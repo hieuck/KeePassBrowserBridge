@@ -173,10 +173,24 @@ activeDocument = sandbox.document;
 const source = fs.readFileSync(new URL('../../extension/contentScript.js', import.meta.url), 'utf8');
 assert.equal(source.includes('more hidden'), false, 'inline picker should not hide additional matching entries');
 assert.equal(source.includes('entries.slice(0, 8)'), false, 'inline picker should render every matching entry');
+assert.equal(source.includes('kbb-inline-picker-search'), true, 'inline picker should include a search input for many matching entries');
+assert.equal(source.includes('filterInlinePickerItems'), true, 'inline picker should filter matching entries as the user types');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
 
 assert.equal(sandbox.scoreOtpCandidate(quotaPageSizeInput) <= 0, true, 'numeric page-size input should not score as OTP');
+
+const pickerItems = [
+  { dataset: { kbbSearchText: 'github hieu https://github.com' }, style: {} },
+  { dataset: { kbbSearchText: 'openai chatgpt hjeupjn https://chatgpt.com' }, style: {} }
+];
+const emptyPickerState = { style: {} };
+sandbox.filterInlinePickerItems(pickerItems, emptyPickerState, 'chat hje');
+assert.equal(pickerItems[0].style.display, 'none', 'picker search should hide non-matching entries');
+assert.equal(pickerItems[1].style.display, 'block', 'picker search should keep entries matching all words');
+assert.equal(emptyPickerState.style.display, 'none', 'picker empty state should stay hidden when matches exist');
+sandbox.filterInlinePickerItems(pickerItems, emptyPickerState, 'dropbox');
+assert.equal(emptyPickerState.style.display, 'block', 'picker empty state should appear when no entries match');
 
 const credential = sandbox.collectCredentialFromForm(targetForm);
 

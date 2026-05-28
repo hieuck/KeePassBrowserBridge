@@ -484,11 +484,34 @@ function showInlinePicker(button, entries) {
   header.style.font = '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   picker.appendChild(header);
 
+  const items = [];
+  let empty = null;
+  if (entries.length > 6) {
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'kbb-inline-picker-search';
+    search.placeholder = 'Search logins';
+    search.setAttribute('aria-label', 'Search KeePass logins');
+    applyPickerSearchStyle(search);
+    search.addEventListener('mousedown', (event) => event.stopPropagation());
+    search.addEventListener('input', () => filterInlinePickerItems(items, empty, search.value));
+    picker.appendChild(search);
+
+    empty = document.createElement('div');
+    empty.textContent = 'No matching logins';
+    empty.style.display = 'none';
+    empty.style.padding = '10px';
+    empty.style.color = '#667085';
+    empty.style.font = '12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    picker.appendChild(empty);
+  }
+
   for (const entry of entries) {
     const item = document.createElement('button');
     item.type = 'button';
     item.setAttribute('role', 'menuitem');
     item.title = 'Fill from KeePass';
+    item.dataset.kbbSearchText = inlinePickerSearchText(entry);
     applyPickerItemStyle(item);
 
     const title = document.createElement('div');
@@ -518,11 +541,39 @@ function showInlinePicker(button, entries) {
     });
 
     picker.appendChild(item);
+    items.push(item);
   }
 
   document.documentElement.appendChild(picker);
   positionInlinePicker(button, picker);
   window.__keepassBrowserBridgeActivePicker = picker;
+}
+
+function filterInlinePickerItems(items, empty, query) {
+  const words = String(query || '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  let visible = 0;
+
+  for (const item of items) {
+    const text = item.dataset && item.dataset.kbbSearchText ? item.dataset.kbbSearchText : '';
+    const matched = words.every((word) => text.indexOf(word) !== -1);
+    item.style.display = matched ? 'block' : 'none';
+    if (matched) visible += 1;
+  }
+
+  if (empty) {
+    empty.style.display = visible === 0 ? 'block' : 'none';
+  }
+}
+
+function inlinePickerSearchText(entry) {
+  return [
+    entry.Title || '',
+    entry.UserName || '',
+    entry.Url || ''
+  ].join(' ').toLowerCase();
 }
 
 function fillCredentialForButton(button, entry) {
@@ -751,6 +802,20 @@ function applyPickerItemStyle(item) {
   item.addEventListener('mouseleave', () => {
     item.style.background = '#ffffff';
   });
+}
+
+function applyPickerSearchStyle(search) {
+  search.style.display = 'block';
+  search.style.width = 'calc(100% - 16px)';
+  search.style.margin = '8px';
+  search.style.padding = '7px 9px';
+  search.style.border = '1px solid #cbd5e1';
+  search.style.borderRadius = '6px';
+  search.style.boxSizing = 'border-box';
+  search.style.background = '#ffffff';
+  search.style.color = '#1f2933';
+  search.style.font = '13px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  search.style.outline = 'none';
 }
 
 function positionInlinePicker(button, picker) {
