@@ -7,10 +7,15 @@ on:
         description: Release version, for example 0.1.0
         required: true
         type: string
+      keepass_version:
+        description: KeePass 2.x version used to build the plugin
+        required: true
+        default: 2.61.1
+        type: string
 
 jobs:
-  package-extension:
-    name: Package extension
+  package:
+    name: Package plugin and extension
     runs-on: windows-latest
 
     steps:
@@ -30,14 +35,57 @@ jobs:
           node --check extension\popup.js
           node tests\extension\protocol.test.mjs
 
-      - name: Package Chrome extension
+      - name: Download KeePass
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          Compress-Archive -Path extension\* -DestinationPath "artifacts\KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip" -Force
+          $ErrorActionPreference = "Stop"
+          $keepassVersion = "${{ inputs.keepass_version }}"
+          $url = "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$keepassVersion/KeePass-$keepassVersion.zip"
+          New-Item -ItemType Directory -Force -Path tools | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile tools\KeePass.zip
+          Expand-Archive -Path tools\KeePass.zip -DestinationPath tools\KeePass -Force
 
-      - name: Upload extension artifact
+      - name: Build release artifacts
+        shell: pwsh
+        run: |
+          .\scripts\build-release.ps1 `
+            -KeePassExe "${{ github.workspace }}\tools\KeePass\KeePass.exe" `
+            -ArtifactsDir "${{ github.workspace }}\artifacts"
+
+      - name: Verify requested version
+        shell: pwsh
+        run: |
+          $expected = "${{ inputs.version }}"
+          $extension = "artifacts\KeePassBrowserBridge-chrome-extension-$expected.zip"
+          if (-not (Test-Path -LiteralPath $extension)) {
+            throw "Expected extension artifact was not created: $extension"
+          }
+          foreach ($path in @("artifacts\KeePassBrowserBridge.dll", "artifacts\KeePassBrowserBridge.plgx", $extension)) {
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Missing release artifact: $path"
+            }
+          }
+
+      - name: Upload plugin DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeePassBrowserBridge-plugin-dll-${{ inputs.version }}
+          path: artifacts\KeePassBrowserBridge.dll
+
+      - name: Upload plugin PLGX
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeePassBrowserBridge-plugin-plgx-${{ inputs.version }}
+          path: artifacts\KeePassBrowserBridge.plgx
+
+      - name: Upload Chrome extension
         uses: actions/upload-artifact@v4
         with:
           name: KeePassBrowserBridge-chrome-extension-${{ inputs.version }}
           path: artifacts\KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip
+
+      - name: Upload release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeePassBrowserBridge-release-${{ inputs.version }}
+          path: artifacts\*
