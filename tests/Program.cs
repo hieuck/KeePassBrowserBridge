@@ -30,6 +30,7 @@ internal static class Program
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
         PairingSessionLocksAfterRepeatedWrongCodes();
+        CancelledPairingSessionCannotComplete();
         ExpiredPairingCodeIsRejected();
         SuccessfulPairingCreatesTrustedClient();
         RevokedClientIsNoLongerTrusted();
@@ -46,6 +47,7 @@ internal static class Program
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
+        BridgeHandlerCancelsPairingSession();
         BridgeHandlerListsTrustedClientsWithoutSecrets();
         BridgeHandlerRevokesTrustedClient();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
@@ -242,6 +244,21 @@ internal static class Program
         AssertFalse(correctAfterLock.Success, "locked pairing session should not accept the correct code later");
         AssertEqual("pairing_session_not_found", correctAfterLock.ErrorCode, "locked pairing session should be removed");
         AssertEqual(0, store.ListClients().Length, "locked pairing session should not add a trusted client");
+    }
+
+    private static void CancelledPairingSessionCannotComplete()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(new DeterministicSecretGenerator("123456", "secret"));
+        PairingSession session = service.BeginPairing("Chrome");
+
+        bool cancelled = service.CancelPairing(session.PairingSessionId);
+        PairingResult result = service.CompletePairing(store, session.PairingSessionId, "123456", "Chrome");
+
+        AssertTrue(cancelled, "cancel should report true for an active pairing session");
+        AssertFalse(result.Success, "cancelled pairing session should not complete");
+        AssertEqual("pairing_session_not_found", result.ErrorCode, "cancelled pairing session error mismatch");
+        AssertEqual(0, store.ListClients().Length, "cancelled pairing session should not add a trusted client");
     }
 
     private static void ExpiredPairingCodeIsRejected()
@@ -498,6 +515,32 @@ internal static class Program
 
         AssertTrue(response.Success, "valid HMAC client.status should succeed: " + response.Error);
         AssertTrue(payload.Trusted, "client.status should report trusted client");
+    }
+
+    private static void BridgeHandlerCancelsPairingSession()
+    {
+        PairingService pairing = new PairingService(new DeterministicSecretGenerator("123456", "shared-secret"));
+        TrustedClientStore store = new TrustedClientStore();
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            pairing,
+            store,
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { });
+        PairingSession session = pairing.BeginPairing("Chrome");
+        string payload = BridgeJsonSerializer.Serialize(new PairCancelPayload { PairingSessionId = session.PairingSessionId });
+        BridgeRequest request = CreateValidRequest(BridgeMethods.PairCancel);
+        request.Payload = payload;
+
+        BridgeResponse response = handler.Handle(request);
+        PairCancelResponsePayload result = BridgeJsonSerializer.Deserialize<PairCancelResponsePayload>(response.Payload);
+        PairingResult completeAfterCancel = pairing.CompletePairing(store, session.PairingSessionId, "123456", "Chrome");
+
+        AssertTrue(response.Success, "pair.cancel should return bridge success: " + response.Error);
+        AssertTrue(result.Cancelled, "pair.cancel should report cancelled");
+        AssertFalse(completeAfterCancel.Success, "handler-cancelled session should not complete");
+        AssertEqual("pairing_session_not_found", completeAfterCancel.ErrorCode, "handler-cancelled session error mismatch");
     }
 
     private static void BridgeHandlerListsTrustedClientsWithoutSecrets()

@@ -827,7 +827,7 @@ function scoreOtpCandidate(input) {
   if (autocomplete === 'one-time-code') score += 120;
   if (/\botp\b|\btotp\b|2fa|mfa|authenticator|verification/.test(text)) score += 90;
   if (/\bcode\b|\btoken\b/.test(text)) score += 45;
-  if (inputMode === 'numeric') score += 10;
+  if (inputMode === 'numeric' && score > 0) score += 10;
   if (/\busername\b|\bemail\b|\buser\b|\blogin\b|search|first|last|name/.test(text)) score -= 100;
   if ((input.getAttribute('type') || '').toLowerCase() === 'password') score -= 15;
   return score;

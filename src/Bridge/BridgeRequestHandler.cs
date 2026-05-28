@@ -45,6 +45,7 @@ namespace KeePassBrowserBridge.Bridge
             if (request.Method == BridgeMethods.Hello) return Hello(request);
             if (request.Method == BridgeMethods.PairBegin) return PairBegin(request);
             if (request.Method == BridgeMethods.PairComplete) return PairComplete(request);
+            if (request.Method == BridgeMethods.PairCancel) return PairCancel(request);
             if (request.Method == BridgeMethods.ClientStatus) return ClientStatus(request);
             if (request.Method == BridgeMethods.ClientsList) return ClientsList(request);
             if (request.Method == BridgeMethods.ClientsRevoke) return ClientsRevoke(request);
@@ -90,6 +91,19 @@ namespace KeePassBrowserBridge.Bridge
                 ClientId = result.Client.ClientId,
                 ClientName = result.Client.ClientName,
                 SharedSecret = result.Client.SharedSecret
+            }));
+        }
+
+        private BridgeResponse PairCancel(BridgeRequest request)
+        {
+            PairCancelPayload payload = BridgeJsonSerializer.Deserialize<PairCancelPayload>(request.Payload);
+            string pairingSessionId = payload == null ? null : payload.PairingSessionId;
+            bool cancelled = m_pairingService.CancelPairing(pairingSessionId);
+
+            return Success(request, BridgeJsonSerializer.Serialize(new PairCancelResponsePayload
+            {
+                PairingSessionId = pairingSessionId,
+                Cancelled = cancelled
             }));
         }
 
@@ -167,7 +181,8 @@ namespace KeePassBrowserBridge.Bridge
         {
             return method != BridgeMethods.Hello &&
                 method != BridgeMethods.PairBegin &&
-                method != BridgeMethods.PairComplete;
+                method != BridgeMethods.PairComplete &&
+                method != BridgeMethods.PairCancel;
         }
 
         private static BridgeResponse Success(BridgeRequest request, string payload)

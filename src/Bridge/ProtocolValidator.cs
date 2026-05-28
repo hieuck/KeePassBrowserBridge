@@ -13,6 +13,7 @@ namespace KeePassBrowserBridge.Bridge
             BridgeMethods.Hello,
             BridgeMethods.PairBegin,
             BridgeMethods.PairComplete,
+            BridgeMethods.PairCancel,
             BridgeMethods.ClientStatus,
             BridgeMethods.ClientsList,
             BridgeMethods.ClientsRevoke,

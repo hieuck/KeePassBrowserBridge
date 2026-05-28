@@ -5,6 +5,7 @@ namespace KeePassBrowserBridge.Bridge
         public const string Hello = "hello";
         public const string PairBegin = "pair.begin";
         public const string PairComplete = "pair.complete";
+        public const string PairCancel = "pair.cancel";
         public const string ClientStatus = "client.status";
         public const string ClientsList = "clients.list";
         public const string ClientsRevoke = "clients.revoke";
@@ -70,6 +71,17 @@ namespace KeePassBrowserBridge.Bridge
         public string ClientId { get; set; }
         public string ClientName { get; set; }
         public string SharedSecret { get; set; }
+    }
+
+    public sealed class PairCancelPayload
+    {
+        public string PairingSessionId { get; set; }
+    }
+
+    public sealed class PairCancelResponsePayload
+    {
+        public string PairingSessionId { get; set; }
+        public bool Cancelled { get; set; }
     }
 
     public sealed class ClientStatusPayload

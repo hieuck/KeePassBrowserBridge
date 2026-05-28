@@ -85,6 +85,12 @@ namespace KeePassBrowserBridge.Bridge
             return PairingResult.Ok(client);
         }
 
+        public bool CancelPairing(string pairingSessionId)
+        {
+            if (string.IsNullOrWhiteSpace(pairingSessionId)) return false;
+            return m_sessions.Remove(pairingSessionId);
+        }
+
         private static string NormalizeClientName(string clientName)
         {
             return string.IsNullOrWhiteSpace(clientName) ? "Browser" : clientName.Trim();

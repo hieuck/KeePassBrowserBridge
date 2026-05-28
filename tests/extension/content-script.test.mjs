@@ -109,6 +109,14 @@ const splitOtpInputs = Array.from({ length: 6 }, (_, index) => new MockInput(10 
   'aria-label': `Verification code digit ${index + 1}`
 }));
 
+const quotaPageSizeInput = new MockInput(30, {
+  id: 'custom-accounts-per-page',
+  name: 'accountsPerPage',
+  type: 'number',
+  inputmode: 'numeric',
+  'aria-label': 'Custom accounts per page'
+}, '20');
+
 const unrelatedForm = new MockRoot([unrelatedUser]);
 const targetForm = new MockRoot([targetUser, targetPassword]);
 const documentRoot = new MockRoot([
@@ -117,7 +125,8 @@ const documentRoot = new MockRoot([
   targetPassword,
   focusedStepEmail,
   otherStepEmail,
-  ...splitOtpInputs
+  ...splitOtpInputs,
+  quotaPageSizeInput
 ]);
 
 const sandbox = {
@@ -166,6 +175,8 @@ assert.equal(source.includes('more hidden'), false, 'inline picker should not hi
 assert.equal(source.includes('entries.slice(0, 8)'), false, 'inline picker should render every matching entry');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
+
+assert.equal(sandbox.scoreOtpCandidate(quotaPageSizeInput) <= 0, true, 'numeric page-size input should not score as OTP');
 
 const credential = sandbox.collectCredentialFromForm(targetForm);
 

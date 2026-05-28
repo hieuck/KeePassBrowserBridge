@@ -6,6 +6,7 @@ const storage = {
   endpoint: 'http://127.0.0.1:19455/bridge',
   pairingSessionId: 'expired-session'
 };
+const requests = [];
 
 const sandbox = {
   console,
@@ -23,16 +24,32 @@ const sandbox = {
       sign: async () => new Uint8Array([1, 2, 3]).buffer
     }
   },
-  fetch: async () => ({
-    ok: true,
-    json: async () => ({
-      ProtocolVersion: 1,
-      RequestId: 'request-1',
-      Success: false,
-      ErrorCode: 'pairing_session_expired',
-      Error: 'Pairing session has expired.'
-    })
-  }),
+  fetch: async (url, options) => {
+    const request = JSON.parse(options.body);
+    requests.push(request);
+    if (request.Method === 'pair.cancel') {
+      return {
+        ok: true,
+        json: async () => ({
+          ProtocolVersion: 1,
+          RequestId: request.RequestId,
+          Success: true,
+          Payload: '{"Cancelled":true,"PairingSessionId":"cancel-session"}'
+        })
+      };
+    }
+
+    return {
+      ok: true,
+      json: async () => ({
+        ProtocolVersion: 1,
+        RequestId: request.RequestId,
+        Success: false,
+        ErrorCode: 'pairing_session_expired',
+        Error: 'Pairing session has expired.'
+      })
+    };
+  },
   chrome: {
     runtime: {
       id: 'abcdefghijklmnopabcdefghijklmnop',
@@ -85,5 +102,14 @@ storage.pairingSessionId = 'stale-session';
 const pairedState = await sandbox.getState();
 assert.equal(pairedState.paired, true);
 assert.equal(pairedState.pairingSessionId, '', 'paired state should not expose a stale pairing session');
+
+delete storage.clientId;
+delete storage.sharedSecret;
+storage.pairingSessionId = 'cancel-session';
+await sandbox.pairCancel();
+assert.equal(storage.pairingSessionId, '', 'cancel should clear the stored pairing session');
+const cancelRequest = requests.find((request) => request.Method === 'pair.cancel');
+assert.ok(cancelRequest, 'cancel should notify the bridge');
+assert.match(cancelRequest.Payload, /cancel-session/);
 
 console.log('Background tests passed.');

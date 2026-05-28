@@ -161,6 +161,15 @@ async function pairComplete(pairingCode) {
 }
 
 async function pairCancel() {
+  const state = await storageGet(['pairingSessionId']);
+  if (state.pairingSessionId) {
+    try {
+      await bridgeCall('pair.cancel', { PairingSessionId: state.pairingSessionId });
+    } catch (error) {
+      // Local cancellation should still clear stale UI even if KeePass is closed.
+    }
+  }
+
   await chrome.storage.local.set({ pairingSessionId: '' });
   return getState();
 }
