@@ -4,12 +4,15 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <BaseOutputPath Condition="'$(BaseOutputPath)' == ''">$(TEMP)\KeePassBrowserBridgeTests\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(TEMP)\KeePassBrowserBridgeTests\obj\</BaseIntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="KeePass">
       <HintPath>..\..\..\KeePass.exe</HintPath>
     </Reference>
     <Compile Include="..\src\Bridge\BridgeAuthentication.cs" Link="BridgeAuthentication.cs" />
+    <Compile Include="..\src\Bridge\BridgeClock.cs" Link="BridgeClock.cs" />
     <Compile Include="..\src\Bridge\BridgeJsonSerializer.cs" Link="BridgeJsonSerializer.cs" />
     <Compile Include="..\src\Bridge\BridgeRequestHandler.cs" Link="BridgeRequestHandler.cs" />
     <Compile Include="..\src\Bridge\BridgeSettings.cs" Link="BridgeSettings.cs" />

@@ -34,7 +34,11 @@ try {
 
     Write-Host ""
     Write-Host "Running bridge tests..."
-    dotnet run --project tests\KeePassBrowserBridge.Tests.csproj
+    $testOutputRoot = Join-Path $env:TEMP "KeePassBrowserBridgeTests"
+    dotnet run `
+        --project tests\KeePassBrowserBridge.Tests.csproj `
+        /p:BaseOutputPath="$testOutputRoot\bin\" `
+        /p:BaseIntermediateOutputPath="$testOutputRoot\obj\"
 
     Write-Host ""
     Write-Host "Compiling KeePass plugin sources..."
@@ -43,6 +47,7 @@ try {
 
     $sources = @(
         ".\src\Bridge\BridgeAuthentication.cs",
+        ".\src\Bridge\BridgeClock.cs",
         ".\src\Bridge\BridgeJsonSerializer.cs",
         ".\src\Bridge\BridgeRequestHandler.cs",
         ".\src\Bridge\BridgeSettings.cs",
@@ -82,5 +87,7 @@ try {
     Write-Host "Compiled: $($compiled.FullName) ($($compiled.Length) bytes)"
 }
 finally {
+    Remove-Item -LiteralPath (Join-Path $repoRoot "tests\bin") -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $repoRoot "tests\obj") -Recurse -Force -ErrorAction SilentlyContinue
     Pop-Location
 }

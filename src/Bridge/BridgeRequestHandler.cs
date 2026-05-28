@@ -31,7 +31,7 @@ namespace KeePassBrowserBridge.Bridge
 
         public BridgeResponse Handle(BridgeRequest request)
         {
-            ProtocolValidationResult validation = ProtocolValidator.Validate(request, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            ProtocolValidationResult validation = ProtocolValidator.Validate(request, BridgeClock.UtcNowMilliseconds());
             if (!validation.IsValid)
                 return Error(request, validation.ErrorCode, validation.Error);
 

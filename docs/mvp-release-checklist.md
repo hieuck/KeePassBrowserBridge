@@ -2,7 +2,8 @@
 
 KeePassBrowserBridge has two user-facing artifacts:
 
-- `KeePassBrowserBridge.plgx` for KeePass 2.x.
+- `KeePassBrowserBridge.dll` for KeePass 2.x.
+- `KeePassBrowserBridge.plgx` for KeePass 2.x source-based loading.
 - A zipped Chrome extension folder built from `extension/`.
 
 ## Local verification
@@ -36,6 +37,7 @@ Then open `http://127.0.0.1:18080/login-page.html` in Chrome and create a KeePas
 
 Attach these files to the release:
 
+- `KeePassBrowserBridge.dll`
 - `KeePassBrowserBridge.plgx`
 - `KeePassBrowserBridge-chrome-extension.zip`
 
@@ -45,7 +47,9 @@ Create both assets with:
 .\scripts\build-release.ps1
 ```
 
-The PLGX artifact is created with KeePass' own `--plgx-create` command. Do not create the `.plgx` by manually renaming a ZIP file; KeePass validates the PLGX format when loading plugins.
+The DLL artifact is the primary end-user install path because KeePass loads it directly. Install it as `KeePassBrowserBridge.dll`; do not include version numbers or hyphens in the plugin DLL file name, because KeePass derives the plugin class name from the file name.
+
+The PLGX artifact is created with KeePass' own `--plgx-create` command. Do not create the `.plgx` by manually renaming a ZIP file; KeePass validates and compiles the PLGX format when loading plugins.
 
 The GitHub workflow `.github/workflows/release.yml` packages the Chrome extension. The PLGX artifact is intentionally built locally because creating it requires a KeePass executable and plugin source layout matching the target KeePass installation.
 

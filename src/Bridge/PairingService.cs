@@ -27,7 +27,7 @@ namespace KeePassBrowserBridge.Bridge
                 PairingSessionId = Guid.NewGuid().ToString("N"),
                 PairingCode = m_secretGenerator.CreatePairingCode(),
                 ClientName = NormalizeClientName(clientName),
-                CreatedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                CreatedUtcMs = BridgeClock.UtcNowMilliseconds()
             };
 
             m_sessions[session.PairingSessionId] = session;
@@ -50,7 +50,7 @@ namespace KeePassBrowserBridge.Bridge
                 ClientId = Guid.NewGuid().ToString("N"),
                 ClientName = NormalizeClientName(clientName),
                 SharedSecret = m_secretGenerator.CreateSecret(),
-                CreatedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                CreatedUtcMs = BridgeClock.UtcNowMilliseconds()
             };
 
             store.AddOrUpdate(client);
