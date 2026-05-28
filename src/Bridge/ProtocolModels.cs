@@ -10,7 +10,7 @@ namespace KeePassBrowserBridge.Bridge
         public const string LoginsFillAck = "logins.fillAck";
     }
 
-    internal sealed class BridgeRequest
+    public sealed class BridgeRequest
     {
         public int ProtocolVersion { get; set; }
         public string Method { get; set; }
@@ -22,7 +22,7 @@ namespace KeePassBrowserBridge.Bridge
         public string Authentication { get; set; }
     }
 
-    internal sealed class BridgeResponse
+    public sealed class BridgeResponse
     {
         public int ProtocolVersion { get; set; }
         public string RequestId { get; set; }
@@ -32,30 +32,53 @@ namespace KeePassBrowserBridge.Bridge
         public string Payload { get; set; }
     }
 
-    internal sealed class HelloPayload
+    public sealed class HelloPayload
     {
         public string ExtensionName { get; set; }
         public string ExtensionVersion { get; set; }
     }
 
-    internal sealed class PairBeginPayload
+    public sealed class HelloResponsePayload
+    {
+        public string ProductName { get; set; }
+        public int ProtocolVersion { get; set; }
+    }
+
+    public sealed class PairBeginPayload
     {
         public string ClientName { get; set; }
     }
 
-    internal sealed class PairCompletePayload
+    public sealed class PairBeginResponsePayload
+    {
+        public string PairingSessionId { get; set; }
+    }
+
+    public sealed class PairCompletePayload
     {
         public string PairingSessionId { get; set; }
         public string PairingCode { get; set; }
         public string ClientName { get; set; }
     }
 
-    internal sealed class ClientStatusPayload
+    public sealed class PairCompleteResponsePayload
+    {
+        public string ClientId { get; set; }
+        public string ClientName { get; set; }
+        public string SharedSecret { get; set; }
+    }
+
+    public sealed class ClientStatusPayload
     {
         public string ClientId { get; set; }
     }
 
-    internal sealed class LoginsQueryPayload
+    public sealed class ClientStatusResponsePayload
+    {
+        public bool Trusted { get; set; }
+    }
+
+    public sealed class LoginsQueryPayload
     {
         public string Url { get; set; }
     }

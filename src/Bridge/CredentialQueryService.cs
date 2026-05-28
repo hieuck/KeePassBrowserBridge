@@ -53,7 +53,7 @@ namespace KeePassBrowserBridge.Bridge
         }
     }
 
-    internal sealed class CredentialQueryResult
+    public sealed class CredentialQueryResult
     {
         public bool Success { get; set; }
         public string ErrorCode { get; set; }
@@ -81,7 +81,7 @@ namespace KeePassBrowserBridge.Bridge
         }
     }
 
-    internal sealed class CredentialEntry
+    public sealed class CredentialEntry
     {
         public string EntryId { get; set; }
         public string Title { get; set; }

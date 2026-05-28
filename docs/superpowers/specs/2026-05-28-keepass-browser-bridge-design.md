@@ -27,10 +27,11 @@ Primary user flow:
 ## Recommended Architecture
 
 Use a KeePass plugin with a localhost bridge, plus a Chrome Manifest V3 extension.
+For the MVP, the bridge is a loopback HTTP JSON endpoint. WebSocket can be added later if the extension needs persistent push-style updates.
 
 ```text
 Chrome Extension
-  -> ws://127.0.0.1:<configured-port>
+  -> http://127.0.0.1:<configured-port>/bridge
 KeePass Browser Bridge Plugin
   -> active KeePass 2.x database
 ```
@@ -45,7 +46,7 @@ This keeps installation simple for KeePass users: install plugin, install extens
 
 Responsibilities:
 
-- Start and stop a loopback-only WebSocket server.
+- Start and stop a loopback-only HTTP JSON server.
 - Bind only to `127.0.0.1`, never public interfaces.
 - Expose a small browser bridge API.
 - Display pairing codes in KeePass UI.
@@ -79,7 +80,7 @@ Initial surfaces:
 
 ## Protocol MVP
 
-Messages should be JSON over WebSocket, with a small versioned protocol.
+Messages should be JSON over the loopback bridge, with a small versioned protocol.
 
 Initial methods:
 
@@ -167,7 +168,7 @@ Security tests:
 ## MVP Milestones
 
 1. KeePass plugin skeleton with menu and enable setting.
-2. Local WebSocket server bound to `127.0.0.1`.
+2. Local HTTP JSON server bound to `127.0.0.1`.
 3. Chrome extension connects and shows plugin status.
 4. Pairing flow with one-time code.
 5. Query matching logins for current tab.

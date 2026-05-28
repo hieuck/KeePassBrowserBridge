@@ -11,6 +11,9 @@ namespace KeePassBrowserBridge
         private ToolStripMenuItem m_enableItem;
         private PairingService m_pairingService;
         private TrustedClientStore m_trustedClients;
+        private CredentialQueryService m_credentialQueryService;
+        private BridgeRequestHandler m_requestHandler;
+        private LoopbackBridgeServer m_server;
 
         public override bool Initialize(IPluginHost host)
         {
@@ -19,6 +22,15 @@ namespace KeePassBrowserBridge
             m_host = host;
             m_pairingService = new PairingService();
             m_trustedClients = new TrustedClientStore();
+            m_credentialQueryService = new CredentialQueryService();
+            m_requestHandler = new BridgeRequestHandler(
+                m_pairingService,
+                m_trustedClients,
+                m_credentialQueryService,
+                delegate { return (m_host == null) ? null : m_host.Database; },
+                OnPairingSessionCreated);
+
+            if (IsEnabled()) StartServer();
             return true;
         }
 
@@ -50,6 +62,9 @@ namespace KeePassBrowserBridge
             bool enabled = (m_enableItem != null && m_enableItem.Checked);
             m_host.CustomConfig.SetBool(BridgeSettings.EnabledConfigKey, enabled);
             SaveConfig();
+
+            if (enabled) StartServer();
+            else StopServer();
 
             string status = enabled ? "enabled" : "disabled";
             MessageBox.Show("Browser integration is now " + status + ".",
@@ -90,12 +105,50 @@ namespace KeePassBrowserBridge
             if (m_host != null && m_host.MainWindow != null) m_host.MainWindow.SaveConfig();
         }
 
+        private int GetPort()
+        {
+            if (m_host == null) return BridgeSettings.DefaultPort;
+            long configured = m_host.CustomConfig.GetLong(BridgeSettings.PortConfigKey, BridgeSettings.DefaultPort);
+            if (configured < 1024 || configured > 65535) return BridgeSettings.DefaultPort;
+            return (int)configured;
+        }
+
+        private void StartServer()
+        {
+            if (m_server != null && m_server.IsRunning) return;
+
+            StopServer();
+            m_server = new LoopbackBridgeServer(m_requestHandler);
+            m_server.Start(GetPort());
+        }
+
+        private void StopServer()
+        {
+            if (m_server == null) return;
+
+            m_server.Dispose();
+            m_server = null;
+        }
+
+        private void OnPairingSessionCreated(PairingSession session)
+        {
+            if (session == null) return;
+
+            MessageBox.Show("Enter this pairing code in the browser extension:\r\n\r\n" +
+                session.PairingCode + "\r\n\r\n" +
+                "Session ID: " + session.PairingSessionId,
+                BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         public override void Terminate()
         {
+            StopServer();
             m_host = null;
             m_enableItem = null;
             m_pairingService = null;
             m_trustedClients = null;
+            m_credentialQueryService = null;
+            m_requestHandler = null;
         }
     }
 }

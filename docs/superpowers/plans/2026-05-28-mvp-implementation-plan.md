@@ -4,9 +4,9 @@
 
 **Goal:** Build a usable MVP where a Chrome extension pairs with a KeePass 2.x plugin, queries matching credentials from the active database, and fills a selected login.
 
-**Architecture:** The KeePass plugin owns database access and exposes a loopback-only browser bridge. The Chrome MV3 extension connects to the bridge, pairs once, requests matches for the current tab URL, and fills only after the user selects an entry.
+**Architecture:** The KeePass plugin owns database access and exposes a loopback-only HTTP JSON browser bridge. The Chrome MV3 extension connects to the bridge, pairs once, requests matches for the current tab URL, and fills only after the user selects an entry.
 
-**Tech Stack:** C# .NET Framework 4.8 KeePass plugin, local loopback WebSocket/HTTP bridge, Chrome Manifest V3 extension, plain JavaScript, focused unit tests.
+**Tech Stack:** C# .NET Framework 4.8 KeePass plugin, local loopback HTTP bridge, Chrome Manifest V3 extension, plain JavaScript, focused unit tests.
 
 ---
 
@@ -21,7 +21,7 @@
 - `src/Bridge/TrustedClientStore.cs`: trusted client config serialization.
 - `src/Bridge/PairingService.cs`: one-time code and shared secret generation.
 - `src/Bridge/CredentialQueryService.cs`: KeePass database search.
-- `src/Bridge/LoopbackBridgeServer.cs`: loopback bridge listener.
+- `src/Bridge/LoopbackBridgeServer.cs`: loopback HTTP bridge listener.
 - `tests/KeePassBrowserBridge.Tests.csproj`: lightweight test harness.
 - `tests/Program.cs`: test runner for core plugin units.
 - `extension/manifest.json`: Chrome MV3 manifest.

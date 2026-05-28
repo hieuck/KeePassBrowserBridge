@@ -16,6 +16,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -25,8 +26,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bridge\BridgeAuthentication.cs" />
+    <Compile Include="Bridge\BridgeJsonSerializer.cs" />
+    <Compile Include="Bridge\BridgeRequestHandler.cs" />
     <Compile Include="Bridge\BridgeSettings.cs" />
     <Compile Include="Bridge\CredentialQueryService.cs" />
+    <Compile Include="Bridge\LoopbackBridgeServer.cs" />
     <Compile Include="Bridge\PairingService.cs" />
     <Compile Include="Bridge\ProtocolModels.cs" />
     <Compile Include="Bridge\ProtocolValidator.cs" />
