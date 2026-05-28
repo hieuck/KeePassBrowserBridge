@@ -3,6 +3,7 @@
 if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgeContentScriptLoaded = true;
   window.__keepassBrowserBridgeInlineTargets = new WeakSet();
+  window.__keepassBrowserBridgeActivePicker = null;
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || message.type !== 'KBB_FILL') {
@@ -23,6 +24,12 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   installInlineFillButtons();
   const observer = new MutationObserver(() => installInlineFillButtons());
   observer.observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('mousedown', (event) => {
+    const picker = window.__keepassBrowserBridgeActivePicker;
+    if (picker && !picker.contains(event.target) && !event.target.classList.contains('kbb-inline-button')) {
+      closeInlinePicker();
+    }
+  }, true);
 }
 
 function fillLogin(credential) {
@@ -214,6 +221,7 @@ async function fillFromInlineButton(button) {
     }
 
     if (entries.length > 1) {
+      showInlinePicker(button, entries);
       setInlineButtonState(button, String(entries.length));
       return;
     }
@@ -223,6 +231,132 @@ async function fillFromInlineButton(button) {
   } catch (error) {
     setInlineButtonState(button, '!');
   }
+}
+
+function showInlinePicker(button, entries) {
+  closeInlinePicker();
+
+  const picker = document.createElement('div');
+  picker.className = 'kbb-inline-picker';
+  picker.setAttribute('role', 'menu');
+  applyPickerStyle(picker);
+
+  const header = document.createElement('div');
+  header.textContent = `${entries.length} KeePass logins`;
+  header.style.padding = '8px 10px';
+  header.style.borderBottom = '1px solid #d7dde5';
+  header.style.color = '#667085';
+  header.style.font = '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  picker.appendChild(header);
+
+  for (const entry of entries.slice(0, 8)) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.setAttribute('role', 'menuitem');
+    item.title = 'Fill from KeePass';
+    applyPickerItemStyle(item);
+
+    const title = document.createElement('div');
+    title.textContent = entry.Title || '(Untitled)';
+    title.style.fontWeight = '700';
+    title.style.overflow = 'hidden';
+    title.style.textOverflow = 'ellipsis';
+    title.style.whiteSpace = 'nowrap';
+
+    const detail = document.createElement('div');
+    detail.textContent = entry.UserName || entry.Url || '';
+    detail.style.color = '#667085';
+    detail.style.fontSize = '12px';
+    detail.style.overflow = 'hidden';
+    detail.style.textOverflow = 'ellipsis';
+    detail.style.whiteSpace = 'nowrap';
+
+    item.appendChild(title);
+    item.appendChild(detail);
+    item.addEventListener('mousedown', (event) => event.preventDefault());
+    item.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      fillLogin(entry);
+      closeInlinePicker();
+      setInlineButtonState(button, 'ok');
+    });
+
+    picker.appendChild(item);
+  }
+
+  if (entries.length > 8) {
+    const footer = document.createElement('div');
+    footer.textContent = `${entries.length - 8} more hidden`;
+    footer.style.padding = '7px 10px';
+    footer.style.color = '#667085';
+    footer.style.font = '12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    footer.style.borderTop = '1px solid #d7dde5';
+    picker.appendChild(footer);
+  }
+
+  document.documentElement.appendChild(picker);
+  positionInlinePicker(button, picker);
+  window.__keepassBrowserBridgeActivePicker = picker;
+}
+
+function closeInlinePicker() {
+  const picker = window.__keepassBrowserBridgeActivePicker;
+  if (picker && picker.parentElement) {
+    picker.parentElement.removeChild(picker);
+  }
+  window.__keepassBrowserBridgeActivePicker = null;
+}
+
+function applyPickerStyle(picker) {
+  picker.style.position = 'fixed';
+  picker.style.zIndex = '2147483647';
+  picker.style.width = '280px';
+  picker.style.maxWidth = 'calc(100vw - 16px)';
+  picker.style.maxHeight = '320px';
+  picker.style.overflowY = 'auto';
+  picker.style.background = '#ffffff';
+  picker.style.color = '#1f2933';
+  picker.style.border = '1px solid #d7dde5';
+  picker.style.borderRadius = '8px';
+  picker.style.boxShadow = '0 12px 30px rgba(15, 23, 42, 0.22)';
+  picker.style.font = '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+}
+
+function applyPickerItemStyle(item) {
+  item.style.display = 'block';
+  item.style.width = '100%';
+  item.style.margin = '0';
+  item.style.padding = '9px 10px';
+  item.style.border = '0';
+  item.style.borderBottom = '1px solid #edf0f3';
+  item.style.borderRadius = '0';
+  item.style.background = '#ffffff';
+  item.style.color = '#1f2933';
+  item.style.textAlign = 'left';
+  item.style.cursor = 'pointer';
+  item.style.appearance = 'none';
+  item.style.font = '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  item.addEventListener('mouseenter', () => {
+    item.style.background = '#f3f7fa';
+  });
+  item.addEventListener('mouseleave', () => {
+    item.style.background = '#ffffff';
+  });
+}
+
+function positionInlinePicker(button, picker) {
+  const rect = button.getBoundingClientRect();
+  const width = Math.min(280, window.innerWidth - 16);
+  const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.right - width));
+  const below = rect.bottom + 8;
+  const top = below + 320 < window.innerHeight
+    ? below
+    : Math.max(8, rect.top - Math.min(320, picker.scrollHeight || 320) - 8);
+
+  picker.style.width = `${width}px`;
+  picker.style.left = `${left}px`;
+  picker.style.top = `${top}px`;
 }
 
 function setInlineButtonState(button, state) {
