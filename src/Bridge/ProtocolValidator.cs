@@ -54,7 +54,7 @@ namespace KeePassBrowserBridge.Bridge
             return ProtocolValidationResult.Ok();
         }
 
-        private static bool IsAllowedExtensionOrigin(string origin)
+        public static bool IsAllowedExtensionOrigin(string origin)
         {
             Uri uri;
             if (!Uri.TryCreate(origin.Trim(), UriKind.Absolute, out uri)) return false;

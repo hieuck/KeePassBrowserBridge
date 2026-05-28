@@ -52,6 +52,8 @@ internal static class Program
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerUpdatesLoginForAuthenticatedRequest();
         LoopbackBridgeServerRespondsToHello();
+        LoopbackBridgeServerRejectsWebPreflightOrigin();
+        LoopbackBridgeServerAllowsExtensionPreflightOrigin();
         LoopbackBridgeServerTryStartReportsPortConflict();
         return 0;
     }
@@ -621,6 +623,49 @@ internal static class Program
         }
     }
 
+    private static void LoopbackBridgeServerRejectsWebPreflightOrigin()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+
+            RawHttpResponse response = SendRawHttp(port,
+                "OPTIONS /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: https://evil.example\r\n" +
+                "Access-Control-Request-Method: POST\r\n" +
+                "Connection: close\r\n\r\n");
+
+            AssertEqual(403, response.StatusCode, "web preflight should be rejected");
+            AssertFalse(response.Headers.ContainsKey("Access-Control-Allow-Origin"),
+                "rejected web preflight should not include an allow-origin header");
+        }
+    }
+
+    private static void LoopbackBridgeServerAllowsExtensionPreflightOrigin()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            RawHttpResponse response = SendRawHttp(port,
+                "OPTIONS /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Access-Control-Request-Method: POST\r\n" +
+                "Connection: close\r\n\r\n");
+
+            AssertEqual(204, response.StatusCode, "extension preflight should be allowed");
+            AssertEqual(origin, response.Headers["Access-Control-Allow-Origin"],
+                "extension preflight should echo the extension origin");
+        }
+    }
+
     private static void LoopbackBridgeServerTryStartReportsPortConflict()
     {
         int port = FindFreePort();
@@ -727,12 +772,25 @@ internal static class Program
             "Content-Length: " + bodyBytes.Length + "\r\n" +
             "Connection: close\r\n\r\n";
 
+        string raw = SendRawHttp(port, header, bodyBytes).Raw;
+        int bodyStart = raw.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+        if (bodyStart < 0) throw new Exception("HTTP response did not contain a body separator.");
+        return raw.Substring(bodyStart + 4);
+    }
+
+    private static RawHttpResponse SendRawHttp(int port, string header)
+    {
+        return SendRawHttp(port, header, new byte[0]);
+    }
+
+    private static RawHttpResponse SendRawHttp(int port, string header, byte[] bodyBytes)
+    {
         using (TcpClient client = new TcpClient("127.0.0.1", port))
         using (NetworkStream stream = client.GetStream())
         {
             byte[] headerBytes = Encoding.ASCII.GetBytes(header);
             stream.Write(headerBytes, 0, headerBytes.Length);
-            stream.Write(bodyBytes, 0, bodyBytes.Length);
+            if (bodyBytes.Length > 0) stream.Write(bodyBytes, 0, bodyBytes.Length);
 
             byte[] buffer = new byte[8192];
             int read;
@@ -742,10 +800,7 @@ internal static class Program
                 response.Append(Encoding.UTF8.GetString(buffer, 0, read));
             }
 
-            string raw = response.ToString();
-            int bodyStart = raw.IndexOf("\r\n\r\n", StringComparison.Ordinal);
-            if (bodyStart < 0) throw new Exception("HTTP response did not contain a body separator.");
-            return raw.Substring(bodyStart + 4);
+            return RawHttpResponse.Parse(response.ToString());
         }
     }
 
@@ -794,6 +849,35 @@ internal static class Program
         public string CreateSecret()
         {
             return m_secret;
+        }
+    }
+
+    private sealed class RawHttpResponse
+    {
+        public int StatusCode { get; private set; }
+        public System.Collections.Generic.Dictionary<string, string> Headers { get; private set; }
+        public string Raw { get; private set; }
+
+        public static RawHttpResponse Parse(string raw)
+        {
+            string[] lines = raw.Split(new[] { "\r\n" }, StringSplitOptions.None);
+            string[] statusParts = lines[0].Split(' ');
+            RawHttpResponse response = new RawHttpResponse
+            {
+                Raw = raw,
+                StatusCode = int.Parse(statusParts[1]),
+                Headers = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            };
+
+            for (int i = 1; i < lines.Length; ++i)
+            {
+                if (lines[i].Length == 0) break;
+                int separator = lines[i].IndexOf(':');
+                if (separator <= 0) continue;
+                response.Headers[lines[i].Substring(0, separator)] = lines[i].Substring(separator + 1).Trim();
+            }
+
+            return response;
         }
     }
 }

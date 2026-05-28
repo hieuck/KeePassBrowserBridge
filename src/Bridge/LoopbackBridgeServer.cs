@@ -116,14 +116,21 @@ namespace KeePassBrowserBridge.Bridge
 
         private void ProcessContext(HttpListenerContext context)
         {
-            AddCorsHeaders(context.Response);
-
             if (context.Request.HttpMethod == "OPTIONS")
             {
+                if (!AddCorsHeadersForAllowedOrigin(context.Request, context.Response))
+                {
+                    context.Response.StatusCode = 403;
+                    context.Response.Close();
+                    return;
+                }
+
                 context.Response.StatusCode = 204;
                 context.Response.Close();
                 return;
             }
+
+            AddCorsHeadersForAllowedOrigin(context.Request, context.Response);
 
             if (context.Request.HttpMethod != "POST" || context.Request.Url == null ||
                 !string.Equals(context.Request.Url.AbsolutePath, "/bridge", StringComparison.OrdinalIgnoreCase))
@@ -166,11 +173,19 @@ namespace KeePassBrowserBridge.Bridge
             context.Response.Close();
         }
 
-        private static void AddCorsHeaders(HttpListenerResponse response)
+        private static bool AddCorsHeadersForAllowedOrigin(HttpListenerRequest request, HttpListenerResponse response)
         {
-            response.Headers["Access-Control-Allow-Origin"] = "*";
+            string origin = request.Headers["Origin"];
+            if (!string.IsNullOrWhiteSpace(origin))
+            {
+                if (!ProtocolValidator.IsAllowedExtensionOrigin(origin)) return false;
+                response.Headers["Access-Control-Allow-Origin"] = origin;
+                response.Headers["Vary"] = "Origin";
+            }
+
             response.Headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
             response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+            return true;
         }
     }
 
