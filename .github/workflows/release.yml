@@ -42,7 +42,14 @@ jobs:
           $keepassVersion = "${{ inputs.keepass_version }}"
           $url = "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$keepassVersion/KeePass-$keepassVersion.zip"
           New-Item -ItemType Directory -Force -Path tools | Out-Null
-          Invoke-WebRequest -Uri $url -OutFile tools\KeePass.zip
+          curl.exe --location --fail --retry 5 --retry-delay 5 --output tools\KeePass.zip $url
+          if ($LASTEXITCODE -ne 0) {
+            throw "KeePass download failed with exit code $LASTEXITCODE."
+          }
+          $header = [System.IO.File]::ReadAllBytes((Resolve-Path tools\KeePass.zip))[0..1]
+          if ($header[0] -ne 0x50 -or $header[1] -ne 0x4B) {
+            throw "Downloaded KeePass file is not a ZIP archive."
+          }
           Expand-Archive -Path tools\KeePass.zip -DestinationPath tools\KeePass -Force
 
       - name: Build release artifacts
