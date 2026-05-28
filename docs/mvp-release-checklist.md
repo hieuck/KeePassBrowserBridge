@@ -53,4 +53,4 @@ Keep the release notes short and include:
 
 - Supported KeePass version range.
 - Installation steps for the plugin and extension.
-- Known MVP limitation: trusted browser clients are not persisted across KeePass restarts until durable storage is implemented.
+- Known MVP limitation: manual smoke testing is required on target websites because login forms vary by site.

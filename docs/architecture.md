@@ -39,9 +39,9 @@ The MVP supports:
 - Querying credentials from the active KeePass database by URL host.
 - Filling the selected username and password into the current Chrome tab.
 - Local verification scripts and GitHub workflows for repeatable checks.
+- Persisting trusted browser clients in KeePass custom configuration.
 
 Known limitations before a broader release:
 
-- Browser client trust persistence in the KeePass plugin must be verified across KeePass restarts.
 - Manual smoke testing is still required on real login pages because form structures vary by site.
 - The Chrome extension is packaged as an unpacked/developer extension ZIP until Chrome Web Store packaging is introduced.
