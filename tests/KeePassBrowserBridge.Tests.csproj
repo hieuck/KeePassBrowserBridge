@@ -6,6 +6,8 @@
     <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\src\Bridge\ProtocolModels.cs" Link="ProtocolModels.cs" />
+    <Compile Include="..\src\Bridge\ProtocolValidator.cs" Link="ProtocolValidator.cs" />
     <Compile Include="..\src\Bridge\UrlMatcher.cs" Link="UrlMatcher.cs" />
   </ItemGroup>
 </Project>
