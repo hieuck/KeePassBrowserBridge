@@ -620,7 +620,7 @@ function showUpdateLoginPrompt(entry, credential) {
       type: 'KBB_UPDATE_LOGIN',
       login: {
         entryId: entry.EntryId,
-        url: credential.url,
+        pageUrl: credential.url,
         userName: credential.userName,
         password: credential.password
       }

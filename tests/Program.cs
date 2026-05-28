@@ -33,6 +33,7 @@ internal static class Program
         CredentialQueryRejectsClosedDatabase();
         CredentialMutationCreatesEntryInDatabase();
         CredentialMutationUpdatesExistingEntryPassword();
+        CredentialMutationUpdatesExistingEntryFields();
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
@@ -310,6 +311,31 @@ internal static class Program
         AssertEqual(1, (int)database.RootGroup.Entries.UCount, "update should not create a new entry");
         AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "entry password should be updated");
         AssertEqual("new-secret", result.Entry.Password, "updated result password mismatch");
+    }
+
+    private static void CredentialMutationUpdatesExistingEntryFields()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Title = "Updated Example",
+            Url = "https://accounts.example.com/sign-in",
+            UserName = "alice.updated@example.com",
+            Password = "new-secret"
+        });
+
+        AssertTrue(result.Success, "credential field update should succeed: " + result.Error);
+        AssertEqual("Updated Example", entry.Strings.ReadSafe(PwDefs.TitleField), "entry title should be updated");
+        AssertEqual("https://accounts.example.com/sign-in", entry.Strings.ReadSafe(PwDefs.UrlField), "entry URL should be updated");
+        AssertEqual("alice.updated@example.com", entry.Strings.ReadSafe(PwDefs.UserNameField), "entry username should be updated");
+        AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "entry password should be updated");
+        AssertEqual("Updated Example", result.Entry.Title, "updated result title mismatch");
+        AssertEqual("alice.updated@example.com", result.Entry.UserName, "updated result username mismatch");
+        AssertEqual("https://accounts.example.com/sign-in", result.Entry.Url, "updated result URL mismatch");
     }
 
     private static void BridgeHandlerHelloDoesNotRequireAuthentication()

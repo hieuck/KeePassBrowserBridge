@@ -24,6 +24,12 @@ if ([string]::IsNullOrWhiteSpace($ArtifactsDir)) {
 New-Item -ItemType Directory -Force -Path $ArtifactsDir | Out-Null
 $ArtifactsDir = (Resolve-Path $ArtifactsDir).Path
 
+$repoUnderKeePassPlugins = $repoRoot -match "\\Plugins(\\|$)"
+$artifactsUnderRepo = $ArtifactsDir.StartsWith($repoRoot, [System.StringComparison]::OrdinalIgnoreCase)
+if ($repoUnderKeePassPlugins -and $artifactsUnderRepo) {
+    throw "Refusing to write release artifacts under this repository because it is inside KeePass' Plugins directory. KeePass scans subdirectories and can load duplicate plugin DLLs. Use the default temp output or pass -ArtifactsDir outside the KeePass Plugins tree."
+}
+
 $version = "0.1.0"
 $manifestPath = Join-Path $extensionDir "manifest.json"
 if (Test-Path -LiteralPath $manifestPath) {

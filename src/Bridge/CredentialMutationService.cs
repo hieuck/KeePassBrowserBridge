@@ -52,23 +52,32 @@ namespace KeePassBrowserBridge.Bridge
             if (string.IsNullOrWhiteSpace(payload.EntryId))
                 return CredentialMutationResult.Fail("missing_entry_id", "Entry ID is required.");
 
-            if (string.IsNullOrWhiteSpace(payload.Password))
-                return CredentialMutationResult.Fail("missing_password", "Password is required.");
+            if (string.IsNullOrWhiteSpace(payload.Title) &&
+                string.IsNullOrWhiteSpace(payload.Url) &&
+                string.IsNullOrWhiteSpace(payload.UserName) &&
+                string.IsNullOrWhiteSpace(payload.Password))
+                return CredentialMutationResult.Fail("missing_update_fields", "At least one login field is required.");
 
             PwEntry entry = FindEntryById(database.RootGroup, payload.EntryId);
             if (entry == null)
                 return CredentialMutationResult.Fail("entry_not_found", "KeePass entry was not found.");
 
             string entryUrl = entry.Strings.ReadSafe(PwDefs.UrlField);
-            if (!string.IsNullOrWhiteSpace(payload.Url) && !UrlMatcher.IsMatch(entryUrl, payload.Url))
+            if (!string.IsNullOrWhiteSpace(payload.PageUrl) && !UrlMatcher.IsMatch(entryUrl, payload.PageUrl))
                 return CredentialMutationResult.Fail("url_mismatch", "Entry URL does not match the page URL.");
 
-            string entryUserName = entry.Strings.ReadSafe(PwDefs.UserNameField);
-            if (!string.IsNullOrWhiteSpace(payload.UserName) &&
-                !string.Equals(entryUserName, payload.UserName, StringComparison.OrdinalIgnoreCase))
-                return CredentialMutationResult.Fail("username_mismatch", "Entry username does not match the submitted username.");
+            if (!string.IsNullOrWhiteSpace(payload.Title))
+                entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, payload.Title.Trim()));
 
-            entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, payload.Password));
+            if (!string.IsNullOrWhiteSpace(payload.Url))
+                entry.Strings.Set(PwDefs.UrlField, new ProtectedString(false, payload.Url.Trim()));
+
+            if (!string.IsNullOrWhiteSpace(payload.UserName))
+                entry.Strings.Set(PwDefs.UserNameField, new ProtectedString(false, payload.UserName));
+
+            if (!string.IsNullOrWhiteSpace(payload.Password))
+                entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, payload.Password));
+
             entry.Touch(true, false);
             database.Modified = true;
 
@@ -76,9 +85,9 @@ namespace KeePassBrowserBridge.Bridge
             {
                 EntryId = entry.Uuid.ToHexString(),
                 Title = entry.Strings.ReadSafe(PwDefs.TitleField),
-                UserName = entryUserName,
-                Url = entryUrl,
-                Password = payload.Password
+                UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
+                Url = entry.Strings.ReadSafe(PwDefs.UrlField),
+                Password = entry.Strings.ReadSafe(PwDefs.PasswordField)
             });
         }
 

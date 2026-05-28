@@ -180,7 +180,9 @@ async function createLogin(login) {
 async function updateLogin(login) {
   const payload = {
     EntryId: login && login.entryId ? String(login.entryId) : '',
+    Title: login && login.title ? String(login.title) : '',
     Url: login && login.url ? String(login.url) : '',
+    PageUrl: login && login.pageUrl ? String(login.pageUrl) : '',
     UserName: login && login.userName ? String(login.userName) : '',
     Password: login && login.password ? String(login.password) : ''
   };

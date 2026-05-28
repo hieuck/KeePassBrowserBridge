@@ -17,6 +17,8 @@ const elements = {
   message: document.getElementById('message')
 };
 
+let currentEntries = [];
+
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
@@ -81,7 +83,8 @@ async function completePair() {
 async function queryLogins() {
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
   elements.currentUrl.textContent = result.url || '';
-  renderResults(result.entries || []);
+  currentEntries = result.entries || [];
+  renderResults(currentEntries);
   setMessage(result.entries && result.entries.length
     ? `${result.entries.length} login(s) found.`
     : 'No matching logins found.');
@@ -94,6 +97,30 @@ async function fillLogin(credential) {
   }
 
   setMessage('Login filled.');
+}
+
+async function updateLogin(entry, form) {
+  const login = {
+    entryId: entry.EntryId,
+    title: form.querySelector('[name="title"]').value,
+    url: form.querySelector('[name="url"]').value,
+    userName: form.querySelector('[name="userName"]').value,
+    password: form.querySelector('[name="password"]').value
+  };
+
+  const result = await send({ type: 'KBB_UPDATE_LOGIN', login });
+  if (!result || !result.Success) {
+    throw new Error(result && result.Error ? result.Error : 'KeePass entry could not be updated.');
+  }
+
+  Object.assign(entry, result.Entry || {}, {
+    Title: login.title,
+    Url: login.url,
+    UserName: login.userName,
+    Password: login.password
+  });
+  renderResults(currentEntries);
+  setMessage('Entry updated.');
 }
 
 async function refreshState() {
@@ -112,6 +139,7 @@ function renderState(state) {
 
 function renderResults(entries) {
   elements.results.textContent = '';
+  currentEntries = entries;
 
   for (const entry of entries) {
     const item = document.createElement('article');
@@ -125,14 +153,57 @@ function renderResults(entries) {
     meta.className = 'login-meta';
     meta.textContent = [entry.UserName, entry.Url].filter(Boolean).join(' - ');
 
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = 'Fill';
-    button.addEventListener('click', () => runAction(() => fillLogin(entry)));
+    const actions = document.createElement('div');
+    actions.className = 'login-actions';
 
-    item.append(title, meta, button);
+    const fill = document.createElement('button');
+    fill.type = 'button';
+    fill.textContent = 'Fill';
+    fill.addEventListener('click', () => runAction(() => fillLogin(entry)));
+
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'secondary';
+    edit.textContent = 'Edit';
+    edit.addEventListener('click', () => showEditForm(item, entry));
+
+    actions.append(fill, edit);
+
+    item.append(title, meta, actions);
     elements.results.append(item);
   }
+}
+
+function showEditForm(item, entry) {
+  const existing = item.querySelector('.edit-form');
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const form = document.createElement('form');
+  form.className = 'edit-form';
+  form.innerHTML = `
+    <label>Title<input name="title" type="text"></label>
+    <label>Username<input name="userName" type="text" autocomplete="username"></label>
+    <label>URL<input name="url" type="url" spellcheck="false"></label>
+    <label>Password<input name="password" type="password" autocomplete="current-password"></label>
+    <div class="login-actions">
+      <button type="submit">Save</button>
+      <button type="button" class="secondary" data-action="cancel">Cancel</button>
+    </div>
+  `;
+
+  form.querySelector('[name="title"]').value = entry.Title || '';
+  form.querySelector('[name="userName"]').value = entry.UserName || '';
+  form.querySelector('[name="url"]').value = entry.Url || '';
+  form.querySelector('[name="password"]').value = entry.Password || '';
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    runAction(() => updateLogin(entry, form));
+  });
+  form.querySelector('[data-action="cancel"]').addEventListener('click', () => form.remove());
+  item.append(form);
 }
 
 async function runAction(action) {
