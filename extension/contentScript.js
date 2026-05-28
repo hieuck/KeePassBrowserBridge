@@ -268,33 +268,50 @@ function setInputValue(input, value) {
 function installInlineFillButtons() {
   const passwordInputs = visibleInputs('input[type="password"]')
     .filter((input) => !input.disabled && !input.readOnly);
+  const attached = new Set();
 
   for (const passwordInput of passwordInputs) {
     if (window.__keepassBrowserBridgeInlineTargets.has(passwordInput)) {
       continue;
     }
 
-    const targetInput = findUsernameInput(passwordInput) || passwordInput;
-    attachInlineButton(targetInput);
+    const usernameInput = findUsernameInput(passwordInput);
+    if (usernameInput && !window.__keepassBrowserBridgeInlineTargets.has(usernameInput)) {
+      attachInlineButton(usernameInput, 'username');
+      window.__keepassBrowserBridgeInlineTargets.add(usernameInput);
+      attached.add(usernameInput);
+    }
+
+    if (!attached.has(passwordInput)) {
+      attachInlineButton(passwordInput, 'password');
+    }
+
     window.__keepassBrowserBridgeInlineTargets.add(passwordInput);
-    window.__keepassBrowserBridgeInlineTargets.add(targetInput);
   }
 
   if (passwordInputs.length === 0) {
     const usernameInput = findUsernameInput(null);
     if (usernameInput && !window.__keepassBrowserBridgeInlineTargets.has(usernameInput)) {
-      attachInlineButton(usernameInput);
+      attachInlineButton(usernameInput, 'username');
       window.__keepassBrowserBridgeInlineTargets.add(usernameInput);
     }
   }
+
+  const otpInput = findOtpInput(null);
+  if (otpInput && !window.__keepassBrowserBridgeInlineTargets.has(otpInput)) {
+    attachInlineButton(otpInput, 'otp');
+    window.__keepassBrowserBridgeInlineTargets.add(otpInput);
+  }
 }
 
-function attachInlineButton(input) {
+function attachInlineButton(input, role) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'kbb-inline-button';
-  button.setAttribute('aria-label', 'Fill from KeePass');
-  button.title = 'Fill from KeePass';
+  button.dataset.kbbFillRole = role || 'form';
+  button.__kbbTargetInput = input;
+  button.setAttribute('aria-label', inlineButtonLabel(button.dataset.kbbFillRole));
+  button.title = inlineButtonLabel(button.dataset.kbbFillRole);
   button.textContent = 'K';
   button.addEventListener('mousedown', (event) => event.preventDefault());
   button.addEventListener('click', (event) => {
@@ -304,6 +321,13 @@ function attachInlineButton(input) {
   });
 
   placeInlineButton(input, button);
+}
+
+function inlineButtonLabel(role) {
+  if (role === 'username') return 'Fill username from KeePass';
+  if (role === 'password') return 'Fill password from KeePass';
+  if (role === 'otp') return 'Fill one-time code from KeePass';
+  return 'Fill from KeePass';
 }
 
 function placeInlineButton(input, button) {
@@ -388,7 +412,7 @@ async function fillFromInlineButton(button) {
       return;
     }
 
-    fillLogin(entries[0]);
+    fillCredentialForButton(button, entries[0]);
     setInlineButtonState(button, 'ok');
   } catch (error) {
     setInlineButtonState(button, '!');
@@ -439,7 +463,7 @@ function showInlinePicker(button, entries) {
     item.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      fillLogin(entry);
+      fillCredentialForButton(button, entry);
       closeInlinePicker();
       setInlineButtonState(button, 'ok');
     });
@@ -460,6 +484,28 @@ function showInlinePicker(button, entries) {
   document.documentElement.appendChild(picker);
   positionInlinePicker(button, picker);
   window.__keepassBrowserBridgeActivePicker = picker;
+}
+
+function fillCredentialForButton(button, entry) {
+  const role = button && button.dataset ? button.dataset.kbbFillRole : 'form';
+  const targetInput = button ? button.__kbbTargetInput : null;
+
+  if (role === 'username' && targetInput && entry.UserName) {
+    setInputValue(targetInput, entry.UserName);
+    return { usernameFilled: true, passwordFilled: false, otpFilled: false };
+  }
+
+  if (role === 'password' && targetInput && entry.Password) {
+    setInputValue(targetInput, entry.Password);
+    return { usernameFilled: false, passwordFilled: true, otpFilled: false };
+  }
+
+  if (role === 'otp' && targetInput && entry.OneTimePassword) {
+    setInputValue(targetInput, entry.OneTimePassword);
+    return { usernameFilled: false, passwordFilled: false, otpFilled: true };
+  }
+
+  return fillLogin(entry);
 }
 
 function closeInlinePicker() {
