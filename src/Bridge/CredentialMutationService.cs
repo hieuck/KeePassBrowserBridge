@@ -63,7 +63,7 @@ namespace KeePassBrowserBridge.Bridge
                 return CredentialMutationResult.Fail("entry_not_found", "KeePass entry was not found.");
 
             string entryUrl = entry.Strings.ReadSafe(PwDefs.UrlField);
-            if (!string.IsNullOrWhiteSpace(payload.PageUrl) && !UrlMatcher.IsMatch(entryUrl, payload.PageUrl))
+            if (!string.IsNullOrWhiteSpace(payload.PageUrl) && !EntryUrlMatcher.IsMatch(entry, payload.PageUrl))
                 return CredentialMutationResult.Fail("url_mismatch", "Entry URL does not match the page URL.");
 
             if (!string.IsNullOrWhiteSpace(payload.Title))

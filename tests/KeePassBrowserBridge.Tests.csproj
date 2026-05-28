@@ -22,6 +22,7 @@
     <Compile Include="..\src\Bridge\ProtocolValidator.cs" Link="ProtocolValidator.cs" />
     <Compile Include="..\src\Bridge\CredentialMutationService.cs" Link="CredentialMutationService.cs" />
     <Compile Include="..\src\Bridge\CredentialQueryService.cs" Link="CredentialQueryService.cs" />
+    <Compile Include="..\src\Bridge\EntryUrlMatcher.cs" Link="EntryUrlMatcher.cs" />
     <Compile Include="..\src\Bridge\PairingService.cs" Link="PairingService.cs" />
     <Compile Include="..\src\Bridge\TrustedClientStore.cs" Link="TrustedClientStore.cs" />
     <Compile Include="..\src\Bridge\TotpGenerator.cs" Link="TotpGenerator.cs" />

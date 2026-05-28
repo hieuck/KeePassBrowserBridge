@@ -59,6 +59,7 @@ $sources = @(
     (Join-Path $srcDir "Bridge\BridgeSettings.cs"),
     (Join-Path $srcDir "Bridge\CredentialMutationService.cs"),
     (Join-Path $srcDir "Bridge\CredentialQueryService.cs"),
+    (Join-Path $srcDir "Bridge\EntryUrlMatcher.cs"),
     (Join-Path $srcDir "Bridge\LoopbackBridgeServer.cs"),
     (Join-Path $srcDir "Bridge\PairingService.cs"),
     (Join-Path $srcDir "Bridge\ProtocolModels.cs"),

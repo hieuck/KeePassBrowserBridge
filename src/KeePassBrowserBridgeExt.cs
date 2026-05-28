@@ -35,7 +35,7 @@ namespace KeePassBrowserBridge
                 delegate { return (m_host == null) ? null : m_host.Database; },
                 OnPairingSessionCreated);
 
-            if (IsEnabled()) StartServer();
+            if (IsEnabled()) StartServer(false);
             return true;
         }
 
@@ -68,12 +68,15 @@ namespace KeePassBrowserBridge
             m_host.CustomConfig.SetBool(BridgeSettings.EnabledConfigKey, enabled);
             SaveConfig();
 
-            if (enabled) StartServer();
+            if (enabled) StartServer(true);
             else StopServer();
 
-            string status = enabled ? "enabled" : "disabled";
-            MessageBox.Show("Browser integration is now " + status + ".",
-                BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (!enabled || (m_server != null && m_server.IsRunning))
+            {
+                string status = enabled ? "enabled" : "disabled";
+                MessageBox.Show("Browser integration is now " + status + ".",
+                    BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private void OnPairNewBrowser(object sender, EventArgs e)
@@ -141,13 +144,28 @@ namespace KeePassBrowserBridge
             return (int)configured;
         }
 
-        private void StartServer()
+        private void StartServer(bool showSuccessMessage)
         {
             if (m_server != null && m_server.IsRunning) return;
 
             StopServer();
             m_server = new LoopbackBridgeServer(m_requestHandler);
-            m_server.Start(GetPort());
+            BridgeServerStartResult result = m_server.TryStart(GetPort());
+            if (result.Success)
+            {
+                if (showSuccessMessage)
+                {
+                    MessageBox.Show("Browser integration is now enabled.",
+                        BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                return;
+            }
+
+            StopServer();
+            SetEnabled(false);
+            if (m_enableItem != null) m_enableItem.Checked = false;
+            MessageBox.Show(result.Error + "\r\n\r\nBrowser integration has been disabled. Remove duplicate plugin artifacts or choose a free port, then enable it again.",
+                BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private void StopServer()
@@ -156,6 +174,13 @@ namespace KeePassBrowserBridge
 
             m_server.Dispose();
             m_server = null;
+        }
+
+        private void SetEnabled(bool enabled)
+        {
+            if (m_host == null) return;
+            m_host.CustomConfig.SetBool(BridgeSettings.EnabledConfigKey, enabled);
+            SaveConfig();
         }
 
         private void OnPairingSessionCreated(PairingSession session)

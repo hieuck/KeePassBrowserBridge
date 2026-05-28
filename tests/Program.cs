@@ -28,11 +28,13 @@ internal static class Program
         RevokedClientIsNoLongerTrusted();
         TrustedClientStorePersistsRoundTrip();
         CredentialQueryReturnsExactHostMatch();
+        CredentialQueryMatchesAdditionalUrlField();
         CredentialQueryIncludesOneTimePassword();
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
         CredentialMutationCreatesEntryInDatabase();
         CredentialMutationUpdatesExistingEntryPassword();
+        CredentialMutationAcceptsPageUrlFromAdditionalUrlField();
         CredentialMutationUpdatesExistingEntryFields();
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
@@ -43,6 +45,7 @@ internal static class Program
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerUpdatesLoginForAuthenticatedRequest();
         LoopbackBridgeServerRespondsToHello();
+        LoopbackBridgeServerTryStartReportsPortConflict();
         return 0;
     }
 
@@ -237,6 +240,22 @@ internal static class Program
         AssertEqual("secret", result.Entries[0].Password, "entry password mismatch");
     }
 
+    private static void CredentialQueryMatchesAdditionalUrlField()
+    {
+        PwEntry entry = CreateEntry("ChatGPT", "alice@example.com", "secret", "https://auth.openai.com/");
+        entry.Strings.Set("URL (2)", new ProtectedString(false, "https://chatgpt.com/"));
+        PwDatabase database = CreateDatabase(entry);
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(database, "https://chatgpt.com/codex/cloud/settings/analytics");
+
+        AssertTrue(result.Success, "credential query with URL (2) should succeed: " + result.Error);
+        AssertEqual(1, result.Entries.Length, "URL (2) query should return one entry");
+        AssertEqual("ChatGPT", result.Entries[0].Title, "URL (2) entry title mismatch");
+        AssertEqual("alice@example.com", result.Entries[0].UserName, "URL (2) username mismatch");
+        AssertEqual("https://auth.openai.com/", result.Entries[0].Url, "primary URL should remain visible");
+    }
+
     private static void CredentialQueryIncludesOneTimePassword()
     {
         PwEntry entry = CreateEntry("Example", "alice", "secret", "https://example.com/login");
@@ -313,6 +332,24 @@ internal static class Program
         AssertEqual(1, (int)database.RootGroup.Entries.UCount, "update should not create a new entry");
         AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "entry password should be updated");
         AssertEqual("new-secret", result.Entry.Password, "updated result password mismatch");
+    }
+
+    private static void CredentialMutationAcceptsPageUrlFromAdditionalUrlField()
+    {
+        PwEntry entry = CreateEntry("ChatGPT", "alice@example.com", "old-secret", "https://auth.openai.com/");
+        entry.Strings.Set("URL (2)", new ProtectedString(false, "https://chatgpt.com/"));
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            PageUrl = "https://chatgpt.com/codex/cloud/settings/analytics",
+            Password = "new-secret"
+        });
+
+        AssertTrue(result.Success, "credential update should accept matching URL (2): " + result.Error);
+        AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "password should update when PageUrl matches URL (2)");
     }
 
     private static void CredentialMutationUpdatesExistingEntryFields()
@@ -496,6 +533,23 @@ internal static class Program
             BridgeResponse response = BridgeJsonSerializer.Deserialize<BridgeResponse>(responseJson);
 
             AssertTrue(response.Success, "loopback hello should succeed: " + response.Error);
+        }
+    }
+
+    private static void LoopbackBridgeServerTryStartReportsPortConflict()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer first = new LoopbackBridgeServer(handler))
+        using (LoopbackBridgeServer second = new LoopbackBridgeServer(handler))
+        {
+            first.Start(port);
+
+            BridgeServerStartResult result = second.TryStart(port);
+
+            AssertFalse(result.Success, "second server should not start on an occupied port");
+            AssertEqual("port_unavailable", result.ErrorCode, "port conflict error code mismatch");
+            AssertFalse(second.IsRunning, "second server should not be running after port conflict");
         }
     }
 

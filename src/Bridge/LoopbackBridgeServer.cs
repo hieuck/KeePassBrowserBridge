@@ -26,14 +26,37 @@ namespace KeePassBrowserBridge.Bridge
 
         public void Start(int port)
         {
-            if (m_running) return;
+            BridgeServerStartResult result = TryStart(port);
+            if (!result.Success) throw result.Exception;
+        }
 
+        public BridgeServerStartResult TryStart(int port)
+        {
+            if (m_running) return BridgeServerStartResult.Ok(Prefix);
+
+            Stop();
             Prefix = "http://127.0.0.1:" + port + "/";
             m_listener = new HttpListener();
             m_listener.Prefixes.Add(Prefix);
-            m_listener.Start();
-            m_running = true;
-            BeginAccept();
+            try
+            {
+                m_listener.Start();
+                m_running = true;
+                BeginAccept();
+                return BridgeServerStartResult.Ok(Prefix);
+            }
+            catch (HttpListenerException ex)
+            {
+                Stop();
+                return BridgeServerStartResult.Fail("port_unavailable",
+                    "Failed to listen on " + Prefix + ". Another KeePassBrowserBridge instance or another process may already be using this port.",
+                    ex);
+            }
+            catch (Exception ex)
+            {
+                Stop();
+                return BridgeServerStartResult.Fail("server_start_failed", ex.Message, ex);
+            }
         }
 
         public void Stop()
@@ -148,6 +171,35 @@ namespace KeePassBrowserBridge.Bridge
             response.Headers["Access-Control-Allow-Origin"] = "*";
             response.Headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
             response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+        }
+    }
+
+    internal sealed class BridgeServerStartResult
+    {
+        public bool Success { get; set; }
+        public string Prefix { get; set; }
+        public string ErrorCode { get; set; }
+        public string Error { get; set; }
+        public Exception Exception { get; set; }
+
+        public static BridgeServerStartResult Ok(string prefix)
+        {
+            return new BridgeServerStartResult
+            {
+                Success = true,
+                Prefix = prefix
+            };
+        }
+
+        public static BridgeServerStartResult Fail(string errorCode, string error, Exception exception)
+        {
+            return new BridgeServerStartResult
+            {
+                Success = false,
+                ErrorCode = errorCode,
+                Error = error,
+                Exception = exception
+            };
         }
     }
 }

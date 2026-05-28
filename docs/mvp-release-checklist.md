@@ -31,9 +31,10 @@ This checks Chrome extension JavaScript syntax, runs the C# tests, and compiles 
 11. Click each field-specific `K` button and verify it fills only that field.
 12. With multiple matching entries, click a field-specific `K` button, pick one account from the inline picker, and verify only that field is filled from the selected account.
 13. In the popup result list, click Edit for a matched entry, update title/username/URL/password, save, and verify the existing KeePass entry is changed.
-14. Enter a new username and password that do not match an existing entry, click `K`, confirm the Save prompt, and verify a new KeePass entry is created.
-15. Enter an existing username with a changed password, submit the form, confirm the Update prompt, and verify the existing KeePass entry password is updated without creating a duplicate.
-16. Add a TOTP secret to a matching KeePass entry in a custom field such as `TOTP Seed`, visit a page with an OTP field, and verify Fill enters username, password, and the current one-time password.
+14. Add a secondary URL field such as `URL (2)` to a KeePass entry, visit that secondary host, and verify the extension finds the entry.
+15. Enter a new username and password that do not match an existing entry, click `K`, confirm the Save prompt, and verify a new KeePass entry is created.
+16. Enter an existing username with a changed password, submit the form, confirm the Update prompt, and verify the existing KeePass entry password is updated without creating a duplicate.
+17. Add a TOTP secret to a matching KeePass entry in a custom field such as `TOTP Seed`, visit a page with an OTP field, and verify Fill enters username, password, and the current one-time password.
 
 For a stable fill test page, serve the fixture over local HTTP:
 
@@ -58,6 +59,8 @@ Create both assets with:
 ```
 
 When this repository is located inside KeePass' `Plugins` directory, keep release artifacts outside the repository tree. KeePass scans plugin subdirectories and can load duplicate DLLs if artifacts are written under this folder.
+
+If KeePass reports that `http://127.0.0.1:19455/` conflicts with an existing registration, check for duplicate `KeePassBrowserBridge.dll` or `KeePassBrowserBridge.plgx` files under the KeePass `Plugins` tree. The plugin now disables browser integration instead of failing to load when the port is occupied, but duplicate artifacts should still be removed.
 
 The DLL artifact is the primary end-user install path because KeePass loads it directly. Install it as `KeePassBrowserBridge.dll`; do not include version numbers or hyphens in the plugin DLL file name, because KeePass derives the plugin class name from the file name.
 

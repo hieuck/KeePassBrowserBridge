@@ -53,6 +53,7 @@ try {
         ".\src\Bridge\BridgeSettings.cs",
         ".\src\Bridge\CredentialMutationService.cs",
         ".\src\Bridge\CredentialQueryService.cs",
+        ".\src\Bridge\EntryUrlMatcher.cs",
         ".\src\Bridge\LoopbackBridgeServer.cs",
         ".\src\Bridge\PairingService.cs",
         ".\src\Bridge\ProtocolModels.cs",

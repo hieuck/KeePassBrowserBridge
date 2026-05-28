@@ -33,6 +33,7 @@
     <Compile Include="Bridge\BridgeSettings.cs" />
     <Compile Include="Bridge\CredentialMutationService.cs" />
     <Compile Include="Bridge\CredentialQueryService.cs" />
+    <Compile Include="Bridge\EntryUrlMatcher.cs" />
     <Compile Include="Bridge\LoopbackBridgeServer.cs" />
     <Compile Include="Bridge\PairingService.cs" />
     <Compile Include="Bridge\ProtocolModels.cs" />

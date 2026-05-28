@@ -29,7 +29,7 @@ namespace KeePassBrowserBridge.Bridge
             foreach (PwEntry entry in group.Entries)
             {
                 string entryUrl = entry.Strings.ReadSafe(PwDefs.UrlField);
-                if (!UrlMatcher.IsMatch(entryUrl, pageUrl)) continue;
+                if (!EntryUrlMatcher.IsMatch(entry, pageUrl)) continue;
 
                 matches.Add(new CredentialEntry
                 {

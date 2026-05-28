@@ -16,6 +16,8 @@ The default bridge endpoint is `http://127.0.0.1:19455/bridge`.
 
 On login pages, the extension injects small `K` buttons near detected username, password, and OTP fields. Clicking a field button queries KeePass for the current page URL and fills that specific field when exactly one login matches. When multiple logins match, the page shows an inline picker so the user can choose the account without opening the popup. Multi-step login pages with an email-only first step are supported; the username button can fill the username/email first and the password button can fill the password after the site reveals the password field.
 
+KeePass entries can match by the primary `URL` field or additional URL fields named like `URL (2)`, `URL (3)`, etc. This supports services where the login page and app page use different hosts, such as `auth.openai.com` and `chatgpt.com`.
+
 If the matched KeePass entry contains a TOTP secret in a common custom field such as `otp`, `TOTP Seed`, or `TOTP Secret`, the bridge returns the current one-time password and the extension fills detected OTP/code fields such as `autocomplete="one-time-code"`.
 
 When no matching login exists and the page contains entered credentials, clicking `K` or submitting the form shows a Save prompt. Confirming it creates a new KeePass entry through the local bridge.
@@ -25,3 +27,5 @@ When a matching login exists but the submitted password differs from KeePass, th
 The popup result list includes an Edit action for each matched entry. Editing can update title, username, URL, and password directly through the local bridge.
 
 The popup also includes a Trusted Browsers view. Users can review paired browser clients and revoke any client, including the current browser, without opening KeePass options.
+
+If the popup cannot reach KeePass after a plugin restart, check that KeePass browser integration is enabled and that no duplicate KeePassBrowserBridge plugin artifact exists under KeePass' `Plugins` directory.
