@@ -8,6 +8,8 @@
   <ItemGroup>
     <Compile Include="..\src\Bridge\ProtocolModels.cs" Link="ProtocolModels.cs" />
     <Compile Include="..\src\Bridge\ProtocolValidator.cs" Link="ProtocolValidator.cs" />
+    <Compile Include="..\src\Bridge\PairingService.cs" Link="PairingService.cs" />
+    <Compile Include="..\src\Bridge\TrustedClientStore.cs" Link="TrustedClientStore.cs" />
     <Compile Include="..\src\Bridge\UrlMatcher.cs" Link="UrlMatcher.cs" />
   </ItemGroup>
 </Project>

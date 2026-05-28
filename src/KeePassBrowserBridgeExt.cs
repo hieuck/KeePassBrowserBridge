@@ -9,12 +9,16 @@ namespace KeePassBrowserBridge
     {
         private IPluginHost m_host;
         private ToolStripMenuItem m_enableItem;
+        private PairingService m_pairingService;
+        private TrustedClientStore m_trustedClients;
 
         public override bool Initialize(IPluginHost host)
         {
             if (host == null) return false;
 
             m_host = host;
+            m_pairingService = new PairingService();
+            m_trustedClients = new TrustedClientStore();
             return true;
         }
 
@@ -54,13 +58,25 @@ namespace KeePassBrowserBridge
 
         private void OnPairNewBrowser(object sender, EventArgs e)
         {
-            MessageBox.Show("Pairing will be implemented in the next MVP slice.",
+            if (!IsEnabled())
+            {
+                MessageBox.Show("Enable browser integration before pairing a browser.",
+                    BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            PairingSession session = m_pairingService.BeginPairing("Chrome");
+            MessageBox.Show("Enter this pairing code in the browser extension:\r\n\r\n" +
+                session.PairingCode + "\r\n\r\n" +
+                "Session ID: " + session.PairingSessionId,
                 BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void OnTrustedBrowsers(object sender, EventArgs e)
         {
-            MessageBox.Show("Trusted browser management will be implemented in the next MVP slice.",
+            int count = (m_trustedClients == null) ? 0 : m_trustedClients.ListClients().Length;
+            MessageBox.Show("Trusted browsers: " + count + "\r\n\r\n" +
+                "Client revoke UI will be implemented after the bridge protocol is connected.",
                 BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -78,6 +94,8 @@ namespace KeePassBrowserBridge
         {
             m_host = null;
             m_enableItem = null;
+            m_pairingService = null;
+            m_trustedClients = null;
         }
     }
 }

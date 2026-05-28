@@ -15,6 +15,10 @@ internal static class Program
         MissingOriginFailsValidation();
         StaleTimestampFailsValidation();
         WrongProtocolVersionFailsValidation();
+        PairingSessionGeneratesSixDigitCode();
+        WrongPairingCodeIsRejected();
+        SuccessfulPairingCreatesTrustedClient();
+        RevokedClientIsNoLongerTrusted();
         return 0;
     }
 
@@ -103,6 +107,56 @@ internal static class Program
         AssertEqual("unsupported_protocol", result.ErrorCode, "protocol version error code mismatch");
     }
 
+    private static void PairingSessionGeneratesSixDigitCode()
+    {
+        PairingService service = new PairingService(new DeterministicSecretGenerator("111111", "secret"));
+
+        PairingSession session = service.BeginPairing("Chrome");
+
+        AssertEqual(6, session.PairingCode.Length, "pairing code length mismatch");
+        AssertTrue(IsDigitsOnly(session.PairingCode), "pairing code should contain digits only");
+    }
+
+    private static void WrongPairingCodeIsRejected()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(new DeterministicSecretGenerator("123456", "secret"));
+        PairingSession session = service.BeginPairing("Chrome");
+
+        PairingResult result = service.CompletePairing(store, session.PairingSessionId, "000000", "Chrome");
+
+        AssertFalse(result.Success, "wrong pairing code should fail");
+        AssertEqual(0, store.ListClients().Length, "wrong code should not add a trusted client");
+    }
+
+    private static void SuccessfulPairingCreatesTrustedClient()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(new DeterministicSecretGenerator("123456", "shared-secret"));
+        PairingSession session = service.BeginPairing("Chrome");
+
+        PairingResult result = service.CompletePairing(store, session.PairingSessionId, "123456", "Chrome");
+
+        AssertTrue(result.Success, "correct pairing code should succeed");
+        AssertTrue(!string.IsNullOrEmpty(result.Client.ClientId), "paired client should have an ID");
+        AssertEqual("Chrome", result.Client.ClientName, "paired client name mismatch");
+        AssertEqual("shared-secret", result.Client.SharedSecret, "paired client secret mismatch");
+        AssertTrue(store.IsTrusted(result.Client.ClientId), "paired client should be trusted");
+    }
+
+    private static void RevokedClientIsNoLongerTrusted()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(new DeterministicSecretGenerator("123456", "shared-secret"));
+        PairingSession session = service.BeginPairing("Chrome");
+        PairingResult result = service.CompletePairing(store, session.PairingSessionId, "123456", "Chrome");
+
+        bool removed = store.Revoke(result.Client.ClientId);
+
+        AssertTrue(removed, "revoke should report true for an existing client");
+        AssertFalse(store.IsTrusted(result.Client.ClientId), "revoked client should not remain trusted");
+    }
+
     private static BridgeRequest CreateValidRequest(string method)
     {
         return new BridgeRequest
@@ -120,6 +174,16 @@ internal static class Program
         return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     }
 
+    private static bool IsDigitsOnly(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return false;
+        for (int i = 0; i < value.Length; ++i)
+        {
+            if (!char.IsDigit(value[i])) return false;
+        }
+        return true;
+    }
+
     private static void AssertTrue(bool value, string message)
     {
         if (!value) throw new Exception(message);
@@ -134,5 +198,27 @@ internal static class Program
     {
         if (!object.Equals(expected, actual))
             throw new Exception(message + ". Expected: " + expected + ", actual: " + actual);
+    }
+
+    private sealed class DeterministicSecretGenerator : ISecretGenerator
+    {
+        private readonly string m_pairingCode;
+        private readonly string m_secret;
+
+        public DeterministicSecretGenerator(string pairingCode, string secret)
+        {
+            m_pairingCode = pairingCode;
+            m_secret = secret;
+        }
+
+        public string CreatePairingCode()
+        {
+            return m_pairingCode;
+        }
+
+        public string CreateSecret()
+        {
+            return m_secret;
+        }
     }
 }
