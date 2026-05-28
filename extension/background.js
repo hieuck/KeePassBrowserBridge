@@ -4,6 +4,7 @@ const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;
 const CLIENT_NAME = 'Chrome';
 const AUTO_FILL_DEBOUNCE_MS = 1200;
+const PAIRING_SESSION_MAX_AGE_MS = 5 * 60 * 1000;
 const autoFillTimers = new Map();
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -63,17 +64,29 @@ async function handleMessage(message) {
 }
 
 async function getState() {
-  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'autoFillEnabled']);
+  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled']);
   const paired = Boolean(state.clientId);
   if (paired && state.pairingSessionId) {
-    await chrome.storage.local.set({ pairingSessionId: '' });
+    await clearPairingSession();
+    state.pairingSessionId = '';
+    state.pairingStartedAt = 0;
   }
 
+  const pairingStartedAt = Number(state.pairingStartedAt || 0);
+  if (!paired && state.pairingSessionId && pairingStartedAt &&
+      Date.now() - pairingStartedAt > PAIRING_SESSION_MAX_AGE_MS) {
+    await clearPairingSession();
+    state.pairingSessionId = '';
+    state.pairingStartedAt = 0;
+  }
+
+  const pairingActive = !paired && Boolean(state.pairingSessionId);
   return {
     endpoint: state.endpoint || DEFAULT_ENDPOINT,
     paired,
     clientId: state.clientId || '',
-    pairingSessionId: paired ? '' : (state.pairingSessionId || ''),
+    pairingSessionId: pairingActive ? state.pairingSessionId : '',
+    pairingExpiresAt: pairingActive && pairingStartedAt ? pairingStartedAt + PAIRING_SESSION_MAX_AGE_MS : 0,
     autoFillEnabled: Boolean(state.autoFillEnabled)
   };
 }
@@ -104,7 +117,8 @@ async function revokeClient(clientId) {
   const response = await bridgeCall('clients.revoke', { ClientId: targetClientId }, true);
   const result = parsePayload(response);
   if (result.Revoked && state.clientId === targetClientId) {
-    await chrome.storage.local.remove(['clientId', 'sharedSecret', 'pairingSessionId']);
+    await chrome.storage.local.remove(['clientId', 'sharedSecret']);
+    await clearPairingSession();
   }
 
   return result;
@@ -117,7 +131,10 @@ async function pairBegin() {
     throw new Error('KeePass did not return a pairing session.');
   }
 
-  await chrome.storage.local.set({ pairingSessionId: payload.PairingSessionId });
+  await chrome.storage.local.set({
+    pairingSessionId: payload.PairingSessionId,
+    pairingStartedAt: Date.now()
+  });
   return getState();
 }
 
@@ -141,7 +158,7 @@ async function pairComplete(pairingCode) {
     });
   } catch (error) {
     if (isTerminalPairingError(error)) {
-      await chrome.storage.local.set({ pairingSessionId: '' });
+      await clearPairingSession();
     }
 
     throw error;
@@ -155,7 +172,8 @@ async function pairComplete(pairingCode) {
   await chrome.storage.local.set({
     clientId: payload.ClientId,
     sharedSecret: payload.SharedSecret,
-    pairingSessionId: ''
+    pairingSessionId: '',
+    pairingStartedAt: 0
   });
   return getState();
 }
@@ -170,8 +188,15 @@ async function pairCancel() {
     }
   }
 
-  await chrome.storage.local.set({ pairingSessionId: '' });
+  await clearPairingSession();
   return getState();
+}
+
+async function clearPairingSession() {
+  await chrome.storage.local.set({
+    pairingSessionId: '',
+    pairingStartedAt: 0
+  });
 }
 
 function isTerminalPairingError(error) {

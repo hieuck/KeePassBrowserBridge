@@ -64,6 +64,7 @@ const ids = [
   'listClients',
   'clientsPanel',
   'pairingPanel',
+  'pairingTimer',
   'pairingCode',
   'completePair',
   'cancelPair',
@@ -116,10 +117,12 @@ sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: false,
   pairingSessionId: 'session-1',
+  pairingExpiresAt: Date.now() + 125000,
   autoFillEnabled: false
 });
 
 assert.equal(elements.pairingPanel.classList.contains('hidden'), false, 'pairing panel should be visible');
+assert.equal(elements.pairingTimer.textContent.includes('2:05'), true, 'pairing panel should show time remaining');
 assert.equal(fakeDocument.activeElement, elements.pairingCode, 'pairing code input should receive focus');
 assert.equal(elements.completePair.disabled, true, 'confirm should be disabled before a complete code is entered');
 
@@ -135,9 +138,11 @@ sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: true,
   pairingSessionId: 'stale-session',
+  pairingExpiresAt: Date.now() + 125000,
   autoFillEnabled: false
 });
 
 assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'paired popup should hide stale pairing sessions');
+assert.equal(elements.pairingTimer.textContent, '', 'paired popup should clear pairing countdown');
 
 console.log('Popup tests passed.');

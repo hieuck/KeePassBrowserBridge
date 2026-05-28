@@ -164,6 +164,12 @@ h1 {
   margin-top: 10px;
 }
 
+.pairing-timer {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .secondary-toolbar {
   margin-top: 10px;
 }

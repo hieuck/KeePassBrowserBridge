@@ -10,6 +10,7 @@ const elements = {
   listClients: document.getElementById('listClients'),
   clientsPanel: document.getElementById('clientsPanel'),
   pairingPanel: document.getElementById('pairingPanel'),
+  pairingTimer: document.getElementById('pairingTimer'),
   pairingCode: document.getElementById('pairingCode'),
   completePair: document.getElementById('completePair'),
   cancelPair: document.getElementById('cancelPair'),
@@ -177,6 +178,9 @@ function renderState(state) {
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
   if (!pairingActive) {
     elements.pairingCode.value = '';
+    elements.pairingTimer.textContent = '';
+  } else {
+    elements.pairingTimer.textContent = formatPairingTimeRemaining(state.pairingExpiresAt);
   }
   setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');
   syncPairingCodeState();
@@ -189,6 +193,13 @@ function syncPairingCodeState() {
   const code = String(elements.pairingCode.value || '').trim();
   const pairingActive = !elements.pairingPanel.classList.contains('hidden');
   elements.completePair.disabled = !pairingActive || !/^\d{6}$/.test(code);
+}
+
+function formatPairingTimeRemaining(expiresAt) {
+  const remainingSeconds = Math.max(0, Math.ceil((Number(expiresAt || 0) - Date.now()) / 1000));
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = String(remainingSeconds % 60).padStart(2, '0');
+  return `Code expires in ${minutes}:${seconds}`;
 }
 
 function renderResults(entries) {
