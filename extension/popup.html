@@ -44,7 +44,7 @@
           <code id="pairingSession"></code>
         </div>
         <div class="row">
-          <input id="pairingCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Pairing code">
+          <input id="pairingCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" placeholder="Pairing code">
           <button id="completePair" type="button">Confirm</button>
         </div>
       </div>

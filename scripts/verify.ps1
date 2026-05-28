@@ -32,6 +32,7 @@ try {
     node --check extension\popup.js
     node tests\extension\protocol.test.mjs
     node tests\extension\content-script.test.mjs
+    node tests\extension\popup.test.mjs
 
     Write-Host ""
     Write-Host "Running bridge tests..."

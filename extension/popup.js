@@ -30,8 +30,10 @@ function init() {
   elements.autoFill.addEventListener('change', () => runAction(setAutoFill));
   elements.listClients.addEventListener('click', () => runAction(listClients));
   elements.completePair.addEventListener('click', () => runAction(completePair));
+  elements.pairingCode.addEventListener('input', syncPairingCodeState);
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
 
+  syncPairingCodeState();
   runAction(refreshState);
 }
 
@@ -58,6 +60,7 @@ async function checkStatus() {
 
 async function beginPair() {
   const state = await send({ type: 'KBB_PAIR_BEGIN' });
+  elements.pairingCode.value = '';
   renderState(state);
   setMessage('Enter the pairing code shown in KeePass.');
 }
@@ -163,8 +166,19 @@ function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
   elements.pairingSession.textContent = state.pairingSessionId || '';
-  elements.pairingPanel.classList.toggle('hidden', !state.pairingSessionId);
+  const pairingActive = Boolean(state.pairingSessionId);
+  elements.pairingPanel.classList.toggle('hidden', !pairingActive);
   setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');
+  syncPairingCodeState();
+  if (pairingActive) {
+    elements.pairingCode.focus();
+  }
+}
+
+function syncPairingCodeState() {
+  const code = String(elements.pairingCode.value || '').trim();
+  const pairingActive = !elements.pairingPanel.classList.contains('hidden');
+  elements.completePair.disabled = !pairingActive || !/^\d{6}$/.test(code);
 }
 
 function renderResults(entries) {

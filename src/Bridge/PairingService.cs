@@ -6,7 +6,10 @@ namespace KeePassBrowserBridge.Bridge
 {
     internal sealed class PairingService
     {
+        public const long MaxPairingSessionAgeMs = 5 * 60 * 1000;
+
         private readonly ISecretGenerator m_secretGenerator;
+        private readonly Func<long> m_nowProvider;
         private readonly Dictionary<string, PairingSession> m_sessions = new Dictionary<string, PairingSession>(StringComparer.Ordinal);
 
         public PairingService()
@@ -15,9 +18,16 @@ namespace KeePassBrowserBridge.Bridge
         }
 
         public PairingService(ISecretGenerator secretGenerator)
+            : this(secretGenerator, BridgeClock.UtcNowMilliseconds)
+        {
+        }
+
+        public PairingService(ISecretGenerator secretGenerator, Func<long> nowProvider)
         {
             if (secretGenerator == null) throw new ArgumentNullException("secretGenerator");
+            if (nowProvider == null) throw new ArgumentNullException("nowProvider");
             m_secretGenerator = secretGenerator;
+            m_nowProvider = nowProvider;
         }
 
         public PairingSession BeginPairing(string clientName)
@@ -27,7 +37,7 @@ namespace KeePassBrowserBridge.Bridge
                 PairingSessionId = Guid.NewGuid().ToString("N"),
                 PairingCode = m_secretGenerator.CreatePairingCode(),
                 ClientName = NormalizeClientName(clientName),
-                CreatedUtcMs = BridgeClock.UtcNowMilliseconds()
+                CreatedUtcMs = m_nowProvider()
             };
 
             m_sessions[session.PairingSessionId] = session;
@@ -42,6 +52,12 @@ namespace KeePassBrowserBridge.Bridge
             if (string.IsNullOrWhiteSpace(pairingSessionId) || !m_sessions.TryGetValue(pairingSessionId, out session))
                 return PairingResult.Fail("pairing_session_not_found", "Pairing session was not found.");
 
+            if (m_nowProvider() - session.CreatedUtcMs > MaxPairingSessionAgeMs)
+            {
+                m_sessions.Remove(pairingSessionId);
+                return PairingResult.Fail("pairing_session_expired", "Pairing session has expired.");
+            }
+
             if (!string.Equals(session.PairingCode, pairingCode, StringComparison.Ordinal))
                 return PairingResult.Fail("invalid_pairing_code", "Pairing code is invalid.");
 
@@ -50,7 +66,7 @@ namespace KeePassBrowserBridge.Bridge
                 ClientId = Guid.NewGuid().ToString("N"),
                 ClientName = NormalizeClientName(clientName),
                 SharedSecret = m_secretGenerator.CreateSecret(),
-                CreatedUtcMs = BridgeClock.UtcNowMilliseconds()
+                CreatedUtcMs = m_nowProvider()
             };
 
             store.AddOrUpdate(client);

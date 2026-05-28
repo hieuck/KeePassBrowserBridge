@@ -27,6 +27,7 @@ internal static class Program
         WrongProtocolVersionFailsValidation();
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
+        ExpiredPairingCodeIsRejected();
         SuccessfulPairingCreatesTrustedClient();
         RevokedClientIsNoLongerTrusted();
         TrustedClientStorePersistsRoundTrip();
@@ -193,6 +194,23 @@ internal static class Program
 
         AssertFalse(result.Success, "wrong pairing code should fail");
         AssertEqual(0, store.ListClients().Length, "wrong code should not add a trusted client");
+    }
+
+    private static void ExpiredPairingCodeIsRejected()
+    {
+        long now = 1779960000000;
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(
+            new DeterministicSecretGenerator("123456", "secret"),
+            delegate { return now; });
+        PairingSession session = service.BeginPairing("Chrome");
+        now += PairingService.MaxPairingSessionAgeMs + 1;
+
+        PairingResult result = service.CompletePairing(store, session.PairingSessionId, "123456", "Chrome");
+
+        AssertFalse(result.Success, "expired pairing code should fail");
+        AssertEqual("pairing_session_expired", result.ErrorCode, "expired pairing code error mismatch");
+        AssertEqual(0, store.ListClients().Length, "expired code should not add a trusted client");
     }
 
     private static void SuccessfulPairingCreatesTrustedClient()
