@@ -36,7 +36,7 @@ The Chrome extension stores the generated client id and shared secret in `chrome
 The MVP supports:
 
 - Local pairing from Chrome to KeePass.
-- Querying credentials from the active KeePass database by URL host.
+- Querying credentials from the active KeePass database by URL host, additional `URL (n)` fields, and simple wildcard URL patterns.
 - Filling the selected username and password into the current Chrome tab.
 - Local verification scripts and GitHub workflows for repeatable checks.
 - Persisting trusted browser clients in KeePass custom configuration.

@@ -12,6 +12,9 @@ internal static class Program
     {
         ExactHostMatchesIgnoringPathAndCase();
         ParentDomainDoesNotMatchByDefault();
+        WildcardSubdomainMatchesChildHost();
+        WildcardSubdomainDoesNotMatchParentHost();
+        WildcardPathMatchesSameHostPath();
         InvalidUrlsDoNotMatch();
         HttpAndHttpsWithSameHostMatch();
         DifferentHostsDoNotMatch();
@@ -59,6 +62,24 @@ internal static class Program
     {
         AssertFalse(UrlMatcher.IsMatch("https://example.com/login", "https://accounts.example.com/login"),
             "parent domain should not match subdomain in MVP");
+    }
+
+    private static void WildcardSubdomainMatchesChildHost()
+    {
+        AssertTrue(UrlMatcher.IsMatch("https://*.example.com/*", "https://accounts.example.com/login"),
+            "wildcard subdomain URL should match a child host");
+    }
+
+    private static void WildcardSubdomainDoesNotMatchParentHost()
+    {
+        AssertFalse(UrlMatcher.IsMatch("https://*.example.com/*", "https://example.com/login"),
+            "wildcard subdomain URL should not match the parent host itself");
+    }
+
+    private static void WildcardPathMatchesSameHostPath()
+    {
+        AssertTrue(UrlMatcher.IsMatch("https://example.com/login/*", "https://example.com/login/password"),
+            "wildcard path URL should match same-host child path");
     }
 
     private static void InvalidUrlsDoNotMatch()
