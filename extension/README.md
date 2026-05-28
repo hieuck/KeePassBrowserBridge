@@ -13,3 +13,5 @@ This is the Chrome MV3 companion extension for the KeePassBrowserBridge plugin.
 7. Optional: enable Auto-fill. The extension only fills automatically when exactly one KeePass entry matches the loaded page URL.
 
 The default bridge endpoint is `http://127.0.0.1:19455/bridge`.
+
+On login pages, the extension injects a small `K` button near detected username/password fields. Clicking it queries KeePass for the current page URL and fills immediately when exactly one login matches.

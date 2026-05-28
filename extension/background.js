@@ -43,6 +43,8 @@ async function handleMessage(message) {
       return bridgeCall('client.status', {}, true);
     case 'KBB_QUERY_LOGINS':
       return queryLogins();
+    case 'KBB_QUERY_FOR_URL':
+      return queryLoginsForUrl(message.url);
     case 'KBB_FILL_LOGIN':
       return fillLogin(message.credential);
     default:
@@ -119,8 +121,16 @@ async function queryLogins() {
     throw new Error('No active tab URL is available.');
   }
 
-  const response = await bridgeCall('logins.query', { Url: tab.url }, true);
-  return queryResultFromResponse(tab.url, response);
+  return queryLoginsForUrl(tab.url);
+}
+
+async function queryLoginsForUrl(url) {
+  if (!isFillableUrl(url)) {
+    throw new Error('This page URL cannot be filled.');
+  }
+
+  const response = await bridgeCall('logins.query', { Url: url }, true);
+  return queryResultFromResponse(url, response);
 }
 
 async function fillLogin(credential) {

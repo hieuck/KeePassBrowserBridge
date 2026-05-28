@@ -2,6 +2,7 @@
 
 if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgeContentScriptLoaded = true;
+  window.__keepassBrowserBridgeInlineButtons = new WeakSet();
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || message.type !== 'KBB_FILL') {
@@ -18,6 +19,10 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
       });
     }
   });
+
+  installInlineFillButtons();
+  const observer = new MutationObserver(() => installInlineFillButtons());
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 function fillLogin(credential) {
@@ -84,4 +89,144 @@ function setInputValue(input, value) {
 
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function installInlineFillButtons() {
+  const passwordInputs = visibleInputs('input[type="password"]')
+    .filter((input) => !input.disabled && !input.readOnly);
+
+  for (const passwordInput of passwordInputs) {
+    if (window.__keepassBrowserBridgeInlineButtons.has(passwordInput)) {
+      continue;
+    }
+
+    const targetInput = findUsernameInput(passwordInput) || passwordInput;
+    attachInlineButton(targetInput);
+    window.__keepassBrowserBridgeInlineButtons.add(passwordInput);
+  }
+}
+
+function attachInlineButton(input) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'kbb-inline-button';
+  button.setAttribute('aria-label', 'Fill from KeePass');
+  button.title = 'Fill from KeePass';
+  button.textContent = 'K';
+  button.addEventListener('mousedown', (event) => event.preventDefault());
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    fillFromInlineButton(button);
+  });
+
+  placeInlineButton(input, button);
+}
+
+function placeInlineButton(input, button) {
+  const parent = input.parentElement;
+  if (!parent) {
+    return;
+  }
+
+  const parentStyle = window.getComputedStyle(parent);
+  if (parentStyle.position === 'static') {
+    parent.style.position = 'relative';
+  }
+
+  button.style.position = 'absolute';
+  button.style.zIndex = '2147483647';
+  button.style.width = '24px';
+  button.style.height = '24px';
+  button.style.minWidth = '24px';
+  button.style.minHeight = '24px';
+  button.style.maxWidth = '24px';
+  button.style.maxHeight = '24px';
+  button.style.margin = '0';
+  button.style.padding = '0';
+  button.style.boxSizing = 'border-box';
+  button.style.border = '1px solid #176b87';
+  button.style.borderRadius = '6px';
+  button.style.background = '#ffffff';
+  button.style.color = '#176b87';
+  button.style.appearance = 'none';
+  button.style.font = '700 12px/22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  button.style.cursor = 'pointer';
+  button.style.boxShadow = '0 1px 4px rgba(15, 23, 42, 0.18)';
+
+  parent.appendChild(button);
+  positionInlineButton(input, button);
+  window.addEventListener('resize', () => positionInlineButton(input, button));
+  input.addEventListener('focus', () => positionInlineButton(input, button));
+}
+
+function positionInlineButton(input, button) {
+  const parent = input.parentElement;
+  if (!parent || !document.documentElement.contains(input)) {
+    button.remove();
+    return;
+  }
+
+  const inputRect = input.getBoundingClientRect();
+  const parentRect = parent.getBoundingClientRect();
+  button.style.left = `${inputRect.right - parentRect.left - 30}px`;
+  button.style.top = `${inputRect.top - parentRect.top + Math.max(4, (inputRect.height - 24) / 2)}px`;
+}
+
+async function fillFromInlineButton(button) {
+  setInlineButtonState(button, '...');
+
+  try {
+    const result = await chrome.runtime.sendMessage({
+      type: 'KBB_QUERY_FOR_URL',
+      url: window.location.href
+    });
+
+    if (!result || !result.ok) {
+      throw new Error(result && result.error ? result.error : 'KeePass query failed.');
+    }
+
+    const entries = result.response && Array.isArray(result.response.entries)
+      ? result.response.entries
+      : [];
+
+    if (entries.length === 0) {
+      setInlineButtonState(button, '0');
+      return;
+    }
+
+    if (entries.length > 1) {
+      setInlineButtonState(button, String(entries.length));
+      return;
+    }
+
+    fillLogin(entries[0]);
+    setInlineButtonState(button, 'ok');
+  } catch (error) {
+    setInlineButtonState(button, '!');
+  }
+}
+
+function setInlineButtonState(button, state) {
+  if (state === 'ok') {
+    button.textContent = 'OK';
+    button.style.borderColor = '#067647';
+    button.style.color = '#067647';
+  } else if (state === '!') {
+    button.textContent = '!';
+    button.style.borderColor = '#b42318';
+    button.style.color = '#b42318';
+  } else {
+    button.textContent = state;
+    button.style.borderColor = '#176b87';
+    button.style.color = '#176b87';
+  }
+
+  window.setTimeout(() => {
+    if (document.documentElement.contains(button)) {
+      button.textContent = 'K';
+      button.style.borderColor = '#176b87';
+      button.style.color = '#176b87';
+    }
+  }, 1600);
 }
