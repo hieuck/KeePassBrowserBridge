@@ -51,6 +51,7 @@ try {
         ".\src\Bridge\BridgeJsonSerializer.cs",
         ".\src\Bridge\BridgeRequestHandler.cs",
         ".\src\Bridge\BridgeSettings.cs",
+        ".\src\Bridge\CredentialMutationService.cs",
         ".\src\Bridge\CredentialQueryService.cs",
         ".\src\Bridge\LoopbackBridgeServer.cs",
         ".\src\Bridge\PairingService.cs",

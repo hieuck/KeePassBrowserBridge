@@ -26,6 +26,7 @@ This checks Chrome extension JavaScript syntax, runs the C# tests, and compiles 
 6. Visit the login page, click Find Logins, then Fill.
 7. Enable Auto-fill in the popup, reload the login page, and confirm the extension fills automatically when exactly one entry matches.
 8. Confirm the inline `K` button appears near the login inputs and fills the form when clicked.
+9. Enter a new username and password that do not match an existing entry, click `K`, confirm the Save prompt, and verify a new KeePass entry is created.
 
 For a stable fill test page, serve the fixture over local HTTP:
 

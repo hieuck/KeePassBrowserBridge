@@ -8,6 +8,7 @@ namespace KeePassBrowserBridge.Bridge
         private readonly PairingService m_pairingService;
         private readonly TrustedClientStore m_trustedClients;
         private readonly CredentialQueryService m_credentialQueryService;
+        private readonly CredentialMutationService m_credentialMutationService;
         private readonly Func<PwDatabase> m_databaseProvider;
         private readonly Action<PairingSession> m_pairingSessionCreated;
 
@@ -15,16 +16,19 @@ namespace KeePassBrowserBridge.Bridge
             PairingService pairingService,
             TrustedClientStore trustedClients,
             CredentialQueryService credentialQueryService,
+            CredentialMutationService credentialMutationService,
             Func<PwDatabase> databaseProvider,
             Action<PairingSession> pairingSessionCreated)
         {
             if (pairingService == null) throw new ArgumentNullException("pairingService");
             if (trustedClients == null) throw new ArgumentNullException("trustedClients");
             if (credentialQueryService == null) throw new ArgumentNullException("credentialQueryService");
+            if (credentialMutationService == null) throw new ArgumentNullException("credentialMutationService");
 
             m_pairingService = pairingService;
             m_trustedClients = trustedClients;
             m_credentialQueryService = credentialQueryService;
+            m_credentialMutationService = credentialMutationService;
             m_databaseProvider = databaseProvider ?? delegate { return null; };
             m_pairingSessionCreated = pairingSessionCreated ?? delegate(PairingSession session) { };
         }
@@ -43,6 +47,7 @@ namespace KeePassBrowserBridge.Bridge
             if (request.Method == BridgeMethods.PairComplete) return PairComplete(request);
             if (request.Method == BridgeMethods.ClientStatus) return ClientStatus(request);
             if (request.Method == BridgeMethods.LoginsQuery) return LoginsQuery(request);
+            if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
             if (request.Method == BridgeMethods.LoginsFillAck) return Success(request, "{}");
 
             return Error(request, "unknown_method", "Unknown method.");
@@ -97,6 +102,13 @@ namespace KeePassBrowserBridge.Bridge
         {
             LoginsQueryPayload payload = BridgeJsonSerializer.Deserialize<LoginsQueryPayload>(request.Payload);
             CredentialQueryResult result = m_credentialQueryService.Query(m_databaseProvider(), payload.Url);
+            return Success(request, BridgeJsonSerializer.Serialize(result));
+        }
+
+        private BridgeResponse LoginsCreate(BridgeRequest request)
+        {
+            CreateLoginPayload payload = BridgeJsonSerializer.Deserialize<CreateLoginPayload>(request.Payload);
+            CredentialMutationResult result = m_credentialMutationService.Create(m_databaseProvider(), payload);
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 

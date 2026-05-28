@@ -30,6 +30,17 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
       closeInlinePicker();
     }
   }, true);
+  document.addEventListener('submit', (event) => captureLoginSubmit(event.target), true);
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target && target.closest) {
+      if (target.closest('.kbb-save-prompt, .kbb-inline-picker, .kbb-inline-button')) {
+        return;
+      }
+      const submit = target.closest('button, input[type="submit"]');
+      if (submit) captureLoginSubmit(submit.form || submit.closest('form'));
+    }
+  }, true);
 }
 
 function fillLogin(credential) {
@@ -51,6 +62,61 @@ function fillLogin(credential) {
     usernameFilled: Boolean(usernameInput && credential.UserName),
     passwordFilled: Boolean(passwordInput && credential.Password)
   };
+}
+
+function captureLoginSubmit(form) {
+  const credential = collectCredentialFromForm(form || document);
+  if (!credential || (!credential.userName && !credential.password)) {
+    return;
+  }
+
+  window.setTimeout(() => maybePromptSaveLogin(credential), 300);
+}
+
+function collectCredentialFromForm(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  const passwordInput = Array.from(scope.querySelectorAll('input[type="password"]'))
+    .filter((input) => isVisible(input) && !input.disabled && !input.readOnly && input.value)
+    .sort((a, b) => b.value.length - a.value.length)[0] || null;
+  const usernameInput = findUsernameInput(passwordInput);
+
+  if (!passwordInput && !usernameInput) {
+    return null;
+  }
+
+  return {
+    title: document.title || new URL(window.location.href).hostname,
+    url: window.location.href,
+    userName: usernameInput ? usernameInput.value : '',
+    password: passwordInput ? passwordInput.value : ''
+  };
+}
+
+async function maybePromptSaveLogin(credential) {
+  if (!credential.password) {
+    return;
+  }
+
+  try {
+    const result = await chrome.runtime.sendMessage({
+      type: 'KBB_QUERY_FOR_URL',
+      url: window.location.href
+    });
+
+    if (!result || !result.ok) {
+      return;
+    }
+
+    const entries = result.response && Array.isArray(result.response.entries)
+      ? result.response.entries
+      : [];
+    const exists = entries.some((entry) => stringEquals(entry.UserName, credential.userName));
+    if (!exists) {
+      showSaveLoginPrompt(credential);
+    }
+  } catch (error) {
+    // Save prompts are opportunistic; manual extension actions surface bridge errors.
+  }
 }
 
 function findPasswordInput() {
@@ -216,6 +282,10 @@ async function fillFromInlineButton(button) {
       : [];
 
     if (entries.length === 0) {
+      const credential = collectCredentialFromForm(document);
+      if (credential && credential.password) {
+        showSaveLoginPrompt(credential);
+      }
       setInlineButtonState(button, '0');
       return;
     }
@@ -306,6 +376,101 @@ function closeInlinePicker() {
     picker.parentElement.removeChild(picker);
   }
   window.__keepassBrowserBridgeActivePicker = null;
+}
+
+function showSaveLoginPrompt(credential) {
+  closeSaveLoginPrompt();
+
+  const prompt = document.createElement('div');
+  prompt.className = 'kbb-save-prompt';
+  applySavePromptStyle(prompt);
+
+  const title = document.createElement('div');
+  title.textContent = 'Save login to KeePass?';
+  title.style.fontWeight = '700';
+  title.style.marginBottom = '4px';
+
+  const detail = document.createElement('div');
+  detail.textContent = credential.userName || new URL(credential.url).hostname;
+  detail.style.color = '#667085';
+  detail.style.fontSize = '12px';
+  detail.style.overflow = 'hidden';
+  detail.style.textOverflow = 'ellipsis';
+  detail.style.whiteSpace = 'nowrap';
+
+  const actions = document.createElement('div');
+  actions.style.display = 'flex';
+  actions.style.justifyContent = 'flex-end';
+  actions.style.gap = '8px';
+  actions.style.marginTop = '10px';
+
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.textContent = 'Not now';
+  applyPromptButtonStyle(dismiss, false);
+  dismiss.addEventListener('click', closeSaveLoginPrompt);
+
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.textContent = 'Save';
+  applyPromptButtonStyle(save, true);
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    save.textContent = 'Saving...';
+    const result = await chrome.runtime.sendMessage({
+      type: 'KBB_CREATE_LOGIN',
+      login: credential
+    });
+    if (result && result.ok && result.response && result.response.Success) {
+      save.textContent = 'Saved';
+      window.setTimeout(closeSaveLoginPrompt, 900);
+    } else {
+      save.disabled = false;
+      save.textContent = 'Retry';
+    }
+  });
+
+  actions.appendChild(dismiss);
+  actions.appendChild(save);
+  prompt.appendChild(title);
+  prompt.appendChild(detail);
+  prompt.appendChild(actions);
+  document.documentElement.appendChild(prompt);
+  window.__keepassBrowserBridgeSavePrompt = prompt;
+}
+
+function closeSaveLoginPrompt() {
+  const prompt = window.__keepassBrowserBridgeSavePrompt;
+  if (prompt && prompt.parentElement) prompt.parentElement.removeChild(prompt);
+  window.__keepassBrowserBridgeSavePrompt = null;
+}
+
+function applySavePromptStyle(prompt) {
+  prompt.style.position = 'fixed';
+  prompt.style.right = '16px';
+  prompt.style.bottom = '16px';
+  prompt.style.zIndex = '2147483647';
+  prompt.style.width = '300px';
+  prompt.style.maxWidth = 'calc(100vw - 32px)';
+  prompt.style.padding = '12px';
+  prompt.style.border = '1px solid #d7dde5';
+  prompt.style.borderRadius = '8px';
+  prompt.style.background = '#ffffff';
+  prompt.style.color = '#1f2933';
+  prompt.style.boxShadow = '0 12px 30px rgba(15, 23, 42, 0.22)';
+  prompt.style.font = '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+}
+
+function applyPromptButtonStyle(button, primary) {
+  button.style.margin = '0';
+  button.style.minHeight = '30px';
+  button.style.padding = '0 10px';
+  button.style.border = primary ? '1px solid #176b87' : '1px solid #d7dde5';
+  button.style.borderRadius = '6px';
+  button.style.background = primary ? '#176b87' : '#ffffff';
+  button.style.color = primary ? '#ffffff' : '#1f2933';
+  button.style.font = '13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  button.style.cursor = 'pointer';
 }
 
 function applyPickerStyle(picker) {
@@ -402,4 +567,8 @@ function scoreUsernameCandidate(input) {
   if (/\bfname\b|\blname\b|first|last|family|given|surname/.test(text)) score -= 120;
   if (/\bsearch\b/.test(text)) score -= 60;
   return score;
+}
+
+function stringEquals(left, right) {
+  return String(left || '').toLowerCase() === String(right || '').toLowerCase();
 }

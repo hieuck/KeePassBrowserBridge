@@ -28,10 +28,12 @@ internal static class Program
         CredentialQueryReturnsExactHostMatch();
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
+        CredentialMutationCreatesEntryInDatabase();
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
+        BridgeHandlerCreatesLoginForAuthenticatedRequest();
         LoopbackBridgeServerRespondsToHello();
         return 0;
     }
@@ -230,6 +232,26 @@ internal static class Program
         AssertEqual("database_not_open", result.ErrorCode, "closed database error code mismatch");
     }
 
+    private static void CredentialMutationCreatesEntryInDatabase()
+    {
+        PwDatabase database = CreateDatabase();
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Create(database, new CreateLoginPayload
+        {
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret"
+        });
+
+        AssertTrue(result.Success, "credential create should succeed: " + result.Error);
+        AssertTrue(database.Modified, "database should be marked modified after create");
+        AssertEqual(1, (int)database.RootGroup.Entries.UCount, "root group should contain created entry");
+        AssertEqual("example.com", result.Entry.Title, "default title should use host");
+        AssertEqual("alice", result.Entry.UserName, "created username mismatch");
+        AssertEqual("secret", result.Entry.Password, "created password mismatch");
+    }
+
     private static void BridgeHandlerHelloDoesNotRequireAuthentication()
     {
         BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
@@ -280,6 +302,29 @@ internal static class Program
         AssertTrue(response.Success, "authenticated logins.query should succeed: " + response.Error);
         AssertEqual(1, result.Entries.Length, "logins.query result count mismatch");
         AssertEqual("alice", result.Entries[0].UserName, "logins.query username mismatch");
+    }
+
+    private static void BridgeHandlerCreatesLoginForAuthenticatedRequest()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        PwDatabase database = CreateDatabase();
+        BridgeRequestHandler handler = CreateHandler(database, store);
+        string payload = BridgeJsonSerializer.Serialize(new CreateLoginPayload
+        {
+            Title = "Example",
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsCreate, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        CredentialMutationResult result = BridgeJsonSerializer.Deserialize<CredentialMutationResult>(response.Payload);
+
+        AssertTrue(response.Success, "authenticated logins.create should return bridge success: " + response.Error);
+        AssertTrue(result.Success, "authenticated logins.create should create entry: " + result.Error);
+        AssertEqual(1, (int)database.RootGroup.Entries.UCount, "logins.create should add one entry");
+        AssertEqual("alice", result.Entry.UserName, "logins.create username mismatch");
     }
 
     private static void LoopbackBridgeServerRespondsToHello()
@@ -346,6 +391,7 @@ internal static class Program
             new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
             store,
             new CredentialQueryService(),
+            new CredentialMutationService(),
             delegate { return database; },
             delegate(PairingSession session) { });
     }

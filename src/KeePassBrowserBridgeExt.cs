@@ -12,6 +12,7 @@ namespace KeePassBrowserBridge
         private PairingService m_pairingService;
         private TrustedClientStore m_trustedClients;
         private CredentialQueryService m_credentialQueryService;
+        private CredentialMutationService m_credentialMutationService;
         private BridgeRequestHandler m_requestHandler;
         private LoopbackBridgeServer m_server;
 
@@ -25,10 +26,12 @@ namespace KeePassBrowserBridge
             LoadTrustedClients();
             m_trustedClients.Changed += delegate { SaveTrustedClients(); };
             m_credentialQueryService = new CredentialQueryService();
+            m_credentialMutationService = new CredentialMutationService();
             m_requestHandler = new BridgeRequestHandler(
                 m_pairingService,
                 m_trustedClients,
                 m_credentialQueryService,
+                m_credentialMutationService,
                 delegate { return (m_host == null) ? null : m_host.Database; },
                 OnPairingSessionCreated);
 
@@ -173,6 +176,7 @@ namespace KeePassBrowserBridge
             m_pairingService = null;
             m_trustedClients = null;
             m_credentialQueryService = null;
+            m_credentialMutationService = null;
             m_requestHandler = null;
         }
     }
