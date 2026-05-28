@@ -99,7 +99,7 @@ function collectCredentialFromForm(root) {
   const passwordInput = Array.from(scope.querySelectorAll('input[type="password"]'))
     .filter((input) => isVisible(input) && !input.disabled && !input.readOnly && input.value)
     .sort((a, b) => b.value.length - a.value.length)[0] || null;
-  const usernameInput = findUsernameInput(passwordInput);
+  const usernameInput = findUsernameInput(passwordInput, scope);
 
   if (!passwordInput && !usernameInput) {
     return null;
@@ -195,12 +195,12 @@ function credentialKey(credential) {
   ].join('\n');
 }
 
-function findPasswordInput() {
-  return visibleInputs('input[type="password"]').find((input) => !input.disabled && !input.readOnly) || null;
+function findPasswordInput(root) {
+  return visibleInputs('input[type="password"]', root).find((input) => !input.disabled && !input.readOnly) || null;
 }
 
-function findUsernameInput(passwordInput) {
-  const candidates = visibleInputs('input')
+function findUsernameInput(passwordInput, root) {
+  const candidates = visibleInputs('input', root)
     .filter((input) => {
       const type = (input.getAttribute('type') || 'text').toLowerCase();
       return ['text', 'email', 'tel', 'url', 'search', ''].includes(type)
@@ -223,8 +223,8 @@ function findUsernameInput(passwordInput) {
   return ranked[0].input;
 }
 
-function findOtpInput(passwordInput) {
-  const candidates = visibleInputs('input')
+function findOtpInput(passwordInput, root) {
+  const candidates = visibleInputs('input', root)
     .filter((input) => {
       const type = (input.getAttribute('type') || 'text').toLowerCase();
       return ['text', 'tel', 'number', 'password', ''].includes(type)
@@ -239,8 +239,9 @@ function findOtpInput(passwordInput) {
   return candidates.length ? candidates[0].input : null;
 }
 
-function visibleInputs(selector) {
-  return Array.from(document.querySelectorAll(selector)).filter(isVisible);
+function visibleInputs(selector, root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  return Array.from(scope.querySelectorAll(selector)).filter(isVisible);
 }
 
 function isVisible(element) {
