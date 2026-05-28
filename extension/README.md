@@ -23,3 +23,5 @@ When no matching login exists and the page contains entered credentials, clickin
 When a matching login exists but the submitted password differs from KeePass, the page shows an Update prompt. Confirming it updates the existing KeePass entry instead of creating a duplicate. Pending save/update prompts survive a same-tab form reload for a short time so normal login redirects can still trigger the prompt.
 
 The popup result list includes an Edit action for each matched entry. Editing can update title, username, URL, and password directly through the local bridge.
+
+The popup also includes a Trusted Browsers view. Users can review paired browser clients and revoke any client, including the current browser, without opening KeePass options.

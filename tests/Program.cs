@@ -37,6 +37,8 @@ internal static class Program
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
+        BridgeHandlerListsTrustedClientsWithoutSecrets();
+        BridgeHandlerRevokesTrustedClient();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerUpdatesLoginForAuthenticatedRequest();
@@ -372,6 +374,51 @@ internal static class Program
 
         AssertTrue(response.Success, "valid HMAC client.status should succeed: " + response.Error);
         AssertTrue(payload.Trusted, "client.status should report trusted client");
+    }
+
+    private static void BridgeHandlerListsTrustedClientsWithoutSecrets()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        store.AddOrUpdate(new TrustedClient
+        {
+            ClientId = "client-2",
+            ClientName = "Second Browser",
+            SharedSecret = "second-secret",
+            CreatedUtcMs = 1779960000000
+        });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientsList, "client-1", "secret", "{}");
+
+        BridgeResponse response = handler.Handle(request);
+        ClientsListResponsePayload payload = BridgeJsonSerializer.Deserialize<ClientsListResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "clients.list should succeed: " + response.Error);
+        AssertEqual(2, payload.Clients.Length, "clients.list count mismatch");
+        AssertEqual("client-1", payload.Clients[0].ClientId, "first client id mismatch");
+        AssertTrue(payload.Clients[0].Trusted, "current client should be trusted");
+    }
+
+    private static void BridgeHandlerRevokesTrustedClient()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        store.AddOrUpdate(new TrustedClient
+        {
+            ClientId = "client-2",
+            ClientName = "Second Browser",
+            SharedSecret = "second-secret",
+            CreatedUtcMs = 1779960000000
+        });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        string payload = BridgeJsonSerializer.Serialize(new ClientRevokePayload { ClientId = "client-2" });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientsRevoke, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        ClientRevokeResponsePayload result = BridgeJsonSerializer.Deserialize<ClientRevokeResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "clients.revoke should return bridge success: " + response.Error);
+        AssertTrue(result.Revoked, "clients.revoke should report revoked");
+        AssertFalse(store.IsTrusted("client-2"), "revoked client should not remain trusted");
+        AssertTrue(store.IsTrusted("client-1"), "requesting client should remain trusted when revoking another client");
     }
 
     private static void BridgeHandlerReturnsLoginsForAuthenticatedQuery()

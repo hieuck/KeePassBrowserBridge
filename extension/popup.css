@@ -149,6 +149,16 @@ h1 {
   margin-top: 10px;
 }
 
+.secondary-toolbar {
+  margin-top: 10px;
+}
+
+.clients {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .session {
   display: grid;
   grid-template-columns: 58px 1fr;
@@ -181,18 +191,28 @@ h1 {
   padding: 9px;
 }
 
-.login-title {
+.client {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 9px;
+}
+
+.login-title,
+.client-title {
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 
-.login-meta {
+.login-meta,
+.client-meta {
   margin: 3px 0 8px;
   color: var(--muted);
   overflow-wrap: anywhere;
 }
 
-.login button {
+.login button,
+.client button {
   width: 100%;
 }
 

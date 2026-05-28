@@ -46,6 +46,8 @@ namespace KeePassBrowserBridge.Bridge
             if (request.Method == BridgeMethods.PairBegin) return PairBegin(request);
             if (request.Method == BridgeMethods.PairComplete) return PairComplete(request);
             if (request.Method == BridgeMethods.ClientStatus) return ClientStatus(request);
+            if (request.Method == BridgeMethods.ClientsList) return ClientsList(request);
+            if (request.Method == BridgeMethods.ClientsRevoke) return ClientsRevoke(request);
             if (request.Method == BridgeMethods.LoginsQuery) return LoginsQuery(request);
             if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
             if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
@@ -96,6 +98,41 @@ namespace KeePassBrowserBridge.Bridge
             return Success(request, BridgeJsonSerializer.Serialize(new ClientStatusResponsePayload
             {
                 Trusted = m_trustedClients.IsTrusted(request.ClientId)
+            }));
+        }
+
+        private BridgeResponse ClientsList(BridgeRequest request)
+        {
+            TrustedClient[] clients = m_trustedClients.ListClients();
+            ClientInfo[] infos = new ClientInfo[clients.Length];
+            for (int i = 0; i < clients.Length; ++i)
+            {
+                TrustedClient client = clients[i];
+                infos[i] = new ClientInfo
+                {
+                    ClientId = client.ClientId,
+                    ClientName = client.ClientName,
+                    CreatedUtcMs = client.CreatedUtcMs,
+                    Trusted = true,
+                    Current = string.Equals(client.ClientId, request.ClientId, StringComparison.Ordinal)
+                };
+            }
+
+            return Success(request, BridgeJsonSerializer.Serialize(new ClientsListResponsePayload
+            {
+                Clients = infos
+            }));
+        }
+
+        private BridgeResponse ClientsRevoke(BridgeRequest request)
+        {
+            ClientRevokePayload payload = BridgeJsonSerializer.Deserialize<ClientRevokePayload>(request.Payload);
+            string clientId = payload == null ? null : payload.ClientId;
+            bool revoked = m_trustedClients.Revoke(clientId);
+            return Success(request, BridgeJsonSerializer.Serialize(new ClientRevokeResponsePayload
+            {
+                ClientId = clientId,
+                Revoked = revoked
             }));
         }
 

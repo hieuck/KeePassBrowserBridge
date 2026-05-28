@@ -25,13 +25,15 @@ This checks Chrome extension JavaScript syntax, runs the C# tests, and compiles 
 5. Enter the pairing code shown in KeePass.
 6. Visit the login page, click Find Logins, then Fill.
 7. Enable Auto-fill in the popup, reload the login page, and confirm the extension fills automatically when exactly one entry matches.
-8. Confirm inline `K` buttons appear near username, password, and OTP inputs where present.
-9. Click each field-specific `K` button and verify it fills only that field.
-10. With multiple matching entries, click a field-specific `K` button, pick one account from the inline picker, and verify only that field is filled from the selected account.
-11. In the popup result list, click Edit for a matched entry, update title/username/URL/password, save, and verify the existing KeePass entry is changed.
-12. Enter a new username and password that do not match an existing entry, click `K`, confirm the Save prompt, and verify a new KeePass entry is created.
-13. Enter an existing username with a changed password, submit the form, confirm the Update prompt, and verify the existing KeePass entry password is updated without creating a duplicate.
-14. Add a TOTP secret to a matching KeePass entry in a custom field such as `TOTP Seed`, visit a page with an OTP field, and verify Fill enters username, password, and the current one-time password.
+8. Open Trusted Browsers in the popup, verify paired clients are listed, revoke a non-current client if available, and verify it can no longer authenticate.
+9. Revoke the current browser from the popup and verify the extension returns to Unpaired.
+10. Pair again, then confirm inline `K` buttons appear near username, password, and OTP inputs where present.
+11. Click each field-specific `K` button and verify it fills only that field.
+12. With multiple matching entries, click a field-specific `K` button, pick one account from the inline picker, and verify only that field is filled from the selected account.
+13. In the popup result list, click Edit for a matched entry, update title/username/URL/password, save, and verify the existing KeePass entry is changed.
+14. Enter a new username and password that do not match an existing entry, click `K`, confirm the Save prompt, and verify a new KeePass entry is created.
+15. Enter an existing username with a changed password, submit the form, confirm the Update prompt, and verify the existing KeePass entry password is updated without creating a duplicate.
+16. Add a TOTP secret to a matching KeePass entry in a custom field such as `TOTP Seed`, visit a page with an OTP field, and verify Fill enters username, password, and the current one-time password.
 
 For a stable fill test page, serve the fixture over local HTTP:
 

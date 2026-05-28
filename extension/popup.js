@@ -7,6 +7,8 @@ const elements = {
   checkStatus: document.getElementById('checkStatus'),
   beginPair: document.getElementById('beginPair'),
   autoFill: document.getElementById('autoFill'),
+  listClients: document.getElementById('listClients'),
+  clientsPanel: document.getElementById('clientsPanel'),
   pairingPanel: document.getElementById('pairingPanel'),
   pairingSession: document.getElementById('pairingSession'),
   pairingCode: document.getElementById('pairingCode'),
@@ -26,6 +28,7 @@ function init() {
   elements.checkStatus.addEventListener('click', () => runAction(checkStatus));
   elements.beginPair.addEventListener('click', () => runAction(beginPair));
   elements.autoFill.addEventListener('change', () => runAction(setAutoFill));
+  elements.listClients.addEventListener('click', () => runAction(listClients));
   elements.completePair.addEventListener('click', () => runAction(completePair));
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
 
@@ -68,6 +71,33 @@ async function setAutoFill() {
   setMessage(state.autoFillEnabled
     ? 'Auto-fill enabled for single matching logins.'
     : 'Auto-fill disabled.');
+}
+
+async function listClients() {
+  const result = await send({ type: 'KBB_LIST_CLIENTS' });
+  renderClients(result.Clients || []);
+  elements.clientsPanel.classList.remove('hidden');
+  setMessage(result.Clients && result.Clients.length
+    ? `${result.Clients.length} trusted browser(s).`
+    : 'No trusted browsers found.');
+}
+
+async function revokeClient(client) {
+  const result = await send({ type: 'KBB_REVOKE_CLIENT', clientId: client.ClientId });
+  if (!result || !result.Revoked) {
+    throw new Error('Browser was not revoked.');
+  }
+
+  if (client.Current) {
+    renderState(await send({ type: 'KBB_GET_STATE' }));
+    elements.clientsPanel.classList.add('hidden');
+    elements.clientsPanel.textContent = '';
+    setMessage('This browser was revoked. Pair again to use KeePass.');
+    return;
+  }
+
+  await listClients();
+  setMessage('Browser revoked.');
 }
 
 async function completePair() {
@@ -172,6 +202,45 @@ function renderResults(entries) {
     item.append(title, meta, actions);
     elements.results.append(item);
   }
+}
+
+function renderClients(clients) {
+  elements.clientsPanel.textContent = '';
+
+  for (const client of clients) {
+    const item = document.createElement('article');
+    item.className = 'client';
+
+    const name = document.createElement('div');
+    name.className = 'client-title';
+    name.textContent = client.ClientName || 'Browser';
+
+    const meta = document.createElement('div');
+    meta.className = 'client-meta';
+    meta.textContent = `${client.Current ? 'This browser - ' : ''}${formatDate(client.CreatedUtcMs)}`;
+
+    const revoke = document.createElement('button');
+    revoke.type = 'button';
+    revoke.className = 'secondary';
+    revoke.textContent = client.Current ? 'Revoke This Browser' : 'Revoke';
+    revoke.addEventListener('click', () => runAction(() => revokeClient(client)));
+
+    item.append(name, meta, revoke);
+    elements.clientsPanel.append(item);
+  }
+
+  if (!clients.length) {
+    const empty = document.createElement('div');
+    empty.className = 'client-meta';
+    empty.textContent = 'No trusted browsers.';
+    elements.clientsPanel.append(empty);
+  }
+}
+
+function formatDate(ms) {
+  const value = Number(ms || 0);
+  if (!value) return 'Unknown date';
+  return new Date(value).toLocaleString();
 }
 
 function showEditForm(item, entry) {

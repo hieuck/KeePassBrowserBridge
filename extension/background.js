@@ -41,6 +41,10 @@ async function handleMessage(message) {
       return pairComplete(message.pairingCode);
     case 'KBB_STATUS':
       return bridgeCall('client.status', {}, true);
+    case 'KBB_LIST_CLIENTS':
+      return listClients();
+    case 'KBB_REVOKE_CLIENT':
+      return revokeClient(message.clientId);
     case 'KBB_QUERY_LOGINS':
       return queryLogins();
     case 'KBB_QUERY_FOR_URL':
@@ -76,6 +80,27 @@ async function saveEndpoint(endpoint) {
 async function setAutoFill(enabled) {
   await chrome.storage.local.set({ autoFillEnabled: Boolean(enabled) });
   return getState();
+}
+
+async function listClients() {
+  const response = await bridgeCall('clients.list', {}, true);
+  return parsePayload(response);
+}
+
+async function revokeClient(clientId) {
+  const targetClientId = String(clientId || '').trim();
+  if (!targetClientId) {
+    throw new Error('Select a browser to revoke.');
+  }
+
+  const state = await storageGet(['clientId']);
+  const response = await bridgeCall('clients.revoke', { ClientId: targetClientId }, true);
+  const result = parsePayload(response);
+  if (result.Revoked && state.clientId === targetClientId) {
+    await chrome.storage.local.remove(['clientId', 'sharedSecret', 'pairingSessionId']);
+  }
+
+  return result;
 }
 
 async function pairBegin() {
