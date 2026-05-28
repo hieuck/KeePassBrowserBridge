@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bridge\BridgeSettings.cs" />
+    <Compile Include="Bridge\UrlMatcher.cs" />
     <Compile Include="KeePassBrowserBridgeExt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
