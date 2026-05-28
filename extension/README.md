@@ -1,0 +1,14 @@
+# KeePass Browser Bridge Extension
+
+This is the Chrome MV3 companion extension for the KeePassBrowserBridge plugin.
+
+## Developer install
+
+1. Open `chrome://extensions`.
+2. Enable Developer mode.
+3. Choose Load unpacked.
+4. Select this `extension` folder.
+5. Open KeePass and enable the KeePassBrowserBridge plugin.
+6. Open the extension popup, click Pair, then enter the pairing code shown by KeePass.
+
+The default bridge endpoint is `http://127.0.0.1:19455/bridge`.

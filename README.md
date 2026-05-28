@@ -4,12 +4,24 @@ Clean-room KeePass 2.x browser integration inspired by KeePassRPC and KeePassXC-
 
 ## Current Status
 
-MVP development has started. The first slice is a KeePass plugin skeleton with the Tools menu and persistent enable setting.
+MVP development is in progress. The repository contains:
 
-## Local Build
+- KeePass 2.x plugin source for a local loopback bridge.
+- Chrome MV3 extension source for pairing, querying matching logins, and filling the active tab.
+- Local verification and release packaging scripts.
+
+## Verify
 
 From this repository:
 
 ```powershell
-& "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:library /optimize+ /out:"..\KeePassBrowserBridge.dll" /reference:"..\..\KeePass.exe" /reference:"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.dll" /reference:"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Drawing.dll" /reference:"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll" ".\src\Bridge\BridgeSettings.cs" ".\src\KeePassBrowserBridgeExt.cs" ".\src\Properties\AssemblyInfo.cs"
+.\scripts\verify.ps1
 ```
+
+## Build Release Artifacts
+
+```powershell
+.\scripts\build-release.ps1
+```
+
+This creates a KeePass `.plgx` plugin artifact using KeePass' `--plgx-create` command and a zipped Chrome extension artifact under `artifacts\`.

@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version, for example 0.1.0
+        required: true
+        type: string
+
+jobs:
+  package-extension:
+    name: Package extension
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check extension JavaScript
+        shell: pwsh
+        run: |
+          node --check extension\background.js
+          node --check extension\contentScript.js
+          node --check extension\popup.js
+          node tests\extension\protocol.test.mjs
+
+      - name: Package Chrome extension
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -Path extension\* -DestinationPath "artifacts\KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip" -Force
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeePassBrowserBridge-chrome-extension-${{ inputs.version }}
+          path: artifacts\KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KeePass Browser Bridge</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <h1>KeePass Bridge</h1>
+      <span id="statusBadge" class="badge">Checking</span>
+    </header>
+
+    <section class="section">
+      <label for="endpoint">Bridge endpoint</label>
+      <div class="row">
+        <input id="endpoint" type="url" spellcheck="false">
+        <button id="saveEndpoint" type="button">Save</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="toolbar">
+        <button id="checkStatus" type="button">Check</button>
+        <button id="beginPair" type="button">Pair</button>
+      </div>
+
+      <div id="pairingPanel" class="pairing hidden">
+        <div class="session">
+          <span>Session</span>
+          <code id="pairingSession"></code>
+        </div>
+        <div class="row">
+          <input id="pairingCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Pairing code">
+          <button id="completePair" type="button">Confirm</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="toolbar">
+        <button id="queryLogins" type="button">Find Logins</button>
+      </div>
+      <div id="currentUrl" class="url"></div>
+      <div id="results" class="results"></div>
+    </section>
+
+    <footer id="message" class="message"></footer>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f8fa;
+  --panel: #ffffff;
+  --text: #1f2933;
+  --muted: #667085;
+  --border: #d7dde5;
+  --accent: #176b87;
+  --accent-strong: #0f5066;
+  --danger: #b42318;
+  --success: #067647;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 360px;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  min-height: 32px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #ffffff;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+button.secondary {
+  background: #ffffff;
+  color: var(--accent);
+}
+
+input {
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 9px;
+  color: var(--text);
+  background: #ffffff;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.shell {
+  padding: 12px;
+}
+
+.header,
+.toolbar,
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.badge {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--muted);
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.badge.paired {
+  border-color: #abefc6;
+  background: #ecfdf3;
+  color: var(--success);
+}
+
+.badge.error {
+  border-color: #fecdca;
+  background: #fef3f2;
+  color: var(--danger);
+}
+
+.section {
+  border-top: 1px solid var(--border);
+  padding: 11px 0;
+}
+
+.row input,
+.row button {
+  flex: 1 1 auto;
+}
+
+.row button {
+  flex: 0 0 auto;
+}
+
+.toolbar {
+  flex-wrap: wrap;
+}
+
+.pairing {
+  margin-top: 10px;
+}
+
+.session {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.session code {
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
+.url {
+  margin-top: 8px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.results {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.login {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 9px;
+}
+
+.login-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.login-meta {
+  margin: 3px 0 8px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.login button {
+  width: 100%;
+}
+
+.message {
+  min-height: 18px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.message.error {
+  color: var(--danger);
+}
+
+.hidden {
+  display: none;
+}

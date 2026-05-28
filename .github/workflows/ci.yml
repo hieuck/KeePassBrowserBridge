@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: Test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check extension JavaScript
+        shell: pwsh
+        run: |
+          node --check extension\background.js
+          node --check extension\contentScript.js
+          node --check extension\popup.js
+          node tests\extension\protocol.test.mjs
+
+      - name: Run bridge tests
+        shell: pwsh
+        run: dotnet run --project tests\KeePassBrowserBridge.Tests.csproj
+
+      - name: Package Chrome extension
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -Path extension\* -DestinationPath artifacts\KeePassBrowserBridge-chrome-extension-ci.zip -Force
