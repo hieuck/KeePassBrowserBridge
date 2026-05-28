@@ -1,0 +1,10 @@
+bin/
+obj/
+*.dll
+*.plgx
+*.zip
+.vs/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
