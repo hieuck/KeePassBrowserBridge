@@ -25,3 +25,9 @@ From this repository:
 ```
 
 This creates a KeePass `.dll` plugin artifact, a KeePass `.plgx` source plugin artifact using KeePass' `--plgx-create` command, and a zipped Chrome extension artifact under `%TEMP%\KeePassBrowserBridge-artifacts\` by default. Keeping DLL/PLGX outputs outside this repository matters when the repository itself is inside KeePass' `Plugins` directory, because KeePass scans plugin subdirectories on startup.
+
+## Install
+
+For KeePass users, download `KeePassBrowserBridge.plgx` or `KeePassBrowserBridge.dll` from the GitHub Release and place exactly one of them in the KeePass `Plugins` directory.
+
+For Chrome users, the extension ZIP in GitHub Releases is intended for developer/manual loading. Chrome does not allow one-click extension installation directly from GitHub. One-click install requires publishing the extension to the Chrome Web Store, then linking users to the store listing.
