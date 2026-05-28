@@ -6,8 +6,12 @@
     <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="KeePass">
+      <HintPath>..\..\..\KeePass.exe</HintPath>
+    </Reference>
     <Compile Include="..\src\Bridge\ProtocolModels.cs" Link="ProtocolModels.cs" />
     <Compile Include="..\src\Bridge\ProtocolValidator.cs" Link="ProtocolValidator.cs" />
+    <Compile Include="..\src\Bridge\CredentialQueryService.cs" Link="CredentialQueryService.cs" />
     <Compile Include="..\src\Bridge\PairingService.cs" Link="PairingService.cs" />
     <Compile Include="..\src\Bridge\TrustedClientStore.cs" Link="TrustedClientStore.cs" />
     <Compile Include="..\src\Bridge\UrlMatcher.cs" Link="UrlMatcher.cs" />

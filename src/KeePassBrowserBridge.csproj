@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bridge\BridgeSettings.cs" />
+    <Compile Include="Bridge\CredentialQueryService.cs" />
     <Compile Include="Bridge\PairingService.cs" />
     <Compile Include="Bridge\ProtocolModels.cs" />
     <Compile Include="Bridge\ProtocolValidator.cs" />

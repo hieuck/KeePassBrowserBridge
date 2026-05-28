@@ -1,5 +1,7 @@
 using System;
 using KeePassBrowserBridge.Bridge;
+using KeePassLib;
+using KeePassLib.Security;
 
 internal static class Program
 {
@@ -19,6 +21,9 @@ internal static class Program
         WrongPairingCodeIsRejected();
         SuccessfulPairingCreatesTrustedClient();
         RevokedClientIsNoLongerTrusted();
+        CredentialQueryReturnsExactHostMatch();
+        CredentialQueryRejectsUnrelatedDomain();
+        CredentialQueryRejectsClosedDatabase();
         return 0;
     }
 
@@ -155,6 +160,64 @@ internal static class Program
 
         AssertTrue(removed, "revoke should report true for an existing client");
         AssertFalse(store.IsTrusted(result.Client.ClientId), "revoked client should not remain trusted");
+    }
+
+    private static void CredentialQueryReturnsExactHostMatch()
+    {
+        PwDatabase database = CreateDatabase(
+            CreateEntry("Example", "alice", "secret", "https://example.com/login"),
+            CreateEntry("Other", "mallory", "bad", "https://evil.example.net/login"));
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(database, "https://example.com/account");
+
+        AssertTrue(result.Success, "credential query should succeed: " + result.Error);
+        AssertEqual(1, result.Entries.Length, "exact host query should return one entry");
+        AssertEqual("Example", result.Entries[0].Title, "entry title mismatch");
+        AssertEqual("alice", result.Entries[0].UserName, "entry username mismatch");
+        AssertEqual("secret", result.Entries[0].Password, "entry password mismatch");
+    }
+
+    private static void CredentialQueryRejectsUnrelatedDomain()
+    {
+        PwDatabase database = CreateDatabase(CreateEntry("Example", "alice", "secret", "https://example.com/login"));
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(database, "https://evil.example.net/login");
+
+        AssertTrue(result.Success, "credential query should succeed with empty results");
+        AssertEqual(0, result.Entries.Length, "unrelated domain should not return entries");
+    }
+
+    private static void CredentialQueryRejectsClosedDatabase()
+    {
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(null, "https://example.com/login");
+
+        AssertFalse(result.Success, "null database should be rejected");
+        AssertEqual("database_not_open", result.ErrorCode, "closed database error code mismatch");
+    }
+
+    private static PwDatabase CreateDatabase(params PwEntry[] entries)
+    {
+        PwDatabase database = new PwDatabase();
+        database.RootGroup = new PwGroup(true, true, "Root", PwIcon.Folder);
+        foreach (PwEntry entry in entries)
+        {
+            database.RootGroup.AddEntry(entry, false);
+        }
+        return database;
+    }
+
+    private static PwEntry CreateEntry(string title, string userName, string password, string url)
+    {
+        PwEntry entry = new PwEntry(true, true);
+        entry.Strings.Set(PwDefs.TitleField, new ProtectedString(false, title));
+        entry.Strings.Set(PwDefs.UserNameField, new ProtectedString(false, userName));
+        entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, password));
+        entry.Strings.Set(PwDefs.UrlField, new ProtectedString(false, url));
+        return entry;
     }
 
     private static BridgeRequest CreateValidRequest(string method)
