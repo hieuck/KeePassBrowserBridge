@@ -216,6 +216,11 @@ function findUsernameInput(passwordInput, root) {
     return candidates[0] || null;
   }
 
+  const active = document.activeElement;
+  if (active && scoped.includes(active) && scoreUsernameCandidate(active) >= 0) {
+    return active;
+  }
+
   const ranked = scoped
     .map((input, index) => ({ input, index, score: scoreUsernameCandidate(input) }))
     .sort((a, b) => (b.score - a.score) || (b.index - a.index));

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const DOCUMENT_POSITION_FOLLOWING = 4;
+let activeDocument = null;
 
 class MockInput {
   constructor(order, attrs, value = '') {
@@ -12,6 +13,7 @@ class MockInput {
     this.disabled = false;
     this.readOnly = false;
     this.parentElement = null;
+    this.dispatchedEvents = [];
   }
 
   getAttribute(name) {
@@ -28,6 +30,14 @@ class MockInput {
 
   getBoundingClientRect() {
     return { width: 160, height: 32, top: 0, right: 160 };
+  }
+
+  focus() {
+    if (activeDocument) activeDocument.activeElement = this;
+  }
+
+  dispatchEvent(event) {
+    this.dispatchedEvents.push(event.type);
   }
 }
 
@@ -75,9 +85,23 @@ const targetPassword = new MockInput(3, {
   autocomplete: 'current-password'
 }, 'secret');
 
+const focusedStepEmail = new MockInput(4, {
+  id: 'signin-email',
+  name: 'email',
+  type: 'email',
+  autocomplete: 'username'
+});
+
+const otherStepEmail = new MockInput(5, {
+  id: 'recovery-email',
+  name: 'email',
+  type: 'email',
+  autocomplete: 'username'
+});
+
 const unrelatedForm = new MockRoot([unrelatedUser]);
 const targetForm = new MockRoot([targetUser, targetPassword]);
-const documentRoot = new MockRoot([unrelatedUser, targetUser, targetPassword]);
+const documentRoot = new MockRoot([unrelatedUser, targetUser, targetPassword, focusedStepEmail, otherStepEmail]);
 
 const sandbox = {
   console,
@@ -92,10 +116,16 @@ const sandbox = {
     }
   },
   document: {
+    activeElement: null,
     title: 'Scoped Login',
     documentElement: documentRoot,
     querySelectorAll: (selector) => documentRoot.querySelectorAll(selector),
     addEventListener() {}
+  },
+  Event: class {
+    constructor(type) {
+      this.type = type;
+    }
   },
   window: {
     location: { href: 'https://example.com/login' },
@@ -112,6 +142,7 @@ const sandbox = {
 
 sandbox.window.__keepassBrowserBridgeContentScriptLoaded = true;
 sandbox.globalThis = sandbox;
+activeDocument = sandbox.document;
 
 const source = fs.readFileSync(new URL('../../extension/contentScript.js', import.meta.url), 'utf8');
 vm.createContext(sandbox);
@@ -122,5 +153,12 @@ const credential = sandbox.collectCredentialFromForm(targetForm);
 assert.equal(credential.userName, 'right@example.com');
 assert.equal(credential.password, 'secret');
 assert.equal(sandbox.collectCredentialFromForm(unrelatedForm).userName, 'wrong@example.com');
+
+focusedStepEmail.focus();
+targetPassword.disabled = true;
+const fillResult = sandbox.fillLogin({ UserName: 'alice@example.com' });
+assert.equal(fillResult.usernameFilled, true);
+assert.equal(focusedStepEmail.value, 'alice@example.com');
+assert.equal(otherStepEmail.value, '');
 
 console.log('Content script tests passed.');
