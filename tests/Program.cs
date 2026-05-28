@@ -24,6 +24,7 @@ internal static class Program
         WrongPairingCodeIsRejected();
         SuccessfulPairingCreatesTrustedClient();
         RevokedClientIsNoLongerTrusted();
+        TrustedClientStorePersistsRoundTrip();
         CredentialQueryReturnsExactHostMatch();
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
@@ -168,6 +169,28 @@ internal static class Program
 
         AssertTrue(removed, "revoke should report true for an existing client");
         AssertFalse(store.IsTrusted(result.Client.ClientId), "revoked client should not remain trusted");
+    }
+
+    private static void TrustedClientStorePersistsRoundTrip()
+    {
+        TrustedClientStore original = new TrustedClientStore();
+        original.AddOrUpdate(new TrustedClient
+        {
+            ClientId = "client-1",
+            ClientName = "Chrome",
+            SharedSecret = "shared-secret",
+            CreatedUtcMs = 1779960000000
+        });
+
+        string json = original.ExportJson();
+        TrustedClientStore restored = new TrustedClientStore();
+        restored.ImportJson(json);
+        TrustedClient client = restored.Get("client-1");
+
+        AssertTrue(client != null, "restored store should contain trusted client");
+        AssertEqual("Chrome", client.ClientName, "restored client name mismatch");
+        AssertEqual("shared-secret", client.SharedSecret, "restored client secret mismatch");
+        AssertEqual(1779960000000, client.CreatedUtcMs, "restored client timestamp mismatch");
     }
 
     private static void CredentialQueryReturnsExactHostMatch()

@@ -22,6 +22,8 @@ namespace KeePassBrowserBridge
             m_host = host;
             m_pairingService = new PairingService();
             m_trustedClients = new TrustedClientStore();
+            LoadTrustedClients();
+            m_trustedClients.Changed += delegate { SaveTrustedClients(); };
             m_credentialQueryService = new CredentialQueryService();
             m_requestHandler = new BridgeRequestHandler(
                 m_pairingService,
@@ -103,6 +105,29 @@ namespace KeePassBrowserBridge
         private void SaveConfig()
         {
             if (m_host != null && m_host.MainWindow != null) m_host.MainWindow.SaveConfig();
+        }
+
+        private void LoadTrustedClients()
+        {
+            if (m_host == null || m_trustedClients == null) return;
+
+            string json = m_host.CustomConfig.GetString(BridgeSettings.TrustedClientsConfigKey, "");
+            try
+            {
+                m_trustedClients.ImportJson(json);
+            }
+            catch (Exception)
+            {
+                m_trustedClients.ImportJson("");
+            }
+        }
+
+        private void SaveTrustedClients()
+        {
+            if (m_host == null || m_trustedClients == null) return;
+
+            m_host.CustomConfig.SetString(BridgeSettings.TrustedClientsConfigKey, m_trustedClients.ExportJson());
+            SaveConfig();
         }
 
         private int GetPort()
