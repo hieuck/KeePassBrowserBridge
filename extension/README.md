@@ -14,4 +14,4 @@ This is the Chrome MV3 companion extension for the KeePassBrowserBridge plugin.
 
 The default bridge endpoint is `http://127.0.0.1:19455/bridge`.
 
-On login pages, the extension injects a small `K` button near detected username/password fields. Clicking it queries KeePass for the current page URL and fills immediately when exactly one login matches.
+On login pages, the extension injects a small `K` button near detected username/password fields. Clicking it queries KeePass for the current page URL and fills immediately when exactly one login matches. Multi-step login pages with an email-only first step are supported; the button can fill the username/email first and the password after the site reveals the password field.

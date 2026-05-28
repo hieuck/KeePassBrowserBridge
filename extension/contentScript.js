@@ -2,7 +2,7 @@
 
 if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgeContentScriptLoaded = true;
-  window.__keepassBrowserBridgeInlineButtons = new WeakSet();
+  window.__keepassBrowserBridgeInlineTargets = new WeakSet();
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || message.type !== 'KBB_FILL') {
@@ -27,22 +27,22 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
 
 function fillLogin(credential) {
   const passwordInput = findPasswordInput();
-  if (!passwordInput) {
-    throw new Error('No password field found on this page.');
+  const usernameInput = findUsernameInput(passwordInput);
+  if (!passwordInput && !usernameInput) {
+    throw new Error('No login field found on this page.');
   }
 
-  const usernameInput = findUsernameInput(passwordInput);
   if (usernameInput && credential.UserName) {
     setInputValue(usernameInput, credential.UserName);
   }
 
-  if (credential.Password) {
+  if (passwordInput && credential.Password) {
     setInputValue(passwordInput, credential.Password);
   }
 
   return {
     usernameFilled: Boolean(usernameInput && credential.UserName),
-    passwordFilled: Boolean(credential.Password)
+    passwordFilled: Boolean(passwordInput && credential.Password)
   };
 }
 
@@ -59,10 +59,19 @@ function findUsernameInput(passwordInput) {
         && !input.readOnly;
     });
 
-  const beforePassword = candidates
-    .filter((input) => input.compareDocumentPosition(passwordInput) & Node.DOCUMENT_POSITION_FOLLOWING);
+  const scoped = passwordInput
+    ? candidates.filter((input) => input.compareDocumentPosition(passwordInput) & Node.DOCUMENT_POSITION_FOLLOWING)
+    : candidates;
 
-  return beforePassword.length ? beforePassword[beforePassword.length - 1] : candidates[0] || null;
+  if (!scoped.length) {
+    return candidates[0] || null;
+  }
+
+  const ranked = scoped
+    .map((input, index) => ({ input, index, score: scoreUsernameCandidate(input) }))
+    .sort((a, b) => (b.score - a.score) || (b.index - a.index));
+
+  return ranked[0].input;
 }
 
 function visibleInputs(selector) {
@@ -96,13 +105,22 @@ function installInlineFillButtons() {
     .filter((input) => !input.disabled && !input.readOnly);
 
   for (const passwordInput of passwordInputs) {
-    if (window.__keepassBrowserBridgeInlineButtons.has(passwordInput)) {
+    if (window.__keepassBrowserBridgeInlineTargets.has(passwordInput)) {
       continue;
     }
 
     const targetInput = findUsernameInput(passwordInput) || passwordInput;
     attachInlineButton(targetInput);
-    window.__keepassBrowserBridgeInlineButtons.add(passwordInput);
+    window.__keepassBrowserBridgeInlineTargets.add(passwordInput);
+    window.__keepassBrowserBridgeInlineTargets.add(targetInput);
+  }
+
+  if (passwordInputs.length === 0) {
+    const usernameInput = findUsernameInput(null);
+    if (usernameInput && !window.__keepassBrowserBridgeInlineTargets.has(usernameInput)) {
+      attachInlineButton(usernameInput);
+      window.__keepassBrowserBridgeInlineTargets.add(usernameInput);
+    }
   }
 }
 
@@ -229,4 +247,25 @@ function setInlineButtonState(button, state) {
       button.style.color = '#176b87';
     }
   }, 1600);
+}
+
+function scoreUsernameCandidate(input) {
+  const type = (input.getAttribute('type') || 'text').toLowerCase();
+  const text = [
+    input.getAttribute('autocomplete') || '',
+    input.getAttribute('name') || '',
+    input.id || '',
+    input.getAttribute('placeholder') || '',
+    input.getAttribute('aria-label') || ''
+  ].join(' ').toLowerCase();
+
+  let score = 0;
+  if (type === 'email') score += 50;
+  if (/\busername\b/.test(text)) score += 80;
+  if (/\bemail\b|e-mail|mail/.test(text)) score += 70;
+  if (/\blogin\b|\buser\b|account/.test(text)) score += 45;
+  if (/\bcurrent-password\b|\bnew-password\b/.test(text)) score -= 100;
+  if (/\bfname\b|\blname\b|first|last|family|given|surname/.test(text)) score -= 120;
+  if (/\bsearch\b/.test(text)) score -= 60;
+  return score;
 }
