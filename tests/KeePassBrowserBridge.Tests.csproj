@@ -9,7 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="KeePass">
-      <HintPath>..\..\..\KeePass.exe</HintPath>
+      <HintPath Condition="'$(KeePassExe)' != ''">$(KeePassExe)</HintPath>
+      <HintPath Condition="'$(KeePassExe)' == ''">..\..\..\KeePass.exe</HintPath>
     </Reference>
     <Compile Include="..\src\Bridge\BridgeAuthentication.cs" Link="BridgeAuthentication.cs" />
     <Compile Include="..\src\Bridge\BridgeClock.cs" Link="BridgeClock.cs" />

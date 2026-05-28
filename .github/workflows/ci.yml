@@ -10,6 +10,8 @@ jobs:
   test:
     name: Test
     runs-on: windows-latest
+    env:
+      KEEPASS_VERSION: 2.61.1
 
     steps:
       - name: Checkout
@@ -33,9 +35,25 @@ jobs:
           node --check extension\popup.js
           node tests\extension\protocol.test.mjs
 
+      - name: Download KeePass
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $url = "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$env:KEEPASS_VERSION/KeePass-$env:KEEPASS_VERSION.zip"
+          New-Item -ItemType Directory -Force -Path tools | Out-Null
+          curl.exe --location --fail --retry 5 --retry-delay 5 --output tools\KeePass.zip $url
+          if ($LASTEXITCODE -ne 0) {
+            throw "KeePass download failed with exit code $LASTEXITCODE."
+          }
+          $header = [System.IO.File]::ReadAllBytes((Resolve-Path tools\KeePass.zip))[0..1]
+          if ($header[0] -ne 0x50 -or $header[1] -ne 0x4B) {
+            throw "Downloaded KeePass file is not a ZIP archive."
+          }
+          Expand-Archive -Path tools\KeePass.zip -DestinationPath tools\KeePass -Force
+
       - name: Run bridge tests
         shell: pwsh
-        run: dotnet run --project tests\KeePassBrowserBridge.Tests.csproj
+        run: dotnet run --project tests\KeePassBrowserBridge.Tests.csproj -p:KeePassExe="${{ github.workspace }}\tools\KeePass\KeePass.exe"
 
       - name: Package Chrome extension
         shell: pwsh
