@@ -41,6 +41,9 @@ namespace KeePassBrowserBridge.Bridge
             if (string.IsNullOrWhiteSpace(request.Origin))
                 return ProtocolValidationResult.Fail("missing_origin", "Origin is required.");
 
+            if (!IsAllowedExtensionOrigin(request.Origin))
+                return ProtocolValidationResult.Fail("invalid_origin", "Origin must be a Chrome extension origin.");
+
             if (request.TimestampUtcMs <= 0)
                 return ProtocolValidationResult.Fail("missing_timestamp", "Timestamp is required.");
 
@@ -49,6 +52,24 @@ namespace KeePassBrowserBridge.Bridge
                 return ProtocolValidationResult.Fail("stale_timestamp", "Timestamp is outside the accepted clock skew.");
 
             return ProtocolValidationResult.Ok();
+        }
+
+        private static bool IsAllowedExtensionOrigin(string origin)
+        {
+            Uri uri;
+            if (!Uri.TryCreate(origin.Trim(), UriKind.Absolute, out uri)) return false;
+            if (!string.Equals(uri.Scheme, "chrome-extension", StringComparison.OrdinalIgnoreCase)) return false;
+            if (!string.IsNullOrEmpty(uri.AbsolutePath) && uri.AbsolutePath != "/") return false;
+
+            string id = uri.Host;
+            if (id == null || id.Length != 32) return false;
+            for (int i = 0; i < id.Length; ++i)
+            {
+                char ch = id[i];
+                if (ch < 'a' || ch > 'p') return false;
+            }
+
+            return true;
         }
     }
 

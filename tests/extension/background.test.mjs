@@ -35,7 +35,7 @@ const sandbox = {
   }),
   chrome: {
     runtime: {
-      id: 'abcdefghijklmnop',
+      id: 'abcdefghijklmnopabcdefghijklmnop',
       onMessage: { addListener() {} }
     },
     tabs: {

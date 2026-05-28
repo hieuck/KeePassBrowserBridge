@@ -30,7 +30,7 @@ const request = {
   RequestId: '00112233445566778899aabbccddeeff',
   Method: 'logins.query',
   TimestampUtcMs: 1779960000000,
-  Origin: 'chrome-extension://abcdefghijklmnop',
+  Origin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
   ClientId: 'client-1',
   Payload: '{"Url":"https://example.com/login"}'
 };
@@ -42,7 +42,7 @@ assert.equal(
     'logins.query',
     '00112233445566778899aabbccddeeff',
     '1779960000000',
-    'chrome-extension://abcdefghijklmnop',
+    'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
     'client-1',
     '{"Url":"https://example.com/login"}'
   ].join('\n')

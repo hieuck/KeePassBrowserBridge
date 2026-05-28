@@ -23,6 +23,8 @@ internal static class Program
         ValidHelloRequestPassesValidation();
         UnknownMethodFailsValidation();
         MissingOriginFailsValidation();
+        WebPageOriginFailsValidation();
+        MalformedExtensionOriginFailsValidation();
         StaleTimestampFailsValidation();
         WrongProtocolVersionFailsValidation();
         PairingSessionGeneratesSixDigitCode();
@@ -150,6 +152,28 @@ internal static class Program
 
         AssertFalse(result.IsValid, "missing origin should fail validation");
         AssertEqual("missing_origin", result.ErrorCode, "missing origin error code mismatch");
+    }
+
+    private static void WebPageOriginFailsValidation()
+    {
+        BridgeRequest request = CreateValidRequest(BridgeMethods.Hello);
+        request.Origin = "https://evil.example";
+
+        ProtocolValidationResult result = ProtocolValidator.Validate(request, NowMs());
+
+        AssertFalse(result.IsValid, "web page origin should fail validation");
+        AssertEqual("invalid_origin", result.ErrorCode, "web page origin error code mismatch");
+    }
+
+    private static void MalformedExtensionOriginFailsValidation()
+    {
+        BridgeRequest request = CreateValidRequest(BridgeMethods.Hello);
+        request.Origin = "chrome-extension://not-a-valid-extension-id";
+
+        ProtocolValidationResult result = ProtocolValidator.Validate(request, NowMs());
+
+        AssertFalse(result.IsValid, "malformed extension origin should fail validation");
+        AssertEqual("invalid_origin", result.ErrorCode, "malformed extension origin error code mismatch");
     }
 
     private static void StaleTimestampFailsValidation()
@@ -643,7 +667,7 @@ internal static class Program
             Method = method,
             RequestId = Guid.NewGuid().ToString("N"),
             TimestampUtcMs = NowMs(),
-            Origin = "chrome-extension://abcdefghijklmnop"
+            Origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop"
         };
     }
 
