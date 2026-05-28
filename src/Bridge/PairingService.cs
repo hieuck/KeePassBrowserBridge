@@ -7,6 +7,7 @@ namespace KeePassBrowserBridge.Bridge
     internal sealed class PairingService
     {
         public const long MaxPairingSessionAgeMs = 5 * 60 * 1000;
+        public const int MaxInvalidPairingAttempts = 5;
 
         private readonly ISecretGenerator m_secretGenerator;
         private readonly Func<long> m_nowProvider;
@@ -59,7 +60,16 @@ namespace KeePassBrowserBridge.Bridge
             }
 
             if (!string.Equals(session.PairingCode, pairingCode, StringComparison.Ordinal))
+            {
+                session.InvalidAttempts += 1;
+                if (session.InvalidAttempts >= MaxInvalidPairingAttempts)
+                {
+                    m_sessions.Remove(pairingSessionId);
+                    return PairingResult.Fail("too_many_pairing_attempts", "Pairing session had too many invalid attempts.");
+                }
+
                 return PairingResult.Fail("invalid_pairing_code", "Pairing code is invalid.");
+            }
 
             TrustedClient client = new TrustedClient
             {
@@ -87,6 +97,7 @@ namespace KeePassBrowserBridge.Bridge
         public string PairingCode { get; set; }
         public string ClientName { get; set; }
         public long CreatedUtcMs { get; set; }
+        public int InvalidAttempts { get; set; }
     }
 
     internal sealed class PairingResult

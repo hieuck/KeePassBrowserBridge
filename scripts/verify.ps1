@@ -30,6 +30,7 @@ try {
     node --check extension\background.js
     node --check extension\contentScript.js
     node --check extension\popup.js
+    node tests\extension\background.test.mjs
     node tests\extension\protocol.test.mjs
     node tests\extension\content-script.test.mjs
     node tests\extension\popup.test.mjs

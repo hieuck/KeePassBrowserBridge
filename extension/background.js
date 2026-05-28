@@ -125,11 +125,20 @@ async function pairComplete(pairingCode) {
     throw new Error('Start pairing before completing it.');
   }
 
-  const response = await bridgeCall('pair.complete', {
-    PairingSessionId: state.pairingSessionId,
-    PairingCode: code,
-    ClientName: CLIENT_NAME
-  });
+  let response;
+  try {
+    response = await bridgeCall('pair.complete', {
+      PairingSessionId: state.pairingSessionId,
+      PairingCode: code,
+      ClientName: CLIENT_NAME
+    });
+  } catch (error) {
+    if (isTerminalPairingError(error)) {
+      await chrome.storage.local.set({ pairingSessionId: '' });
+    }
+
+    throw error;
+  }
   const payload = parsePayload(response);
 
   if (!payload.ClientId || !payload.SharedSecret) {
@@ -142,6 +151,11 @@ async function pairComplete(pairingCode) {
     pairingSessionId: ''
   });
   return getState();
+}
+
+function isTerminalPairingError(error) {
+  const message = error && error.message ? error.message : String(error || '');
+  return /expired|not found|too many invalid attempts/i.test(message);
 }
 
 async function queryLogins() {

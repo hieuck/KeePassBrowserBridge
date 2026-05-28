@@ -27,6 +27,7 @@ internal static class Program
         WrongProtocolVersionFailsValidation();
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
+        PairingSessionLocksAfterRepeatedWrongCodes();
         ExpiredPairingCodeIsRejected();
         SuccessfulPairingCreatesTrustedClient();
         RevokedClientIsNoLongerTrusted();
@@ -194,6 +195,27 @@ internal static class Program
 
         AssertFalse(result.Success, "wrong pairing code should fail");
         AssertEqual(0, store.ListClients().Length, "wrong code should not add a trusted client");
+    }
+
+    private static void PairingSessionLocksAfterRepeatedWrongCodes()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(new DeterministicSecretGenerator("123456", "secret"));
+        PairingSession session = service.BeginPairing("Chrome");
+        PairingResult result = null;
+
+        for (int i = 0; i < PairingService.MaxInvalidPairingAttempts; ++i)
+        {
+            result = service.CompletePairing(store, session.PairingSessionId, "000000", "Chrome");
+        }
+
+        AssertFalse(result.Success, "last wrong pairing attempt should fail");
+        AssertEqual("too_many_pairing_attempts", result.ErrorCode, "pairing lockout error mismatch");
+
+        PairingResult correctAfterLock = service.CompletePairing(store, session.PairingSessionId, "123456", "Chrome");
+        AssertFalse(correctAfterLock.Success, "locked pairing session should not accept the correct code later");
+        AssertEqual("pairing_session_not_found", correctAfterLock.ErrorCode, "locked pairing session should be removed");
+        AssertEqual(0, store.ListClients().Length, "locked pairing session should not add a trusted client");
     }
 
     private static void ExpiredPairingCodeIsRejected()
