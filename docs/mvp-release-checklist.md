@@ -28,6 +28,7 @@ This checks Chrome extension JavaScript syntax, runs the C# tests, and compiles 
 8. Confirm the inline `K` button appears near the login inputs and fills the form when clicked.
 9. Enter a new username and password that do not match an existing entry, click `K`, confirm the Save prompt, and verify a new KeePass entry is created.
 10. Enter an existing username with a changed password, submit the form, confirm the Update prompt, and verify the existing KeePass entry password is updated without creating a duplicate.
+11. Add a TOTP secret to a matching KeePass entry in a custom field such as `TOTP Seed`, visit a page with an OTP field, and verify Fill enters username, password, and the current one-time password.
 
 For a stable fill test page, serve the fixture over local HTTP:
 
@@ -35,7 +36,7 @@ For a stable fill test page, serve the fixture over local HTTP:
 python -m http.server 18080 --directory tests\fixtures
 ```
 
-Then open `http://127.0.0.1:18080/login-page.html` in Chrome and create a KeePass entry with a matching URL host. The extension should fill the `username` and `password` fields after selecting the matched entry.
+Then open `http://127.0.0.1:18080/login-page.html` in Chrome and create a KeePass entry with a matching URL host. The extension should fill the `username` and `password` fields after selecting the matched entry. For OTP testing, add a temporary text input with `autocomplete="one-time-code"` or test on a real site that exposes an OTP/code field.
 
 ## GitHub release assets
 

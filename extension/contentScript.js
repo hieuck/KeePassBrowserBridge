@@ -51,7 +51,8 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
 function fillLogin(credential) {
   const passwordInput = findPasswordInput();
   const usernameInput = findUsernameInput(passwordInput);
-  if (!passwordInput && !usernameInput) {
+  const otpInput = findOtpInput(passwordInput);
+  if (!passwordInput && !usernameInput && !otpInput) {
     throw new Error('No login field found on this page.');
   }
 
@@ -63,9 +64,14 @@ function fillLogin(credential) {
     setInputValue(passwordInput, credential.Password);
   }
 
+  if (otpInput && credential.OneTimePassword) {
+    setInputValue(otpInput, credential.OneTimePassword);
+  }
+
   return {
     usernameFilled: Boolean(usernameInput && credential.UserName),
-    passwordFilled: Boolean(passwordInput && credential.Password)
+    passwordFilled: Boolean(passwordInput && credential.Password),
+    otpFilled: Boolean(otpInput && credential.OneTimePassword)
   };
 }
 
@@ -215,6 +221,22 @@ function findUsernameInput(passwordInput) {
     .sort((a, b) => (b.score - a.score) || (b.index - a.index));
 
   return ranked[0].input;
+}
+
+function findOtpInput(passwordInput) {
+  const candidates = visibleInputs('input')
+    .filter((input) => {
+      const type = (input.getAttribute('type') || 'text').toLowerCase();
+      return ['text', 'tel', 'number', 'password', ''].includes(type)
+        && !input.disabled
+        && !input.readOnly
+        && input !== passwordInput;
+    })
+    .map((input, index) => ({ input, index, score: scoreOtpCandidate(input) }))
+    .filter((candidate) => candidate.score > 0)
+    .sort((a, b) => (b.score - a.score) || (a.index - b.index));
+
+  return candidates.length ? candidates[0].input : null;
 }
 
 function visibleInputs(selector) {
@@ -702,6 +724,27 @@ function scoreUsernameCandidate(input) {
   if (/\bcurrent-password\b|\bnew-password\b/.test(text)) score -= 100;
   if (/\bfname\b|\blname\b|first|last|family|given|surname/.test(text)) score -= 120;
   if (/\bsearch\b/.test(text)) score -= 60;
+  return score;
+}
+
+function scoreOtpCandidate(input) {
+  const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
+  const inputMode = (input.getAttribute('inputmode') || '').toLowerCase();
+  const text = [
+    autocomplete,
+    input.getAttribute('name') || '',
+    input.id || '',
+    input.getAttribute('placeholder') || '',
+    input.getAttribute('aria-label') || ''
+  ].join(' ').toLowerCase();
+
+  let score = 0;
+  if (autocomplete === 'one-time-code') score += 120;
+  if (/\botp\b|\btotp\b|2fa|mfa|authenticator|verification/.test(text)) score += 90;
+  if (/\bcode\b|\btoken\b/.test(text)) score += 45;
+  if (inputMode === 'numeric') score += 10;
+  if (/\busername\b|\bemail\b|\buser\b|\blogin\b|search|first|last|name/.test(text)) score -= 100;
+  if ((input.getAttribute('type') || '').toLowerCase() === 'password') score -= 15;
   return score;
 }
 

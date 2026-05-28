@@ -58,6 +58,7 @@ $sources = @(
     (Join-Path $srcDir "Bridge\ProtocolModels.cs"),
     (Join-Path $srcDir "Bridge\ProtocolValidator.cs"),
     (Join-Path $srcDir "Bridge\TrustedClientStore.cs"),
+    (Join-Path $srcDir "Bridge\TotpGenerator.cs"),
     (Join-Path $srcDir "Bridge\UrlMatcher.cs"),
     (Join-Path $srcDir "KeePassBrowserBridgeExt.cs"),
     (Join-Path $srcDir "Properties\AssemblyInfo.cs")

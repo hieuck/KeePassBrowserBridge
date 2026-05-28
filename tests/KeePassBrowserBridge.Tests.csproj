@@ -24,6 +24,7 @@
     <Compile Include="..\src\Bridge\CredentialQueryService.cs" Link="CredentialQueryService.cs" />
     <Compile Include="..\src\Bridge\PairingService.cs" Link="PairingService.cs" />
     <Compile Include="..\src\Bridge\TrustedClientStore.cs" Link="TrustedClientStore.cs" />
+    <Compile Include="..\src\Bridge\TotpGenerator.cs" Link="TotpGenerator.cs" />
     <Compile Include="..\src\Bridge\UrlMatcher.cs" Link="UrlMatcher.cs" />
   </ItemGroup>
 </Project>

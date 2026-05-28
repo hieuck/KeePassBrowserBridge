@@ -15,6 +15,8 @@ internal static class Program
         InvalidUrlsDoNotMatch();
         HttpAndHttpsWithSameHostMatch();
         DifferentHostsDoNotMatch();
+        TotpGeneratorMatchesRfcVector();
+        TotpGeneratorParsesOtpAuthUri();
         ValidHelloRequestPassesValidation();
         UnknownMethodFailsValidation();
         MissingOriginFailsValidation();
@@ -26,6 +28,7 @@ internal static class Program
         RevokedClientIsNoLongerTrusted();
         TrustedClientStorePersistsRoundTrip();
         CredentialQueryReturnsExactHostMatch();
+        CredentialQueryIncludesOneTimePassword();
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
         CredentialMutationCreatesEntryInDatabase();
@@ -70,6 +73,24 @@ internal static class Program
     {
         AssertFalse(UrlMatcher.IsMatch("https://example.com", "https://evil.example.net"),
             "different hosts should not match");
+    }
+
+    private static void TotpGeneratorMatchesRfcVector()
+    {
+        TotpResult result = TotpGenerator.Generate("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", 59000);
+
+        AssertTrue(result.Success, "TOTP generation should succeed: " + result.Error);
+        AssertEqual("287082", result.Code, "TOTP RFC vector mismatch");
+    }
+
+    private static void TotpGeneratorParsesOtpAuthUri()
+    {
+        TotpResult result = TotpGenerator.Generate(
+            "otpauth://totp/Example:alice?secret=JBSWY3DPEHPK3PXP&issuer=Example&digits=8&period=60",
+            1779960000000);
+
+        AssertTrue(result.Success, "otpauth URI generation should succeed: " + result.Error);
+        AssertEqual(8, result.Code.Length, "otpauth digits parameter should control code length");
     }
 
     private static void ValidHelloRequestPassesValidation()
@@ -211,6 +232,22 @@ internal static class Program
         AssertEqual("Example", result.Entries[0].Title, "entry title mismatch");
         AssertEqual("alice", result.Entries[0].UserName, "entry username mismatch");
         AssertEqual("secret", result.Entries[0].Password, "entry password mismatch");
+    }
+
+    private static void CredentialQueryIncludesOneTimePassword()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "secret", "https://example.com/login");
+        entry.Strings.Set("TOTP Seed", new ProtectedString(true, "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"));
+        PwDatabase database = CreateDatabase(entry);
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(database, "https://example.com/account");
+
+        AssertTrue(result.Success, "credential query with TOTP should succeed: " + result.Error);
+        AssertEqual(1, result.Entries.Length, "TOTP query result count mismatch");
+        AssertTrue(!string.IsNullOrEmpty(result.Entries[0].OneTimePassword), "query should include generated TOTP");
+        AssertEqual(6, result.Entries[0].OneTimePassword.Length, "default TOTP length mismatch");
+        AssertTrue(IsDigitsOnly(result.Entries[0].OneTimePassword), "TOTP should contain digits only");
     }
 
     private static void CredentialQueryRejectsUnrelatedDomain()

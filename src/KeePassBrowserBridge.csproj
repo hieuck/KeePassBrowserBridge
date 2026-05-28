@@ -38,6 +38,7 @@
     <Compile Include="Bridge\ProtocolModels.cs" />
     <Compile Include="Bridge\ProtocolValidator.cs" />
     <Compile Include="Bridge\TrustedClientStore.cs" />
+    <Compile Include="Bridge\TotpGenerator.cs" />
     <Compile Include="Bridge\UrlMatcher.cs" />
     <Compile Include="KeePassBrowserBridgeExt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

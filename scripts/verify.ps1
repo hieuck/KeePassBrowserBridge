@@ -58,6 +58,7 @@ try {
         ".\src\Bridge\ProtocolModels.cs",
         ".\src\Bridge\ProtocolValidator.cs",
         ".\src\Bridge\TrustedClientStore.cs",
+        ".\src\Bridge\TotpGenerator.cs",
         ".\src\Bridge\UrlMatcher.cs",
         ".\src\KeePassBrowserBridgeExt.cs",
         ".\src\Properties\AssemblyInfo.cs"

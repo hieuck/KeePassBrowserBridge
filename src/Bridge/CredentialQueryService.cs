@@ -37,7 +37,8 @@ namespace KeePassBrowserBridge.Bridge
                     Title = entry.Strings.ReadSafe(PwDefs.TitleField),
                     UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
                     Url = entryUrl,
-                    Password = ReadProtectedString(entry.Strings.GetSafe(PwDefs.PasswordField))
+                    Password = ReadProtectedString(entry.Strings.GetSafe(PwDefs.PasswordField)),
+                    OneTimePassword = GenerateOneTimePassword(entry)
                 });
             }
 
@@ -50,6 +51,32 @@ namespace KeePassBrowserBridge.Bridge
         private static string ReadProtectedString(ProtectedString value)
         {
             return value == null ? string.Empty : value.ReadString();
+        }
+
+        private static string GenerateOneTimePassword(PwEntry entry)
+        {
+            string secret = ReadFirstExistingField(entry,
+                "otp",
+                "TOTP Seed",
+                "TOTP Secret",
+                "TOTP",
+                "TimeOtp-Secret-Base32");
+            if (string.IsNullOrWhiteSpace(secret)) return string.Empty;
+
+            TotpResult result = TotpGenerator.Generate(secret, BridgeClock.UtcNowMilliseconds());
+            return result.Success ? result.Code : string.Empty;
+        }
+
+        private static string ReadFirstExistingField(PwEntry entry, params string[] fieldNames)
+        {
+            foreach (string fieldName in fieldNames)
+            {
+                ProtectedString value = entry.Strings.Get(fieldName);
+                string text = ReadProtectedString(value);
+                if (!string.IsNullOrWhiteSpace(text)) return text;
+            }
+
+            return string.Empty;
         }
     }
 
@@ -88,5 +115,6 @@ namespace KeePassBrowserBridge.Bridge
         public string UserName { get; set; }
         public string Url { get; set; }
         public string Password { get; set; }
+        public string OneTimePassword { get; set; }
     }
 }
