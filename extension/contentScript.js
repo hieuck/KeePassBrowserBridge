@@ -64,14 +64,16 @@ function fillLogin(credential) {
     setInputValue(passwordInput, credential.Password);
   }
 
-  if (otpInput && credential.OneTimePassword) {
+  const otpFilled = credential.OneTimePassword ? fillOneTimePassword(otpInput, credential.OneTimePassword) : false;
+
+  if (otpInput && credential.OneTimePassword && !otpFilled) {
     setInputValue(otpInput, credential.OneTimePassword);
   }
 
   return {
     usernameFilled: Boolean(usernameInput && credential.UserName),
     passwordFilled: Boolean(passwordInput && credential.Password),
-    otpFilled: Boolean(otpInput && credential.OneTimePassword)
+    otpFilled: Boolean(otpFilled || (otpInput && credential.OneTimePassword))
   };
 }
 
@@ -242,6 +244,47 @@ function findOtpInput(passwordInput, root) {
     .sort((a, b) => (b.score - a.score) || (a.index - b.index));
 
   return candidates.length ? candidates[0].input : null;
+}
+
+function fillOneTimePassword(otpInput, code) {
+  const value = String(code || '').trim();
+  if (!value) return false;
+
+  const splitInputs = findSplitOtpInputs(otpInput, value.length);
+  if (splitInputs.length < value.length) return false;
+
+  for (let i = 0; i < value.length; ++i) {
+    setInputValue(splitInputs[i], value.charAt(i));
+  }
+
+  return true;
+}
+
+function findSplitOtpInputs(anchorInput, codeLength) {
+  if (!anchorInput || codeLength < 2) return [];
+
+  const parent = anchorInput.parentElement;
+  const scope = parent && parent.querySelectorAll ? parent : document;
+  const inputs = visibleInputs('input', scope)
+    .filter((input) => !input.disabled && !input.readOnly && isOtpDigitInput(input))
+    .sort((a, b) => documentOrder(a, b));
+
+  return inputs.length >= codeLength ? inputs.slice(0, codeLength) : [];
+}
+
+function isOtpDigitInput(input) {
+  const maxLength = Number(input.getAttribute('maxlength') || input.maxLength || 0);
+  if (maxLength !== 1) return false;
+
+  const type = (input.getAttribute('type') || 'text').toLowerCase();
+  if (!['text', 'tel', 'number', 'password', ''].includes(type)) return false;
+
+  return scoreOtpCandidate(input) > 0;
+}
+
+function documentOrder(left, right) {
+  if (left === right) return 0;
+  return left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
 }
 
 function visibleInputs(selector, root) {

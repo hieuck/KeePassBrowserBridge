@@ -99,9 +99,26 @@ const otherStepEmail = new MockInput(5, {
   autocomplete: 'username'
 });
 
+const splitOtpInputs = Array.from({ length: 6 }, (_, index) => new MockInput(10 + index, {
+  id: `otp-${index + 1}`,
+  name: `otp-${index + 1}`,
+  type: 'text',
+  inputmode: 'numeric',
+  autocomplete: 'one-time-code',
+  maxlength: '1',
+  'aria-label': `Verification code digit ${index + 1}`
+}));
+
 const unrelatedForm = new MockRoot([unrelatedUser]);
 const targetForm = new MockRoot([targetUser, targetPassword]);
-const documentRoot = new MockRoot([unrelatedUser, targetUser, targetPassword, focusedStepEmail, otherStepEmail]);
+const documentRoot = new MockRoot([
+  unrelatedUser,
+  targetUser,
+  targetPassword,
+  focusedStepEmail,
+  otherStepEmail,
+  ...splitOtpInputs
+]);
 
 const sandbox = {
   console,
@@ -160,5 +177,9 @@ const fillResult = sandbox.fillLogin({ UserName: 'alice@example.com' });
 assert.equal(fillResult.usernameFilled, true);
 assert.equal(focusedStepEmail.value, 'alice@example.com');
 assert.equal(otherStepEmail.value, '');
+
+const otpResult = sandbox.fillLogin({ OneTimePassword: '123456' });
+assert.equal(otpResult.otpFilled, true);
+assert.deepEqual(splitOtpInputs.map((input) => input.value), ['1', '2', '3', '4', '5', '6']);
 
 console.log('Content script tests passed.');
