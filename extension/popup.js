@@ -6,6 +6,7 @@ const elements = {
   saveEndpoint: document.getElementById('saveEndpoint'),
   checkStatus: document.getElementById('checkStatus'),
   beginPair: document.getElementById('beginPair'),
+  autoFill: document.getElementById('autoFill'),
   pairingPanel: document.getElementById('pairingPanel'),
   pairingSession: document.getElementById('pairingSession'),
   pairingCode: document.getElementById('pairingCode'),
@@ -22,6 +23,7 @@ function init() {
   elements.saveEndpoint.addEventListener('click', () => runAction(saveEndpoint));
   elements.checkStatus.addEventListener('click', () => runAction(checkStatus));
   elements.beginPair.addEventListener('click', () => runAction(beginPair));
+  elements.autoFill.addEventListener('change', () => runAction(setAutoFill));
   elements.completePair.addEventListener('click', () => runAction(completePair));
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
 
@@ -53,6 +55,17 @@ async function beginPair() {
   const state = await send({ type: 'KBB_PAIR_BEGIN' });
   renderState(state);
   setMessage('Enter the pairing code shown in KeePass.');
+}
+
+async function setAutoFill() {
+  const state = await send({
+    type: 'KBB_SET_AUTO_FILL',
+    enabled: elements.autoFill.checked
+  });
+  renderState(state);
+  setMessage(state.autoFillEnabled
+    ? 'Auto-fill enabled for single matching logins.'
+    : 'Auto-fill disabled.');
 }
 
 async function completePair() {
@@ -91,6 +104,7 @@ async function refreshState() {
 
 function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
+  elements.autoFill.checked = Boolean(state.autoFillEnabled);
   elements.pairingSession.textContent = state.pairingSessionId || '';
   elements.pairingPanel.classList.toggle('hidden', !state.pairingSessionId);
   setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');

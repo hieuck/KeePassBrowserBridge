@@ -24,6 +24,7 @@ This checks Chrome extension JavaScript syntax, runs the C# tests, and compiles 
 4. Open the extension popup and click Pair.
 5. Enter the pairing code shown in KeePass.
 6. Visit the login page, click Find Logins, then Fill.
+7. Enable Auto-fill in the popup, reload the login page, and confirm the extension fills automatically when exactly one entry matches.
 
 For a stable fill test page, serve the fixture over local HTTP:
 

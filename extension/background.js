@@ -3,6 +3,16 @@
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;
 const CLIENT_NAME = 'Chrome';
+const AUTO_FILL_DEBOUNCE_MS = 1200;
+const autoFillTimers = new Map();
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status !== 'complete' || !tab || !isFillableUrl(tab.url)) {
+    return;
+  }
+
+  scheduleAutoFill(tabId, tab.url);
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   handleMessage(message)
@@ -21,6 +31,8 @@ async function handleMessage(message) {
       return getState();
     case 'KBB_SAVE_ENDPOINT':
       return saveEndpoint(message.endpoint);
+    case 'KBB_SET_AUTO_FILL':
+      return setAutoFill(message.enabled);
     case 'KBB_HELLO':
       return bridgeCall('hello', {});
     case 'KBB_PAIR_BEGIN':
@@ -39,18 +51,24 @@ async function handleMessage(message) {
 }
 
 async function getState() {
-  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId']);
+  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'autoFillEnabled']);
   return {
     endpoint: state.endpoint || DEFAULT_ENDPOINT,
     paired: Boolean(state.clientId),
     clientId: state.clientId || '',
-    pairingSessionId: state.pairingSessionId || ''
+    pairingSessionId: state.pairingSessionId || '',
+    autoFillEnabled: Boolean(state.autoFillEnabled)
   };
 }
 
 async function saveEndpoint(endpoint) {
   const normalized = normalizeEndpoint(endpoint);
   await chrome.storage.local.set({ endpoint: normalized });
+  return getState();
+}
+
+async function setAutoFill(enabled) {
+  await chrome.storage.local.set({ autoFillEnabled: Boolean(enabled) });
   return getState();
 }
 
@@ -102,11 +120,7 @@ async function queryLogins() {
   }
 
   const response = await bridgeCall('logins.query', { Url: tab.url }, true);
-  const payload = parsePayload(response);
-  return {
-    url: tab.url,
-    entries: Array.isArray(payload.Entries) ? payload.Entries : []
-  };
+  return queryResultFromResponse(tab.url, response);
 }
 
 async function fillLogin(credential) {
@@ -132,6 +146,45 @@ async function fillLogin(credential) {
   await bridgeCall('logins.fillAck', {
     EntryId: credential.EntryId,
     Url: tab.url || ''
+  }, true);
+
+  return result || { filled: true };
+}
+
+async function autoFillTab(tabId, url) {
+  const state = await storageGet(['autoFillEnabled', 'clientId', 'sharedSecret']);
+  if (!state.autoFillEnabled || !state.clientId || !state.sharedSecret || !isFillableUrl(url)) {
+    return { filled: false, reason: 'disabled_or_unpaired' };
+  }
+
+  const response = await bridgeCall('logins.query', { Url: url }, true);
+  const result = queryResultFromResponse(url, response);
+  if (result.entries.length !== 1) {
+    return {
+      filled: false,
+      reason: result.entries.length === 0 ? 'no_match' : 'multiple_matches',
+      count: result.entries.length
+    };
+  }
+
+  await fillCredentialInTab(tabId, result.entries[0], url);
+  return { filled: true, count: 1 };
+}
+
+async function fillCredentialInTab(tabId, credential, url) {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['contentScript.js']
+  });
+
+  const result = await chrome.tabs.sendMessage(tabId, {
+    type: 'KBB_FILL',
+    credential
+  });
+
+  await bridgeCall('logins.fillAck', {
+    EntryId: credential.EntryId,
+    Url: url || ''
   }, true);
 
   return result || { filled: true };
@@ -212,6 +265,14 @@ function parsePayload(response) {
   }
 }
 
+function queryResultFromResponse(url, response) {
+  const payload = parsePayload(response);
+  return {
+    url,
+    entries: Array.isArray(payload.Entries) ? payload.Entries : []
+  };
+}
+
 function normalizeEndpoint(endpoint) {
   const value = String(endpoint || '').trim();
   if (!value) {
@@ -229,6 +290,34 @@ function normalizeEndpoint(endpoint) {
 function getActiveTab() {
   return chrome.tabs.query({ active: true, currentWindow: true })
     .then((tabs) => tabs && tabs.length ? tabs[0] : null);
+}
+
+function scheduleAutoFill(tabId, url) {
+  if (autoFillTimers.has(tabId)) {
+    clearTimeout(autoFillTimers.get(tabId));
+  }
+
+  const timerId = setTimeout(() => {
+    autoFillTimers.delete(tabId);
+    autoFillTab(tabId, url).catch(() => {
+      // Auto-fill is intentionally silent. Manual popup actions surface errors.
+    });
+  }, AUTO_FILL_DEBOUNCE_MS);
+
+  autoFillTimers.set(tabId, timerId);
+}
+
+function isFillableUrl(url) {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch (error) {
+    return false;
+  }
 }
 
 function storageGet(keys) {

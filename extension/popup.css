@@ -65,6 +65,23 @@ label {
   font-weight: 600;
 }
 
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.toggle input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  padding: 0;
+}
+
 .shell {
   padding: 12px;
 }
