@@ -64,7 +64,6 @@ const ids = [
   'listClients',
   'clientsPanel',
   'pairingPanel',
-  'pairingSession',
   'pairingCode',
   'completePair',
   'cancelPair',
@@ -107,6 +106,8 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 
 const source = fs.readFileSync(new URL('../../extension/popup.js', import.meta.url), 'utf8');
+const markup = fs.readFileSync(new URL('../../extension/popup.html', import.meta.url), 'utf8');
+assert.equal(markup.includes('pairingSession'), false, 'pairing session id element should not exist in popup markup');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'popup.js' });
 

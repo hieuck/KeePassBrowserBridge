@@ -90,8 +90,7 @@ namespace KeePassBrowserBridge
 
             PairingSession session = m_pairingService.BeginPairing("Chrome");
             MessageBox.Show("Enter this pairing code in the browser extension:\r\n\r\n" +
-                session.PairingCode + "\r\n\r\n" +
-                "Session ID: " + session.PairingSessionId,
+                session.PairingCode,
                 BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -188,8 +187,7 @@ namespace KeePassBrowserBridge
             if (session == null) return;
 
             MessageBox.Show("Enter this pairing code in the browser extension:\r\n\r\n" +
-                session.PairingCode + "\r\n\r\n" +
-                "Session ID: " + session.PairingSessionId,
+                session.PairingCode,
                 BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 

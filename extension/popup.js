@@ -10,7 +10,6 @@ const elements = {
   listClients: document.getElementById('listClients'),
   clientsPanel: document.getElementById('clientsPanel'),
   pairingPanel: document.getElementById('pairingPanel'),
-  pairingSession: document.getElementById('pairingSession'),
   pairingCode: document.getElementById('pairingCode'),
   completePair: document.getElementById('completePair'),
   cancelPair: document.getElementById('cancelPair'),
@@ -174,7 +173,6 @@ async function refreshState() {
 function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
-  elements.pairingSession.textContent = state.pairingSessionId || '';
   const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
   if (!pairingActive) {
