@@ -4,6 +4,10 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgeContentScriptLoaded = true;
   window.__keepassBrowserBridgeInlineTargets = new WeakSet();
   window.__keepassBrowserBridgeActivePicker = null;
+  window.__keepassBrowserBridgeMutationPrompt = null;
+  window.__keepassBrowserBridgeBootAt = Date.now();
+  window.__keepassBrowserBridgeLastCredentialKey = '';
+  window.__keepassBrowserBridgeLastCredentialAt = 0;
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || message.type !== 'KBB_FILL') {
@@ -22,6 +26,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   });
 
   installInlineFillButtons();
+  restorePendingCredential();
   const observer = new MutationObserver(() => installInlineFillButtons());
   observer.observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('mousedown', (event) => {
@@ -34,7 +39,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   document.addEventListener('click', (event) => {
     const target = event.target;
     if (target && target.closest) {
-      if (target.closest('.kbb-save-prompt, .kbb-inline-picker, .kbb-inline-button')) {
+      if (target.closest('.kbb-save-prompt, .kbb-update-prompt, .kbb-inline-picker, .kbb-inline-button')) {
         return;
       }
       const submit = target.closest('button, input[type="submit"]');
@@ -70,6 +75,16 @@ function captureLoginSubmit(form) {
     return;
   }
 
+  const key = credentialKey(credential);
+  const now = Date.now();
+  if (window.__keepassBrowserBridgeLastCredentialKey === key &&
+      now - window.__keepassBrowserBridgeLastCredentialAt < 2000) {
+    return;
+  }
+
+  window.__keepassBrowserBridgeLastCredentialKey = key;
+  window.__keepassBrowserBridgeLastCredentialAt = now;
+  storePendingCredential(credential);
   window.setTimeout(() => maybePromptSaveLogin(credential), 300);
 }
 
@@ -98,9 +113,10 @@ async function maybePromptSaveLogin(credential) {
   }
 
   try {
+    const pageUrl = credential.url || window.location.href;
     const result = await chrome.runtime.sendMessage({
       type: 'KBB_QUERY_FOR_URL',
-      url: window.location.href
+      url: pageUrl
     });
 
     if (!result || !result.ok) {
@@ -110,13 +126,67 @@ async function maybePromptSaveLogin(credential) {
     const entries = result.response && Array.isArray(result.response.entries)
       ? result.response.entries
       : [];
-    const exists = entries.some((entry) => stringEquals(entry.UserName, credential.userName));
-    if (!exists) {
+    const match = findCredentialMatch(entries, credential);
+    if (!match) {
       showSaveLoginPrompt(credential);
+    } else if (match.Password && match.Password !== credential.password) {
+      showUpdateLoginPrompt(match, credential);
     }
   } catch (error) {
     // Save prompts are opportunistic; manual extension actions surface bridge errors.
   }
+}
+
+function storePendingCredential(credential) {
+  try {
+    window.sessionStorage.setItem('__kbbPendingCredential', JSON.stringify({
+      credential,
+      savedAt: Date.now()
+    }));
+  } catch (error) {
+    // Session storage can be disabled; immediate prompt still runs.
+  }
+}
+
+function restorePendingCredential() {
+  window.setTimeout(() => {
+    try {
+      const raw = window.sessionStorage.getItem('__kbbPendingCredential');
+      if (!raw) return;
+
+      window.sessionStorage.removeItem('__kbbPendingCredential');
+      const pending = JSON.parse(raw);
+      if (!pending || !pending.credential || Date.now() - Number(pending.savedAt || 0) > 2 * 60 * 1000) {
+        return;
+      }
+      if (Number(pending.savedAt || 0) >= window.__keepassBrowserBridgeBootAt) {
+        return;
+      }
+
+      maybePromptSaveLogin(pending.credential);
+    } catch (error) {
+      // Pending credentials are best-effort and should never break the page.
+    }
+  }, 500);
+}
+
+function findCredentialMatch(entries, credential) {
+  if (!entries.length) return null;
+
+  if (credential.userName) {
+    const usernameMatch = entries.find((entry) => stringEquals(entry.UserName, credential.userName));
+    if (usernameMatch) return usernameMatch;
+  }
+
+  return entries.length === 1 ? entries[0] : null;
+}
+
+function credentialKey(credential) {
+  return [
+    credential.url || '',
+    String(credential.userName || '').toLowerCase(),
+    credential.password || ''
+  ].join('\n');
 }
 
 function findPasswordInput() {
@@ -379,7 +449,7 @@ function closeInlinePicker() {
 }
 
 function showSaveLoginPrompt(credential) {
-  closeSaveLoginPrompt();
+  closeMutationPrompt();
 
   const prompt = document.createElement('div');
   prompt.className = 'kbb-save-prompt';
@@ -408,7 +478,7 @@ function showSaveLoginPrompt(credential) {
   dismiss.type = 'button';
   dismiss.textContent = 'Not now';
   applyPromptButtonStyle(dismiss, false);
-  dismiss.addEventListener('click', closeSaveLoginPrompt);
+  dismiss.addEventListener('click', closeMutationPrompt);
 
   const save = document.createElement('button');
   save.type = 'button';
@@ -423,7 +493,7 @@ function showSaveLoginPrompt(credential) {
     });
     if (result && result.ok && result.response && result.response.Success) {
       save.textContent = 'Saved';
-      window.setTimeout(closeSaveLoginPrompt, 900);
+      window.setTimeout(closeMutationPrompt, 900);
     } else {
       save.disabled = false;
       save.textContent = 'Retry';
@@ -436,13 +506,79 @@ function showSaveLoginPrompt(credential) {
   prompt.appendChild(detail);
   prompt.appendChild(actions);
   document.documentElement.appendChild(prompt);
-  window.__keepassBrowserBridgeSavePrompt = prompt;
+  window.__keepassBrowserBridgeMutationPrompt = prompt;
 }
 
-function closeSaveLoginPrompt() {
-  const prompt = window.__keepassBrowserBridgeSavePrompt;
+function showUpdateLoginPrompt(entry, credential) {
+  closeMutationPrompt();
+
+  const prompt = document.createElement('div');
+  prompt.className = 'kbb-update-prompt';
+  applySavePromptStyle(prompt);
+
+  const title = document.createElement('div');
+  title.textContent = 'Update KeePass password?';
+  title.style.fontWeight = '700';
+  title.style.marginBottom = '4px';
+
+  const detail = document.createElement('div');
+  detail.textContent = credential.userName || entry.Title || new URL(credential.url).hostname;
+  detail.style.color = '#667085';
+  detail.style.fontSize = '12px';
+  detail.style.overflow = 'hidden';
+  detail.style.textOverflow = 'ellipsis';
+  detail.style.whiteSpace = 'nowrap';
+
+  const actions = document.createElement('div');
+  actions.style.display = 'flex';
+  actions.style.justifyContent = 'flex-end';
+  actions.style.gap = '8px';
+  actions.style.marginTop = '10px';
+
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.textContent = 'Not now';
+  applyPromptButtonStyle(dismiss, false);
+  dismiss.addEventListener('click', closeMutationPrompt);
+
+  const update = document.createElement('button');
+  update.type = 'button';
+  update.textContent = 'Update';
+  applyPromptButtonStyle(update, true);
+  update.addEventListener('click', async () => {
+    update.disabled = true;
+    update.textContent = 'Updating...';
+    const result = await chrome.runtime.sendMessage({
+      type: 'KBB_UPDATE_LOGIN',
+      login: {
+        entryId: entry.EntryId,
+        url: credential.url,
+        userName: credential.userName,
+        password: credential.password
+      }
+    });
+    if (result && result.ok && result.response && result.response.Success) {
+      update.textContent = 'Updated';
+      window.setTimeout(closeMutationPrompt, 900);
+    } else {
+      update.disabled = false;
+      update.textContent = 'Retry';
+    }
+  });
+
+  actions.appendChild(dismiss);
+  actions.appendChild(update);
+  prompt.appendChild(title);
+  prompt.appendChild(detail);
+  prompt.appendChild(actions);
+  document.documentElement.appendChild(prompt);
+  window.__keepassBrowserBridgeMutationPrompt = prompt;
+}
+
+function closeMutationPrompt() {
+  const prompt = window.__keepassBrowserBridgeMutationPrompt;
   if (prompt && prompt.parentElement) prompt.parentElement.removeChild(prompt);
-  window.__keepassBrowserBridgeSavePrompt = null;
+  window.__keepassBrowserBridgeMutationPrompt = null;
 }
 
 function applySavePromptStyle(prompt) {

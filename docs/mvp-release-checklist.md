@@ -27,6 +27,7 @@ This checks Chrome extension JavaScript syntax, runs the C# tests, and compiles 
 7. Enable Auto-fill in the popup, reload the login page, and confirm the extension fills automatically when exactly one entry matches.
 8. Confirm the inline `K` button appears near the login inputs and fills the form when clicked.
 9. Enter a new username and password that do not match an existing entry, click `K`, confirm the Save prompt, and verify a new KeePass entry is created.
+10. Enter an existing username with a changed password, submit the form, confirm the Update prompt, and verify the existing KeePass entry password is updated without creating a duplicate.
 
 For a stable fill test page, serve the fixture over local HTTP:
 
@@ -42,7 +43,7 @@ Attach these files to the release:
 
 - `KeePassBrowserBridge.dll`
 - `KeePassBrowserBridge.plgx`
-- `KeePassBrowserBridge-chrome-extension.zip`
+- `KeePassBrowserBridge-chrome-extension-<version>.zip`
 
 Create both assets with:
 
@@ -54,7 +55,7 @@ The DLL artifact is the primary end-user install path because KeePass loads it d
 
 The PLGX artifact is created with KeePass' own `--plgx-create` command. Do not create the `.plgx` by manually renaming a ZIP file; KeePass validates and compiles the PLGX format when loading plugins.
 
-The GitHub workflow `.github/workflows/release.yml` packages the Chrome extension. The PLGX artifact is intentionally built locally because creating it requires a KeePass executable and plugin source layout matching the target KeePass installation.
+The GitHub workflow `.github/workflows/release.yml` downloads KeePass, builds the plugin DLL, creates the PLGX artifact, packages the Chrome extension, and uploads both individual artifacts and a combined release bundle.
 
 Keep the release notes short and include:
 

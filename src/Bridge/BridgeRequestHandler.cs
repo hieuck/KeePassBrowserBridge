@@ -48,6 +48,7 @@ namespace KeePassBrowserBridge.Bridge
             if (request.Method == BridgeMethods.ClientStatus) return ClientStatus(request);
             if (request.Method == BridgeMethods.LoginsQuery) return LoginsQuery(request);
             if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
+            if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
             if (request.Method == BridgeMethods.LoginsFillAck) return Success(request, "{}");
 
             return Error(request, "unknown_method", "Unknown method.");
@@ -109,6 +110,13 @@ namespace KeePassBrowserBridge.Bridge
         {
             CreateLoginPayload payload = BridgeJsonSerializer.Deserialize<CreateLoginPayload>(request.Payload);
             CredentialMutationResult result = m_credentialMutationService.Create(m_databaseProvider(), payload);
+            return Success(request, BridgeJsonSerializer.Serialize(result));
+        }
+
+        private BridgeResponse LoginsUpdate(BridgeRequest request)
+        {
+            UpdateLoginPayload payload = BridgeJsonSerializer.Deserialize<UpdateLoginPayload>(request.Payload);
+            CredentialMutationResult result = m_credentialMutationService.Update(m_databaseProvider(), payload);
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 

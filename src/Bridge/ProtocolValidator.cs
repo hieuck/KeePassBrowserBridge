@@ -16,6 +16,7 @@ namespace KeePassBrowserBridge.Bridge
             BridgeMethods.ClientStatus,
             BridgeMethods.LoginsQuery,
             BridgeMethods.LoginsCreate,
+            BridgeMethods.LoginsUpdate,
             BridgeMethods.LoginsFillAck
         };
 

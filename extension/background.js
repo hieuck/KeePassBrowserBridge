@@ -47,6 +47,8 @@ async function handleMessage(message) {
       return queryLoginsForUrl(message.url);
     case 'KBB_CREATE_LOGIN':
       return createLogin(message.login);
+    case 'KBB_UPDATE_LOGIN':
+      return updateLogin(message.login);
     case 'KBB_FILL_LOGIN':
       return fillLogin(message.credential);
     default:
@@ -172,6 +174,18 @@ async function createLogin(login) {
   };
 
   const response = await bridgeCall('logins.create', payload, true);
+  return parsePayload(response);
+}
+
+async function updateLogin(login) {
+  const payload = {
+    EntryId: login && login.entryId ? String(login.entryId) : '',
+    Url: login && login.url ? String(login.url) : '',
+    UserName: login && login.userName ? String(login.userName) : '',
+    Password: login && login.password ? String(login.password) : ''
+  };
+
+  const response = await bridgeCall('logins.update', payload, true);
   return parsePayload(response);
 }
 

@@ -8,6 +8,7 @@ namespace KeePassBrowserBridge.Bridge
         public const string ClientStatus = "client.status";
         public const string LoginsQuery = "logins.query";
         public const string LoginsCreate = "logins.create";
+        public const string LoginsUpdate = "logins.update";
         public const string LoginsFillAck = "logins.fillAck";
     }
 
@@ -87,6 +88,14 @@ namespace KeePassBrowserBridge.Bridge
     public sealed class CreateLoginPayload
     {
         public string Title { get; set; }
+        public string Url { get; set; }
+        public string UserName { get; set; }
+        public string Password { get; set; }
+    }
+
+    public sealed class UpdateLoginPayload
+    {
+        public string EntryId { get; set; }
         public string Url { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }

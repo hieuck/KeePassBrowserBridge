@@ -29,11 +29,13 @@ internal static class Program
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
         CredentialMutationCreatesEntryInDatabase();
+        CredentialMutationUpdatesExistingEntryPassword();
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
+        BridgeHandlerUpdatesLoginForAuthenticatedRequest();
         LoopbackBridgeServerRespondsToHello();
         return 0;
     }
@@ -252,6 +254,27 @@ internal static class Program
         AssertEqual("secret", result.Entry.Password, "created password mismatch");
     }
 
+    private static void CredentialMutationUpdatesExistingEntryPassword()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "new-secret"
+        });
+
+        AssertTrue(result.Success, "credential update should succeed: " + result.Error);
+        AssertTrue(database.Modified, "database should be marked modified after update");
+        AssertEqual(1, (int)database.RootGroup.Entries.UCount, "update should not create a new entry");
+        AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "entry password should be updated");
+        AssertEqual("new-secret", result.Entry.Password, "updated result password mismatch");
+    }
+
     private static void BridgeHandlerHelloDoesNotRequireAuthentication()
     {
         BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
@@ -325,6 +348,29 @@ internal static class Program
         AssertTrue(result.Success, "authenticated logins.create should create entry: " + result.Error);
         AssertEqual(1, (int)database.RootGroup.Entries.UCount, "logins.create should add one entry");
         AssertEqual("alice", result.Entry.UserName, "logins.create username mismatch");
+    }
+
+    private static void BridgeHandlerUpdatesLoginForAuthenticatedRequest()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        BridgeRequestHandler handler = CreateHandler(database, store);
+        string payload = BridgeJsonSerializer.Serialize(new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "new-secret"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsUpdate, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        CredentialMutationResult result = BridgeJsonSerializer.Deserialize<CredentialMutationResult>(response.Payload);
+
+        AssertTrue(response.Success, "authenticated logins.update should return bridge success: " + response.Error);
+        AssertTrue(result.Success, "authenticated logins.update should update entry: " + result.Error);
+        AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "logins.update password mismatch");
     }
 
     private static void LoopbackBridgeServerRespondsToHello()
