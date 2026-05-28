@@ -67,6 +67,7 @@ const ids = [
   'pairingSession',
   'pairingCode',
   'completePair',
+  'cancelPair',
   'queryLogins',
   'currentUrl',
   'results',
@@ -84,7 +85,7 @@ const fakeDocument = {
   addEventListener() {},
   querySelectorAll(selector) {
     if (selector === 'button') {
-      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.completePair, elements.queryLogins];
+      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.completePair, elements.cancelPair, elements.queryLogins];
     }
 
     return [];
@@ -128,5 +129,14 @@ assert.equal(elements.completePair.disabled, true, 'confirm should stay disabled
 elements.pairingCode.value = '123456';
 elements.pairingCode.dispatch('input');
 assert.equal(elements.completePair.disabled, false, 'confirm should enable for a six digit code');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  pairingSessionId: 'stale-session',
+  autoFillEnabled: false
+});
+
+assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'paired popup should hide stale pairing sessions');
 
 console.log('Popup tests passed.');

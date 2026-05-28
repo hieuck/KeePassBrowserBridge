@@ -13,6 +13,7 @@ const elements = {
   pairingSession: document.getElementById('pairingSession'),
   pairingCode: document.getElementById('pairingCode'),
   completePair: document.getElementById('completePair'),
+  cancelPair: document.getElementById('cancelPair'),
   queryLogins: document.getElementById('queryLogins'),
   currentUrl: document.getElementById('currentUrl'),
   results: document.getElementById('results'),
@@ -30,6 +31,7 @@ function init() {
   elements.autoFill.addEventListener('change', () => runAction(setAutoFill));
   elements.listClients.addEventListener('click', () => runAction(listClients));
   elements.completePair.addEventListener('click', () => runAction(completePair));
+  elements.cancelPair.addEventListener('click', () => runAction(cancelPair));
   elements.pairingCode.addEventListener('input', syncPairingCodeState);
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
 
@@ -113,6 +115,13 @@ async function completePair() {
   setMessage('Browser paired with KeePass.');
 }
 
+async function cancelPair() {
+  const state = await send({ type: 'KBB_PAIR_CANCEL' });
+  elements.pairingCode.value = '';
+  renderState(state);
+  setMessage(state.paired ? 'Ready to query KeePass.' : 'Pairing cancelled.');
+}
+
 async function queryLogins() {
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
   elements.currentUrl.textContent = result.url || '';
@@ -166,8 +175,11 @@ function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
   elements.pairingSession.textContent = state.pairingSessionId || '';
-  const pairingActive = Boolean(state.pairingSessionId);
+  const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
+  if (!pairingActive) {
+    elements.pairingCode.value = '';
+  }
   setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');
   syncPairingCodeState();
   if (pairingActive) {

@@ -79,4 +79,11 @@ await assert.rejects(
 
 assert.equal(storage.pairingSessionId, '', 'expired pairing failure should clear the stored pairing session');
 
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
+storage.pairingSessionId = 'stale-session';
+const pairedState = await sandbox.getState();
+assert.equal(pairedState.paired, true);
+assert.equal(pairedState.pairingSessionId, '', 'paired state should not expose a stale pairing session');
+
 console.log('Background tests passed.');

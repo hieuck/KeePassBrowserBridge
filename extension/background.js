@@ -39,6 +39,8 @@ async function handleMessage(message) {
       return pairBegin();
     case 'KBB_PAIR_COMPLETE':
       return pairComplete(message.pairingCode);
+    case 'KBB_PAIR_CANCEL':
+      return pairCancel();
     case 'KBB_STATUS':
       return bridgeCall('client.status', {}, true);
     case 'KBB_LIST_CLIENTS':
@@ -62,11 +64,16 @@ async function handleMessage(message) {
 
 async function getState() {
   const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'autoFillEnabled']);
+  const paired = Boolean(state.clientId);
+  if (paired && state.pairingSessionId) {
+    await chrome.storage.local.set({ pairingSessionId: '' });
+  }
+
   return {
     endpoint: state.endpoint || DEFAULT_ENDPOINT,
-    paired: Boolean(state.clientId),
+    paired,
     clientId: state.clientId || '',
-    pairingSessionId: state.pairingSessionId || '',
+    pairingSessionId: paired ? '' : (state.pairingSessionId || ''),
     autoFillEnabled: Boolean(state.autoFillEnabled)
   };
 }
@@ -150,6 +157,11 @@ async function pairComplete(pairingCode) {
     sharedSecret: payload.SharedSecret,
     pairingSessionId: ''
   });
+  return getState();
+}
+
+async function pairCancel() {
+  await chrome.storage.local.set({ pairingSessionId: '' });
   return getState();
 }
 

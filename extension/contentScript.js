@@ -484,7 +484,7 @@ function showInlinePicker(button, entries) {
   header.style.font = '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   picker.appendChild(header);
 
-  for (const entry of entries.slice(0, 8)) {
+  for (const entry of entries) {
     const item = document.createElement('button');
     item.type = 'button';
     item.setAttribute('role', 'menuitem');
@@ -518,16 +518,6 @@ function showInlinePicker(button, entries) {
     });
 
     picker.appendChild(item);
-  }
-
-  if (entries.length > 8) {
-    const footer = document.createElement('div');
-    footer.textContent = `${entries.length - 8} more hidden`;
-    footer.style.padding = '7px 10px';
-    footer.style.color = '#667085';
-    footer.style.font = '12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    footer.style.borderTop = '1px solid #d7dde5';
-    picker.appendChild(footer);
   }
 
   document.documentElement.appendChild(picker);
