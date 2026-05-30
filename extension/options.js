@@ -21,7 +21,9 @@ const SENSITIVE_SETTING_KEYS = [
   'clientId',
   'sharedSecret',
   'pairingSessionId',
-  'pairingStartedAt'
+  'pairingStartedAt',
+  'locked',
+  'lastCredentialActivityAt'
 ];
 
 let siteOverrides = [];

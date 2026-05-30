@@ -335,7 +335,9 @@ test.describe('options page settings', () => {
       clientId: 'client-secret-id',
       sharedSecret: 'super-secret-hmac-key',
       pairingSessionId: 'pairing-session',
-      pairingStartedAt: 1779989000000
+      pairingStartedAt: 1779989000000,
+      locked: true,
+      lastCredentialActivityAt: 1779989200000
     });
     await page.addInitScript(() => {
       window.__kbbExportedSettingsText = '';
@@ -364,6 +366,8 @@ test.describe('options page settings', () => {
     expect(exported).not.toHaveProperty('sharedSecret');
     expect(exported).not.toHaveProperty('pairingSessionId');
     expect(exported).not.toHaveProperty('pairingStartedAt');
+    expect(exported).not.toHaveProperty('locked');
+    expect(exported).not.toHaveProperty('lastCredentialActivityAt');
   });
 
   test('imports settings without accepting pairing secrets', async ({ page }) => {
@@ -379,7 +383,9 @@ test.describe('options page settings', () => {
         clientId: 'imported-client-id',
         sharedSecret: 'imported-shared-secret',
         pairingSessionId: 'imported-pairing-session',
-        pairingStartedAt: 1779989000000
+        pairingStartedAt: 1779989000000,
+        locked: true,
+        lastCredentialActivityAt: 1779989200000
       }))
     });
 
@@ -391,6 +397,8 @@ test.describe('options page settings', () => {
     expect(stored).not.toHaveProperty('sharedSecret');
     expect(stored).not.toHaveProperty('pairingSessionId');
     expect(stored).not.toHaveProperty('pairingStartedAt');
+    expect(stored).not.toHaveProperty('locked');
+    expect(stored).not.toHaveProperty('lastCredentialActivityAt');
   });
 
   test('rejects imported settings with a non-loopback endpoint', async ({ page }) => {
