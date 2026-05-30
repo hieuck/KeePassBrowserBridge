@@ -10,6 +10,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
 $srcDir = (Resolve-Path (Join-Path $repoRoot "src")).Path
 $extensionDir = (Resolve-Path (Join-Path $repoRoot "extension")).Path
+$updateDir = (Resolve-Path (Join-Path $repoRoot "update")).Path
 
 if ([string]::IsNullOrWhiteSpace($KeePassExe)) {
     $KeePassExe = Join-Path $repoRoot "..\..\KeePass.exe"
@@ -118,6 +119,21 @@ if (-not (Test-Path -LiteralPath $csc)) {
 }
 
 $pluginDllTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge.dll"
+$updateInfoSource = Join-Path $updateDir "versioninfo.txt"
+$expectedUpdateInfo = ":`nKeePass Browser Bridge:$version`n:`n"
+if (-not (Test-Path -LiteralPath $updateInfoSource)) {
+    throw "Cannot find KeePass update info file: $updateInfoSource"
+}
+
+$actualUpdateInfo = (Get-Content -LiteralPath $updateInfoSource -Raw).Replace("`r`n", "`n")
+if ($actualUpdateInfo -ne $expectedUpdateInfo) {
+    throw "KeePass update info file must contain the current plugin version $version."
+}
+
+$updateInfoTarget = Join-Path $ArtifactsDir "versioninfo.txt"
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($updateInfoTarget, $expectedUpdateInfo, $utf8NoBom)
+
 $sources = @(
     (Join-Path $srcDir "Bridge\BridgeAuthentication.cs"),
     (Join-Path $srcDir "Bridge\BridgeClock.cs"),
@@ -213,3 +229,4 @@ Write-Host " - $pluginDllTarget"
 Write-Host " - $plgxTarget"
 Write-Host " - $chromeExtensionTarget"
 Write-Host " - $firefoxExtensionTarget"
+Write-Host " - $updateInfoTarget"

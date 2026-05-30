@@ -17,6 +17,11 @@ namespace KeePassBrowserBridge
         private LoopbackBridgeServer m_server;
         private Form m_pairingDialog;
 
+        public override string UpdateUrl
+        {
+            get { return BridgeSettings.UpdateInfoUrl; }
+        }
+
         public override bool Initialize(IPluginHost host)
         {
             if (host == null) return false;

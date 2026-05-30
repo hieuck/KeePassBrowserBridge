@@ -25,6 +25,7 @@ KeePass Browser Bridge has two release artifacts:
 - Site-specific auto-fill and auto-submit overrides.
 - Trusted browser listing and revocation.
 - About panel and GitHub release update check.
+- KeePass plugin update checking through the built-in KeePass updater.
 - Chrome and Firefox extension packaging.
 
 ## Security Model
@@ -70,8 +71,11 @@ This creates release artifacts under `%TEMP%\KeePassBrowserBridge-artifacts\` by
 - `KeePassBrowserBridge.plgx`
 - `KeePassBrowserBridge-chrome-extension-0.9.0.zip`
 - `KeePassBrowserBridge-firefox-extension-0.9.0.zip`
+- `versioninfo.txt`
 
 Keeping generated DLL/PLGX outputs outside this repository matters when the repository itself is inside KeePass' `Plugins` directory, because KeePass scans plugin subdirectories on startup.
+
+`versioninfo.txt` is the KeePass plugin update metadata. Publish the same content at the URL configured by the plugin's `UpdateUrl` property so KeePass can report newer plugin releases from its built-in update check.
 
 ## Repository Layout
 

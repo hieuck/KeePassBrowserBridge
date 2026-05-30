@@ -1,0 +1,3 @@
+:
+KeePass Browser Bridge:0.9.0
+:
