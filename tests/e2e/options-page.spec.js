@@ -215,6 +215,29 @@ test.describe('options page settings', () => {
     expect(stored.endpoint).toBe('http://127.0.0.1:19455/bridge');
   });
 
+  test('rejects invalid security timeout settings', async ({ page }) => {
+    await installOptionsStorage(page, {
+      autoLockTimeoutMinutes: 5,
+      clipboardClearDelay: 30
+    });
+
+    await page.goto('/extension/options.html');
+    await page.locator('#autoLockTimeoutMinutes').fill('-1');
+    await page.locator('#saveSettings').click();
+
+    await expect(page.locator('#message')).toHaveText('Auto-lock timeout must be between 0 and 1440 minutes.');
+    await expect(page.locator('#message')).toHaveClass(/error/);
+
+    await page.locator('#autoLockTimeoutMinutes').fill('15');
+    await page.locator('#clipboardClearDelay').fill('301');
+    await page.locator('#saveSettings').click();
+
+    await expect(page.locator('#message')).toHaveText('Clipboard clear delay must be between 0 and 300 seconds.');
+    const stored = await page.evaluate(() => window.__kbbOptionsStore);
+    expect(stored.autoLockTimeoutMinutes).toBe(5);
+    expect(stored.clipboardClearDelay).toBe(30);
+  });
+
   test('resets settings to defaults after confirmation', async ({ page }) => {
     await installOptionsStorage(page, {
       endpoint: 'http://127.0.0.1:19456/bridge',

@@ -150,8 +150,18 @@ function saveSettings() {
       regexUrlMatching: elements.regexUrlMatching.checked,
       showPasswordsInPopup: elements.showPasswordsInPopup.checked,
       notificationsEnabled: elements.notificationsEnabled.checked,
-      autoLockTimeoutMinutes: parseInt(elements.autoLockTimeoutMinutes.value, 10),
-      clipboardClearDelay: parseInt(elements.clipboardClearDelay.value, 10),
+      autoLockTimeoutMinutes: normalizeIntegerSetting(
+        elements.autoLockTimeoutMinutes.value,
+        0,
+        1440,
+        'Auto-lock timeout must be between 0 and 1440 minutes.'
+      ),
+      clipboardClearDelay: normalizeIntegerSetting(
+        elements.clipboardClearDelay.value,
+        0,
+        300,
+        'Clipboard clear delay must be between 0 and 300 seconds.'
+      ),
       debugMode: elements.debugMode.checked,
       siteOverrides: normalizeSiteOverrides(siteOverrides)
     };
@@ -181,6 +191,20 @@ function normalizeBridgeEndpoint(endpoint) {
   }
 
   return url.toString();
+}
+
+function normalizeIntegerSetting(value, min, max, errorMessage) {
+  const trimmed = String(value || '').trim();
+  if (!/^\d+$/.test(trimmed)) {
+    throw new Error(errorMessage);
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    throw new Error(errorMessage);
+  }
+
+  return parsed;
 }
 
 async function checkBridgeStatus() {
