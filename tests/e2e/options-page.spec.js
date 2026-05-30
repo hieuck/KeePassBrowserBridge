@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 async function installOptionsStorage(page, initial = {}) {
   await page.addInitScript((initialSettings) => {
     const store = { ...initialSettings };
+    const bridgeHelloFails = Boolean(store.__bridgeHelloFails);
+    delete store.__bridgeHelloFails;
     const messages = [];
     const trustedClients = [
       {
@@ -25,6 +27,23 @@ async function installOptionsStorage(page, initial = {}) {
       runtime: {
         sendMessage(message) {
           messages.push(message);
+          if (message.type === 'KBB_HELLO') {
+            if (bridgeHelloFails) {
+              return Promise.resolve({
+                ok: false,
+                error: 'Failed to fetch'
+              });
+            }
+
+            return Promise.resolve({
+              ok: true,
+              response: {
+                ProtocolVersion: 1,
+                Success: true
+              }
+            });
+          }
+
           if (message.type === 'KBB_LIST_CLIENTS') {
             return Promise.resolve({
               ok: true,
@@ -148,6 +167,33 @@ test.describe('options page settings', () => {
       clipboardClearDelay: 45,
       debugMode: true
     });
+  });
+
+  test('checks bridge connectivity from settings', async ({ page }) => {
+    await installOptionsStorage(page);
+
+    await page.goto('/extension/options.html');
+    await expect(page.locator('#bridgeStatus')).toHaveText('Not checked');
+    await page.locator('#checkBridgeStatus').click();
+
+    await expect(page.locator('#bridgeStatus')).toHaveText('Reachable');
+    await expect(page.locator('#bridgeStatus')).toHaveClass(/success/);
+    await expect(page.locator('#message')).toHaveText('KeePass bridge is reachable.');
+    const messages = await page.evaluate(() => window.__kbbOptionsMessages.map((message) => message.type));
+    expect(messages).toContain('KBB_HELLO');
+  });
+
+  test('reports unavailable bridge from settings', async ({ page }) => {
+    await installOptionsStorage(page, {
+      __bridgeHelloFails: true
+    });
+
+    await page.goto('/extension/options.html');
+    await page.locator('#checkBridgeStatus').click();
+
+    await expect(page.locator('#bridgeStatus')).toHaveText('Unavailable');
+    await expect(page.locator('#bridgeStatus')).toHaveClass(/error/);
+    await expect(page.locator('#message')).toHaveText('KeePass bridge is unavailable: Failed to fetch');
   });
 
   test('resets settings to defaults after confirmation', async ({ page }) => {

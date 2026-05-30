@@ -26,6 +26,8 @@ let siteOverrides = [];
 const elements = {
   themeToggle: document.getElementById('themeToggle'),
   bridgeEndpoint: document.getElementById('bridgeEndpoint'),
+  bridgeStatus: document.getElementById('bridgeStatus'),
+  checkBridgeStatus: document.getElementById('checkBridgeStatus'),
   theme: document.getElementById('theme'),
   autoFillEnabled: document.getElementById('autoFillEnabled'),
   autoSubmitEnabled: document.getElementById('autoSubmitEnabled'),
@@ -67,6 +69,7 @@ function init() {
   elements.importFile.addEventListener('change', importSettings);
   elements.resetSettings.addEventListener('click', resetSettings);
   elements.addSiteOverride.addEventListener('click', addSiteOverride);
+  elements.checkBridgeStatus.addEventListener('click', () => runAction(checkBridgeStatus));
   elements.refreshTrustedBrowsers.addEventListener('click', () => runAction(listTrustedBrowsers));
   elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
   
@@ -149,6 +152,24 @@ function saveSettings() {
       applyTheme(settings.theme);
     }
   });
+}
+
+async function checkBridgeStatus() {
+  setBridgeStatus('Checking', '');
+  try {
+    await send({ type: 'KBB_HELLO' });
+    setBridgeStatus('Reachable', 'success');
+    showMessage('KeePass bridge is reachable.', 'success');
+  } catch (error) {
+    setBridgeStatus('Unavailable', 'error');
+    throw new Error(`KeePass bridge is unavailable: ${error && error.message ? error.message : String(error)}`);
+  }
+}
+
+function setBridgeStatus(text, kind) {
+  elements.bridgeStatus.textContent = text;
+  elements.bridgeStatus.classList.toggle('success', kind === 'success');
+  elements.bridgeStatus.classList.toggle('error', kind === 'error');
 }
 
 function addSiteOverride() {

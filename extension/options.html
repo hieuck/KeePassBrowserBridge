@@ -21,6 +21,10 @@
       <div class="setting-group">
         <label for="bridgeEndpoint">Bridge Endpoint</label>
         <input id="bridgeEndpoint" type="url" placeholder="http://127.0.0.1:19455/bridge">
+        <div class="bridge-status-row">
+          <span id="bridgeStatus" class="status-pill">Not checked</span>
+          <button id="checkBridgeStatus" type="button" class="secondary">Check bridge</button>
+        </div>
         <p class="help-text">The local address where KeePass plugin listens for requests.</p>
       </div>
 
