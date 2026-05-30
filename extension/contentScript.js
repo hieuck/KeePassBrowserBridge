@@ -760,6 +760,7 @@ function showInlineErrorPicker(button, messageText) {
 
   error.appendChild(title);
   error.appendChild(hint);
+  error.appendChild(createInlinePickerCloseButton());
   picker.appendChild(error);
   document.documentElement.appendChild(picker);
   positionInlinePicker(button, picker);
@@ -790,10 +791,34 @@ function showInlineEmptyPicker(button) {
 
   empty.appendChild(title);
   empty.appendChild(hint);
+  empty.appendChild(createInlinePickerCloseButton());
   picker.appendChild(empty);
   document.documentElement.appendChild(picker);
   positionInlinePicker(button, picker);
   window.__keepassBrowserBridgeActivePicker = picker;
+}
+function createInlinePickerCloseButton() {
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "kbb-inline-picker-close";
+  close.textContent = "Close";
+  close.style.marginTop = "8px";
+  close.style.width = "100%";
+  close.style.border = "1px solid #d7dde5";
+  close.style.borderRadius = "6px";
+  close.style.background = "#ffffff";
+  close.style.color = "#1f2933";
+  close.style.padding = "6px 8px";
+  close.style.font =
+    '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  close.style.cursor = "pointer";
+  close.addEventListener("mousedown", (event) => event.preventDefault());
+  close.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeInlinePicker();
+  });
+  return close;
 }
 function showInlinePicker(button, entries) {
   closeInlinePicker();

@@ -466,6 +466,8 @@ test.describe('content script form detection', () => {
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
     await expect(page.locator('.kbb-inline-picker-empty')).toContainText('No KeePass logins found for this page.');
     await expect(page.locator('.kbb-inline-picker-empty')).toContainText('Enter a username and password, then submit the form to save a new KeePass entry.');
+    await page.locator('.kbb-inline-picker-close').click();
+    await expect(page.locator('.kbb-inline-picker')).toHaveCount(0);
   });
 
   test('inline picker explains KeePass query errors at the field', async ({ page }) => {
@@ -488,6 +490,8 @@ test.describe('content script form detection', () => {
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
     await expect(page.locator('.kbb-inline-picker-error')).toContainText('KeePass Bridge is locked.');
     await expect(page.locator('.kbb-inline-picker-error')).toContainText('Open the extension popup to unlock or pair this browser.');
+    await page.locator('.kbb-inline-picker-close').click();
+    await expect(page.locator('.kbb-inline-picker')).toHaveCount(0);
   });
 
   test('inline picker can fill a selected password field action', async ({ page }) => {
