@@ -66,6 +66,12 @@ namespace KeePassBrowserBridge
             clientsItem.Click += OnTrustedBrowsers;
             root.DropDownItems.Add(clientsItem);
 
+            root.DropDownItems.Add(new ToolStripSeparator());
+
+            ToolStripMenuItem aboutItem = new ToolStripMenuItem("About...");
+            aboutItem.Click += OnAbout;
+            root.DropDownItems.Add(aboutItem);
+
             return root;
         }
 
@@ -104,6 +110,15 @@ namespace KeePassBrowserBridge
             if (m_trustedClients == null) return;
 
             using (Form dialog = CreateTrustedBrowsersDialog())
+            {
+                IWin32Window owner = (m_host == null) ? null : m_host.MainWindow;
+                dialog.ShowDialog(owner);
+            }
+        }
+
+        private void OnAbout(object sender, EventArgs e)
+        {
+            using (Form dialog = CreateAboutDialog())
             {
                 IWin32Window owner = (m_host == null) ? null : m_host.MainWindow;
                 dialog.ShowDialog(owner);
@@ -454,6 +469,64 @@ namespace KeePassBrowserBridge
             dialog.AcceptButton = revoke;
             dialog.CancelButton = close;
 
+            return dialog;
+        }
+
+        private Form CreateAboutDialog()
+        {
+            Form dialog = new Form();
+            dialog.Text = "About " + BridgeSettings.ProductName;
+            dialog.Width = 560;
+            dialog.Height = 330;
+            dialog.MinimizeBox = false;
+            dialog.MaximizeBox = false;
+            dialog.StartPosition = FormStartPosition.CenterParent;
+            dialog.ShowInTaskbar = false;
+
+            TableLayoutPanel layout = new TableLayoutPanel();
+            layout.Dock = DockStyle.Fill;
+            layout.ColumnCount = 1;
+            layout.RowCount = 3;
+            layout.Padding = new Padding(12);
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+
+            Label title = new Label();
+            title.Dock = DockStyle.Fill;
+            title.Text = BridgeSettings.ProductName + " " + BridgeSettings.PluginVersion;
+            title.Font = new System.Drawing.Font(title.Font, System.Drawing.FontStyle.Bold);
+
+            string status = (m_server != null && m_server.IsRunning) ? "Running" : "Stopped";
+            string endpoint = "http://127.0.0.1:" + GetPort() + "/bridge";
+            TextBox details = new TextBox();
+            details.Dock = DockStyle.Fill;
+            details.Multiline = true;
+            details.ReadOnly = true;
+            details.ScrollBars = ScrollBars.Vertical;
+            details.Text =
+                "Version: " + BridgeSettings.PluginVersion + "\r\n" +
+                "Bridge endpoint: " + endpoint + "\r\n" +
+                "Server status: " + status + "\r\n" +
+                "Update metadata: " + BridgeSettings.UpdateInfoUrl + "\r\n\r\n" +
+                "Install exactly one KeePassBrowserBridge plugin artifact in the KeePass Plugins directory. Duplicate DLL/PLGX artifacts can cause port conflicts.";
+
+            FlowLayoutPanel actions = new FlowLayoutPanel();
+            actions.Dock = DockStyle.Fill;
+            actions.FlowDirection = FlowDirection.RightToLeft;
+            actions.WrapContents = false;
+
+            Button close = new Button();
+            close.Text = "Close";
+            close.Width = 96;
+            close.DialogResult = DialogResult.Cancel;
+            actions.Controls.Add(close);
+
+            layout.Controls.Add(title, 0, 0);
+            layout.Controls.Add(details, 0, 1);
+            layout.Controls.Add(actions, 0, 2);
+            dialog.Controls.Add(layout);
+            dialog.CancelButton = close;
             return dialog;
         }
 

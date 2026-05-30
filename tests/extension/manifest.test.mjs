@@ -44,6 +44,11 @@ assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersio
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
 assert.equal(bridgeSettings.includes(`PluginVersion = "${manifest.version}"`), true, 'bridge-reported plugin version should match extension release version');
 assert.equal(pluginExt.includes('public override string UpdateUrl'), true, 'plugin should expose a KeePass update URL');
+assert.equal(pluginExt.includes('new ToolStripMenuItem("About...")'), true, 'plugin menu should expose an About dialog');
+assert.equal(pluginExt.includes('CreateAboutDialog()'), true, 'plugin should build a KeePass-side About dialog');
+assert.equal(pluginExt.includes('BridgeSettings.PluginVersion'), true, 'plugin About dialog should display plugin version');
+assert.equal(pluginExt.includes('BridgeSettings.UpdateInfoUrl'), true, 'plugin About dialog should display update metadata URL');
+assert.equal(pluginExt.includes('http://127.0.0.1:" + GetPort() + "/bridge'), true, 'plugin About dialog should display the active bridge endpoint');
 assert.equal(bridgeSettings.includes('https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt'), true, 'plugin update URL should point to the public version info file');
 assert.equal(updateInfo.replace(/\r\n/g, '\n'), `:\nKeePass Browser Bridge:${manifest.version}\n:\n`, 'KeePass update info should use the plugin title and current version');
 assert.equal(releaseScript.includes('versioninfo.txt'), true, 'release script should emit the KeePass update info artifact');
