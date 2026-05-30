@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "KeePass Browser Bridge",
   "description": "Fill browser logins from KeePass through a local bridge plugin.",
-  "version": "0.3.0",
+  "version": "0.9.0",
   "browser_specific_settings": {
     "gecko": {
       "id": "kbb@keepass.local",
