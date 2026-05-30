@@ -387,4 +387,27 @@ test.describe('options page settings', () => {
     expect(stored).not.toHaveProperty('pairingSessionId');
     expect(stored).not.toHaveProperty('pairingStartedAt');
   });
+
+  test('rejects imported settings with a non-loopback endpoint', async ({ page }) => {
+    await installOptionsStorage(page, {
+      endpoint: 'http://127.0.0.1:19455/bridge',
+      autoFillEnabled: true
+    });
+
+    await page.goto('/extension/options.html');
+    await page.locator('#importFile').setInputFiles({
+      name: 'kbb-settings.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        endpoint: 'https://evil.example/bridge',
+        autoFillEnabled: false
+      }))
+    });
+
+    await expect(page.locator('#message')).toHaveText('Failed to import settings: Bridge endpoint must be an http://127.0.0.1 URL.');
+    await expect(page.locator('#message')).toHaveClass(/error/);
+    const stored = await page.evaluate(() => window.__kbbOptionsStore);
+    expect(stored.endpoint).toBe('http://127.0.0.1:19455/bridge');
+    expect(stored.autoFillEnabled).toBe(true);
+  });
 });

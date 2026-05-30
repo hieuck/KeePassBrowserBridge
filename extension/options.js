@@ -389,13 +389,13 @@ function importSettings(event) {
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      const settings = sanitizePortableSettings(JSON.parse(e.target.result));
+      const settings = sanitizePortableSettings(JSON.parse(e.target.result), { validateEndpoint: true });
       chrome.storage.local.set(settings, () => {
         loadSettings();
         showMessage('Settings imported successfully!', 'success');
       });
     } catch (error) {
-      showMessage('Failed to import settings: Invalid JSON file', 'error');
+      showMessage(`Failed to import settings: ${error && error.message ? error.message : 'Invalid JSON file'}`, 'error');
     }
   };
   reader.readAsText(file);
@@ -404,10 +404,14 @@ function importSettings(event) {
   elements.importFile.value = '';
 }
 
-function sanitizePortableSettings(settings) {
+function sanitizePortableSettings(settings, options = {}) {
   const sanitized = { ...(settings || {}) };
   for (const key of SENSITIVE_SETTING_KEYS) {
     delete sanitized[key];
+  }
+
+  if (options.validateEndpoint && Object.prototype.hasOwnProperty.call(sanitized, 'endpoint')) {
+    sanitized.endpoint = normalizeBridgeEndpoint(sanitized.endpoint);
   }
 
   return sanitized;
