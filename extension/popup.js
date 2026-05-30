@@ -265,6 +265,15 @@ async function listClients() {
 }
 
 async function revokeClient(client) {
+  const clientName = client && client.ClientName ? client.ClientName : 'Browser';
+  const confirmed = window.confirm(
+    `Revoke browser "${clientName}"?\n\nIt will need to pair again before accessing KeePass.`
+  );
+  if (!confirmed) {
+    setMessage('Revoke cancelled.');
+    return;
+  }
+
   const result = await send({ type: 'KBB_REVOKE_CLIENT', clientId: client.ClientId });
   if (!result || !result.Revoked) {
     throw new Error('Browser was not revoked.');

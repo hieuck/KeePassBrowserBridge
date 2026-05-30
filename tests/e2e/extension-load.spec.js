@@ -865,7 +865,23 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('.client-title')).toContainText(['This Chrome', 'Old Browser']);
     await expect(page.locator('#message')).toHaveText('2 trusted browser(s).');
 
-    await page.locator('.client', { hasText: 'Old Browser' }).locator('button', { hasText: 'Revoke' }).click();
+    const oldBrowserRevoke = page.locator('.client', { hasText: 'Old Browser' }).locator('button', { hasText: 'Revoke' });
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Revoke browser "Old Browser"?');
+      await dialog.dismiss();
+    });
+    await oldBrowserRevoke.click();
+
+    await expect(page.locator('#message')).toHaveText('Revoke cancelled.');
+    await expect.poll(() => page.evaluate(() =>
+      window.__kbbPopupMessages.filter((message) => message.type === 'KBB_REVOKE_CLIENT')
+    )).toEqual([]);
+
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Revoke browser "Old Browser"?');
+      await dialog.accept();
+    });
+    await oldBrowserRevoke.click();
 
     await expect(page.locator('#message')).toHaveText('Browser revoked.');
     const revokeMessage = await page.evaluate(() => window.__kbbPopupMessages.find(
