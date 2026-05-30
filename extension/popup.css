@@ -461,6 +461,32 @@ h1 {
   white-space: nowrap;
 }
 
+.custom-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.field-row-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.custom-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.custom-field-row button {
+  height: 34px;
+  white-space: nowrap;
+}
+
 .message {
   min-height: 18px;
   color: var(--muted);

@@ -504,21 +504,17 @@ function addOptionalSecret(payload, name, value) {
 }
 
 function addOptionalCustomField(payload, form) {
-  const nameInput = form.querySelector('[name="customFieldName"]');
-  const valueInput = form.querySelector('[name="customFieldValue"]');
-  const name = String(nameInput ? nameInput.value : '').trim();
-  const value = String(valueInput ? valueInput.value : '').trim();
-  if (!name || !value) {
-    return;
-  }
-
-  payload.customFields = [
-    {
-      name,
-      value,
+  const fields = Array.from(form.querySelectorAll('.custom-field-row'))
+    .map((row) => ({
+      name: String(row.querySelector('[name="customFieldName"]')?.value || '').trim(),
+      value: String(row.querySelector('[name="customFieldValue"]')?.value || '').trim(),
       isProtected: false
-    }
-  ];
+    }))
+    .filter((field) => field.name && field.value);
+
+  if (fields.length) {
+    payload.customFields = fields;
+  }
 }
 
 async function filterCurrentLogins() {
@@ -840,8 +836,12 @@ function showCreateForm(url, pageCredential) {
       </div>
     </label>
     <label>TOTP secret<input name="otp" type="password" spellcheck="false" autocomplete="off" placeholder="Base32 or otpauth:// URI"></label>
-    <label>Custom field name<input name="customFieldName" type="text" spellcheck="false" placeholder="Tenant"></label>
-    <label>Custom field value<input name="customFieldValue" type="text" spellcheck="false" placeholder="production"></label>
+    <div class="custom-fields" data-custom-fields>
+      <div class="field-row-heading">
+        <span>Custom fields</span>
+        <button type="button" class="secondary" data-action="add-custom-field">Add field</button>
+      </div>
+    </div>
     <div class="login-actions">
       <button type="submit">✓ Save</button>
       <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>
@@ -862,6 +862,7 @@ function showCreateForm(url, pageCredential) {
     passwordInput.focus();
     setMessage('Generated a new password. Save to create the KeePass entry.');
   });
+  initializeCustomFields(form, []);
   wirePasswordVisibilityToggle(form);
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -929,8 +930,12 @@ function showEditForm(item, entry) {
     </label>
     <label>TOTP secret<input name="otp" type="password" spellcheck="false" autocomplete="off" placeholder="Leave blank to keep existing"></label>
     <label><input name="clearOtp" type="checkbox"> Clear TOTP secret</label>
-    <label>Custom field name<input name="customFieldName" type="text" spellcheck="false" placeholder="Tenant"></label>
-    <label>Custom field value<input name="customFieldValue" type="text" spellcheck="false" placeholder="production"></label>
+    <div class="custom-fields" data-custom-fields>
+      <div class="field-row-heading">
+        <span>Custom fields</span>
+        <button type="button" class="secondary" data-action="add-custom-field">Add field</button>
+      </div>
+    </div>
     <div class="login-actions">
       <button type="submit">✓ Save</button>
       <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>
@@ -942,9 +947,7 @@ function showEditForm(item, entry) {
   form.querySelector('[name="userName"]').value = entry.UserName || '';
   form.querySelector('[name="url"]').value = entry.Url || '';
   form.querySelector('[name="password"]').value = entry.Password || '';
-  const customField = firstEditableCustomField(entry);
-  form.querySelector('[name="customFieldName"]').value = customField ? customField.Name : '';
-  form.querySelector('[name="customFieldValue"]').value = customField ? customField.Value : '';
+  initializeCustomFields(form, editableCustomFields(entry));
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     runAction(() => updateLogin(entry, form));
@@ -962,9 +965,45 @@ function showEditForm(item, entry) {
   item.append(form);
 }
 
-function firstEditableCustomField(entry) {
+function editableCustomFields(entry) {
   const fields = entry && Array.isArray(entry.CustomFields) ? entry.CustomFields : [];
-  return fields.find((field) => field && !field.IsProtected && field.Name && field.Value) || null;
+  return fields.filter((field) => field && !field.IsProtected && field.Name && field.Value);
+}
+
+function initializeCustomFields(form, fields) {
+  const container = form.querySelector('[data-custom-fields]');
+  if (!container) return;
+  const values = fields && fields.length ? fields : [{ Name: '', Value: '' }];
+  for (const field of values) {
+    appendCustomFieldRow(container, field);
+  }
+
+  const add = form.querySelector('[data-action="add-custom-field"]');
+  if (add) {
+    add.addEventListener('click', () => appendCustomFieldRow(container, { Name: '', Value: '' }));
+  }
+}
+
+function appendCustomFieldRow(container, field) {
+  const row = document.createElement('div');
+  row.className = 'custom-field-row';
+  row.innerHTML = `
+    <label>Field<input name="customFieldName" type="text" spellcheck="false" placeholder="Tenant"></label>
+    <label>Value<input name="customFieldValue" type="text" spellcheck="false" placeholder="production"></label>
+    <button type="button" class="secondary" data-action="remove-custom-field" title="Remove custom field">Remove</button>
+  `;
+  row.querySelector('[name="customFieldName"]').value = field ? field.Name || '' : '';
+  row.querySelector('[name="customFieldValue"]').value = field ? field.Value || '' : '';
+  row.querySelector('[data-action="remove-custom-field"]').addEventListener('click', () => {
+    const rows = container.querySelectorAll('.custom-field-row');
+    if (rows.length <= 1) {
+      row.querySelector('[name="customFieldName"]').value = '';
+      row.querySelector('[name="customFieldValue"]').value = '';
+      return;
+    }
+    row.remove();
+  });
+  container.append(row);
 }
 
 function wirePasswordVisibilityToggle(form) {

@@ -507,6 +507,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('[name="otp"]').fill('JBSWY3DPEHPK3PXP');
     await form.locator('[name="customFieldName"]').fill('Tenant');
     await form.locator('[name="customFieldValue"]').fill('production');
+    await form.locator('[data-action="add-custom-field"]').click();
+    await form.locator('[name="customFieldName"]').nth(1).fill('Environment');
+    await form.locator('[name="customFieldValue"]').nth(1).fill('prod-us');
     await form.locator('button[type="submit"]').click();
 
     await expect(page.locator('#message')).toHaveText('Entry created.');
@@ -522,7 +525,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
         password: 'new-secret',
         otp: 'JBSWY3DPEHPK3PXP',
         customFields: [
-          { name: 'Tenant', value: 'production', isProtected: false }
+          { name: 'Tenant', value: 'production', isProtected: false },
+          { name: 'Environment', value: 'prod-us', isProtected: false }
         ]
       }
     });
@@ -592,6 +596,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('[name="otp"]').fill('JBSWY3DPEHPK3PXP');
     await expect(form.locator('[name="customFieldName"]')).toHaveValue('Tenant');
     await form.locator('[name="customFieldValue"]').fill('production');
+    await form.locator('[data-action="add-custom-field"]').click();
+    await form.locator('[name="customFieldName"]').nth(1).fill('Environment');
+    await form.locator('[name="customFieldValue"]').nth(1).fill('prod-us');
     await form.locator('button[type="submit"]').click();
 
     await expect(page.locator('#message')).toHaveText('Entry updated.');
@@ -611,7 +618,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
         password: 'updated-secret',
         otp: 'JBSWY3DPEHPK3PXP',
         customFields: [
-          { name: 'Tenant', value: 'production', isProtected: false }
+          { name: 'Tenant', value: 'production', isProtected: false },
+          { name: 'Environment', value: 'prod-us', isProtected: false }
         ]
       }
     });
