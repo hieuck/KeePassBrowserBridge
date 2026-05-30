@@ -66,6 +66,7 @@ namespace KeePassBrowserBridge.Bridge
                 string.IsNullOrWhiteSpace(payload.Password) &&
                 string.IsNullOrWhiteSpace(payload.Otp) &&
                 !HasCustomFields(payload.CustomFields) &&
+                !payload.ReplaceCustomFields &&
                 !payload.ClearOtp)
                 return CredentialMutationResult.Fail("missing_update_fields", "At least one login field is required.");
 
@@ -95,6 +96,9 @@ namespace KeePassBrowserBridge.Bridge
 
             if (!string.IsNullOrWhiteSpace(payload.Otp))
                 entry.Strings.Set("otp", new ProtectedString(true, payload.Otp.Trim()));
+
+            if (payload.ReplaceCustomFields)
+                RemoveReplacedCustomFields(entry, payload.CustomFields);
 
             AddCustomFields(entry, payload.CustomFields);
 
@@ -194,6 +198,35 @@ namespace KeePassBrowserBridge.Bridge
                     return true;
             }
             return false;
+        }
+
+        private static void RemoveReplacedCustomFields(PwEntry entry, CustomField[] replacementFields)
+        {
+            if (entry == null || entry.Strings == null) return;
+
+            System.Collections.Generic.HashSet<string> keep = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (replacementFields != null)
+            {
+                foreach (CustomField field in replacementFields)
+                {
+                    if (field == null || string.IsNullOrWhiteSpace(field.Name) || string.IsNullOrWhiteSpace(field.Value)) continue;
+                    string name = field.Name.Trim();
+                    if (!IsReservedStringField(name)) keep.Add(name);
+                }
+            }
+
+            System.Collections.Generic.List<string> remove = new System.Collections.Generic.List<string>();
+            foreach (System.Collections.Generic.KeyValuePair<string, ProtectedString> item in entry.Strings)
+            {
+                if (IsReservedStringField(item.Key)) continue;
+                if (item.Value != null && item.Value.IsProtected) continue;
+                if (!keep.Contains(item.Key)) remove.Add(item.Key);
+            }
+
+            foreach (string name in remove)
+            {
+                entry.Strings.Remove(name);
+            }
         }
 
         private static CustomField[] ExtractResultCustomFields(CustomField[] fields)

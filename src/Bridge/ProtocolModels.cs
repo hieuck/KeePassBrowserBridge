@@ -151,6 +151,7 @@ namespace KeePassBrowserBridge.Bridge
         public string Otp { get; set; }
         public bool ClearOtp { get; set; }
         public CustomField[] CustomFields { get; set; }
+        public bool ReplaceCustomFields { get; set; }
     }
 
     public sealed class FillAckPayload

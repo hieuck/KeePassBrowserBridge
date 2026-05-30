@@ -30,7 +30,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
           Url: 'https://example.com/login',
           Group: 'Accounts/Work',
           CustomFields: [
-            { Name: 'Tenant', Value: 'staging', IsProtected: false }
+            { Name: 'Tenant', Value: 'staging', IsProtected: false },
+            { Name: 'Environment', Value: 'dev', IsProtected: false }
           ]
         }
       ];
@@ -506,7 +507,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('[name="password"]').fill('new-secret');
     await form.locator('[name="otp"]').fill('JBSWY3DPEHPK3PXP');
     await form.locator('[name="customFieldName"]').fill('Tenant');
-    await form.locator('[name="customFieldValue"]').fill('production');
+    await form.locator('[name="customFieldValue"]').nth(0).fill('production');
     await form.locator('[data-action="add-custom-field"]').click();
     await form.locator('[name="customFieldName"]').nth(1).fill('Environment');
     await form.locator('[name="customFieldValue"]').nth(1).fill('prod-us');
@@ -594,11 +595,11 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('[name="url"]').fill('https://example.com/account');
     await form.locator('[name="password"]').fill('updated-secret');
     await form.locator('[name="otp"]').fill('JBSWY3DPEHPK3PXP');
-    await expect(form.locator('[name="customFieldName"]')).toHaveValue('Tenant');
-    await form.locator('[name="customFieldValue"]').fill('production');
-    await form.locator('[data-action="add-custom-field"]').click();
-    await form.locator('[name="customFieldName"]').nth(1).fill('Environment');
-    await form.locator('[name="customFieldValue"]').nth(1).fill('prod-us');
+    await expect(form.locator('[name="customFieldName"]').nth(0)).toHaveValue('Tenant');
+    await expect(form.locator('[name="customFieldName"]').nth(1)).toHaveValue('Environment');
+    await form.locator('[name="customFieldValue"]').nth(0).fill('production');
+    await form.locator('[data-action="remove-custom-field"]').nth(1).click();
+    await expect(form.locator('[name="customFieldName"]')).toHaveCount(1);
     await form.locator('button[type="submit"]').click();
 
     await expect(page.locator('#message')).toHaveText('Entry updated.');
@@ -617,9 +618,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
         url: 'https://example.com/account',
         password: 'updated-secret',
         otp: 'JBSWY3DPEHPK3PXP',
+        replaceCustomFields: true,
         customFields: [
-          { name: 'Tenant', value: 'production', isProtected: false },
-          { name: 'Environment', value: 'prod-us', isProtected: false }
+          { name: 'Tenant', value: 'production', isProtected: false }
         ]
       }
     });

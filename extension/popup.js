@@ -449,6 +449,7 @@ async function updateLogin(entry, form) {
   if (!login.clearOtp) {
     addOptionalSecret(login, 'otp', form.querySelector('[name="otp"]').value);
   }
+  login.replaceCustomFields = true;
   addOptionalCustomField(login, form);
 
   const result = await send({ type: 'KBB_UPDATE_LOGIN', login });

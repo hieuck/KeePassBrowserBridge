@@ -57,6 +57,7 @@ internal static class Program
         CredentialMutationAcceptsPageUrlFromAdditionalUrlField();
         CredentialMutationUpdatesExistingEntryFields();
         CredentialMutationUpdatesExistingEntryCustomField();
+        CredentialMutationReplacesExistingEntryCustomFields();
         CredentialMutationMovesExistingEntryToRequestedGroup();
         CredentialMutationMovesExistingEntryToRootWhenGroupIsBlank();
         CredentialMutationUpdatesExistingEntryTotpSecret();
@@ -753,6 +754,33 @@ internal static class Program
         AssertEqual("production", entry.Strings.ReadSafe("Tenant"), "updated entry should store public custom field");
         AssertEqual("old-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "reserved custom field name should not overwrite password");
         AssertTrue(FindCustomField(result.Entry.CustomFields, "Tenant") != null, "updated result should include public custom field metadata");
+    }
+
+    private static void CredentialMutationReplacesExistingEntryCustomFields()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        entry.Strings.Set("Tenant", new ProtectedString(false, "staging"));
+        entry.Strings.Set("Environment", new ProtectedString(false, "dev"));
+        entry.Strings.Set("ApiKey", new ProtectedString(true, "protected-secret"));
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            ReplaceCustomFields = true,
+            CustomFields = new[]
+            {
+                new CustomField { Name = "Tenant", Value = "production", IsProtected = false }
+            }
+        });
+
+        AssertTrue(result.Success, "credential update should replace custom fields: " + result.Error);
+        AssertEqual("production", entry.Strings.ReadSafe("Tenant"), "kept custom field should update value");
+        AssertEqual(string.Empty, entry.Strings.ReadSafe("Environment"), "removed custom field should be deleted");
+        AssertEqual("protected-secret", entry.Strings.ReadSafe("ApiKey"), "protected custom field should not be deleted by replace");
+        AssertTrue(FindCustomField(result.Entry.CustomFields, "Tenant") != null, "updated result should include kept custom field");
+        AssertTrue(FindCustomField(result.Entry.CustomFields, "Environment") == null, "updated result should not include removed custom field");
     }
 
     private static void CredentialMutationMovesExistingEntryToRequestedGroup()
