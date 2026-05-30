@@ -668,6 +668,24 @@ assert.ok(notifications.some((notification) => notification.options.title === 'U
   'successful update should show a desktop notification');
 
 // Context menu tests
+storage.locked = true;
+requests.length = 0;
+sentMessage = null;
+sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
+  sentMessage = msg;
+  return { filled: true };
+};
+sandbox.contextMenuHandler({ menuItemId: 'kbb_fill_password' }, { id: 1, url: 'https://example.com/login' });
+await new Promise(r => setTimeout(r, 100)); // wait for async handler
+assert.equal(sentMessage, null, 'locked extension should not fill from context menu');
+assert.equal(requests.some((request) => request.Method === 'logins.query'), false, 'locked context menu fill should not query KeePass');
+
+sentMessage = null;
+sandbox.contextMenuHandler({ menuItemId: 'kbb_generate_password' }, { id: 1, url: 'http://example.com' });
+await new Promise(r => setTimeout(r, 100)); // wait for async handler
+assert.equal(sentMessage, null, 'locked extension should not generate and fill a password from context menu');
+storage.locked = false;
+
 requests.length = 0;
 sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
   sentMessage = msg;

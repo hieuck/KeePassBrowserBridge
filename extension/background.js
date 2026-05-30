@@ -977,6 +977,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 async function fillFromContextMenu(tabId, url, role) {
   try {
+    await assertUnlocked();
+    await rememberCredentialActivity();
     const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
     const result = queryResultFromResponse(url, response);
     if (result.entries.length === 0) return;
@@ -999,12 +1001,15 @@ async function fillFromContextMenu(tabId, url, role) {
       await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);
     }
   } catch (error) {
+    if (isLockedError(error)) return;
     console.error('Context menu fill failed:', error);
   }
 }
 
 async function generateAndFillPassword(tabId) {
   try {
+    await assertUnlocked();
+    await rememberCredentialActivity();
     const result = new Uint32Array(16);
     crypto.getRandomValues(result);
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+~|}{[]:;?><,./-=';
@@ -1016,6 +1021,12 @@ async function generateAndFillPassword(tabId) {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
     await chrome.tabs.sendMessage(tabId, { type: 'KBB_FILL', credential: { Password: password } });
   } catch (error) {
+    if (isLockedError(error)) return;
     console.error('Password generation failed:', error);
   }
+}
+
+function isLockedError(error) {
+  const message = error && error.message ? error.message : String(error || '');
+  return /locked/i.test(message);
 }
