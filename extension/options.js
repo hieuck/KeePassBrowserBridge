@@ -38,6 +38,11 @@ const elements = {
   importSettings: document.getElementById('importSettings'),
   importFile: document.getElementById('importFile'),
   resetSettings: document.getElementById('resetSettings'),
+  aboutVersion: document.getElementById('aboutVersion'),
+  aboutBrowserId: document.getElementById('aboutBrowserId'),
+  repositoryLink: document.getElementById('repositoryLink'),
+  releasesLink: document.getElementById('releasesLink'),
+  checkUpdates: document.getElementById('checkUpdates'),
   saveSettings: document.getElementById('saveSettings'),
   message: document.getElementById('message')
 };
@@ -53,8 +58,10 @@ function init() {
   elements.importFile.addEventListener('change', importSettings);
   elements.resetSettings.addEventListener('click', resetSettings);
   elements.addSiteOverride.addEventListener('click', addSiteOverride);
+  elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
   
   loadSettings();
+  runAction(renderAbout);
 }
 
 function detectAndApplyTheme() {
@@ -287,6 +294,43 @@ function resetSettings() {
   chrome.storage.local.set(DEFAULT_SETTINGS, () => {
     loadSettings();
     showMessage('Settings reset to defaults!', 'success');
+  });
+}
+
+async function renderAbout() {
+  const about = await send({ type: 'KBB_GET_ABOUT' });
+  elements.aboutVersion.textContent = about.version || 'Unknown';
+  elements.aboutBrowserId.textContent = about.browserId || 'Unknown';
+  elements.repositoryLink.href = about.repositoryUrl || '#';
+  elements.releasesLink.href = about.releasesUrl || '#';
+}
+
+async function checkUpdates() {
+  const result = await send({ type: 'KBB_CHECK_UPDATES' });
+  if (result.updateAvailable) {
+    elements.releasesLink.href = result.releaseUrl || elements.releasesLink.href;
+    showMessage(`Update ${result.latestVersion} is available. Open GitHub Releases to install it.`, 'success');
+    return;
+  }
+
+  showMessage(`KeePass Browser Bridge ${result.currentVersion} is up to date.`, 'success');
+}
+
+async function runAction(action) {
+  try {
+    await action();
+  } catch (error) {
+    showMessage(error && error.message ? error.message : String(error), 'error');
+  }
+}
+
+function send(message) {
+  return chrome.runtime.sendMessage(message).then((result) => {
+    if (!result || !result.ok) {
+      throw new Error(result && result.error ? result.error : 'Extension request failed.');
+    }
+
+    return result.response;
   });
 }
 

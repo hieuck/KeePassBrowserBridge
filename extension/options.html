@@ -157,6 +157,26 @@
       </div>
     </section>
 
+    <section class="settings-section">
+      <h2>About</h2>
+
+      <div class="about-grid">
+        <span>Version</span>
+        <strong id="aboutVersion">...</strong>
+        <span>Browser ID</span>
+        <code id="aboutBrowserId"></code>
+        <span>Project</span>
+        <a id="repositoryLink" href="#" target="_blank" rel="noreferrer">Repository</a>
+        <span>Updates</span>
+        <a id="releasesLink" href="#" target="_blank" rel="noreferrer">GitHub Releases</a>
+      </div>
+
+      <div class="setting-group about-actions">
+        <button id="checkUpdates" type="button" class="secondary">Check updates</button>
+        <p class="help-text">Manual installs are updated from GitHub Releases. Store builds update through the browser's extension store.</p>
+      </div>
+    </section>
+
     <footer class="footer">
       <button id="saveSettings" type="button" class="primary">✓ Save Settings</button>
       <span id="message" class="message"></span>

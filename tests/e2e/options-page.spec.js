@@ -3,8 +3,41 @@ import { test, expect } from '@playwright/test';
 async function installOptionsStorage(page, initial = {}) {
   await page.addInitScript((initialSettings) => {
     const store = { ...initialSettings };
+    const messages = [];
     window.__kbbOptionsStore = store;
+    window.__kbbOptionsMessages = messages;
     window.chrome = {
+      runtime: {
+        sendMessage(message) {
+          messages.push(message);
+          if (message.type === 'KBB_GET_ABOUT') {
+            return Promise.resolve({
+              ok: true,
+              response: {
+                name: 'KeePass Browser Bridge',
+                version: '0.9.0',
+                browserId: 'abcdefghijklmnopabcdefghijklmnop',
+                repositoryUrl: 'https://github.com/hieuck/KeePassBrowserBridge',
+                releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases'
+              }
+            });
+          }
+
+          if (message.type === 'KBB_CHECK_UPDATES') {
+            return Promise.resolve({
+              ok: true,
+              response: {
+                currentVersion: '0.9.0',
+                latestVersion: '0.10.0',
+                updateAvailable: true,
+                releaseUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0'
+              }
+            });
+          }
+
+          return Promise.resolve({ ok: false, error: 'Unknown message type.' });
+        }
+      },
       storage: {
         local: {
           get(keys, callback) {
@@ -151,5 +184,24 @@ test.describe('options page settings', () => {
     expect(stored.siteOverrides).toEqual([
       { host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true }
     ]);
+  });
+
+  test('shows about information and checks GitHub releases for updates', async ({ page }) => {
+    await installOptionsStorage(page);
+
+    await page.goto('/extension/options.html');
+
+    await expect(page.locator('#aboutVersion')).toHaveText('0.9.0');
+    await expect(page.locator('#aboutBrowserId')).toHaveText('abcdefghijklmnopabcdefghijklmnop');
+    await expect(page.locator('#repositoryLink')).toHaveAttribute('href', 'https://github.com/hieuck/KeePassBrowserBridge');
+    await expect(page.locator('#releasesLink')).toHaveAttribute('href', 'https://github.com/hieuck/KeePassBrowserBridge/releases');
+
+    await page.locator('#checkUpdates').click();
+
+    await expect(page.locator('#message')).toHaveText('Update 0.10.0 is available. Open GitHub Releases to install it.');
+    await expect(page.locator('#releasesLink')).toHaveAttribute('href', 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0');
+    const messages = await page.evaluate(() => window.__kbbOptionsMessages.map((message) => message.type));
+    expect(messages).toContain('KBB_GET_ABOUT');
+    expect(messages).toContain('KBB_CHECK_UPDATES');
   });
 });

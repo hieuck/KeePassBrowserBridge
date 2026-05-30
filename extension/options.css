@@ -265,6 +265,42 @@ label {
   padding: 0 10px;
 }
 
+.about-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 14px;
+  align-items: center;
+  margin-bottom: 18px;
+  color: var(--muted);
+}
+
+.about-grid strong,
+.about-grid code {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about-grid a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.about-grid a:hover {
+  text-decoration: underline;
+}
+
+.about-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.about-actions .help-text {
+  margin: 0;
+}
+
 .footer {
   display: flex;
   align-items: center;
