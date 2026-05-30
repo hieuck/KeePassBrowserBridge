@@ -443,7 +443,7 @@ async function notifyUser(title, message) {
   try {
     await chrome.notifications.create('kbb-' + Date.now(), {
       type: 'basic',
-      iconUrl: 'icons/icon-128.png',
+      iconUrl: 'icons/icon-128.svg',
       title,
       message: message || ''
     });

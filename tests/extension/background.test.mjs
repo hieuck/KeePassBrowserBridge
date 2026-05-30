@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const storage = {
   endpoint: 'http://127.0.0.1:19455/bridge',
@@ -496,6 +498,15 @@ const popupFillAckRequest = requests.find((request) => request.Method === 'login
 assert.ok(popupFillAckRequest, 'popup fill should acknowledge the filled entry for usage ranking');
 assert.ok(notifications.some((notification) => notification.options.title === 'Filled from KeePass'),
   'successful popup fill should show a desktop notification');
+const fillNotification = notifications.find((notification) => notification.options.title === 'Filled from KeePass');
+const notificationIconPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  'extension',
+  fillNotification.options.iconUrl
+);
+assert.equal(fs.existsSync(notificationIconPath), true, 'notification iconUrl should point to a packaged extension asset');
 
 notifications.length = 0;
 storage.notificationsEnabled = false;
