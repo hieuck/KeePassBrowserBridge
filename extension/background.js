@@ -98,7 +98,7 @@ async function handleMessage(message) {
     case 'KBB_UPDATE_LOGIN':
       return updateLogin(message.login);
     case 'KBB_FILL_LOGIN':
-      return fillLogin(message.credential);
+      return fillLogin(message.credential, message.fieldRole);
     case 'KBB_FILL_ACK':
       return acknowledgeFill(message.entryId, message.url);
     case 'KBB_REMEMBER_PENDING_CREDENTIAL':
@@ -463,7 +463,7 @@ async function consumeSubmittedCredential(origin) {
   return { credential: pending.credential };
 }
 
-async function fillLogin(credential) {
+async function fillLogin(credential, fieldRole) {
   const tab = await getActiveTab();
   if (!tab || !tab.id) {
     throw new Error('No active tab.');
@@ -475,6 +475,7 @@ async function fillLogin(credential) {
   const result = await chrome.tabs.sendMessage(tab.id, {
     type: 'KBB_FILL',
     credential,
+    fieldRole: fieldRole || '',
     autoSubmit
   });
 

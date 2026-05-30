@@ -375,13 +375,24 @@ async function getCurrentSiteOverrideContext() {
   return { host, overrides, existingIndex, existing };
 }
 
-async function fillLogin(credential) {
-  const result = await send({ type: 'KBB_FILL_LOGIN', credential });
+async function fillLogin(credential, fieldRole) {
+  const result = await send({
+    type: 'KBB_FILL_LOGIN',
+    credential,
+    fieldRole: fieldRole || ''
+  });
   if (result && result.filled === false) {
     throw new Error(result.error || 'The page could not be filled.');
   }
 
-  setMessage('Login filled.');
+  setMessage(fieldRole ? `${fieldRoleLabel(fieldRole)} filled into focused field.` : 'Login filled.');
+}
+
+function fieldRoleLabel(fieldRole) {
+  if (fieldRole === 'username') return 'Username';
+  if (fieldRole === 'password') return 'Password';
+  if (fieldRole === 'otp') return 'OTP';
+  return 'Value';
 }
 
 async function copyToClipboard(label, text) {
@@ -589,6 +600,15 @@ async function renderResults(entries) {
     edit.addEventListener('click', () => showEditForm(item, entry));
 
     actions.append(fill, edit);
+    if (entry.UserName) {
+      actions.append(createFieldFillButton('User Field', entry, 'username'));
+    }
+    if (entry.Password) {
+      actions.append(createFieldFillButton('Pass Field', entry, 'password'));
+    }
+    if (entry.OneTimePassword) {
+      actions.append(createFieldFillButton('OTP Field', entry, 'otp'));
+    }
     item.append(title, meta);
     if (secret.textContent) {
       item.append(secret);
@@ -654,6 +674,15 @@ function createCopyButton(text, label, value) {
   button.className = 'secondary';
   button.textContent = text;
   button.addEventListener('click', () => runAction(() => copyToClipboard(label, value)));
+  return button;
+}
+
+function createFieldFillButton(text, entry, fieldRole) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'secondary';
+  button.textContent = text;
+  button.addEventListener('click', () => runAction(() => fillLogin(entry, fieldRole)));
   return button;
 }
 

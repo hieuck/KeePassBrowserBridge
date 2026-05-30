@@ -359,6 +359,24 @@ assert.equal(focusedFieldResponse.filled, true, 'manual field fill should report
 assert.equal(focusedFieldResponse.result.passwordFilled, true, 'manual password fill should mark the password as filled');
 assert.equal(viotpHistorySearchInput.value, 'manual-secret', 'manual field fill should write to the focused editable input even when form detection would ignore it');
 
+viotpHistorySearchInput.value = '';
+activeDocument.activeElement = null;
+focusedFieldResponse = null;
+sandbox.window.__keepassBrowserBridgeMessageListener(
+  {
+    type: 'KBB_FILL',
+    credential: { UserName: 'last-focused@example.com' },
+    fieldRole: 'username'
+  },
+  {},
+  (response) => {
+    focusedFieldResponse = response;
+  }
+);
+assert.equal(focusedFieldResponse.filled, true, 'manual field fill should use the last focused editable input when the page loses active focus');
+assert.equal(focusedFieldResponse.result.usernameFilled, true, 'last focused manual fill should mark username as filled');
+assert.equal(viotpHistorySearchInput.value, 'last-focused@example.com', 'manual field fill should write to the last focused editable input');
+
 const customFieldResult = sandbox.fillLogin({
   CustomFields: [
     { Name: 'Tenant', Value: 'production', IsProtected: false },

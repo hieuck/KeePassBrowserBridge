@@ -239,6 +239,24 @@ test.describe('KeePassBrowserBridge Extension', () => {
     });
   });
 
+  test('fills a selected popup password into the focused field contract', async ({ page }) => {
+    await page.locator('#queryLogins').click();
+    await page.locator('.login button', { hasText: 'Pass Field' }).click();
+
+    await expect(page.locator('#message')).toHaveText('Password filled into focused field.');
+    const fillMessage = await page.evaluate(() => window.__kbbPopupMessages.find(
+      (message) => message.type === 'KBB_FILL_LOGIN' && message.fieldRole === 'password'
+    ));
+    expect(fillMessage).toMatchObject({
+      type: 'KBB_FILL_LOGIN',
+      fieldRole: 'password',
+      credential: {
+        EntryId: 'entry-1',
+        Password: 'secret-password'
+      }
+    });
+  });
+
   test('ranks frequently used popup logins first', async ({ page }) => {
     await page.evaluate(() => {
       window.__kbbPopupEntries = [

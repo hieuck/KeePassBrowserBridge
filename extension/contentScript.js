@@ -10,6 +10,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgePendingRemember = null;
   window.__keepassBrowserBridgePendingSubmitted = null;
   window.__keepassBrowserBridgeLastMultiStepCredential = null;
+  window.__keepassBrowserBridgeLastFocusedInput = null;
   window.__keepassBrowserBridgeObservedShadowRoots = new WeakSet();
   window.__keepassBrowserBridgeEventRoots = new WeakSet();
   window.__keepassBrowserBridgeMessageListener = (message, sender, sendResponse) => {
@@ -88,6 +89,16 @@ function installRootEventListeners(root) {
         !event.target.classList.contains("kbb-inline-button")
       ) {
         closeInlinePicker();
+      }
+    },
+    true,
+  );
+  root.addEventListener(
+    "focusin",
+    (event) => {
+      const input = editableInputFromElement(event.target);
+      if (input) {
+        window.__keepassBrowserBridgeLastFocusedInput = input;
       }
     },
     true,
@@ -177,25 +188,31 @@ function fillFocusedField(credential, role) {
   throw new Error("Selected KeePass entry does not contain a value for this field.");
 }
 function getFocusedEditableInput() {
-  const active = document.activeElement;
-  if (!active || !isVisible(active) || active.disabled || active.readOnly) {
+  const activeInput = editableInputFromElement(document.activeElement);
+  if (activeInput) {
+    window.__keepassBrowserBridgeLastFocusedInput = activeInput;
+    return activeInput;
+  }
+
+  return editableInputFromElement(window.__keepassBrowserBridgeLastFocusedInput);
+}
+function editableInputFromElement(element) {
+  if (!element || !isVisible(element) || element.disabled || element.readOnly) {
     return null;
   }
 
-  const tagName = String(active.tagName || active.nodeName || "").toLowerCase();
-  if (tagName === "textarea") {
-    return active;
-  }
+  const tagName = String(element.tagName || element.nodeName || "").toLowerCase();
+  if (tagName === "textarea") return element;
   if (tagName && tagName !== "input") {
     return null;
   }
-  if (!tagName && typeof active.getAttribute !== "function") {
+  if (!tagName && typeof element.getAttribute !== "function") {
     return null;
   }
 
-  const type = (active.getAttribute("type") || "text").toLowerCase();
+  const type = (element.getAttribute("type") || "text").toLowerCase();
   return ["text", "email", "tel", "url", "search", "number", "password", ""].includes(type)
-    ? active
+    ? element
     : null;
 }
 function fillCustomFields(credential) {

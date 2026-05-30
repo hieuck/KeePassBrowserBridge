@@ -547,9 +547,11 @@ const popupFillResult = await sandbox.handleMessage({
     Title: 'Example',
     UserName: 'alice',
     Password: 'secret'
-  }
+  },
+  fieldRole: 'password'
 });
 assert.equal(popupFillResult.filled, true, 'popup fill should return the content script result');
+assert.equal(sentMessage.fieldRole, 'password', 'popup fill should pass manual field role to the content script');
 const popupFillAckRequest = requests.find((request) => request.Method === 'logins.fillAck' && JSON.parse(request.Payload).EntryId === 'entry-1');
 assert.ok(popupFillAckRequest, 'popup fill should acknowledge the filled entry for usage ranking');
 assert.ok(notifications.some((notification) => notification.options.title === 'Filled from KeePass'),
