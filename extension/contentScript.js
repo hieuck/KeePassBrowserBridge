@@ -19,7 +19,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
     }
     try {
       const result = message.fieldRole
-        ? fillFocusedField(message.credential || {}, message.fieldRole)
+        ? fillFocusedField(message.credential || {}, message.fieldRole, message.customFieldName || "")
         : fillLogin(message.credential || {});
       
       if (message.autoSubmit && (result.usernameFilled || result.passwordFilled)) {
@@ -166,7 +166,7 @@ function fillLogin(credential) {
     customFields: customFieldsResult ? customFieldsResult.fields : [],
   };
 }
-function fillFocusedField(credential, role) {
+function fillFocusedField(credential, role, customFieldName) {
   const target = getFocusedEditableInput();
   if (!target) {
     throw new Error("No focused editable field found on this page.");
@@ -183,6 +183,19 @@ function fillFocusedField(credential, role) {
   if (role === "otp" && credential.OneTimePassword) {
     setInputValue(target, credential.OneTimePassword);
     return { usernameFilled: false, passwordFilled: false, otpFilled: true };
+  }
+  if (role === "custom" && customFieldName) {
+    const field = (credential.CustomFields || []).find(
+      (candidate) =>
+        candidate &&
+        candidate.IsProtected !== true &&
+        candidate.Name === customFieldName &&
+        typeof candidate.Value === "string",
+    );
+    if (field) {
+      setInputValue(target, field.Value);
+      return { usernameFilled: false, passwordFilled: false, otpFilled: false, customFieldsFilled: 1 };
+    }
   }
 
   throw new Error("Selected KeePass entry does not contain a value for this field.");

@@ -556,6 +556,20 @@ const popupFillAckRequest = requests.find((request) => request.Method === 'login
 assert.ok(popupFillAckRequest, 'popup fill should acknowledge the filled entry for usage ranking');
 assert.ok(notifications.some((notification) => notification.options.title === 'Filled from KeePass'),
   'successful popup fill should show a desktop notification');
+
+sentMessage = null;
+await sandbox.handleMessage({
+  type: 'KBB_FILL_LOGIN',
+  credential: {
+    EntryId: 'entry-1',
+    Title: 'Example',
+    CustomFields: [{ Name: 'Tenant', Value: 'production', IsProtected: false }]
+  },
+  fieldRole: 'custom',
+  customFieldName: 'Tenant'
+});
+assert.equal(sentMessage.fieldRole, 'custom', 'popup custom field fill should pass custom field role to the content script');
+assert.equal(sentMessage.customFieldName, 'Tenant', 'popup custom field fill should pass the selected custom field name');
 const fillNotification = notifications.find((notification) => notification.options.title === 'Filled from KeePass');
 const notificationIconPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

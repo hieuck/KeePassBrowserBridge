@@ -377,6 +377,29 @@ assert.equal(focusedFieldResponse.filled, true, 'manual field fill should use th
 assert.equal(focusedFieldResponse.result.usernameFilled, true, 'last focused manual fill should mark username as filled');
 assert.equal(viotpHistorySearchInput.value, 'last-focused@example.com', 'manual field fill should write to the last focused editable input');
 
+viotpHistorySearchInput.value = '';
+focusedFieldResponse = null;
+sandbox.window.__keepassBrowserBridgeMessageListener(
+  {
+    type: 'KBB_FILL',
+    credential: {
+      CustomFields: [
+        { Name: 'Tenant', Value: 'production', IsProtected: false },
+        { Name: 'ApiKey', Value: 'protected-secret', IsProtected: true }
+      ]
+    },
+    fieldRole: 'custom',
+    customFieldName: 'Tenant'
+  },
+  {},
+  (response) => {
+    focusedFieldResponse = response;
+  }
+);
+assert.equal(focusedFieldResponse.filled, true, 'manual custom field fill should report success');
+assert.equal(focusedFieldResponse.result.customFieldsFilled, 1, 'manual custom field fill should mark one custom field as filled');
+assert.equal(viotpHistorySearchInput.value, 'production', 'manual custom field fill should write the selected custom field value');
+
 const customFieldResult = sandbox.fillLogin({
   CustomFields: [
     { Name: 'Tenant', Value: 'production', IsProtected: false },

@@ -375,23 +375,25 @@ async function getCurrentSiteOverrideContext() {
   return { host, overrides, existingIndex, existing };
 }
 
-async function fillLogin(credential, fieldRole) {
+async function fillLogin(credential, fieldRole, customFieldName) {
   const result = await send({
     type: 'KBB_FILL_LOGIN',
     credential,
-    fieldRole: fieldRole || ''
+    fieldRole: fieldRole || '',
+    customFieldName: customFieldName || ''
   });
   if (result && result.filled === false) {
     throw new Error(result.error || 'The page could not be filled.');
   }
 
-  setMessage(fieldRole ? `${fieldRoleLabel(fieldRole)} filled into focused field.` : 'Login filled.');
+  setMessage(fieldRole ? `${fieldRoleLabel(fieldRole, customFieldName)} filled into focused field.` : 'Login filled.');
 }
 
-function fieldRoleLabel(fieldRole) {
+function fieldRoleLabel(fieldRole, customFieldName) {
   if (fieldRole === 'username') return 'Username';
   if (fieldRole === 'password') return 'Password';
   if (fieldRole === 'otp') return 'OTP';
+  if (fieldRole === 'custom') return customFieldName || 'Custom field';
   return 'Value';
 }
 
@@ -644,6 +646,14 @@ async function renderResults(entries) {
         `;
 
         if (!field.IsProtected) {
+          const fillBtn = document.createElement('button');
+          fillBtn.type = 'button';
+          fillBtn.className = 'field-fill-btn';
+          fillBtn.title = 'Fill focused field';
+          fillBtn.textContent = 'Field';
+          fillBtn.addEventListener('click', () => runAction(() => fillLogin(entry, 'custom', field.Name)));
+          fieldDiv.append(fillBtn);
+
           const copyBtn = document.createElement('button');
           copyBtn.type = 'button';
           copyBtn.className = 'copy-btn';
