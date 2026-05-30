@@ -782,11 +782,18 @@ function filterEntries(entries, query) {
 }
 
 function credentialSearchText(entry) {
+  const customText = (entry.CustomFields || [])
+    .map((field) => {
+      if (!field) return '';
+      return [field.Name || '', field.IsProtected ? '' : field.Value || ''].join(' ');
+    })
+    .join(' ');
   return [
     entry.Title || '',
     entry.Group || '',
     entry.UserName || '',
-    entry.Url || ''
+    entry.Url || '',
+    customText
   ].join(' ').toLowerCase();
 }
 

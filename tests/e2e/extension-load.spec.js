@@ -353,6 +353,42 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#results')).toContainText('No matching logins in this list.');
   });
 
+  test('filters popup logins by non-protected custom fields only', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupEntries = [
+        {
+          EntryId: 'entry-custom',
+          Title: 'Custom Fields',
+          UserName: 'custom@example.com',
+          Password: 'custom-secret',
+          Url: 'https://example.com/login',
+          CustomFields: [
+            { Name: 'Tenant', Value: 'production', IsProtected: false },
+            { Name: 'ApiKey', Value: 'protected-secret', IsProtected: true }
+          ]
+        },
+        {
+          EntryId: 'entry-normal',
+          Title: 'Normal Login',
+          UserName: 'normal@example.com',
+          Password: 'normal-secret',
+          Url: 'https://example.com/login'
+        }
+      ];
+    });
+
+    await page.locator('#queryLogins').click();
+    await expect(page.locator('#loginSearch')).toBeVisible();
+
+    await page.locator('#loginSearch').fill('tenant production');
+    await expect(page.locator('.login-title')).toHaveCount(1);
+    await expect(page.locator('.login-title')).toHaveText('Custom Fields');
+
+    await page.locator('#loginSearch').fill('protected-secret');
+    await expect(page.locator('.login-title')).toHaveCount(0);
+    await expect(page.locator('#results')).toContainText('No matching logins in this list.');
+  });
+
   test('copies username password and OTP from popup results', async ({ page }) => {
     await page.locator('#queryLogins').click();
 
