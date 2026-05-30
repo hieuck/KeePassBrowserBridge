@@ -29,6 +29,8 @@ const elements = {
   notificationsEnabled: document.getElementById('notificationsEnabled'),
   clipboardClearDelay: document.getElementById('clipboardClearDelay'),
   debugMode: document.getElementById('debugMode'),
+  refreshTrustedBrowsers: document.getElementById('refreshTrustedBrowsers'),
+  trustedBrowserList: document.getElementById('trustedBrowserList'),
   siteOverrideHost: document.getElementById('siteOverrideHost'),
   siteOverrideAutoFill: document.getElementById('siteOverrideAutoFill'),
   siteOverrideAutoSubmit: document.getElementById('siteOverrideAutoSubmit'),
@@ -58,6 +60,7 @@ function init() {
   elements.importFile.addEventListener('change', importSettings);
   elements.resetSettings.addEventListener('click', resetSettings);
   elements.addSiteOverride.addEventListener('click', addSiteOverride);
+  elements.refreshTrustedBrowsers.addEventListener('click', () => runAction(listTrustedBrowsers));
   elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
   
   loadSettings();
@@ -214,6 +217,65 @@ function renderSiteOverrides() {
   }
 }
 
+async function listTrustedBrowsers() {
+  const result = await send({ type: 'KBB_LIST_CLIENTS' });
+  renderTrustedBrowsers(result.Clients || []);
+  showMessage(result.Clients && result.Clients.length
+    ? `${result.Clients.length} trusted browser(s).`
+    : 'No trusted browsers found.', 'success');
+}
+
+async function revokeTrustedBrowser(clientId) {
+  const result = await send({ type: 'KBB_REVOKE_CLIENT', clientId });
+  if (!result || !result.Revoked) {
+    throw new Error('Browser was not revoked.');
+  }
+
+  await listTrustedBrowsers();
+  showMessage('Browser revoked.', 'success');
+}
+
+function renderTrustedBrowsers(clients) {
+  elements.trustedBrowserList.textContent = '';
+  if (!clients.length) {
+    const empty = document.createElement('p');
+    empty.className = 'trusted-browser-empty';
+    empty.textContent = 'No trusted browsers.';
+    elements.trustedBrowserList.appendChild(empty);
+    return;
+  }
+
+  for (const client of clients) {
+    const row = document.createElement('div');
+    row.className = 'trusted-browser-row';
+    row.dataset.clientId = client.ClientId || '';
+
+    const details = document.createElement('div');
+    const name = document.createElement('span');
+    name.className = 'trusted-browser-name';
+    name.textContent = client.ClientName || 'Browser';
+
+    const meta = document.createElement('span');
+    meta.className = 'trusted-browser-meta';
+    meta.textContent = [
+      client.Current ? 'This browser' : '',
+      formatDate(client.CreatedUtcMs)
+    ].filter(Boolean).join(' / ');
+
+    details.append(name, meta);
+
+    const revoke = document.createElement('button');
+    revoke.type = 'button';
+    revoke.className = 'secondary';
+    revoke.dataset.action = 'revoke-client';
+    revoke.textContent = client.Current ? 'Revoke This Browser' : 'Revoke';
+    revoke.addEventListener('click', () => runAction(() => revokeTrustedBrowser(client.ClientId)));
+
+    row.append(details, revoke);
+    elements.trustedBrowserList.appendChild(row);
+  }
+}
+
 function normalizeSiteOverrides(rules) {
   if (!Array.isArray(rules)) {
     return [];
@@ -248,6 +310,12 @@ function normalizeHost(value) {
   } catch (error) {
     return trimmed.replace(/^\.+|\.+$/g, '');
   }
+}
+
+function formatDate(ms) {
+  const value = Number(ms || 0);
+  if (!value) return 'Unknown date';
+  return new Date(value).toLocaleString();
 }
 
 function exportSettings() {

@@ -4,12 +4,45 @@ async function installOptionsStorage(page, initial = {}) {
   await page.addInitScript((initialSettings) => {
     const store = { ...initialSettings };
     const messages = [];
+    const trustedClients = [
+      {
+        ClientId: 'client-current',
+        ClientName: 'Chrome',
+        Current: true,
+        CreatedUtcMs: 1779989000000
+      },
+      {
+        ClientId: 'client-old',
+        ClientName: 'Old Browser',
+        Current: false,
+        CreatedUtcMs: 1779900000000
+      }
+    ];
     window.__kbbOptionsStore = store;
     window.__kbbOptionsMessages = messages;
+    window.__kbbOptionsTrustedClients = trustedClients;
     window.chrome = {
       runtime: {
         sendMessage(message) {
           messages.push(message);
+          if (message.type === 'KBB_LIST_CLIENTS') {
+            return Promise.resolve({
+              ok: true,
+              response: { Clients: trustedClients.slice() }
+            });
+          }
+
+          if (message.type === 'KBB_REVOKE_CLIENT') {
+            const index = trustedClients.findIndex((client) => client.ClientId === message.clientId);
+            if (index >= 0) {
+              trustedClients.splice(index, 1);
+            }
+            return Promise.resolve({
+              ok: true,
+              response: { Revoked: index >= 0 }
+            });
+          }
+
           if (message.type === 'KBB_GET_ABOUT') {
             return Promise.resolve({
               ok: true,
@@ -203,5 +236,29 @@ test.describe('options page settings', () => {
     const messages = await page.evaluate(() => window.__kbbOptionsMessages.map((message) => message.type));
     expect(messages).toContain('KBB_GET_ABOUT');
     expect(messages).toContain('KBB_CHECK_UPDATES');
+  });
+
+  test('lists and revokes trusted browsers from settings', async ({ page }) => {
+    await installOptionsStorage(page);
+
+    await page.goto('/extension/options.html');
+    await page.locator('#refreshTrustedBrowsers').click();
+
+    await expect(page.locator('#trustedBrowserList')).toContainText('Chrome');
+    await expect(page.locator('#trustedBrowserList')).toContainText('This browser');
+    await expect(page.locator('#trustedBrowserList')).toContainText('Old Browser');
+    await expect(page.locator('#message')).toHaveText('2 trusted browser(s).');
+
+    await page.locator('[data-client-id="client-old"] [data-action="revoke-client"]').click();
+
+    await expect(page.locator('#trustedBrowserList')).not.toContainText('Old Browser');
+    await expect(page.locator('#message')).toHaveText('Browser revoked.');
+    const messages = await page.evaluate(() => window.__kbbOptionsMessages);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'KBB_LIST_CLIENTS' }),
+        expect.objectContaining({ type: 'KBB_REVOKE_CLIENT', clientId: 'client-old' })
+      ])
+    );
   });
 });

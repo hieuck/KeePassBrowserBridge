@@ -134,6 +134,15 @@
     </section>
 
     <section class="settings-section">
+      <div class="section-heading-row">
+        <h2>Trusted Browsers</h2>
+        <button id="refreshTrustedBrowsers" type="button" class="secondary">Refresh</button>
+      </div>
+      <p class="help-text">Browsers paired with KeePass can query and fill entries. Revoke any browser you no longer use.</p>
+      <div id="trustedBrowserList" class="trusted-browser-list" aria-live="polite"></div>
+    </section>
+
+    <section class="settings-section">
       <h2>Advanced</h2>
       
       <div class="setting-group">
