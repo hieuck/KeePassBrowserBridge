@@ -16,6 +16,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 - Create a new KeePass entry from the popup, prefilled from fields already typed on the page when available, with optional non-protected custom field capture.
 - Edit existing entries, update changed passwords, generate replacement passwords, add/update/remove non-protected custom fields, and clear TOTP secrets.
 - Save/update prompts after submitted login forms, including redirect and multi-step login flows.
+- Username-first login support across navigation and same-page password reveal flows.
 - HTTP Basic Auth credential lookup.
 - Site-specific auto-fill and auto-submit overrides.
 - Trusted browser listing and revocation from popup/options.

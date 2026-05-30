@@ -1031,6 +1031,65 @@ test.describe('content script form detection', () => {
     });
   });
 
+  test('fills password after same-page username-first step reveals password field', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_FILL_ACK') {
+              return { ok: true, response: { Success: true } };
+            }
+            if (message.type === 'KBB_REMEMBER_PENDING_CREDENTIAL') {
+              await new Promise((resolve) => setTimeout(resolve, 60));
+              sessionStorage.setItem('__testKbbPendingMultiStepCredential', JSON.stringify({
+                origin: message.origin,
+                credential: message.credential
+              }));
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_CONSUME_PENDING_CREDENTIAL') {
+              const pending = JSON.parse(sessionStorage.getItem('__testKbbPendingMultiStepCredential') || 'null');
+              if (!pending || pending.origin !== message.origin) {
+                return { ok: true, response: { credential: null } };
+              }
+              sessionStorage.removeItem('__testKbbPendingMultiStepCredential');
+              return { ok: true, response: { credential: pending.credential } };
+            }
+            return {
+              ok: true,
+              response: {
+                entries: [
+                  {
+                    EntryId: 'entry-dropbox',
+                    Title: 'Dropbox',
+                    UserName: 'dropbox@example.com',
+                    Password: 'dropbox-secret',
+                    Url: 'https://www.dropbox.com/login'
+                  }
+                ]
+              }
+            };
+          }
+        }
+      };
+    });
+
+    await page.goto('/tests/fixtures/same-page-username-first.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+    await expect(page.locator('#same-page-username')).toHaveValue('dropbox@example.com');
+
+    await page.locator('#continue').click();
+
+    await expect(page.locator('#same-page-password')).toHaveValue('dropbox-secret');
+    const ackMessages = await page.evaluate(() => window.__kbbMessages.filter((message) => message.type === 'KBB_FILL_ACK'));
+    expect(ackMessages.some((message) => message.entryId === 'entry-dropbox')).toBe(true);
+  });
+
   test('fills username and password on a standard login form', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/login-page.html');

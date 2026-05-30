@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Same-page Username First Fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 32px; }
+    label { display: block; margin: 12px 0; }
+    input { width: 280px; padding: 8px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Sign in</h1>
+  <form id="login-form">
+    <section id="email-step">
+      <label>Email
+        <input id="same-page-username" name="login_email" type="email" autocomplete="username">
+      </label>
+      <button id="continue" type="button">Continue</button>
+    </section>
+
+    <section id="password-step" class="hidden">
+      <label>Password
+        <input id="same-page-password" name="login_password" type="password" autocomplete="current-password">
+      </label>
+      <button type="submit">Sign in</button>
+    </section>
+  </form>
+
+  <script>
+    document.getElementById('continue').addEventListener('click', () => {
+      document.getElementById('email-step').classList.add('hidden');
+      document.getElementById('password-step').classList.remove('hidden');
+      document.getElementById('same-page-password').focus();
+    });
+  </script>
+</body>
+</html>

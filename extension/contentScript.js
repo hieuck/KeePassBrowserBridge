@@ -130,6 +130,9 @@ function installRootEventListeners(root) {
           return;
         }
         const submit = target.closest('button, input[type="submit"]');
+        if (submit && !isSubmitControl(submit)) {
+          return;
+        }
         if (submit) {
           captureLoginSubmit(submit.form || submit.closest("form"));
           waitForPendingCredentialMessages(event);
@@ -138,6 +141,14 @@ function installRootEventListeners(root) {
     },
     true,
   );
+}
+function isSubmitControl(element) {
+  if (!element || !element.tagName) return false;
+  const tagName = element.tagName.toLowerCase();
+  const type = (element.getAttribute("type") || "").toLowerCase();
+  if (tagName === "input") return type === "submit";
+  if (tagName === "button") return type === "" || type === "submit";
+  return false;
 }
 function fillLogin(credential) {
   const passwordInput = findPasswordInput();
