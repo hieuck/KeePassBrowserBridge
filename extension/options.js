@@ -306,7 +306,16 @@ async function listTrustedBrowsers() {
     : 'No trusted browsers found.', 'success');
 }
 
-async function revokeTrustedBrowser(clientId) {
+async function revokeTrustedBrowser(clientId, clientName) {
+  const name = clientName || 'Browser';
+  const confirmed = confirm(
+    `Revoke browser "${name}"?\n\nIt will need to pair again before accessing KeePass.`
+  );
+  if (!confirmed) {
+    showMessage('Revoke cancelled.', 'success');
+    return;
+  }
+
   const result = await send({ type: 'KBB_REVOKE_CLIENT', clientId });
   if (!result || !result.Revoked) {
     throw new Error('Browser was not revoked.');
@@ -350,7 +359,7 @@ function renderTrustedBrowsers(clients) {
     revoke.className = 'secondary';
     revoke.dataset.action = 'revoke-client';
     revoke.textContent = client.Current ? 'Revoke This Browser' : 'Revoke';
-    revoke.addEventListener('click', () => runAction(() => revokeTrustedBrowser(client.ClientId)));
+    revoke.addEventListener('click', () => runAction(() => revokeTrustedBrowser(client.ClientId, client.ClientName || 'Browser')));
 
     row.append(details, revoke);
     elements.trustedBrowserList.appendChild(row);

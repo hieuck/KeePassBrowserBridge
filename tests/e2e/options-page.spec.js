@@ -338,7 +338,24 @@ test.describe('options page settings', () => {
     await expect(page.locator('#trustedBrowserList')).toContainText('Old Browser');
     await expect(page.locator('#message')).toHaveText('2 trusted browser(s).');
 
-    await page.locator('[data-client-id="client-old"] [data-action="revoke-client"]').click();
+    const revokeOldBrowser = page.locator('[data-client-id="client-old"] [data-action="revoke-client"]');
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Revoke browser "Old Browser"?');
+      await dialog.dismiss();
+    });
+    await revokeOldBrowser.click();
+
+    await expect(page.locator('#trustedBrowserList')).toContainText('Old Browser');
+    await expect(page.locator('#message')).toHaveText('Revoke cancelled.');
+    await expect.poll(() => page.evaluate(() =>
+      window.__kbbOptionsMessages.filter((message) => message.type === 'KBB_REVOKE_CLIENT')
+    )).toEqual([]);
+
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Revoke browser "Old Browser"?');
+      await dialog.accept();
+    });
+    await revokeOldBrowser.click();
 
     await expect(page.locator('#trustedBrowserList')).not.toContainText('Old Browser');
     await expect(page.locator('#message')).toHaveText('Browser revoked.');
