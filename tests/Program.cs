@@ -61,6 +61,8 @@ internal static class Program
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
+        BridgeHandlerPairCompleteStoresExtensionOrigin();
+        BridgeHandlerRejectsAuthenticatedRequestFromDifferentExtensionOrigin();
         BridgeHandlerRejectsReplayedAuthenticatedRequestId();
         BridgeHandlerCancelsPairingSession();
         BridgeHandlerListsTrustedClientsWithoutSecrets();
@@ -360,6 +362,7 @@ internal static class Program
             ClientId = "client-1",
             ClientName = "Chrome",
             SharedSecret = "shared-secret",
+            ExtensionOrigin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
             CreatedUtcMs = 1779960000000
         });
 
@@ -371,6 +374,8 @@ internal static class Program
         AssertTrue(client != null, "restored store should contain trusted client");
         AssertEqual("Chrome", client.ClientName, "restored client name mismatch");
         AssertEqual("shared-secret", client.SharedSecret, "restored client secret mismatch");
+        AssertEqual("chrome-extension://abcdefghijklmnopabcdefghijklmnop", client.ExtensionOrigin,
+            "restored client origin mismatch");
         AssertEqual(1779960000000, client.CreatedUtcMs, "restored client timestamp mismatch");
     }
 
@@ -799,6 +804,53 @@ internal static class Program
 
         AssertTrue(response.Success, "valid HMAC client.status should succeed: " + response.Error);
         AssertTrue(payload.Trusted, "client.status should report trusted client");
+    }
+
+    private static void BridgeHandlerPairCompleteStoresExtensionOrigin()
+    {
+        PairingService pairing = new PairingService(new DeterministicSecretGenerator("123456", "shared-secret"));
+        TrustedClientStore store = new TrustedClientStore();
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            pairing,
+            store,
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { },
+            delegate(PwDatabase database) { });
+        PairingSession session = pairing.BeginPairing("Chrome");
+        BridgeRequest request = CreateValidRequest(BridgeMethods.PairComplete);
+        request.Payload = BridgeJsonSerializer.Serialize(new PairCompletePayload
+        {
+            PairingSessionId = session.PairingSessionId,
+            PairingCode = "123456",
+            ClientName = "Chrome"
+        });
+
+        BridgeResponse response = handler.Handle(request);
+        PairCompleteResponsePayload payload = BridgeJsonSerializer.Deserialize<PairCompleteResponsePayload>(response.Payload);
+        TrustedClient client = store.Get(payload.ClientId);
+
+        AssertTrue(response.Success, "pair.complete should succeed: " + response.Error);
+        AssertTrue(client != null, "paired client should be stored");
+        AssertEqual("chrome-extension://abcdefghijklmnopabcdefghijklmnop", client.ExtensionOrigin,
+            "paired client should store the extension origin");
+    }
+
+    private static void BridgeHandlerRejectsAuthenticatedRequestFromDifferentExtensionOrigin()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        store.ImportJson("{\"Clients\":[{\"ClientId\":\"client-1\",\"ClientName\":\"Chrome\",\"SharedSecret\":\"secret\",\"ExtensionOrigin\":\"chrome-extension://abcdefghijklmnopabcdefghijklmnop\",\"CreatedUtcMs\":1779960000000}]}");
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateValidRequest(BridgeMethods.ClientStatus);
+        request.Origin = "chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        request.ClientId = "client-1";
+        request.Authentication = BridgeAuthentication.CreateAuthentication(request, "secret");
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "trusted client secret should not authenticate a different extension origin");
+        AssertEqual("invalid_authentication", response.ErrorCode, "origin-bound auth error code mismatch");
     }
 
     private static void BridgeHandlerRejectsReplayedAuthenticatedRequestId()

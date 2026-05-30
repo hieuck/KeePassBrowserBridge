@@ -50,6 +50,11 @@ namespace KeePassBrowserBridge.Bridge
 
         public PairingResult CompletePairing(TrustedClientStore store, string pairingSessionId, string pairingCode, string clientName)
         {
+            return CompletePairing(store, pairingSessionId, pairingCode, clientName, null);
+        }
+
+        public PairingResult CompletePairing(TrustedClientStore store, string pairingSessionId, string pairingCode, string clientName, string extensionOrigin)
+        {
             if (store == null) throw new ArgumentNullException("store");
 
             PairingSession session;
@@ -79,6 +84,7 @@ namespace KeePassBrowserBridge.Bridge
                 ClientId = Guid.NewGuid().ToString("N"),
                 ClientName = NormalizeClientName(clientName),
                 SharedSecret = m_secretGenerator.CreateSecret(),
+                ExtensionOrigin = NormalizeExtensionOrigin(extensionOrigin),
                 CreatedUtcMs = m_nowProvider()
             };
 
@@ -97,6 +103,13 @@ namespace KeePassBrowserBridge.Bridge
         private static string NormalizeClientName(string clientName)
         {
             return string.IsNullOrWhiteSpace(clientName) ? "Browser" : clientName.Trim();
+        }
+
+        private static string NormalizeExtensionOrigin(string extensionOrigin)
+        {
+            if (string.IsNullOrWhiteSpace(extensionOrigin)) return string.Empty;
+            string trimmed = extensionOrigin.Trim();
+            return ProtocolValidator.IsAllowedExtensionOrigin(trimmed) ? trimmed : string.Empty;
         }
 
         private void CancelExistingSessionsForClient(string clientName)

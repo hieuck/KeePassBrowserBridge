@@ -92,7 +92,7 @@ namespace KeePassBrowserBridge.Bridge
         {
             PairCompletePayload payload = BridgeJsonSerializer.Deserialize<PairCompletePayload>(request.Payload);
             PairingResult result = m_pairingService.CompletePairing(m_trustedClients,
-                payload.PairingSessionId, payload.PairingCode, payload.ClientName);
+                payload.PairingSessionId, payload.PairingCode, payload.ClientName, request.Origin);
 
             if (!result.Success) return Error(request, result.ErrorCode, result.Error);
 
@@ -201,7 +201,12 @@ namespace KeePassBrowserBridge.Bridge
         private bool VerifyAuthentication(BridgeRequest request)
         {
             TrustedClient client = m_trustedClients.Get(request.ClientId);
-            return client != null && BridgeAuthentication.Verify(request, client.SharedSecret);
+            if (client == null) return false;
+            if (!string.IsNullOrWhiteSpace(client.ExtensionOrigin) &&
+                !string.Equals(client.ExtensionOrigin, request.Origin, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            return BridgeAuthentication.Verify(request, client.SharedSecret);
         }
 
         private bool TrackAuthenticatedRequest(BridgeRequest request, long nowUtcMs)

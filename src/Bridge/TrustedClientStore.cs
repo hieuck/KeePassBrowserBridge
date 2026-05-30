@@ -89,6 +89,9 @@ namespace KeePassBrowserBridge.Bridge
         public string SharedSecret { get; set; }
 
         [DataMember]
+        public string ExtensionOrigin { get; set; }
+
+        [DataMember]
         public long CreatedUtcMs { get; set; }
     }
 
