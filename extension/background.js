@@ -525,6 +525,7 @@ async function consumeSubmittedCredential(origin) {
 }
 
 async function collectPageCredential() {
+  await assertCanAccessCredentials();
   const tab = await getActiveTab();
   if (!tab || !tab.id || !isFillableUrl(tab.url)) {
     return { collected: false, credential: null };

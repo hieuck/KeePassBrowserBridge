@@ -13,6 +13,7 @@ const requests = [];
 const extensionSessionStorage = {};
 const notifications = [];
 const badgeCalls = [];
+const scriptCalls = [];
 let now = 10000;
 let loginEntries = [];
 
@@ -165,7 +166,9 @@ const sandbox = {
       query: async () => []
     },
     scripting: {
-      executeScript: async () => {}
+      executeScript: async (details) => {
+        scriptCalls.push(details);
+      }
     },
     storage: {
       local: {
@@ -642,6 +645,29 @@ sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
     }
   };
 };
+scriptCalls.length = 0;
+storage.locked = true;
+await assert.rejects(
+  () => sandbox.handleMessage({ type: 'KBB_COLLECT_PAGE_CREDENTIAL' }),
+  /locked/i,
+  'locked extension should reject page credential collection'
+);
+assert.equal(sentMessage, null, 'locked collection should not message the content script');
+assert.equal(scriptCalls.length, 0, 'locked collection should not inject the content script');
+
+storage.locked = false;
+delete storage.clientId;
+delete storage.sharedSecret;
+await assert.rejects(
+  () => sandbox.handleMessage({ type: 'KBB_COLLECT_PAGE_CREDENTIAL' }),
+  /Pair this browser with KeePass first\./,
+  'unpaired extension should reject page credential collection'
+);
+assert.equal(sentMessage, null, 'unpaired collection should not message the content script');
+assert.equal(scriptCalls.length, 0, 'unpaired collection should not inject the content script');
+
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
 const collectedPageCredential = await sandbox.handleMessage({ type: 'KBB_COLLECT_PAGE_CREDENTIAL' });
 assert.equal(sentMessage.type, 'KBB_COLLECT_PAGE_CREDENTIAL', 'background should ask the content script to collect page credentials');
 assert.equal(collectedPageCredential.credential.userName, 'typed@example.com', 'background should return collected page username');
