@@ -28,7 +28,10 @@ test.describe('KeePassBrowserBridge Extension', () => {
           Password: 'secret-password',
           OneTimePassword: '123456',
           Url: 'https://example.com/login',
-          Group: 'Accounts/Work'
+          Group: 'Accounts/Work',
+          CustomFields: [
+            { Name: 'Tenant', Value: 'staging', IsProtected: false }
+          ]
         }
       ];
       window.chrome = {
@@ -86,7 +89,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
                     Title: message.login.title,
                     UserName: message.login.userName,
                     Url: message.login.url,
-                    Password: message.login.password
+                    Password: message.login.password,
+                    CustomFields: message.login.customFields || []
                   }
                 }
               };
@@ -586,6 +590,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('[name="url"]').fill('https://example.com/account');
     await form.locator('[name="password"]').fill('updated-secret');
     await form.locator('[name="otp"]').fill('JBSWY3DPEHPK3PXP');
+    await expect(form.locator('[name="customFieldName"]')).toHaveValue('Tenant');
+    await form.locator('[name="customFieldValue"]').fill('production');
     await form.locator('button[type="submit"]').click();
 
     await expect(page.locator('#message')).toHaveText('Entry updated.');
@@ -603,7 +609,10 @@ test.describe('KeePassBrowserBridge Extension', () => {
         userName: 'updated@example.com',
         url: 'https://example.com/account',
         password: 'updated-secret',
-        otp: 'JBSWY3DPEHPK3PXP'
+        otp: 'JBSWY3DPEHPK3PXP',
+        customFields: [
+          { name: 'Tenant', value: 'production', isProtected: false }
+        ]
       }
     });
   });

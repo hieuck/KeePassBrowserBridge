@@ -449,6 +449,7 @@ async function updateLogin(entry, form) {
   if (!login.clearOtp) {
     addOptionalSecret(login, 'otp', form.querySelector('[name="otp"]').value);
   }
+  addOptionalCustomField(login, form);
 
   const result = await send({ type: 'KBB_UPDATE_LOGIN', login });
   if (!result || !result.Success) {
@@ -460,7 +461,8 @@ async function updateLogin(entry, form) {
     Group: login.group,
     Url: login.url,
     UserName: login.userName,
-    Password: login.password
+    Password: login.password,
+    CustomFields: result.Entry && result.Entry.CustomFields ? result.Entry.CustomFields : entry.CustomFields
   });
   await renderResults(currentEntries);
   setMessage('Entry updated.');
@@ -502,8 +504,10 @@ function addOptionalSecret(payload, name, value) {
 }
 
 function addOptionalCustomField(payload, form) {
-  const name = String(form.querySelector('[name="customFieldName"]').value || '').trim();
-  const value = String(form.querySelector('[name="customFieldValue"]').value || '').trim();
+  const nameInput = form.querySelector('[name="customFieldName"]');
+  const valueInput = form.querySelector('[name="customFieldValue"]');
+  const name = String(nameInput ? nameInput.value : '').trim();
+  const value = String(valueInput ? valueInput.value : '').trim();
   if (!name || !value) {
     return;
   }
@@ -925,6 +929,8 @@ function showEditForm(item, entry) {
     </label>
     <label>TOTP secret<input name="otp" type="password" spellcheck="false" autocomplete="off" placeholder="Leave blank to keep existing"></label>
     <label><input name="clearOtp" type="checkbox"> Clear TOTP secret</label>
+    <label>Custom field name<input name="customFieldName" type="text" spellcheck="false" placeholder="Tenant"></label>
+    <label>Custom field value<input name="customFieldValue" type="text" spellcheck="false" placeholder="production"></label>
     <div class="login-actions">
       <button type="submit">✓ Save</button>
       <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>
@@ -936,6 +942,9 @@ function showEditForm(item, entry) {
   form.querySelector('[name="userName"]').value = entry.UserName || '';
   form.querySelector('[name="url"]').value = entry.Url || '';
   form.querySelector('[name="password"]').value = entry.Password || '';
+  const customField = firstEditableCustomField(entry);
+  form.querySelector('[name="customFieldName"]').value = customField ? customField.Name : '';
+  form.querySelector('[name="customFieldValue"]').value = customField ? customField.Value : '';
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     runAction(() => updateLogin(entry, form));
@@ -951,6 +960,11 @@ function showEditForm(item, entry) {
   wirePasswordVisibilityToggle(form);
   form.querySelector('[data-action="cancel"]').addEventListener('click', () => form.remove());
   item.append(form);
+}
+
+function firstEditableCustomField(entry) {
+  const fields = entry && Array.isArray(entry.CustomFields) ? entry.CustomFields : [];
+  return fields.find((field) => field && !field.IsProtected && field.Name && field.Value) || null;
 }
 
 function wirePasswordVisibilityToggle(form) {

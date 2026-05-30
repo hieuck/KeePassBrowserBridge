@@ -150,6 +150,7 @@ namespace KeePassBrowserBridge.Bridge
         public string Password { get; set; }
         public string Otp { get; set; }
         public bool ClearOtp { get; set; }
+        public CustomField[] CustomFields { get; set; }
     }
 
     public sealed class FillAckPayload

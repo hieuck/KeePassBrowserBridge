@@ -19,7 +19,7 @@ KeePass Browser Bridge has two release artifacts:
 - OTP generation from KeePass TOTP fields.
 - Save new logins and update changed passwords from page prompts.
 - Create KeePass entries from the popup, including one non-protected custom field.
-- Edit existing KeePass entries from the popup.
+- Edit existing KeePass entries from the popup, including one non-protected custom field.
 - New-login popup form prefilled from fields already typed on the page when available.
 - HTTP Basic Auth fill support.
 - Site-specific auto-fill and auto-submit overrides.

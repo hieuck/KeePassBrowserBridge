@@ -14,7 +14,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 - Fill full forms or fill the focused field with username, password, OTP, or selected non-protected custom fields.
 - Copy username, password, OTP, and non-protected custom fields with clipboard auto-clear support.
 - Create a new KeePass entry from the popup, prefilled from fields already typed on the page when available, with optional non-protected custom field capture.
-- Edit existing entries, update changed passwords, generate replacement passwords, and clear TOTP secrets.
+- Edit existing entries, update changed passwords, generate replacement passwords, update one non-protected custom field, and clear TOTP secrets.
 - Save/update prompts after submitted login forms, including redirect and multi-step login flows.
 - HTTP Basic Auth credential lookup.
 - Site-specific auto-fill and auto-submit overrides.

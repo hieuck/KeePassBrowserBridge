@@ -65,6 +65,7 @@ namespace KeePassBrowserBridge.Bridge
                 string.IsNullOrWhiteSpace(payload.UserName) &&
                 string.IsNullOrWhiteSpace(payload.Password) &&
                 string.IsNullOrWhiteSpace(payload.Otp) &&
+                !HasCustomFields(payload.CustomFields) &&
                 !payload.ClearOtp)
                 return CredentialMutationResult.Fail("missing_update_fields", "At least one login field is required.");
 
@@ -95,6 +96,8 @@ namespace KeePassBrowserBridge.Bridge
             if (!string.IsNullOrWhiteSpace(payload.Otp))
                 entry.Strings.Set("otp", new ProtectedString(true, payload.Otp.Trim()));
 
+            AddCustomFields(entry, payload.CustomFields);
+
             string groupPath = string.Empty;
             if (payload.Group != null)
             {
@@ -117,7 +120,8 @@ namespace KeePassBrowserBridge.Bridge
                 UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
                 Url = entry.Strings.ReadSafe(PwDefs.UrlField),
                 Group = groupPath,
-                Password = entry.Strings.ReadSafe(PwDefs.PasswordField)
+                Password = entry.Strings.ReadSafe(PwDefs.PasswordField),
+                CustomFields = ExtractResultCustomFields(payload.CustomFields)
             });
         }
 
@@ -176,6 +180,20 @@ namespace KeePassBrowserBridge.Bridge
                 if (string.IsNullOrWhiteSpace(value)) continue;
                 entry.Strings.Set(name, new ProtectedString(field.IsProtected, value));
             }
+        }
+
+        private static bool HasCustomFields(CustomField[] fields)
+        {
+            if (fields == null) return false;
+            foreach (CustomField field in fields)
+            {
+                if (field != null &&
+                    !string.IsNullOrWhiteSpace(field.Name) &&
+                    !string.IsNullOrWhiteSpace(field.Value) &&
+                    !IsReservedStringField(field.Name.Trim()))
+                    return true;
+            }
+            return false;
         }
 
         private static CustomField[] ExtractResultCustomFields(CustomField[] fields)

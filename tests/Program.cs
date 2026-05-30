@@ -56,6 +56,7 @@ internal static class Program
         CredentialMutationUpdatesExistingEntryPassword();
         CredentialMutationAcceptsPageUrlFromAdditionalUrlField();
         CredentialMutationUpdatesExistingEntryFields();
+        CredentialMutationUpdatesExistingEntryCustomField();
         CredentialMutationMovesExistingEntryToRequestedGroup();
         CredentialMutationMovesExistingEntryToRootWhenGroupIsBlank();
         CredentialMutationUpdatesExistingEntryTotpSecret();
@@ -729,6 +730,29 @@ internal static class Program
         AssertEqual("Updated Example", result.Entry.Title, "updated result title mismatch");
         AssertEqual("alice.updated@example.com", result.Entry.UserName, "updated result username mismatch");
         AssertEqual("https://accounts.example.com/sign-in", result.Entry.Url, "updated result URL mismatch");
+    }
+
+    private static void CredentialMutationUpdatesExistingEntryCustomField()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        entry.Strings.Set("Tenant", new ProtectedString(false, "staging"));
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            CustomFields = new[]
+            {
+                new CustomField { Name = "Tenant", Value = "production", IsProtected = false },
+                new CustomField { Name = "Password", Value = "should-not-overwrite", IsProtected = false }
+            }
+        });
+
+        AssertTrue(result.Success, "credential update with custom field should succeed: " + result.Error);
+        AssertEqual("production", entry.Strings.ReadSafe("Tenant"), "updated entry should store public custom field");
+        AssertEqual("old-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "reserved custom field name should not overwrite password");
+        AssertTrue(FindCustomField(result.Entry.CustomFields, "Tenant") != null, "updated result should include public custom field metadata");
     }
 
     private static void CredentialMutationMovesExistingEntryToRequestedGroup()
