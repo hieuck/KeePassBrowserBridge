@@ -9,6 +9,7 @@ const assemblyInfo = fs.readFileSync(new URL('../../src/Properties/AssemblyInfo.
 const releaseScript = fs.readFileSync(new URL('../../scripts/build-release.ps1', import.meta.url), 'utf8');
 const releaseWorkflow = fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8');
 const ciWorkflow = fs.readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const rootReadme = fs.readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
 const extensionReadme = fs.readFileSync(new URL('../../extension/README.md', import.meta.url), 'utf8');
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'extension');
 const scripts = manifest.content_scripts.flatMap((entry) => entry.js || []);
@@ -38,6 +39,9 @@ assert.equal(releaseWorkflow.includes('npx playwright install chromium'), true, 
 assert.equal(releaseWorkflow.includes('.\\scripts\\verify.ps1'), true, 'release workflow should run the same full verifier before packaging');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersion}")]`), true, 'plugin AssemblyVersion should match extension release version');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
+assert.equal(rootReadme.includes(`Version ${manifest.version}`), true, 'root README should document the current release version');
+assert.equal(rootReadme.includes('MVP development is in progress'), false, 'root README should not describe the product as the old MVP status');
+assert.equal(rootReadme.includes('Chrome/Firefox extension'), true, 'root README should describe both packaged browser extension targets');
 assert.equal(extensionReadme.includes(`Version ${manifest.version}`), true, 'extension README should document the current extension version');
 assert.equal(extensionReadme.includes('0.2.0'), false, 'extension README should not describe an obsolete release version');
 assert.equal(extensionReadme.includes('contentScript.js - Main filling logic (unchanged)'), false, 'extension README should not claim current filling logic is unchanged from an older phase');
