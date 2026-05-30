@@ -899,7 +899,11 @@ async function fillFromContextMenu(tabId, url, role) {
     else if (role === 'otp') credentialToFill = { OneTimePassword: entry.OneTimePassword };
     
     await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
-    const fillResult = await chrome.tabs.sendMessage(tabId, { type: 'KBB_FILL', credential: credentialToFill });
+    const fillResult = await chrome.tabs.sendMessage(tabId, {
+      type: 'KBB_FILL',
+      credential: credentialToFill,
+      fieldRole: role
+    });
     
     if (entry.EntryId && (!fillResult || fillResult.filled !== false)) {
       await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);

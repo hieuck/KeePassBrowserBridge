@@ -342,6 +342,23 @@ const otpResult = sandbox.fillLogin({ OneTimePassword: '123456' });
 assert.equal(otpResult.otpFilled, true);
 assert.deepEqual(splitOtpInputs.map((input) => input.value), ['1', '2', '3', '4', '5', '6']);
 
+viotpHistorySearchInput.focus();
+let focusedFieldResponse = null;
+sandbox.window.__keepassBrowserBridgeMessageListener(
+  {
+    type: 'KBB_FILL',
+    credential: { Password: 'manual-secret' },
+    fieldRole: 'password'
+  },
+  {},
+  (response) => {
+    focusedFieldResponse = response;
+  }
+);
+assert.equal(focusedFieldResponse.filled, true, 'manual field fill should report success');
+assert.equal(focusedFieldResponse.result.passwordFilled, true, 'manual password fill should mark the password as filled');
+assert.equal(viotpHistorySearchInput.value, 'manual-secret', 'manual field fill should write to the focused editable input even when form detection would ignore it');
+
 const customFieldResult = sandbox.fillLogin({
   CustomFields: [
     { Name: 'Tenant', Value: 'production', IsProtected: false },

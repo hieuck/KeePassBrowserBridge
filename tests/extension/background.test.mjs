@@ -604,6 +604,7 @@ sandbox.contextMenuHandler({ menuItemId: 'kbb_fill_password' }, { id: 1, url: 'h
 await new Promise(r => setTimeout(r, 100)); // wait for async handler
 assert.equal(sentMessage.type, 'KBB_FILL', 'context menu fill should send a fill message');
 assert.equal(sentMessage.credential.Password, 'secret', 'context menu password fill should use the matching entry password');
+assert.equal(sentMessage.fieldRole, 'password', 'context menu fill should tell the content script to fill the focused editable field');
 const contextMenuFillAckRequest = requests.find((request) => request.Method === 'logins.fillAck' && JSON.parse(request.Payload).EntryId === 'entry-1');
 assert.ok(contextMenuFillAckRequest, 'successful context menu fill should acknowledge usage');
 

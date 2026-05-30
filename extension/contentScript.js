@@ -17,7 +17,9 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
       return;
     }
     try {
-      const result = fillLogin(message.credential || {});
+      const result = message.fieldRole
+        ? fillFocusedField(message.credential || {}, message.fieldRole)
+        : fillLogin(message.credential || {});
       
       if (message.autoSubmit && (result.usernameFilled || result.passwordFilled)) {
         const passwordInput = findPasswordInput();
@@ -152,6 +154,49 @@ function fillLogin(credential) {
     customFieldsFilled: customFieldsResult ? customFieldsResult.filled : 0,
     customFields: customFieldsResult ? customFieldsResult.fields : [],
   };
+}
+function fillFocusedField(credential, role) {
+  const target = getFocusedEditableInput();
+  if (!target) {
+    throw new Error("No focused editable field found on this page.");
+  }
+
+  if (role === "username" && credential.UserName) {
+    setInputValue(target, credential.UserName);
+    return { usernameFilled: true, passwordFilled: false, otpFilled: false };
+  }
+  if (role === "password" && credential.Password) {
+    setInputValue(target, credential.Password);
+    return { usernameFilled: false, passwordFilled: true, otpFilled: false };
+  }
+  if (role === "otp" && credential.OneTimePassword) {
+    setInputValue(target, credential.OneTimePassword);
+    return { usernameFilled: false, passwordFilled: false, otpFilled: true };
+  }
+
+  throw new Error("Selected KeePass entry does not contain a value for this field.");
+}
+function getFocusedEditableInput() {
+  const active = document.activeElement;
+  if (!active || !isVisible(active) || active.disabled || active.readOnly) {
+    return null;
+  }
+
+  const tagName = String(active.tagName || active.nodeName || "").toLowerCase();
+  if (tagName === "textarea") {
+    return active;
+  }
+  if (tagName && tagName !== "input") {
+    return null;
+  }
+  if (!tagName && typeof active.getAttribute !== "function") {
+    return null;
+  }
+
+  const type = (active.getAttribute("type") || "text").toLowerCase();
+  return ["text", "email", "tel", "url", "search", "number", "password", ""].includes(type)
+    ? active
+    : null;
 }
 function fillCustomFields(credential) {
   const fields = credential && Array.isArray(credential.CustomFields)
