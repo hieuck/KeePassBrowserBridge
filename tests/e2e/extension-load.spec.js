@@ -296,6 +296,26 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#message')).toHaveText('1 login(s) found.');
   });
 
+  test('shows a useful empty state when no logins match the current page', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupEntries = [];
+    });
+
+    await page.locator('#queryLogins').click();
+
+    await expect(page.locator('#results')).toContainText('No KeePass logins found for this page.');
+    await expect(page.locator('#results')).toContainText('Create a new entry or adjust URL matching in settings.');
+    await expect(page.locator('#emptyCreateLogin')).toBeVisible();
+    await expect(page.locator('#message')).toHaveText('No matching logins found.');
+
+    await page.locator('#emptyCreateLogin').click();
+
+    await expect(page.locator('.create-form')).toBeVisible();
+    await expect(page.locator('.create-form [name="userName"]')).toHaveValue('typed@example.com');
+    await expect(page.locator('.create-form [name="password"]')).toHaveValue('typed-secret');
+    await expect(page.locator('#message')).toHaveText('Create a new KeePass login for this page.');
+  });
+
   test('locks and unlocks credential access from the popup', async ({ page }) => {
     await expect(page.locator('#lockBridge')).toHaveText('Lock');
 

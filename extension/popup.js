@@ -673,6 +673,11 @@ async function renderResults(entries) {
   const showPasswords = await shouldShowPasswordsInPopup();
   visibleEntries = filterEntries(currentEntries, elements.loginSearch.value);
 
+  if (!currentEntries.length) {
+    renderNoLoginsEmptyState();
+    return;
+  }
+
   if (currentEntries.length && !visibleEntries.length) {
     const empty = document.createElement('div');
     empty.className = 'login-empty';
@@ -781,6 +786,28 @@ async function renderResults(entries) {
 
     elements.results.append(item);
   }
+}
+
+function renderNoLoginsEmptyState() {
+  const empty = document.createElement('div');
+  empty.className = 'login-empty login-empty-actionable';
+
+  const title = document.createElement('div');
+  title.className = 'login-empty-title';
+  title.textContent = 'No KeePass logins found for this page.';
+
+  const hint = document.createElement('div');
+  hint.className = 'login-empty-hint';
+  hint.textContent = 'Create a new entry or adjust URL matching in settings.';
+
+  const create = document.createElement('button');
+  create.id = 'emptyCreateLogin';
+  create.type = 'button';
+  create.textContent = '+ New Login';
+  create.addEventListener('click', () => runAction(beginCreateLogin));
+
+  empty.append(title, hint, create);
+  elements.results.append(empty);
 }
 
 async function shouldShowPasswordsInPopup() {
