@@ -125,6 +125,7 @@ const elements = Object.fromEntries(ids.map((id) => [id, new Element(id)]));
 elements.pairingPanel.classList.add('hidden');
 const sentMessages = [];
 const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
+const timerCalls = [];
 
 const fakeDocument = {
   activeElement: null,
@@ -150,6 +151,14 @@ const fakeDocument = {
 
 const sandbox = {
   console,
+  setTimeout(handler, delay) {
+    const timer = { handler, delay, cleared: false };
+    timerCalls.push(timer);
+    return timer;
+  },
+  clearTimeout(timer) {
+    if (timer) timer.cleared = true;
+  },
   document: fakeDocument,
   window: {
     matchMedia: () => ({ matches: false })
@@ -325,6 +334,27 @@ assert.deepEqual(
 assert.equal(sentMessages[0].pairingCode, '955963', 'paste should submit the extracted pairing code');
 assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'paste and pair should hide the pairing panel after success');
 assert.equal(elements.message.textContent, 'Browser paired with KeePass.', 'paste and pair should confirm success to the user');
+
+timerCalls.length = 0;
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: false,
+  pairingSessionId: 'session-expiring',
+  pairingExpiresAt: Date.now() + 1000,
+  autoFillEnabled: false
+});
+assert.equal(timerCalls.length, 1, 'active pairing state should schedule expiry handling');
+assert.equal(timerCalls[0].delay <= 1000, true, 'pairing expiry handler should run when the code expires');
+sentMessages.length = 0;
+timerCalls[0].handler();
+await flushAsync();
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_PAIR_CANCEL'],
+  'expired pairing code should cancel the active pairing session'
+);
+assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'expired pairing code should hide the pairing panel');
+assert.equal(elements.message.textContent, 'Pairing code expired. Start pairing again.', 'expired pairing code should explain the next action');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',

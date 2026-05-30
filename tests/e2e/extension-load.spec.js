@@ -49,7 +49,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
             if (message && message.type === 'KBB_PAIR_BEGIN') {
               state.paired = false;
               state.pairingSessionId = 'session-1';
-              state.pairingExpiresAt = Date.now() + 300000;
+              state.pairingExpiresAt = Date.now() + (window.__kbbPairingDurationMs || 300000);
               return { ok: true, response: { ...state } };
             }
             if (message && message.type === 'KBB_PAIR_CANCEL') {
@@ -244,6 +244,23 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#message')).toHaveText('Browser paired with KeePass.');
     await expect.poll(() => page.evaluate(() => window.__kbbPopupMessages.map((message) => message.type))).toEqual(
       expect.arrayContaining(['KBB_PAIR_BEGIN', 'KBB_PAIR_COMPLETE'])
+    );
+  });
+
+  test('expires active pairing from the popup', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = false;
+      window.__kbbPairingDurationMs = 750;
+    });
+    await page.locator('#beginPair').click();
+
+    await expect(page.locator('#pairingPanel')).toBeVisible();
+    await expect(page.locator('#pairingTimer')).toContainText('Code expires in');
+
+    await expect(page.locator('#pairingPanel')).toBeHidden();
+    await expect(page.locator('#message')).toHaveText('Pairing code expired. Start pairing again.');
+    await expect.poll(() => page.evaluate(() => window.__kbbPopupMessages.map((message) => message.type))).toEqual(
+      expect.arrayContaining(['KBB_PAIR_BEGIN', 'KBB_PAIR_CANCEL'])
     );
   });
 

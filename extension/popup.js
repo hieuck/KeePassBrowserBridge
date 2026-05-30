@@ -38,6 +38,7 @@ const elements = {
 let currentEntries = [];
 let visibleEntries = [];
 let currentState = { locked: false };
+let pairingExpiryTimer = null;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -312,10 +313,19 @@ function extractPairingCode(text) {
 }
 
 async function cancelPair() {
+  clearPairingExpiryTimer();
   const state = await send({ type: 'KBB_PAIR_CANCEL' });
   elements.pairingCode.value = '';
   renderState(state);
   setMessage(state.paired ? 'Ready to query KeePass.' : 'Pairing cancelled.');
+}
+
+async function expirePairingSession() {
+  clearPairingExpiryTimer();
+  const state = await send({ type: 'KBB_PAIR_CANCEL' });
+  elements.pairingCode.value = '';
+  renderState(state);
+  setMessage('Pairing code expired. Start pairing again.');
 }
 
 async function queryLogins() {
@@ -621,10 +631,12 @@ function renderState(state) {
   const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
   if (!pairingActive) {
+    clearPairingExpiryTimer();
     elements.pairingCode.value = '';
     elements.pairingTimer.textContent = '';
   } else {
     elements.pairingTimer.textContent = formatPairingTimeRemaining(state.pairingExpiresAt);
+    schedulePairingExpiry(state);
   }
   if (state.locked) {
     setStatus('Locked', 'error');
@@ -637,6 +649,28 @@ function renderState(state) {
   if (pairingActive) {
     elements.pairingCode.focus();
   }
+}
+
+function schedulePairingExpiry(state) {
+  clearPairingExpiryTimer();
+  const expiresAt = Number(state && state.pairingExpiresAt ? state.pairingExpiresAt : 0);
+  if (!expiresAt) {
+    return;
+  }
+
+  const delay = Math.max(0, expiresAt - Date.now());
+  pairingExpiryTimer = setTimeout(() => {
+    expirePairingSession();
+  }, delay);
+}
+
+function clearPairingExpiryTimer() {
+  if (!pairingExpiryTimer) {
+    return;
+  }
+
+  clearTimeout(pairingExpiryTimer);
+  pairingExpiryTimer = null;
 }
 
 function renderStateNotice(state, pairingActive) {
