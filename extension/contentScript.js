@@ -765,13 +765,10 @@ function showInlinePicker(button, entries) {
       handlePickerSearchKeydown(event, button, picker, items, empty, search),
     );
     picker.appendChild(search);
-    empty = document.createElement("div");
-    empty.textContent = "No matching logins";
+    empty = createInlinePickerEmptyState(() => {
+      clearInlinePickerSearch(search, items, empty, button, picker);
+    });
     empty.style.display = "none";
-    empty.style.padding = "10px";
-    empty.style.color = "#667085";
-    empty.style.font =
-      '12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     picker.appendChild(empty);
   }
   const maxInitialItems = 5;
@@ -936,9 +933,7 @@ function handlePickerSearchKeydown(event, sourceButton, picker, items, empty, se
     event.preventDefault();
     event.stopPropagation();
     if (search && search.value) {
-      search.value = "";
-      filterInlinePickerItems(items, empty, "");
-      positionInlinePicker(sourceButton, picker);
+      clearInlinePickerSearch(search, items, empty, sourceButton, picker);
       return;
     }
     closeInlinePicker();
@@ -953,6 +948,49 @@ function handlePickerSearchKeydown(event, sourceButton, picker, items, empty, se
     event.stopPropagation();
     first.click();
   }
+}
+function createInlinePickerEmptyState(onClear) {
+  const empty = document.createElement("div");
+  empty.className = "kbb-inline-picker-empty";
+  empty.style.padding = "10px";
+  empty.style.color = "#667085";
+  empty.style.font =
+    '12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+  const message = document.createElement("div");
+  message.textContent = "No matching logins";
+
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "kbb-inline-picker-clear-search";
+  clear.textContent = "Clear Search";
+  clear.style.marginTop = "8px";
+  clear.style.width = "100%";
+  clear.style.border = "1px solid #176b87";
+  clear.style.borderRadius = "6px";
+  clear.style.background = "#ffffff";
+  clear.style.color = "#176b87";
+  clear.style.padding = "6px 8px";
+  clear.style.font =
+    '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  clear.style.cursor = "pointer";
+  clear.addEventListener("mousedown", (event) => event.preventDefault());
+  clear.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear();
+  });
+
+  empty.appendChild(message);
+  empty.appendChild(clear);
+  return empty;
+}
+function clearInlinePickerSearch(search, items, empty, sourceButton, picker) {
+  if (!search) return;
+  search.value = "";
+  filterInlinePickerItems(items, empty, "");
+  positionInlinePicker(sourceButton, picker);
+  search.focus();
 }
 function focusInlinePickerStart(picker, items) {
   const search = picker ? picker.querySelector(".kbb-inline-picker-search") : null;

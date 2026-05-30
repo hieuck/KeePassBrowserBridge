@@ -843,6 +843,21 @@ test.describe('content script form detection', () => {
     await page.keyboard.type('admin');
     await expect(page.locator('.kbb-inline-picker [data-kbb-entry-title="Hidden Admin"]')).toBeVisible();
 
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('missing');
+    await expect(page.locator('.kbb-inline-picker-empty')).toBeVisible();
+    await expect(page.locator('.kbb-inline-picker-empty')).toContainText('No matching logins');
+    await expect(page.locator('.kbb-inline-picker-clear-search')).toBeVisible();
+
+    await page.locator('.kbb-inline-picker-clear-search').click();
+
+    await expect(page.locator('.kbb-inline-picker-search')).toHaveValue('');
+    await expect(page.locator('.kbb-inline-picker [data-kbb-entry-title="Login 1"]')).toBeVisible();
+    await expect(page.locator('.kbb-inline-picker [data-kbb-entry-title="Hidden Admin"]')).toBeHidden();
+
+    await page.keyboard.type('admin');
+    await expect(page.locator('.kbb-inline-picker [data-kbb-entry-title="Hidden Admin"]')).toBeVisible();
+
     await page.keyboard.press('Enter');
 
     await expect(page.locator('#username')).toHaveValue('admin@example.com');
