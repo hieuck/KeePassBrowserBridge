@@ -677,6 +677,7 @@ function normalizeWebOrigin(origin) {
 
 async function bridgeCall(method, payload, requiresAuth) {
   const state = await storageGet(['endpoint', 'clientId', 'sharedSecret']);
+  const endpoint = normalizeEndpoint(state.endpoint || DEFAULT_ENDPOINT);
   const request = {
     ProtocolVersion: PROTOCOL_VERSION,
     RequestId: createRequestId(),
@@ -696,7 +697,7 @@ async function bridgeCall(method, payload, requiresAuth) {
     request.Authentication = await createAuthentication(request, state.sharedSecret);
   }
   
-  const response = await fetch(state.endpoint || DEFAULT_ENDPOINT, {
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)

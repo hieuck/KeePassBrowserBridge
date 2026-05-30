@@ -240,6 +240,16 @@ assert.equal(updateCheck.latestVersion, '0.10.0', 'update check should normalize
 assert.equal(updateCheck.updateAvailable, true, 'newer GitHub release should be reported');
 assert.equal(updateCheck.releaseUrl, 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0', 'update check should include latest release URL');
 
+requests.length = 0;
+storage.endpoint = 'https://evil.example/bridge';
+await assert.rejects(
+  () => sandbox.handleMessage({ type: 'KBB_HELLO' }),
+  /Endpoint must be an http:\/\/127\.0\.0\.1 URL\./,
+  'background should reject a non-loopback endpoint loaded from storage before network access'
+);
+assert.equal(requests.length, 0, 'background should not send bridge requests to a non-loopback endpoint');
+storage.endpoint = 'http://127.0.0.1:19455/bridge';
+
 storage.pairingSessionId = 'active-session';
 storage.pairingStartedAt = 1000;
 now = 2000;
