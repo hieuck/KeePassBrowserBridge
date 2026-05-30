@@ -134,6 +134,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserName { get; set; }
         public string Password { get; set; }
         public string Otp { get; set; }
+        public CustomField[] CustomFields { get; set; }
     }
 
     public sealed class UpdateLoginPayload

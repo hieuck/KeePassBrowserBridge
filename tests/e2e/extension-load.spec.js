@@ -501,6 +501,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('[name="userName"]').fill('new@example.com');
     await form.locator('[name="password"]').fill('new-secret');
     await form.locator('[name="otp"]').fill('JBSWY3DPEHPK3PXP');
+    await form.locator('[name="customFieldName"]').fill('Tenant');
+    await form.locator('[name="customFieldValue"]').fill('production');
     await form.locator('button[type="submit"]').click();
 
     await expect(page.locator('#message')).toHaveText('Entry created.');
@@ -514,7 +516,10 @@ test.describe('KeePassBrowserBridge Extension', () => {
         url: 'https://example.com/login',
         userName: 'new@example.com',
         password: 'new-secret',
-        otp: 'JBSWY3DPEHPK3PXP'
+        otp: 'JBSWY3DPEHPK3PXP',
+        customFields: [
+          { name: 'Tenant', value: 'production', isProtected: false }
+        ]
       }
     });
   });

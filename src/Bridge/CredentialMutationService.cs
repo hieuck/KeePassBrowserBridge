@@ -28,6 +28,7 @@ namespace KeePassBrowserBridge.Bridge
             entry.Strings.Set(PwDefs.UrlField, new ProtectedString(false, payload.Url));
             if (!string.IsNullOrWhiteSpace(payload.Otp))
                 entry.Strings.Set("otp", new ProtectedString(true, payload.Otp.Trim()));
+            AddCustomFields(entry, payload.CustomFields);
             entry.Touch(true, false);
 
             PwGroup targetGroup = FindOrCreateGroupPath(database.RootGroup, payload.Group);
@@ -42,7 +43,8 @@ namespace KeePassBrowserBridge.Bridge
                 UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
                 Url = entry.Strings.ReadSafe(PwDefs.UrlField),
                 Group = groupPath,
-                Password = payload.Password ?? string.Empty
+                Password = payload.Password ?? string.Empty,
+                CustomFields = ExtractResultCustomFields(payload.CustomFields)
             });
         }
 
@@ -159,6 +161,56 @@ namespace KeePassBrowserBridge.Bridge
                 return host;
 
             return "New Login";
+        }
+
+        private static void AddCustomFields(PwEntry entry, CustomField[] fields)
+        {
+            if (entry == null || fields == null) return;
+
+            foreach (CustomField field in fields)
+            {
+                if (field == null || string.IsNullOrWhiteSpace(field.Name)) continue;
+                string name = field.Name.Trim();
+                if (IsReservedStringField(name)) continue;
+                string value = field.Value ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(value)) continue;
+                entry.Strings.Set(name, new ProtectedString(field.IsProtected, value));
+            }
+        }
+
+        private static CustomField[] ExtractResultCustomFields(CustomField[] fields)
+        {
+            if (fields == null) return new CustomField[0];
+            System.Collections.Generic.List<CustomField> result = new System.Collections.Generic.List<CustomField>();
+            foreach (CustomField field in fields)
+            {
+                if (field == null || string.IsNullOrWhiteSpace(field.Name) || string.IsNullOrWhiteSpace(field.Value)) continue;
+                string name = field.Name.Trim();
+                if (IsReservedStringField(name)) continue;
+                result.Add(new CustomField
+                {
+                    Name = name,
+                    Value = field.IsProtected ? string.Empty : field.Value,
+                    IsProtected = field.IsProtected
+                });
+            }
+            return result.ToArray();
+        }
+
+        private static bool IsReservedStringField(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return true;
+            if (string.Equals(name, PwDefs.TitleField, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, PwDefs.UserNameField, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, PwDefs.PasswordField, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, PwDefs.UrlField, StringComparison.OrdinalIgnoreCase)) return true;
+            if (name.StartsWith(PwDefs.UrlField + " (", StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, "otp", StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, "TOTP Seed", StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, "TOTP Secret", StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, "TOTP", StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(name, "TimeOtp-Secret-Base32", StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
         }
 
         private static PwGroup FindOrCreateGroupPath(PwGroup rootGroup, string groupPath)

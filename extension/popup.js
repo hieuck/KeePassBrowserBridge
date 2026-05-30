@@ -474,6 +474,7 @@ async function createLogin(form) {
     password: form.querySelector('[name="password"]').value
   };
   addOptionalSecret(login, 'otp', form.querySelector('[name="otp"]').value);
+  addOptionalCustomField(login, form);
 
   const result = await send({ type: 'KBB_CREATE_LOGIN', login });
   if (!result || !result.Success) {
@@ -497,6 +498,22 @@ function addOptionalSecret(payload, name, value) {
   if (trimmed) {
     payload[name] = trimmed;
   }
+}
+
+function addOptionalCustomField(payload, form) {
+  const name = String(form.querySelector('[name="customFieldName"]').value || '').trim();
+  const value = String(form.querySelector('[name="customFieldValue"]').value || '').trim();
+  if (!name || !value) {
+    return;
+  }
+
+  payload.customFields = [
+    {
+      name,
+      value,
+      isProtected: false
+    }
+  ];
 }
 
 async function filterCurrentLogins() {
@@ -817,6 +834,8 @@ function showCreateForm(url, pageCredential) {
       </div>
     </label>
     <label>TOTP secret<input name="otp" type="password" spellcheck="false" autocomplete="off" placeholder="Base32 or otpauth:// URI"></label>
+    <label>Custom field name<input name="customFieldName" type="text" spellcheck="false" placeholder="Tenant"></label>
+    <label>Custom field value<input name="customFieldValue" type="text" spellcheck="false" placeholder="production"></label>
     <div class="login-actions">
       <button type="submit">✓ Save</button>
       <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>

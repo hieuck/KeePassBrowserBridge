@@ -52,6 +52,7 @@ internal static class Program
         CredentialMutationCreatesEntryInDatabase();
         CredentialMutationCreatesEntryInRequestedGroup();
         CredentialMutationCreatesEntryWithTotpSecret();
+        CredentialMutationCreatesEntryWithCustomField();
         CredentialMutationUpdatesExistingEntryPassword();
         CredentialMutationAcceptsPageUrlFromAdditionalUrlField();
         CredentialMutationUpdatesExistingEntryFields();
@@ -636,6 +637,34 @@ internal static class Program
         AssertTrue(result.Success, "credential create with TOTP should succeed: " + result.Error);
         PwEntry entry = database.RootGroup.Entries.GetAt(0);
         AssertEqual("JBSWY3DPEHPK3PXP", entry.Strings.ReadSafe("otp"), "created entry should store TOTP secret in otp field");
+    }
+
+    private static void CredentialMutationCreatesEntryWithCustomField()
+    {
+        PwDatabase database = CreateDatabase();
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Create(database, new CreateLoginPayload
+        {
+            Title = "Example",
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret",
+            CustomFields = new[]
+            {
+                new CustomField { Name = "Tenant", Value = "production", IsProtected = false },
+                new CustomField { Name = "Password", Value = "should-not-overwrite", IsProtected = false },
+                new CustomField { Name = "ApiKey", Value = "protected-secret", IsProtected = true }
+            }
+        });
+
+        AssertTrue(result.Success, "credential create with custom field should succeed: " + result.Error);
+        PwEntry entry = database.RootGroup.Entries.GetAt(0);
+        AssertEqual("production", entry.Strings.ReadSafe("Tenant"), "created entry should store public custom field");
+        AssertEqual("secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "reserved custom field name should not overwrite password");
+        AssertTrue(entry.Strings.Get("ApiKey").IsProtected, "protected custom field should be stored as protected");
+        AssertEqual("protected-secret", entry.Strings.ReadSafe("ApiKey"), "protected custom field value mismatch");
+        AssertTrue(FindCustomField(result.Entry.CustomFields, "Tenant") != null, "created result should include public custom field metadata");
     }
 
     private static void CredentialMutationUpdatesExistingEntryPassword()

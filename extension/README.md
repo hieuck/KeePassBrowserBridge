@@ -13,7 +13,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 - Popup account picker with search over title, group, username, URL, and non-protected custom fields.
 - Fill full forms or fill the focused field with username, password, OTP, or selected non-protected custom fields.
 - Copy username, password, OTP, and non-protected custom fields with clipboard auto-clear support.
-- Create a new KeePass entry from the popup, prefilled from fields already typed on the page when available.
+- Create a new KeePass entry from the popup, prefilled from fields already typed on the page when available, with optional non-protected custom field capture.
 - Edit existing entries, update changed passwords, generate replacement passwords, and clear TOTP secrets.
 - Save/update prompts after submitted login forms, including redirect and multi-step login flows.
 - HTTP Basic Auth credential lookup.
