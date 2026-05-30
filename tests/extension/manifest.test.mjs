@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 const manifest = JSON.parse(fs.readFileSync(new URL('../../extension/manifest.json', import.meta.url), 'utf8'));
 const firefoxManifest = JSON.parse(fs.readFileSync(new URL('../../extension/manifest.firefox.json', import.meta.url), 'utf8'));
+const assemblyInfo = fs.readFileSync(new URL('../../src/Properties/AssemblyInfo.cs', import.meta.url), 'utf8');
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'extension');
 const scripts = manifest.content_scripts.flatMap((entry) => entry.js || []);
+const assemblyVersion = `${manifest.version}.0`;
 
 assert.equal(scripts.includes('testingInfrastructure.js'), false, 'production manifest must not inject testingInfrastructure.js into web pages');
 assert.equal(scripts.includes('quick-test.js'), false, 'production manifest must not inject quick-test.js into web pages');
@@ -20,6 +22,8 @@ assert.equal(scripts.includes('groupOrganization.js'), false, 'production manife
 assert.equal(scripts.includes('passwordQuality.js'), false, 'production manifest must not inject password quality helpers into web pages');
 assert.equal(manifest.permissions.includes('notifications'), true, 'manifest should request notifications for save/update/fill feedback');
 assert.equal(firefoxManifest.version, manifest.version, 'Firefox and Chrome extension manifests should use the same release version');
+assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersion}")]`), true, 'plugin AssemblyVersion should match extension release version');
+assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
 for (const size of ['16', '48', '128']) {
   assert.equal(typeof manifest.icons?.[size], 'string', `manifest should declare ${size}px extension icon`);
   assert.equal(fs.existsSync(path.join(extensionRoot, manifest.icons[size])), true, `${size}px extension icon should exist`);
