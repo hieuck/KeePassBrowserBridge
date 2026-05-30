@@ -273,8 +273,7 @@ async function pastePairingCode() {
 
   elements.pairingCode.value = code;
   syncPairingCodeState();
-  elements.completePair.focus();
-  setMessage('Pairing code pasted.');
+  await completePair();
 }
 
 function extractPairingCode(text) {

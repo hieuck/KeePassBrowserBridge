@@ -116,6 +116,7 @@ const ids = [
 
 const elements = Object.fromEntries(ids.map((id) => [id, new Element(id)]));
 elements.pairingPanel.classList.add('hidden');
+const sentMessages = [];
 
 const fakeDocument = {
   activeElement: null,
@@ -148,6 +149,7 @@ const sandbox = {
   chrome: {
     runtime: {
       sendMessage: async (message) => {
+        sentMessages.push(message);
         if (message.type === 'KBB_GET_ABOUT') {
           return {
             ok: true,
@@ -170,6 +172,19 @@ const sandbox = {
               latestVersion: '0.10.0',
               updateAvailable: true,
               releaseUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0'
+            }
+          };
+        }
+
+        if (message.type === 'KBB_PAIR_COMPLETE') {
+          return {
+            ok: true,
+            response: {
+              endpoint: 'http://127.0.0.1:19455/bridge',
+              paired: true,
+              pairingSessionId: '',
+              pairingExpiresAt: 0,
+              autoFillEnabled: false
             }
           };
         }
@@ -242,10 +257,16 @@ elements.pairingCode.dispatch('input');
 assert.equal(elements.completePair.disabled, false, 'confirm should enable for a six digit code');
 
 elements.pairingCode.value = '';
+sentMessages.length = 0;
 await sandbox.pastePairingCode();
-assert.equal(elements.pairingCode.value, '955963', 'paste should extract the six digit pairing code from clipboard text');
-assert.equal(elements.completePair.disabled, false, 'paste should enable confirm when clipboard contains a pairing code');
-assert.equal(elements.message.textContent, 'Pairing code pasted.', 'paste should confirm success to the user');
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_PAIR_COMPLETE'],
+  'paste should immediately submit a valid clipboard pairing code'
+);
+assert.equal(sentMessages[0].pairingCode, '955963', 'paste should submit the extracted pairing code');
+assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'paste and pair should hide the pairing panel after success');
+assert.equal(elements.message.textContent, 'Browser paired with KeePass.', 'paste and pair should confirm success to the user');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',

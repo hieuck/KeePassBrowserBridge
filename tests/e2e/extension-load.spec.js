@@ -57,6 +57,12 @@ test.describe('KeePassBrowserBridge Extension', () => {
               state.pairingExpiresAt = 0;
               return { ok: true, response: { ...state } };
             }
+            if (message && message.type === 'KBB_PAIR_COMPLETE') {
+              state.paired = true;
+              state.pairingSessionId = '';
+              state.pairingExpiresAt = 0;
+              return { ok: true, response: { ...state } };
+            }
             if (message && message.type === 'KBB_SET_LOCKED') {
               state.locked = message.locked;
               return { ok: true, response: { ...state } };
@@ -226,16 +232,19 @@ test.describe('KeePassBrowserBridge Extension', () => {
     );
   });
 
-  test('pastes a copied pairing code from clipboard', async ({ page }) => {
+  test('pastes and submits a copied pairing code from clipboard', async ({ page }) => {
     await page.evaluate(() => {
       window.__kbbPopupState.paired = false;
     });
     await page.locator('#beginPair').click();
     await page.locator('#pastePairingCode').click();
 
-    await expect(page.locator('#pairingCode')).toHaveValue('955963');
-    await expect(page.locator('#completePair')).toBeEnabled();
-    await expect(page.locator('#message')).toHaveText('Pairing code pasted.');
+    await expect(page.locator('#pairingPanel')).toBeHidden();
+    await expect(page.locator('#statusBadge')).toHaveText('Paired');
+    await expect(page.locator('#message')).toHaveText('Browser paired with KeePass.');
+    await expect.poll(() => page.evaluate(() => window.__kbbPopupMessages.map((message) => message.type))).toEqual(
+      expect.arrayContaining(['KBB_PAIR_BEGIN', 'KBB_PAIR_COMPLETE'])
+    );
   });
 
   test('checks bridge status and renders matching logins', async ({ page }) => {
