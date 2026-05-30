@@ -43,6 +43,7 @@ test.describe('options page settings', () => {
       strictUrlMatching: false,
       regexUrlMatching: false,
       showPasswordsInPopup: false,
+      notificationsEnabled: true,
       clipboardClearDelay: 30,
       debugMode: false
     });
@@ -61,6 +62,7 @@ test.describe('options page settings', () => {
     await page.locator('#strictUrlMatching').check();
     await page.locator('#regexUrlMatching').check();
     await page.locator('#showPasswordsInPopup').check();
+    await page.locator('#notificationsEnabled').uncheck();
     await page.locator('#clipboardClearDelay').fill('45');
     await page.locator('#debugMode').check();
     await page.locator('#saveSettings').click();
@@ -76,6 +78,7 @@ test.describe('options page settings', () => {
       strictUrlMatching: true,
       regexUrlMatching: true,
       showPasswordsInPopup: true,
+      notificationsEnabled: false,
       clipboardClearDelay: 45,
       debugMode: true
     });
@@ -91,6 +94,7 @@ test.describe('options page settings', () => {
       strictUrlMatching: true,
       regexUrlMatching: true,
       showPasswordsInPopup: true,
+      notificationsEnabled: false,
       clipboardClearDelay: 45,
       debugMode: true
     });
@@ -109,6 +113,7 @@ test.describe('options page settings', () => {
       strictUrlMatching: false,
       regexUrlMatching: false,
       showPasswordsInPopup: false,
+      notificationsEnabled: true,
       clipboardClearDelay: 30,
       debugMode: false
     });

@@ -430,6 +430,11 @@ async function notifyUser(title, message) {
     return;
   }
 
+  const state = await storageGet(['notificationsEnabled']);
+  if (state.notificationsEnabled === false) {
+    return;
+  }
+
   try {
     await chrome.notifications.create('kbb-' + Date.now(), {
       type: 'basic',

@@ -451,6 +451,7 @@ assert.ok(notifications.some((notification) => notification.options.title === 'F
   'successful popup fill should show a desktop notification');
 
 notifications.length = 0;
+storage.notificationsEnabled = false;
 const createResult = await sandbox.handleMessage({
   type: 'KBB_CREATE_LOGIN',
   login: {
@@ -461,10 +462,10 @@ const createResult = await sandbox.handleMessage({
   }
 });
 assert.equal(createResult.Success, true, 'create login should return the bridge mutation result');
-assert.ok(notifications.some((notification) => notification.options.title === 'Saved to KeePass'),
-  'successful create should show a desktop notification');
+assert.equal(notifications.length, 0, 'disabled notifications should suppress create feedback');
 
 notifications.length = 0;
+storage.notificationsEnabled = true;
 const updateResult = await sandbox.handleMessage({
   type: 'KBB_UPDATE_LOGIN',
   login: {
