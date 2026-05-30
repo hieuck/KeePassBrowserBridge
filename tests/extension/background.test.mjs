@@ -580,6 +580,22 @@ const notificationIconPath = path.resolve(
 );
 assert.equal(fs.existsSync(notificationIconPath), true, 'notification iconUrl should point to a packaged extension asset');
 
+sentMessage = null;
+sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
+  sentMessage = msg;
+  return {
+    collected: true,
+    credential: {
+      userName: 'typed@example.com',
+      password: 'typed-secret'
+    }
+  };
+};
+const collectedPageCredential = await sandbox.handleMessage({ type: 'KBB_COLLECT_PAGE_CREDENTIAL' });
+assert.equal(sentMessage.type, 'KBB_COLLECT_PAGE_CREDENTIAL', 'background should ask the content script to collect page credentials');
+assert.equal(collectedPageCredential.credential.userName, 'typed@example.com', 'background should return collected page username');
+assert.equal(collectedPageCredential.credential.password, 'typed-secret', 'background should return collected page password');
+
 notifications.length = 0;
 storage.notificationsEnabled = false;
 const createResult = await sandbox.handleMessage({

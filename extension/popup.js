@@ -286,13 +286,23 @@ async function queryLogins() {
 
 async function beginCreateLogin() {
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
+  const pageCredential = await collectPageCredential();
   const url = result.url || '';
   currentEntries = sortCredentialEntries(result.entries || []);
   elements.loginSearch.value = '';
   elements.currentUrl.textContent = url;
   updateSearchVisibility();
-  showCreateForm(url);
+  showCreateForm(url, pageCredential);
   setMessage('Create a new KeePass login for this page.');
+}
+
+async function collectPageCredential() {
+  try {
+    const result = await send({ type: 'KBB_COLLECT_PAGE_CREDENTIAL' });
+    return result && result.collected ? result.credential : null;
+  } catch (error) {
+    return null;
+  }
 }
 
 async function toggleSiteAutoFill() {
@@ -780,7 +790,7 @@ function credentialSearchText(entry) {
   ].join(' ').toLowerCase();
 }
 
-function showCreateForm(url) {
+function showCreateForm(url, pageCredential) {
   elements.results.textContent = '';
   visibleEntries = [];
   elements.loginSearch.classList.add('hidden');
@@ -808,6 +818,10 @@ function showCreateForm(url) {
 
   form.querySelector('[name="title"]').value = titleFromUrl(url);
   form.querySelector('[name="url"]').value = url || '';
+  if (pageCredential) {
+    form.querySelector('[name="userName"]').value = pageCredential.userName || '';
+    form.querySelector('[name="password"]').value = pageCredential.password || '';
+  }
   form.querySelector('[data-action="generate-password"]').addEventListener('click', () => {
     const passwordInput = form.querySelector('[name="password"]');
     passwordInput.value = generatePassword(20);

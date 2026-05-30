@@ -99,6 +99,8 @@ async function handleMessage(message) {
       return updateLogin(message.login);
     case 'KBB_FILL_LOGIN':
       return fillLogin(message.credential, message.fieldRole, message.customFieldName);
+    case 'KBB_COLLECT_PAGE_CREDENTIAL':
+      return collectPageCredential();
     case 'KBB_FILL_ACK':
       return acknowledgeFill(message.entryId, message.url);
     case 'KBB_REMEMBER_PENDING_CREDENTIAL':
@@ -461,6 +463,16 @@ async function consumeSubmittedCredential(origin) {
 
   await sessionStorageRemove([PENDING_SUBMITTED_KEY]);
   return { credential: pending.credential };
+}
+
+async function collectPageCredential() {
+  const tab = await getActiveTab();
+  if (!tab || !tab.id || !isFillableUrl(tab.url)) {
+    return { collected: false, credential: null };
+  }
+
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['contentScript.js'] });
+  return chrome.tabs.sendMessage(tab.id, { type: 'KBB_COLLECT_PAGE_CREDENTIAL' });
 }
 
 async function fillLogin(credential, fieldRole, customFieldName) {

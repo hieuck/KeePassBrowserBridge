@@ -64,6 +64,18 @@ test.describe('KeePassBrowserBridge Extension', () => {
             if (message && message.type === 'KBB_FILL_LOGIN') {
               return { ok: true, response: { filled: true } };
             }
+            if (message && message.type === 'KBB_COLLECT_PAGE_CREDENTIAL') {
+              return {
+                ok: true,
+                response: {
+                  collected: true,
+                  credential: {
+                    userName: 'typed@example.com',
+                    password: 'typed-secret'
+                  }
+                }
+              };
+            }
             if (message && message.type === 'KBB_UPDATE_LOGIN') {
               return {
                 ok: true,
@@ -446,6 +458,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
     const form = page.locator('.create-form');
     await expect(form).toBeVisible();
     await expect(form.locator('[name="url"]')).toHaveValue('https://example.com/login');
+    await expect(form.locator('[name="userName"]')).toHaveValue('typed@example.com');
+    await expect(form.locator('[name="password"]')).toHaveValue('typed-secret');
     await form.locator('[name="title"]').fill('New Example');
     await form.locator('[name="group"]').fill('Accounts/Work');
     await form.locator('[name="userName"]').fill('new@example.com');

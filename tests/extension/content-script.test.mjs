@@ -419,4 +419,16 @@ sandbox.window.__keepassBrowserBridgeMessageListener(
 );
 assert.equal(targetForm.submitted, true, 'autoSubmit should call form.submit()');
 
+let collectedCredentialResponse = null;
+sandbox.window.__keepassBrowserBridgeMessageListener(
+  { type: 'KBB_COLLECT_PAGE_CREDENTIAL' },
+  {},
+  (response) => {
+    collectedCredentialResponse = response;
+  }
+);
+assert.equal(collectedCredentialResponse.collected, true, 'content script should collect the current page credential');
+assert.equal(collectedCredentialResponse.credential.userName, 'u', 'collected credential should include current username field value');
+assert.equal(collectedCredentialResponse.credential.password, 'p', 'collected credential should include current password field value');
+
 console.log('Content script tests passed.');

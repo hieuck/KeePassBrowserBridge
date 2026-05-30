@@ -14,10 +14,16 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgeObservedShadowRoots = new WeakSet();
   window.__keepassBrowserBridgeEventRoots = new WeakSet();
   window.__keepassBrowserBridgeMessageListener = (message, sender, sendResponse) => {
-    if (!message || message.type !== "KBB_FILL") {
+    if (!message || (message.type !== "KBB_FILL" && message.type !== "KBB_COLLECT_PAGE_CREDENTIAL")) {
       return;
     }
     try {
+      if (message.type === "KBB_COLLECT_PAGE_CREDENTIAL") {
+        const credential = collectCredentialFromForm(document);
+        sendResponse({ collected: Boolean(credential), credential });
+        return;
+      }
+
       const result = message.fieldRole
         ? fillFocusedField(message.credential || {}, message.fieldRole, message.customFieldName || "")
         : fillLogin(message.credential || {});
