@@ -388,7 +388,7 @@ async function queryLogins() {
 }
 
 async function queryLoginsForUrl(url) {
-  await assertUnlocked();
+  await assertCanAccessCredentials();
   await rememberCredentialActivity();
   const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
   return queryResultFromResponse(url, response);
@@ -412,7 +412,7 @@ async function queryHttpAuth(url) {
 }
 
 async function createLogin(login) {
-  await assertUnlocked();
+  await assertCanAccessCredentials();
   await rememberCredentialActivity();
   const response = await bridgeCall('logins.create', login, true);
   const result = parsePayload(response);
@@ -423,7 +423,7 @@ async function createLogin(login) {
 }
 
 async function updateLogin(login) {
-  await assertUnlocked();
+  await assertCanAccessCredentials();
   await rememberCredentialActivity();
   const response = await bridgeCall('logins.update', login, true);
   const result = parsePayload(response);
@@ -535,7 +535,7 @@ async function collectPageCredential() {
 }
 
 async function fillLogin(credential, fieldRole, customFieldName) {
-  await assertUnlocked();
+  await assertCanAccessCredentials();
   await rememberCredentialActivity();
   const tab = await getActiveTab();
   if (!tab || !tab.id) {
@@ -595,7 +595,7 @@ function notificationCredentialMessage(credential, fallback) {
 
 async function copyToClipboard(text, clearAfterMs) {
   try {
-    await assertUnlocked();
+    await assertCanAccessCredentials();
     await rememberCredentialActivity();
     await navigator.clipboard.writeText(text);
     
@@ -658,6 +658,14 @@ async function assertUnlocked() {
   await applyAutoLock(state);
   if (state.locked === true) {
     throw new Error('KeePass Bridge is locked.');
+  }
+}
+
+async function assertCanAccessCredentials() {
+  await assertUnlocked();
+  const state = await storageGet(['clientId', 'sharedSecret']);
+  if (!state.clientId || !state.sharedSecret) {
+    throw new Error('Pair this browser with KeePass first.');
   }
 }
 
@@ -977,7 +985,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 async function fillFromContextMenu(tabId, url, role) {
   try {
-    await assertUnlocked();
+    await assertCanAccessCredentials();
     await rememberCredentialActivity();
     const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
     const result = queryResultFromResponse(url, response);
@@ -1001,14 +1009,14 @@ async function fillFromContextMenu(tabId, url, role) {
       await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);
     }
   } catch (error) {
-    if (isLockedError(error)) return;
+    if (isExpectedAccessStateError(error)) return;
     console.error('Context menu fill failed:', error);
   }
 }
 
 async function generateAndFillPassword(tabId) {
   try {
-    await assertUnlocked();
+    await assertCanAccessCredentials();
     await rememberCredentialActivity();
     const result = new Uint32Array(16);
     crypto.getRandomValues(result);
@@ -1021,12 +1029,12 @@ async function generateAndFillPassword(tabId) {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
     await chrome.tabs.sendMessage(tabId, { type: 'KBB_FILL', credential: { Password: password } });
   } catch (error) {
-    if (isLockedError(error)) return;
+    if (isExpectedAccessStateError(error)) return;
     console.error('Password generation failed:', error);
   }
 }
 
-function isLockedError(error) {
+function isExpectedAccessStateError(error) {
   const message = error && error.message ? error.message : String(error || '');
-  return /locked/i.test(message);
+  return /locked|pair this browser/i.test(message);
 }

@@ -356,6 +356,16 @@ storage.lastCredentialActivityAt = 0;
 
 delete storage.clientId;
 delete storage.sharedSecret;
+storage.lastCredentialActivityAt = 0;
+requests.length = 0;
+await assert.rejects(
+  () => sandbox.queryLoginsForUrl('https://example.com/login'),
+  /Pair this browser with KeePass first\./,
+  'unpaired extension should reject login queries before contacting KeePass'
+);
+assert.equal(requests.length, 0, 'unpaired login query should not call the bridge');
+assert.equal(storage.lastCredentialActivityAt, 0, 'unpaired login query should not refresh credential activity');
+
 storage.pairingSessionId = 'cancel-session';
 storage.pairingStartedAt = 1000;
 requests.length = 0;
