@@ -295,12 +295,20 @@ async function queryHttpAuth(url) {
 
 async function createLogin(login) {
   const response = await bridgeCall('logins.create', login, true);
-  return parsePayload(response);
+  const result = parsePayload(response);
+  if (result && result.Success !== false) {
+    await notifyUser('Saved to KeePass', notificationEntryMessage(result.Entry, 'New login saved.'));
+  }
+  return result;
 }
 
 async function updateLogin(login) {
   const response = await bridgeCall('logins.update', login, true);
-  return parsePayload(response);
+  const result = parsePayload(response);
+  if (result && result.Success !== false) {
+    await notifyUser('Updated KeePass entry', notificationEntryMessage(result.Entry, 'Login updated.'));
+  }
+  return result;
 }
 
 async function acknowledgeFill(entryId, url) {
@@ -411,9 +419,37 @@ async function fillLogin(credential) {
 
   if (credential && credential.EntryId && (!result || result.filled !== false)) {
     await acknowledgeFill(credential.EntryId, tab.url || '');
+    await notifyUser('Filled from KeePass', notificationCredentialMessage(credential, 'Login filled.'));
   }
 
   return result;
+}
+
+async function notifyUser(title, message) {
+  if (!chrome.notifications || !chrome.notifications.create) {
+    return;
+  }
+
+  try {
+    await chrome.notifications.create('kbb-' + Date.now(), {
+      type: 'basic',
+      iconUrl: 'icons/icon-128.png',
+      title,
+      message: message || ''
+    });
+  } catch (_) {
+    // Notifications are feedback only; credential operations should not fail if the browser denies them.
+  }
+}
+
+function notificationEntryMessage(entry, fallback) {
+  if (!entry) return fallback;
+  return entry.Title || entry.UserName || entry.Url || fallback;
+}
+
+function notificationCredentialMessage(credential, fallback) {
+  if (!credential) return fallback;
+  return credential.Title || credential.UserName || credential.Url || fallback;
 }
 
 async function copyToClipboard(text, clearAfterMs) {

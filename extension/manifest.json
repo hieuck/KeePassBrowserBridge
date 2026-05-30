@@ -33,6 +33,7 @@
     "tabs",
     "clipboardWrite",
     "contextMenus",
+    "notifications",
     "webRequest",
     "webRequestAuthProvider"
   ],

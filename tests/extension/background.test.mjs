@@ -9,6 +9,7 @@ const storage = {
 };
 const requests = [];
 const extensionSessionStorage = {};
+const notifications = [];
 let now = 10000;
 let loginEntries = [];
 
@@ -84,6 +85,26 @@ const sandbox = {
       };
     }
 
+    if (request.Method === 'logins.create' || request.Method === 'logins.update') {
+      return {
+        ok: true,
+        json: async () => ({
+          ProtocolVersion: 1,
+          RequestId: request.RequestId,
+          Success: true,
+          Payload: JSON.stringify({
+            Success: true,
+            Entry: {
+              EntryId: 'entry-saved',
+              Title: 'Saved Entry',
+              UserName: 'saved@example.com',
+              Url: 'https://example.com/login'
+            }
+          })
+        })
+      };
+    }
+
     return {
       ok: true,
       json: async () => ({
@@ -155,6 +176,12 @@ const sandbox = {
           sandbox.httpAuthFilter = filter;
           sandbox.httpAuthExtraInfoSpec = extraInfoSpec;
         }
+      }
+    },
+    notifications: {
+      create: async (id, options) => {
+        notifications.push({ id, options });
+        return id;
       }
     }
   }
@@ -412,6 +439,7 @@ const popupFillResult = await sandbox.handleMessage({
   type: 'KBB_FILL_LOGIN',
   credential: {
     EntryId: 'entry-1',
+    Title: 'Example',
     UserName: 'alice',
     Password: 'secret'
   }
@@ -419,6 +447,37 @@ const popupFillResult = await sandbox.handleMessage({
 assert.equal(popupFillResult.filled, true, 'popup fill should return the content script result');
 const popupFillAckRequest = requests.find((request) => request.Method === 'logins.fillAck' && JSON.parse(request.Payload).EntryId === 'entry-1');
 assert.ok(popupFillAckRequest, 'popup fill should acknowledge the filled entry for usage ranking');
+assert.ok(notifications.some((notification) => notification.options.title === 'Filled from KeePass'),
+  'successful popup fill should show a desktop notification');
+
+notifications.length = 0;
+const createResult = await sandbox.handleMessage({
+  type: 'KBB_CREATE_LOGIN',
+  login: {
+    Title: 'Saved Entry',
+    Url: 'https://example.com/login',
+    UserName: 'saved@example.com',
+    Password: 'secret'
+  }
+});
+assert.equal(createResult.Success, true, 'create login should return the bridge mutation result');
+assert.ok(notifications.some((notification) => notification.options.title === 'Saved to KeePass'),
+  'successful create should show a desktop notification');
+
+notifications.length = 0;
+const updateResult = await sandbox.handleMessage({
+  type: 'KBB_UPDATE_LOGIN',
+  login: {
+    EntryId: 'entry-saved',
+    Title: 'Saved Entry',
+    Url: 'https://example.com/login',
+    UserName: 'saved@example.com',
+    Password: 'new-secret'
+  }
+});
+assert.equal(updateResult.Success, true, 'update login should return the bridge mutation result');
+assert.ok(notifications.some((notification) => notification.options.title === 'Updated KeePass entry'),
+  'successful update should show a desktop notification');
 
 // Context menu tests
 requests.length = 0;

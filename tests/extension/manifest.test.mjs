@@ -14,5 +14,6 @@ assert.equal(scripts.includes('enhancedSecurity_part1.js'), false, 'production m
 assert.equal(scripts.includes('enhancedSecurity_part2.js'), false, 'production manifest must not inject screenshot or clipboard helpers into web pages');
 assert.equal(scripts.includes('groupOrganization.js'), false, 'production manifest must not inject popup search helpers into web pages');
 assert.equal(scripts.includes('passwordQuality.js'), false, 'production manifest must not inject password quality helpers into web pages');
+assert.equal(manifest.permissions.includes('notifications'), true, 'manifest should request notifications for save/update/fill feedback');
 
 console.log('Manifest tests passed.');
