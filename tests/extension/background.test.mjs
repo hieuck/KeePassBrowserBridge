@@ -380,6 +380,89 @@ assert.ok(cancelRequest, 'cancel should notify the bridge');
 assert.match(cancelRequest.Payload, /cancel-session/);
 
 now = 6000;
+storage.locked = true;
+delete extensionSessionStorage.kbbPendingMultiStepCredential;
+await assert.rejects(
+  () => sandbox.handleMessage({
+    type: 'KBB_REMEMBER_PENDING_CREDENTIAL',
+    origin: 'https://example.com',
+    credential: {
+      EntryId: 'entry-locked',
+      UserName: 'locked@example.com',
+      Password: 'locked-secret'
+    }
+  }),
+  /locked/i,
+  'locked extension should reject pending credential storage'
+);
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'locked extension should not store pending credentials');
+extensionSessionStorage.kbbPendingMultiStepCredential = {
+  origin: 'https://example.com',
+  credential: {
+    EntryId: 'entry-locked-consume',
+    UserName: 'locked-consume@example.com',
+    Password: 'locked-consume-secret'
+  },
+  savedAt: now
+};
+await assert.rejects(
+  () => sandbox.handleMessage({
+    type: 'KBB_CONSUME_PENDING_CREDENTIAL',
+    origin: 'https://example.com'
+  }),
+  /locked/i,
+  'locked extension should reject pending credential consume'
+);
+assert.equal(
+  extensionSessionStorage.kbbPendingMultiStepCredential.credential.Password,
+  'locked-consume-secret',
+  'locked pending consume should not remove the stored credential'
+);
+delete extensionSessionStorage.kbbPendingMultiStepCredential;
+
+storage.locked = false;
+delete storage.clientId;
+delete storage.sharedSecret;
+await assert.rejects(
+  () => sandbox.handleMessage({
+    type: 'KBB_REMEMBER_SUBMITTED_CREDENTIAL',
+    origin: 'https://example.com',
+    credential: {
+      url: 'https://example.com/login',
+      userName: 'unpaired@example.com',
+      password: 'unpaired-secret'
+    }
+  }),
+  /Pair this browser with KeePass first\./,
+  'unpaired extension should reject submitted credential storage'
+);
+assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'unpaired extension should not store submitted credentials');
+extensionSessionStorage.kbbPendingSubmittedCredential = {
+  origin: 'https://example.com',
+  credential: {
+    url: 'https://example.com/login',
+    userName: 'unpaired-consume@example.com',
+    password: 'unpaired-consume-secret'
+  },
+  savedAt: now
+};
+await assert.rejects(
+  () => sandbox.handleMessage({
+    type: 'KBB_CONSUME_SUBMITTED_CREDENTIAL',
+    origin: 'https://example.com'
+  }),
+  /Pair this browser with KeePass first\./,
+  'unpaired extension should reject submitted credential consume'
+);
+assert.equal(
+  extensionSessionStorage.kbbPendingSubmittedCredential.credential.password,
+  'unpaired-consume-secret',
+  'unpaired submitted consume should not remove the stored credential'
+);
+delete extensionSessionStorage.kbbPendingSubmittedCredential;
+
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
 const rememberPendingResult = await sandbox.handleMessage({
   type: 'KBB_REMEMBER_PENDING_CREDENTIAL',
   origin: 'https://example.com',

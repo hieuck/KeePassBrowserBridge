@@ -443,6 +443,7 @@ async function acknowledgeFill(entryId, url) {
 }
 
 async function rememberPendingCredential(origin, credential) {
+  await assertCanAccessCredentials();
   const normalizedOrigin = normalizeWebOrigin(origin);
   if (!normalizedOrigin || !credential || !credential.Password) {
     return { remembered: false };
@@ -459,6 +460,7 @@ async function rememberPendingCredential(origin, credential) {
 }
 
 async function consumePendingCredential(origin) {
+  await assertCanAccessCredentials();
   const normalizedOrigin = normalizeWebOrigin(origin);
   if (!normalizedOrigin) {
     return { credential: null };
@@ -484,6 +486,7 @@ async function consumePendingCredential(origin) {
 }
 
 async function rememberSubmittedCredential(origin, credential) {
+  await assertCanAccessCredentials();
   const normalizedOrigin = normalizeWebOrigin(origin);
   if (!normalizedOrigin || !credential || !credential.password) {
     return { remembered: false };
@@ -500,6 +503,7 @@ async function rememberSubmittedCredential(origin, credential) {
 }
 
 async function consumeSubmittedCredential(origin) {
+  await assertCanAccessCredentials();
   const normalizedOrigin = normalizeWebOrigin(origin);
   if (!normalizedOrigin) {
     return { credential: null };
