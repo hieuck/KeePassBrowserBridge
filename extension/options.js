@@ -445,6 +445,24 @@ function sanitizePortableSettings(settings, options = {}) {
     sanitized.endpoint = normalizeBridgeEndpoint(sanitized.endpoint);
   }
 
+  if (Object.prototype.hasOwnProperty.call(sanitized, 'autoLockTimeoutMinutes')) {
+    sanitized.autoLockTimeoutMinutes = normalizeIntegerSetting(
+      sanitized.autoLockTimeoutMinutes,
+      0,
+      1440,
+      'Auto-lock timeout must be between 0 and 1440 minutes.'
+    );
+  }
+
+  if (Object.prototype.hasOwnProperty.call(sanitized, 'clipboardClearDelay')) {
+    sanitized.clipboardClearDelay = normalizeIntegerSetting(
+      sanitized.clipboardClearDelay,
+      0,
+      300,
+      'Clipboard clear delay must be between 0 and 300 seconds.'
+    );
+  }
+
   return sanitized;
 }
 

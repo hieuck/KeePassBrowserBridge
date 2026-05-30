@@ -446,4 +446,38 @@ test.describe('options page settings', () => {
     expect(stored.endpoint).toBe('http://127.0.0.1:19455/bridge');
     expect(stored.autoFillEnabled).toBe(true);
   });
+
+  test('rejects imported settings with invalid security timeouts', async ({ page }) => {
+    await installOptionsStorage(page, {
+      autoLockTimeoutMinutes: 5,
+      clipboardClearDelay: 30
+    });
+
+    await page.goto('/extension/options.html');
+    await page.locator('#importFile').setInputFiles({
+      name: 'kbb-settings.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        autoLockTimeoutMinutes: 1441,
+        clipboardClearDelay: 30
+      }))
+    });
+
+    await expect(page.locator('#message')).toHaveText('Failed to import settings: Auto-lock timeout must be between 0 and 1440 minutes.');
+    await expect(page.locator('#message')).toHaveClass(/error/);
+
+    await page.locator('#importFile').setInputFiles({
+      name: 'kbb-settings.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        autoLockTimeoutMinutes: 15,
+        clipboardClearDelay: -1
+      }))
+    });
+
+    await expect(page.locator('#message')).toHaveText('Failed to import settings: Clipboard clear delay must be between 0 and 300 seconds.');
+    const stored = await page.evaluate(() => window.__kbbOptionsStore);
+    expect(stored.autoLockTimeoutMinutes).toBe(5);
+    expect(stored.clipboardClearDelay).toBe(30);
+  });
 });
