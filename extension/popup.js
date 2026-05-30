@@ -21,6 +21,11 @@ const elements = {
   newLogin: document.getElementById('newLogin'),
   toggleSiteAutoFill: document.getElementById('toggleSiteAutoFill'),
   toggleSiteAutoSubmit: document.getElementById('toggleSiteAutoSubmit'),
+  aboutVersion: document.getElementById('aboutVersion'),
+  aboutBrowserId: document.getElementById('aboutBrowserId'),
+  repositoryLink: document.getElementById('repositoryLink'),
+  releasesLink: document.getElementById('releasesLink'),
+  checkUpdates: document.getElementById('checkUpdates'),
   currentUrl: document.getElementById('currentUrl'),
   loginSearch: document.getElementById('loginSearch'),
   results: document.getElementById('results'),
@@ -51,9 +56,11 @@ function init() {
   elements.newLogin.addEventListener('click', () => runAction(beginCreateLogin));
   elements.toggleSiteAutoFill.addEventListener('click', () => runAction(toggleSiteAutoFill));
   elements.toggleSiteAutoSubmit.addEventListener('click', () => runAction(toggleSiteAutoSubmit));
+  elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
   elements.loginSearch.addEventListener('input', () => runAction(filterCurrentLogins));
 
   syncPairingCodeState();
+  runAction(renderAbout);
   runAction(refreshState);
 }
 
@@ -483,6 +490,25 @@ async function refreshState() {
   const state = await send({ type: 'KBB_GET_STATE' });
   renderState(state);
   setMessage(state.paired ? 'Ready to query KeePass.' : 'Pair this browser with KeePass.');
+}
+
+async function renderAbout() {
+  const about = await send({ type: 'KBB_GET_ABOUT' });
+  elements.aboutVersion.textContent = about.version || 'Unknown';
+  elements.aboutBrowserId.textContent = about.browserId || 'Unknown';
+  elements.repositoryLink.href = about.repositoryUrl || '#';
+  elements.releasesLink.href = about.releasesUrl || '#';
+}
+
+async function checkUpdates() {
+  const result = await send({ type: 'KBB_CHECK_UPDATES' });
+  if (result.updateAvailable) {
+    elements.releasesLink.href = result.releaseUrl || elements.releasesLink.href;
+    setMessage(`Update ${result.latestVersion} is available. Open GitHub Releases to install it.`);
+    return;
+  }
+
+  setMessage(`KeePass Browser Bridge ${result.currentVersion} is up to date.`);
 }
 
 function renderState(state) {

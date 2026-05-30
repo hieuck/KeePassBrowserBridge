@@ -36,6 +36,7 @@ class Element {
     this.checked = false;
     this.disabled = false;
     this.textContent = '';
+    this.href = '';
     this.children = [];
     this.innerHTML = '';
     this.classList = new ClassList();
@@ -99,6 +100,11 @@ const ids = [
   'newLogin',
   'toggleSiteAutoFill',
   'toggleSiteAutoSubmit',
+  'aboutVersion',
+  'aboutBrowserId',
+  'repositoryLink',
+  'releasesLink',
+  'checkUpdates',
   'currentUrl',
   'loginSearch',
   'results',
@@ -120,7 +126,7 @@ const fakeDocument = {
   addEventListener() {},
   querySelectorAll(selector) {
     if (selector === 'button') {
-      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.pastePairingCode, elements.completePair, elements.cancelPair, elements.queryLogins, elements.newLogin, elements.toggleSiteAutoFill, elements.toggleSiteAutoSubmit];
+      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.pastePairingCode, elements.completePair, elements.cancelPair, elements.queryLogins, elements.newLogin, elements.toggleSiteAutoFill, elements.toggleSiteAutoSubmit, elements.checkUpdates];
     }
 
     return [];
@@ -138,7 +144,34 @@ const sandbox = {
   },
   chrome: {
     runtime: {
-      sendMessage: async () => ({ ok: true, response: {} })
+      sendMessage: async (message) => {
+        if (message.type === 'KBB_GET_ABOUT') {
+          return {
+            ok: true,
+            response: {
+              name: 'KeePass Browser Bridge',
+              version: '0.9.0',
+              browserId: 'abcdefghijklmnopabcdefghijklmnop',
+              repositoryUrl: 'https://github.com/hieuck/KeePassBrowserBridge',
+              releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases'
+            }
+          };
+        }
+
+        if (message.type === 'KBB_CHECK_UPDATES') {
+          return {
+            ok: true,
+            response: {
+              currentVersion: '0.9.0',
+              latestVersion: '0.10.0',
+              updateAvailable: true,
+              releaseUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0'
+            }
+          };
+        }
+
+        return { ok: true, response: {} };
+      }
     },
     storage: {
       local: {
@@ -162,10 +195,21 @@ sandbox.globalThis = sandbox;
 const source = fs.readFileSync(new URL('../../extension/popup.js', import.meta.url), 'utf8');
 const markup = fs.readFileSync(new URL('../../extension/popup.html', import.meta.url), 'utf8');
 assert.equal(markup.includes('pairingSession'), false, 'pairing session id element should not exist in popup markup');
+assert.equal(markup.includes('aboutVersion'), true, 'popup should render an About version element');
+assert.equal(markup.includes('checkUpdates'), true, 'popup should provide a check updates action');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'popup.js' });
 
 sandbox.init();
+await sandbox.renderAbout();
+assert.equal(elements.aboutVersion.textContent, '0.9.0', 'popup should display the extension version');
+assert.equal(elements.aboutBrowserId.textContent, 'abcdefghijklmnopabcdefghijklmnop', 'popup should display the browser extension id');
+assert.equal(elements.repositoryLink.href, 'https://github.com/hieuck/KeePassBrowserBridge', 'popup should link to the repository');
+assert.equal(elements.releasesLink.href, 'https://github.com/hieuck/KeePassBrowserBridge/releases', 'popup should link to releases');
+
+await sandbox.checkUpdates();
+assert.equal(elements.message.textContent, 'Update 0.10.0 is available. Open GitHub Releases to install it.', 'popup should report newer releases without auto-installing');
+
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: false,

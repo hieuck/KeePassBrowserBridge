@@ -3,6 +3,9 @@
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;
 const CLIENT_NAME = 'Chrome';
+const REPOSITORY_URL = 'https://github.com/hieuck/KeePassBrowserBridge';
+const RELEASES_URL = REPOSITORY_URL + '/releases';
+const LATEST_RELEASE_API_URL = 'https://api.github.com/repos/hieuck/KeePassBrowserBridge/releases/latest';
 const AUTO_FILL_DEBOUNCE_MS = 1200;
 const PAIRING_SESSION_MAX_AGE_MS = 5 * 60 * 1000;
 const PENDING_MULTI_STEP_MAX_AGE_MS = 10 * 60 * 1000;
@@ -108,9 +111,62 @@ async function handleMessage(message) {
       return consumeSubmittedCredential(message.origin);
     case 'KBB_COPY_TO_CLIPBOARD':
       return copyToClipboard(message.text, message.clearAfterMs);
+    case 'KBB_GET_ABOUT':
+      return getAbout();
+    case 'KBB_CHECK_UPDATES':
+      return checkUpdates();
     default:
       throw new Error('Unknown message type.');
   }
+}
+
+function getAbout() {
+  const manifest = chrome.runtime.getManifest ? chrome.runtime.getManifest() : {};
+  return {
+    name: manifest.name || 'KeePass Browser Bridge',
+    version: manifest.version || '0.0.0',
+    browserId: chrome.runtime.id || '',
+    repositoryUrl: REPOSITORY_URL,
+    releasesUrl: RELEASES_URL
+  };
+}
+
+async function checkUpdates() {
+  const about = getAbout();
+  const response = await fetch(LATEST_RELEASE_API_URL, {
+    headers: {
+      Accept: 'application/vnd.github+json'
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Could not check GitHub Releases: ${response.status} ${response.statusText}`);
+  }
+
+  const latest = await response.json();
+  const latestVersion = normalizeReleaseVersion(latest.tag_name || latest.name || '');
+  const releaseUrl = latest.html_url || RELEASES_URL;
+  return {
+    currentVersion: about.version,
+    latestVersion,
+    updateAvailable: compareVersions(latestVersion, about.version) > 0,
+    releaseUrl
+  };
+}
+
+function normalizeReleaseVersion(version) {
+  return String(version || '').trim().replace(/^v/i, '');
+}
+
+function compareVersions(left, right) {
+  const leftParts = normalizeReleaseVersion(left).split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = normalizeReleaseVersion(right).split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const length = Math.max(leftParts.length, rightParts.length);
+  for (let index = 0; index < length; index += 1) {
+    const delta = (leftParts[index] || 0) - (rightParts[index] || 0);
+    if (delta !== 0) return delta;
+  }
+
+  return 0;
 }
 
 async function getState() {

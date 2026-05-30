@@ -31,3 +31,5 @@ This creates a KeePass `.dll` plugin artifact, a KeePass `.plgx` source plugin a
 For KeePass users, download `KeePassBrowserBridge.plgx` or `KeePassBrowserBridge.dll` from the GitHub Release and place exactly one of them in the KeePass `Plugins` directory.
 
 For Chrome users, the extension ZIP in GitHub Releases is intended for developer/manual loading. Chrome does not allow one-click extension installation directly from GitHub. One-click install requires publishing the extension to the Chrome Web Store, then linking users to the store listing.
+
+The extension popup includes an About section with the installed extension version, browser extension id, repository link, and GitHub Releases link. The Check updates action compares the installed extension version with the latest GitHub Release and sends the user to the release page for manual installation.

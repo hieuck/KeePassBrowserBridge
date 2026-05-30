@@ -38,6 +38,16 @@ const sandbox = {
     }
   },
   fetch: async (url, options) => {
+    if (String(url).startsWith('https://api.github.com/repos/hieuck/KeePassBrowserBridge/releases/latest')) {
+      return {
+        ok: true,
+        json: async () => ({
+          tag_name: 'v0.10.0',
+          html_url: 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0'
+        })
+      };
+    }
+
     const request = JSON.parse(options.body);
     requests.push(request);
     if (request.Method === 'pair.cancel') {
@@ -122,6 +132,10 @@ const sandbox = {
   chrome: {
     runtime: {
       id: 'abcdefghijklmnopabcdefghijklmnop',
+      getManifest: () => ({
+        name: 'KeePass Browser Bridge',
+        version: '0.9.0'
+      }),
       onMessage: { addListener(fn) { sandbox.runtimeMessageHandler = fn; } },
       onInstalled: { addListener() {} }
     },
@@ -212,6 +226,19 @@ const externalMessageResponse = await new Promise((resolve) => {
 });
 assert.equal(externalMessageResponse.ok, false, 'background should reject messages from other extensions');
 assert.match(externalMessageResponse.error, /not allowed/i, 'external sender error should be explicit');
+
+const about = await sandbox.handleMessage({ type: 'KBB_GET_ABOUT' });
+assert.equal(about.name, 'KeePass Browser Bridge', 'about should include extension name');
+assert.equal(about.version, '0.9.0', 'about should include extension version');
+assert.equal(about.repositoryUrl, 'https://github.com/hieuck/KeePassBrowserBridge', 'about should include repository URL');
+assert.equal(about.releasesUrl, 'https://github.com/hieuck/KeePassBrowserBridge/releases', 'about should include releases URL');
+assert.equal(about.browserId, 'abcdefghijklmnopabcdefghijklmnop', 'about should include browser extension id');
+
+const updateCheck = await sandbox.handleMessage({ type: 'KBB_CHECK_UPDATES' });
+assert.equal(updateCheck.currentVersion, '0.9.0', 'update check should include current version');
+assert.equal(updateCheck.latestVersion, '0.10.0', 'update check should normalize latest tag version');
+assert.equal(updateCheck.updateAvailable, true, 'newer GitHub release should be reported');
+assert.equal(updateCheck.releaseUrl, 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0', 'update check should include latest release URL');
 
 storage.pairingSessionId = 'active-session';
 storage.pairingStartedAt = 1000;

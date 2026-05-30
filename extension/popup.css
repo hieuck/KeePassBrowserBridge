@@ -276,6 +276,51 @@ h1 {
   margin-top: 8px;
 }
 
+.about {
+  display: grid;
+  gap: 8px;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.about-title {
+  font-weight: 700;
+}
+
+.about-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.about-grid code {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about-grid a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.about-grid a:hover {
+  text-decoration: underline;
+}
+
 .login {
   border: 1px solid var(--border);
   border-radius: 8px;
