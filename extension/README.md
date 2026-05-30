@@ -20,6 +20,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 - HTTP Basic Auth credential lookup.
 - Site-specific auto-fill and auto-submit overrides.
 - Popup lock/unlock to temporarily block credential queries and filling.
+- Optional auto-lock after credential inactivity.
 - Trusted browser listing and revocation from popup/options.
 - About panel showing extension and KeePass plugin versions plus GitHub release update check.
 

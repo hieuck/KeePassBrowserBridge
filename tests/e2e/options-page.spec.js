@@ -130,6 +130,7 @@ test.describe('options page settings', () => {
       regexUrlMatching: false,
       showPasswordsInPopup: false,
       notificationsEnabled: true,
+      autoLockTimeoutMinutes: 0,
       clipboardClearDelay: 30,
       debugMode: false
     });
@@ -149,6 +150,7 @@ test.describe('options page settings', () => {
     await page.locator('#regexUrlMatching').check();
     await page.locator('#showPasswordsInPopup').check();
     await page.locator('#notificationsEnabled').uncheck();
+    await page.locator('#autoLockTimeoutMinutes').fill('15');
     await page.locator('#clipboardClearDelay').fill('45');
     await page.locator('#debugMode').check();
     await page.locator('#saveSettings').click();
@@ -165,6 +167,7 @@ test.describe('options page settings', () => {
       regexUrlMatching: true,
       showPasswordsInPopup: true,
       notificationsEnabled: false,
+      autoLockTimeoutMinutes: 15,
       clipboardClearDelay: 45,
       debugMode: true
     });

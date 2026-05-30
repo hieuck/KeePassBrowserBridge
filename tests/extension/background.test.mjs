@@ -341,6 +341,19 @@ assert.equal(lockState.locked, true, 'lock message should set lock state');
 assert.equal(storage.locked, true, 'lock message should persist lock state');
 storage.locked = false;
 
+now = 10 * 60 * 1000;
+storage.autoLockTimeoutMinutes = 5;
+storage.lastCredentialActivityAt = now - (6 * 60 * 1000);
+const autoLockedState = await sandbox.getState();
+assert.equal(autoLockedState.locked, true, 'state should lock after the configured inactivity timeout');
+assert.equal(storage.locked, true, 'auto-lock should persist the locked state');
+storage.locked = false;
+storage.lastCredentialActivityAt = now - (2 * 60 * 1000);
+const activeLockState = await sandbox.getState();
+assert.equal(activeLockState.locked, false, 'state should remain unlocked before the inactivity timeout');
+storage.autoLockTimeoutMinutes = 0;
+storage.lastCredentialActivityAt = 0;
+
 delete storage.clientId;
 delete storage.sharedSecret;
 storage.pairingSessionId = 'cancel-session';
@@ -491,12 +504,17 @@ requests.length = 0;
 badgeCalls.length = 0;
 storage.siteOverrides = [{ host: 'example.com', autoFillEnabled: true, autoSubmitEnabled: true }];
 storage.autoSubmitEnabled = false;
+storage.autoLockTimeoutMinutes = 5;
+storage.lastCredentialActivityAt = now - (60 * 1000);
 await sandbox.autoFillTab(100, 'https://example.com/login');
 assert.ok(requests.some((request) => request.Method === 'logins.query'), 'enabled site override should allow KeePass query');
 assert.equal(autofillMessage.type, 'KBB_FILL');
 assert.equal(autofillMessage.autoSubmit, true, 'site override should control auto-submit for the matching host');
+assert.equal(storage.lastCredentialActivityAt, now, 'auto-fill should refresh credential activity for auto-lock');
 badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 100);
 assert.equal(badgeTextCall.details.text, '1', 'single match should show a count badge on the tab');
+storage.autoLockTimeoutMinutes = 0;
+storage.lastCredentialActivityAt = 0;
 
 requests.length = 0;
 badgeCalls.length = 0;

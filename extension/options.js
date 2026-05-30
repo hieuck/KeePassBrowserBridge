@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
   regexUrlMatching: false,
   showPasswordsInPopup: false,
   notificationsEnabled: true,
+  autoLockTimeoutMinutes: 0,
   clipboardClearDelay: 30,
   debugMode: false,
   siteOverrides: []
@@ -38,6 +39,7 @@ const elements = {
   regexUrlMatching: document.getElementById('regexUrlMatching'),
   showPasswordsInPopup: document.getElementById('showPasswordsInPopup'),
   notificationsEnabled: document.getElementById('notificationsEnabled'),
+  autoLockTimeoutMinutes: document.getElementById('autoLockTimeoutMinutes'),
   clipboardClearDelay: document.getElementById('clipboardClearDelay'),
   debugMode: document.getElementById('debugMode'),
   refreshTrustedBrowsers: document.getElementById('refreshTrustedBrowsers'),
@@ -125,6 +127,7 @@ function loadSettings() {
     elements.regexUrlMatching.checked = settings.regexUrlMatching;
     elements.showPasswordsInPopup.checked = settings.showPasswordsInPopup;
     elements.notificationsEnabled.checked = settings.notificationsEnabled;
+    elements.autoLockTimeoutMinutes.value = settings.autoLockTimeoutMinutes;
     elements.clipboardClearDelay.value = settings.clipboardClearDelay;
     elements.debugMode.checked = settings.debugMode;
     siteOverrides = normalizeSiteOverrides(settings.siteOverrides);
@@ -145,6 +148,7 @@ function saveSettings() {
       regexUrlMatching: elements.regexUrlMatching.checked,
       showPasswordsInPopup: elements.showPasswordsInPopup.checked,
       notificationsEnabled: elements.notificationsEnabled.checked,
+      autoLockTimeoutMinutes: parseInt(elements.autoLockTimeoutMinutes.value, 10),
       clipboardClearDelay: parseInt(elements.clipboardClearDelay.value, 10),
       debugMode: elements.debugMode.checked,
       siteOverrides: normalizeSiteOverrides(siteOverrides)

@@ -131,6 +131,12 @@
       </div>
 
       <div class="setting-group">
+        <label for="autoLockTimeoutMinutes">Auto-lock after inactivity (minutes)</label>
+        <input id="autoLockTimeoutMinutes" type="number" min="0" max="1440" step="1" value="0">
+        <p class="help-text">Lock credential access after this many inactive minutes. Set to 0 to disable.</p>
+      </div>
+
+      <div class="setting-group">
         <label for="clipboardClearDelay">Clear clipboard after (seconds)</label>
         <input id="clipboardClearDelay" type="number" min="0" max="300" step="5" value="30">
         <p class="help-text">Automatically clear copied passwords from clipboard. Set to 0 to disable.</p>

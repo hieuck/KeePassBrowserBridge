@@ -15,6 +15,7 @@ const PENDING_SUBMITTED_KEY = 'kbbPendingSubmittedCredential';
 const HTTP_AUTH_MAX_ATTEMPTS = 2;
 const DEFAULT_AUTO_FILL_ENABLED = true;
 const DEFAULT_AUTO_SUBMIT_ENABLED = false;
+const DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES = 0;
 const autoFillTimers = new Map();
 const clipboardTimers = new Map();
 const httpAuthAttempts = new Map();
@@ -188,7 +189,7 @@ function compareVersions(left, right) {
 }
 
 async function getState() {
-  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked']);
+  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
   const paired = Boolean(state.clientId);
   if (paired && state.pairingSessionId) {
     await clearPairingSession();
@@ -204,6 +205,8 @@ async function getState() {
     state.pairingStartedAt = 0;
   }
 
+  await applyAutoLock(state);
+
   const pairingActive = !paired && Boolean(state.pairingSessionId);
   return {
     endpoint: state.endpoint || DEFAULT_ENDPOINT,
@@ -213,12 +216,35 @@ async function getState() {
     pairingExpiresAt: pairingActive && pairingStartedAt ? pairingStartedAt + PAIRING_SESSION_MAX_AGE_MS : 0,
     autoFillEnabled: booleanSetting(state.autoFillEnabled, DEFAULT_AUTO_FILL_ENABLED),
     autoSubmitEnabled: booleanSetting(state.autoSubmitEnabled, DEFAULT_AUTO_SUBMIT_ENABLED),
+    autoLockTimeoutMinutes: numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES),
     locked: state.locked === true
   };
 }
 
 function booleanSetting(value, defaultValue) {
   return typeof value === 'boolean' ? value : defaultValue;
+}
+
+function numberSetting(value, defaultValue) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue;
+}
+
+async function applyAutoLock(state) {
+  if (state.locked === true) {
+    return;
+  }
+
+  const timeoutMinutes = numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES);
+  const lastActivityAt = Number(state.lastCredentialActivityAt || 0);
+  if (timeoutMinutes <= 0 || lastActivityAt <= 0) {
+    return;
+  }
+
+  if (Date.now() - lastActivityAt >= timeoutMinutes * 60 * 1000) {
+    state.locked = true;
+    await chrome.storage.local.set({ locked: true });
+  }
 }
 
 async function saveEndpoint(endpoint) {
@@ -238,7 +264,12 @@ async function setAutoSubmit(enabled) {
 }
 
 async function setLocked(locked) {
-  await chrome.storage.local.set({ locked: Boolean(locked) });
+  const values = { locked: Boolean(locked) };
+  if (!values.locked) {
+    values.lastCredentialActivityAt = Date.now();
+  }
+
+  await chrome.storage.local.set(values);
   return getState();
 }
 
@@ -358,6 +389,7 @@ async function queryLogins() {
 
 async function queryLoginsForUrl(url) {
   await assertUnlocked();
+  await rememberCredentialActivity();
   const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
   return queryResultFromResponse(url, response);
 }
@@ -381,6 +413,7 @@ async function queryHttpAuth(url) {
 
 async function createLogin(login) {
   await assertUnlocked();
+  await rememberCredentialActivity();
   const response = await bridgeCall('logins.create', login, true);
   const result = parsePayload(response);
   if (result && result.Success !== false) {
@@ -391,6 +424,7 @@ async function createLogin(login) {
 
 async function updateLogin(login) {
   await assertUnlocked();
+  await rememberCredentialActivity();
   const response = await bridgeCall('logins.update', login, true);
   const result = parsePayload(response);
   if (result && result.Success !== false) {
@@ -502,6 +536,7 @@ async function collectPageCredential() {
 
 async function fillLogin(credential, fieldRole, customFieldName) {
   await assertUnlocked();
+  await rememberCredentialActivity();
   const tab = await getActiveTab();
   if (!tab || !tab.id) {
     throw new Error('No active tab.');
@@ -560,6 +595,8 @@ function notificationCredentialMessage(credential, fallback) {
 
 async function copyToClipboard(text, clearAfterMs) {
   try {
+    await assertUnlocked();
+    await rememberCredentialActivity();
     await navigator.clipboard.writeText(text);
     
     if (clearAfterMs && clearAfterMs > 0) {
@@ -590,6 +627,7 @@ async function autoFillTab(tabId, url) {
   }
 
   try {
+    await rememberCredentialActivity();
     const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
     const result = queryResultFromResponse(url, response);
     await updateBadgeCount(tabId, result.entries.length);
@@ -616,10 +654,15 @@ async function autoFillTab(tabId, url) {
 }
 
 async function assertUnlocked() {
-  const state = await storageGet(['locked']);
+  const state = await storageGet(['locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
+  await applyAutoLock(state);
   if (state.locked === true) {
     throw new Error('KeePass Bridge is locked.');
   }
+}
+
+async function rememberCredentialActivity() {
+  await chrome.storage.local.set({ lastCredentialActivityAt: Date.now() });
 }
 
 async function updateBadgeCount(tabId, count) {
