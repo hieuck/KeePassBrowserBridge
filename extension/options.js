@@ -14,6 +14,8 @@ const DEFAULT_SETTINGS = {
   siteOverrides: []
 };
 
+const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
+
 const SENSITIVE_SETTING_KEYS = [
   'clientId',
   'sharedSecret',
@@ -113,7 +115,7 @@ function toggleTheme() {
 
 function loadSettings() {
   chrome.storage.local.get(DEFAULT_SETTINGS, (settings) => {
-    elements.bridgeEndpoint.value = settings.endpoint || 'http://127.0.0.1:19455/bridge';
+    elements.bridgeEndpoint.value = settings.endpoint || DEFAULT_ENDPOINT;
     elements.theme.value = settings.theme || 'system';
     elements.autoFillEnabled.checked = settings.autoFillEnabled;
     elements.autoSubmitEnabled.checked = settings.autoSubmitEnabled;
@@ -130,20 +132,26 @@ function loadSettings() {
 }
 
 function saveSettings() {
-  const settings = {
-    endpoint: elements.bridgeEndpoint.value,
-    theme: elements.theme.value,
-    autoFillEnabled: elements.autoFillEnabled.checked,
-    autoSubmitEnabled: elements.autoSubmitEnabled.checked,
-    autoFillDelay: parseInt(elements.autoFillDelay.value, 10),
-    strictUrlMatching: elements.strictUrlMatching.checked,
-    regexUrlMatching: elements.regexUrlMatching.checked,
-    showPasswordsInPopup: elements.showPasswordsInPopup.checked,
-    notificationsEnabled: elements.notificationsEnabled.checked,
-    clipboardClearDelay: parseInt(elements.clipboardClearDelay.value, 10),
-    debugMode: elements.debugMode.checked,
-    siteOverrides: normalizeSiteOverrides(siteOverrides)
-  };
+  let settings;
+  try {
+    settings = {
+      endpoint: normalizeBridgeEndpoint(elements.bridgeEndpoint.value),
+      theme: elements.theme.value,
+      autoFillEnabled: elements.autoFillEnabled.checked,
+      autoSubmitEnabled: elements.autoSubmitEnabled.checked,
+      autoFillDelay: parseInt(elements.autoFillDelay.value, 10),
+      strictUrlMatching: elements.strictUrlMatching.checked,
+      regexUrlMatching: elements.regexUrlMatching.checked,
+      showPasswordsInPopup: elements.showPasswordsInPopup.checked,
+      notificationsEnabled: elements.notificationsEnabled.checked,
+      clipboardClearDelay: parseInt(elements.clipboardClearDelay.value, 10),
+      debugMode: elements.debugMode.checked,
+      siteOverrides: normalizeSiteOverrides(siteOverrides)
+    };
+  } catch (error) {
+    showMessage(error && error.message ? error.message : String(error), 'error');
+    return;
+  }
 
   chrome.storage.local.set(settings, () => {
     showMessage('Settings saved successfully!', 'success');
@@ -152,6 +160,20 @@ function saveSettings() {
       applyTheme(settings.theme);
     }
   });
+}
+
+function normalizeBridgeEndpoint(endpoint) {
+  const value = String(endpoint || '').trim();
+  if (!value) {
+    return DEFAULT_ENDPOINT;
+  }
+
+  const url = new URL(value);
+  if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1') {
+    throw new Error('Bridge endpoint must be an http://127.0.0.1 URL.');
+  }
+
+  return url.toString();
 }
 
 async function checkBridgeStatus() {

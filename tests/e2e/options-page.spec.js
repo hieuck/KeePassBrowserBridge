@@ -196,6 +196,21 @@ test.describe('options page settings', () => {
     await expect(page.locator('#message')).toHaveText('KeePass bridge is unavailable: Failed to fetch');
   });
 
+  test('rejects non-loopback bridge endpoint in settings', async ({ page }) => {
+    await installOptionsStorage(page, {
+      endpoint: 'http://127.0.0.1:19455/bridge'
+    });
+
+    await page.goto('/extension/options.html');
+    await page.locator('#bridgeEndpoint').fill('https://evil.example/bridge');
+    await page.locator('#saveSettings').click();
+
+    await expect(page.locator('#message')).toHaveText('Bridge endpoint must be an http://127.0.0.1 URL.');
+    await expect(page.locator('#message')).toHaveClass(/error/);
+    const stored = await page.evaluate(() => window.__kbbOptionsStore);
+    expect(stored.endpoint).toBe('http://127.0.0.1:19455/bridge');
+  });
+
   test('resets settings to defaults after confirmation', async ({ page }) => {
     await installOptionsStorage(page, {
       endpoint: 'http://127.0.0.1:19456/bridge',
