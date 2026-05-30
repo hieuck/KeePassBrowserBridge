@@ -232,6 +232,22 @@ test.describe('KeePassBrowserBridge Extension', () => {
     );
   });
 
+  test('refreshes the active pairing countdown in the popup', async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-05-30T16:00:00Z') });
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = false;
+      window.__kbbPairingDurationMs = 125000;
+    });
+    await page.locator('#beginPair').click();
+
+    await expect(page.locator('#pairingPanel')).toBeVisible();
+    await expect(page.locator('#pairingTimer')).toHaveText('Code expires in 2:05');
+
+    await page.clock.fastForward(10000);
+
+    await expect(page.locator('#pairingTimer')).toHaveText('Code expires in 1:55');
+  });
+
   test('pastes and submits a copied pairing code from clipboard', async ({ page }) => {
     await page.evaluate(() => {
       window.__kbbPopupState.paired = false;

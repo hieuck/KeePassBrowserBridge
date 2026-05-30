@@ -126,6 +126,8 @@ elements.pairingPanel.classList.add('hidden');
 const sentMessages = [];
 const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 const timerCalls = [];
+const intervalCalls = [];
+let fakeNow = 1779990000000;
 
 const fakeDocument = {
   activeElement: null,
@@ -158,6 +160,23 @@ const sandbox = {
   },
   clearTimeout(timer) {
     if (timer) timer.cleared = true;
+  },
+  setInterval(handler, delay) {
+    const interval = { handler, delay, cleared: false };
+    intervalCalls.push(interval);
+    return interval;
+  },
+  clearInterval(interval) {
+    if (interval) interval.cleared = true;
+  },
+  Date: class extends Date {
+    constructor(...args) {
+      super(...(args.length ? args : [fakeNow]));
+    }
+
+    static now() {
+      return fakeNow;
+    }
   },
   document: fakeDocument,
   window: {
@@ -266,12 +285,17 @@ sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: false,
   pairingSessionId: 'session-1',
-  pairingExpiresAt: Date.now() + 125000,
+  pairingExpiresAt: fakeNow + 125000,
   autoFillEnabled: false
 });
 
 assert.equal(elements.pairingPanel.classList.contains('hidden'), false, 'pairing panel should be visible');
 assert.equal(elements.pairingTimer.textContent.includes('2:05'), true, 'pairing panel should show time remaining');
+assert.equal(intervalCalls.length, 1, 'active pairing state should schedule countdown refresh');
+assert.equal(intervalCalls[0].delay, 1000, 'pairing countdown should refresh every second');
+fakeNow += 10000;
+intervalCalls[0].handler();
+assert.equal(elements.pairingTimer.textContent.includes('1:55'), true, 'pairing countdown should update while popup stays open');
 assert.equal(elements.stateNotice.textContent, 'Enter the six digit code shown in KeePass to finish pairing.', 'pairing state should explain the next step');
 assert.equal(elements.queryLogins.disabled, true, 'unpaired pairing state should disable credential query action');
 assert.equal(elements.newLogin.disabled, true, 'unpaired pairing state should disable create action');
@@ -302,7 +326,7 @@ sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: false,
   pairingSessionId: 'session-escape',
-  pairingExpiresAt: Date.now() + 125000,
+  pairingExpiresAt: fakeNow + 125000,
   autoFillEnabled: false
 });
 sentMessages.length = 0;
@@ -320,7 +344,7 @@ sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: false,
   pairingSessionId: 'session-1',
-  pairingExpiresAt: Date.now() + 125000,
+  pairingExpiresAt: fakeNow + 125000,
   autoFillEnabled: false
 });
 elements.pairingCode.value = '';
@@ -340,7 +364,7 @@ sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: false,
   pairingSessionId: 'session-expiring',
-  pairingExpiresAt: Date.now() + 1000,
+  pairingExpiresAt: fakeNow + 1000,
   autoFillEnabled: false
 });
 assert.equal(timerCalls.length, 1, 'active pairing state should schedule expiry handling');
@@ -360,7 +384,7 @@ sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: true,
   pairingSessionId: 'stale-session',
-  pairingExpiresAt: Date.now() + 125000,
+  pairingExpiresAt: fakeNow + 125000,
   autoFillEnabled: false
 });
 
