@@ -47,6 +47,8 @@ namespace KeePassBrowserBridge.Bridge
     {
         public string ProductName { get; set; }
         public int ProtocolVersion { get; set; }
+        public string PluginVersion { get; set; }
+        public string PluginUpdateUrl { get; set; }
     }
 
     public sealed class PairBeginPayload

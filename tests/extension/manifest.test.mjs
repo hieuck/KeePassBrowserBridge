@@ -42,6 +42,7 @@ assert.equal(releaseWorkflow.includes('npx playwright install chromium'), true, 
 assert.equal(releaseWorkflow.includes('.\\scripts\\verify.ps1'), true, 'release workflow should run the same full verifier before packaging');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersion}")]`), true, 'plugin AssemblyVersion should match extension release version');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
+assert.equal(bridgeSettings.includes(`PluginVersion = "${manifest.version}"`), true, 'bridge-reported plugin version should match extension release version');
 assert.equal(pluginExt.includes('public override string UpdateUrl'), true, 'plugin should expose a KeePass update URL');
 assert.equal(bridgeSettings.includes('https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt'), true, 'plugin update URL should point to the public version info file');
 assert.equal(updateInfo.replace(/\r\n/g, '\n'), `:\nKeePass Browser Bridge:${manifest.version}\n:\n`, 'KeePass update info should use the plugin title and current version');

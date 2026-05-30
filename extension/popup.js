@@ -22,6 +22,7 @@ const elements = {
   toggleSiteAutoFill: document.getElementById('toggleSiteAutoFill'),
   toggleSiteAutoSubmit: document.getElementById('toggleSiteAutoSubmit'),
   aboutVersion: document.getElementById('aboutVersion'),
+  aboutPluginVersion: document.getElementById('aboutPluginVersion'),
   aboutBrowserId: document.getElementById('aboutBrowserId'),
   repositoryLink: document.getElementById('repositoryLink'),
   releasesLink: document.getElementById('releasesLink'),
@@ -535,6 +536,7 @@ async function refreshState() {
 async function renderAbout() {
   const about = await send({ type: 'KBB_GET_ABOUT' });
   elements.aboutVersion.textContent = about.version || 'Unknown';
+  elements.aboutPluginVersion.textContent = about.pluginVersion || 'Unavailable';
   elements.aboutBrowserId.textContent = about.browserId || 'Unknown';
   elements.repositoryLink.href = about.repositoryUrl || '#';
   elements.releasesLink.href = about.releasesUrl || '#';

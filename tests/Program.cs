@@ -816,9 +816,12 @@ internal static class Program
         BridgeRequest request = CreateValidRequest(BridgeMethods.Hello);
 
         BridgeResponse response = handler.Handle(request);
+        HelloResponsePayload payload = BridgeJsonSerializer.Deserialize<HelloResponsePayload>(response.Payload);
 
         AssertTrue(response.Success, "hello should succeed without authentication: " + response.Error);
         AssertEqual(request.RequestId, response.RequestId, "hello response request ID mismatch");
+        AssertEqual("0.9.0", payload.PluginVersion, "hello should expose the KeePass plugin version");
+        AssertEqual(BridgeSettings.UpdateInfoUrl, payload.PluginUpdateUrl, "hello should expose the KeePass plugin update URL");
     }
 
     private static void BridgeHandlerRejectsBadHmacForTrustedMethod()

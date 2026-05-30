@@ -24,7 +24,7 @@ KeePass Browser Bridge has two release artifacts:
 - HTTP Basic Auth fill support.
 - Site-specific auto-fill and auto-submit overrides.
 - Trusted browser listing and revocation.
-- About panel and GitHub release update check.
+- About panel showing extension and KeePass plugin versions plus GitHub release update check.
 - KeePass plugin update checking through the built-in KeePass updater.
 - Chrome and Firefox extension packaging.
 

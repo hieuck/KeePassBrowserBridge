@@ -101,6 +101,7 @@ const ids = [
   'toggleSiteAutoFill',
   'toggleSiteAutoSubmit',
   'aboutVersion',
+  'aboutPluginVersion',
   'aboutBrowserId',
   'repositoryLink',
   'releasesLink',
@@ -151,6 +152,7 @@ const sandbox = {
             response: {
               name: 'KeePass Browser Bridge',
               version: '0.9.0',
+              pluginVersion: '0.9.0',
               browserId: 'abcdefghijklmnopabcdefghijklmnop',
               repositoryUrl: 'https://github.com/hieuck/KeePassBrowserBridge',
               releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases'
@@ -196,6 +198,7 @@ const source = fs.readFileSync(new URL('../../extension/popup.js', import.meta.u
 const markup = fs.readFileSync(new URL('../../extension/popup.html', import.meta.url), 'utf8');
 assert.equal(markup.includes('pairingSession'), false, 'pairing session id element should not exist in popup markup');
 assert.equal(markup.includes('aboutVersion'), true, 'popup should render an About version element');
+assert.equal(markup.includes('aboutPluginVersion'), true, 'popup should render a plugin version element');
 assert.equal(markup.includes('checkUpdates'), true, 'popup should provide a check updates action');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'popup.js' });
@@ -203,6 +206,7 @@ vm.runInContext(source, sandbox, { filename: 'popup.js' });
 sandbox.init();
 await sandbox.renderAbout();
 assert.equal(elements.aboutVersion.textContent, '0.9.0', 'popup should display the extension version');
+assert.equal(elements.aboutPluginVersion.textContent, '0.9.0', 'popup should display the plugin version');
 assert.equal(elements.aboutBrowserId.textContent, 'abcdefghijklmnopabcdefghijklmnop', 'popup should display the browser extension id');
 assert.equal(elements.repositoryLink.href, 'https://github.com/hieuck/KeePassBrowserBridge', 'popup should link to the repository');
 assert.equal(elements.releasesLink.href, 'https://github.com/hieuck/KeePassBrowserBridge/releases', 'popup should link to releases');

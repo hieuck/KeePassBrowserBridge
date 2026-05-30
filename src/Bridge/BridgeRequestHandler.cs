@@ -72,7 +72,9 @@ namespace KeePassBrowserBridge.Bridge
             return Success(request, BridgeJsonSerializer.Serialize(new HelloResponsePayload
             {
                 ProductName = BridgeSettings.ProductName,
-                ProtocolVersion = ProtocolValidator.ProtocolVersion
+                ProtocolVersion = ProtocolValidator.ProtocolVersion,
+                PluginVersion = BridgeSettings.PluginVersion,
+                PluginUpdateUrl = BridgeSettings.UpdateInfoUrl
             }));
         }
 

@@ -57,7 +57,7 @@ const sandbox = {
           ProtocolVersion: 1,
           RequestId: request.RequestId,
           Success: true,
-          Payload: '{"ProductName":"KeePass Browser Bridge","ProtocolVersion":1}'
+          Payload: '{"ProductName":"KeePass Browser Bridge","ProtocolVersion":1,"PluginVersion":"0.9.0","PluginUpdateUrl":"https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt"}'
         })
       };
     }
@@ -246,6 +246,9 @@ assert.equal(about.version, '0.9.0', 'about should include extension version');
 assert.equal(about.repositoryUrl, 'https://github.com/hieuck/KeePassBrowserBridge', 'about should include repository URL');
 assert.equal(about.releasesUrl, 'https://github.com/hieuck/KeePassBrowserBridge/releases', 'about should include releases URL');
 assert.equal(about.browserId, 'abcdefghijklmnopabcdefghijklmnop', 'about should include browser extension id');
+assert.equal(about.pluginVersion, '0.9.0', 'about should include bridge plugin version when KeePass is reachable');
+assert.equal(about.pluginUpdateUrl, 'https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt', 'about should include bridge plugin update URL');
+assert.equal(about.bridgeAvailable, true, 'about should report when bridge metadata is reachable');
 
 const updateCheck = await sandbox.handleMessage({ type: 'KBB_CHECK_UPDATES' });
 assert.equal(updateCheck.currentVersion, '0.9.0', 'update check should include current version');

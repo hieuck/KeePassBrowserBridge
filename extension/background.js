@@ -122,19 +122,33 @@ async function handleMessage(message) {
   }
 }
 
-function getAbout() {
+async function getAbout() {
   const manifest = chrome.runtime.getManifest ? chrome.runtime.getManifest() : {};
-  return {
+  const about = {
     name: manifest.name || 'KeePass Browser Bridge',
     version: manifest.version || '0.0.0',
     browserId: chrome.runtime.id || '',
     repositoryUrl: REPOSITORY_URL,
-    releasesUrl: RELEASES_URL
+    releasesUrl: RELEASES_URL,
+    bridgeAvailable: false,
+    pluginVersion: '',
+    pluginUpdateUrl: ''
   };
+
+  try {
+    const hello = parsePayload(await bridgeCall('hello', {}));
+    about.bridgeAvailable = true;
+    about.pluginVersion = hello.PluginVersion || '';
+    about.pluginUpdateUrl = hello.PluginUpdateUrl || '';
+  } catch (error) {
+    about.bridgeError = error && error.message ? error.message : String(error);
+  }
+
+  return about;
 }
 
 async function checkUpdates() {
-  const about = getAbout();
+  const about = await getAbout();
   const response = await fetch(LATEST_RELEASE_API_URL, {
     headers: {
       Accept: 'application/vnd.github+json'

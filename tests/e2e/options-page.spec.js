@@ -68,6 +68,7 @@ async function installOptionsStorage(page, initial = {}) {
               response: {
                 name: 'KeePass Browser Bridge',
                 version: '0.9.0',
+                pluginVersion: '0.9.0',
                 browserId: 'abcdefghijklmnopabcdefghijklmnop',
                 repositoryUrl: 'https://github.com/hieuck/KeePassBrowserBridge',
                 releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases'
@@ -286,6 +287,7 @@ test.describe('options page settings', () => {
     await page.goto('/extension/options.html');
 
     await expect(page.locator('#aboutVersion')).toHaveText('0.9.0');
+    await expect(page.locator('#aboutPluginVersion')).toHaveText('0.9.0');
     await expect(page.locator('#aboutBrowserId')).toHaveText('abcdefghijklmnopabcdefghijklmnop');
     await expect(page.locator('#repositoryLink')).toHaveAttribute('href', 'https://github.com/hieuck/KeePassBrowserBridge');
     await expect(page.locator('#releasesLink')).toHaveAttribute('href', 'https://github.com/hieuck/KeePassBrowserBridge/releases');
