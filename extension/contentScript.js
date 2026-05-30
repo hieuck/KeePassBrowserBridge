@@ -716,6 +716,8 @@ async function fillFromInlineButton(button) {
       const credential = collectCredentialFromForm(document);
       if (credential && credential.password) {
         showSaveLoginPrompt(credential);
+      } else {
+        showInlineEmptyPicker(button);
       }
       setInlineButtonState(button, "0");
       return;
@@ -731,6 +733,36 @@ async function fillFromInlineButton(button) {
   } catch (error) {
     setInlineButtonState(button, "!");
   }
+}
+function showInlineEmptyPicker(button) {
+  closeInlinePicker();
+  const picker = document.createElement("div");
+  picker.className = "kbb-inline-picker";
+  picker.setAttribute("role", "status");
+  applyPickerStyle(picker);
+
+  const empty = document.createElement("div");
+  empty.className = "kbb-inline-picker-empty";
+  empty.style.padding = "10px";
+  empty.style.color = "#667085";
+  empty.style.font =
+    '12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+  const title = document.createElement("div");
+  title.textContent = "No KeePass logins found for this page.";
+  title.style.color = "#1f2933";
+  title.style.fontWeight = "700";
+
+  const hint = document.createElement("div");
+  hint.textContent = "Enter a username and password, then submit the form to save a new KeePass entry.";
+  hint.style.marginTop = "6px";
+
+  empty.appendChild(title);
+  empty.appendChild(hint);
+  picker.appendChild(empty);
+  document.documentElement.appendChild(picker);
+  positionInlinePicker(button, picker);
+  window.__keepassBrowserBridgeActivePicker = picker;
 }
 function showInlinePicker(button, entries) {
   closeInlinePicker();
