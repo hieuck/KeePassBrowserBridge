@@ -257,6 +257,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#message')).toHaveText('KeePass Bridge is locked.');
     await expect(page.locator('#queryLogins')).toBeDisabled();
     await expect(page.locator('#newLogin')).toBeDisabled();
+    await expect(page.locator('#stateNotice')).toHaveText('Unlock KeePass Bridge to find, fill, create, or update logins.');
 
     await page.locator('#lockBridge').click();
 
@@ -265,6 +266,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#message')).toHaveText('KeePass Bridge is unlocked.');
     await expect(page.locator('#queryLogins')).toBeEnabled();
     await expect(page.locator('#newLogin')).toBeEnabled();
+    await expect(page.locator('#stateNotice')).toHaveText('Pair this browser with KeePass to query and fill logins.');
     await expect.poll(() => page.evaluate(() => window.__kbbPopupMessages.map((message) => message.type))).toEqual(
       expect.arrayContaining(['KBB_SET_LOCKED'])
     );

@@ -252,6 +252,16 @@ h1 {
   margin-top: 10px;
 }
 
+.state-notice {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.state-notice.warning {
+  color: var(--danger);
+}
+
 .clients {
   display: grid;
   gap: 8px;

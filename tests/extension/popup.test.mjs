@@ -101,6 +101,7 @@ const ids = [
   'newLogin',
   'toggleSiteAutoFill',
   'toggleSiteAutoSubmit',
+  'stateNotice',
   'aboutVersion',
   'aboutPluginVersion',
   'aboutBrowserId',
@@ -201,6 +202,7 @@ assert.equal(markup.includes('pairingSession'), false, 'pairing session id eleme
 assert.equal(markup.includes('aboutVersion'), true, 'popup should render an About version element');
 assert.equal(markup.includes('aboutPluginVersion'), true, 'popup should render a plugin version element');
 assert.equal(markup.includes('checkUpdates'), true, 'popup should provide a check updates action');
+assert.equal(markup.includes('stateNotice'), true, 'popup should render state guidance text');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'popup.js' });
 
@@ -225,6 +227,7 @@ sandbox.renderState({
 
 assert.equal(elements.pairingPanel.classList.contains('hidden'), false, 'pairing panel should be visible');
 assert.equal(elements.pairingTimer.textContent.includes('2:05'), true, 'pairing panel should show time remaining');
+assert.equal(elements.stateNotice.textContent, 'Enter the six digit code shown in KeePass to finish pairing.', 'pairing state should explain the next step');
 assert.equal(fakeDocument.activeElement, elements.pairingCode, 'pairing code input should receive focus');
 assert.equal(elements.completePair.disabled, true, 'confirm should be disabled before a complete code is entered');
 
@@ -252,5 +255,18 @@ sandbox.renderState({
 
 assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'paired popup should hide stale pairing sessions');
 assert.equal(elements.pairingTimer.textContent, '', 'paired popup should clear pairing countdown');
+assert.equal(elements.stateNotice.textContent, 'Ready to find, fill, create, and update KeePass logins.', 'paired state should explain available actions');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  locked: true,
+  autoFillEnabled: false
+});
+
+assert.equal(elements.stateNotice.textContent, 'Unlock KeePass Bridge to find, fill, create, or update logins.', 'locked state should explain disabled credential actions');
+assert.equal(elements.stateNotice.classList.contains('warning'), true, 'locked state notice should use warning styling');
+assert.equal(elements.queryLogins.disabled, true, 'locked state should disable credential query action');
+assert.equal(elements.newLogin.disabled, true, 'locked state should disable create action');
 
 console.log('Popup tests passed.');

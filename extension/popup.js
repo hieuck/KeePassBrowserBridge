@@ -22,6 +22,7 @@ const elements = {
   newLogin: document.getElementById('newLogin'),
   toggleSiteAutoFill: document.getElementById('toggleSiteAutoFill'),
   toggleSiteAutoSubmit: document.getElementById('toggleSiteAutoSubmit'),
+  stateNotice: document.getElementById('stateNotice'),
   aboutVersion: document.getElementById('aboutVersion'),
   aboutPluginVersion: document.getElementById('aboutPluginVersion'),
   aboutBrowserId: document.getElementById('aboutBrowserId'),
@@ -596,11 +597,30 @@ function renderState(state) {
   } else {
     setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');
   }
+  renderStateNotice(state, pairingActive);
   syncCredentialActionAvailability();
   syncPairingCodeState();
   if (pairingActive) {
     elements.pairingCode.focus();
   }
+}
+
+function renderStateNotice(state, pairingActive) {
+  let text = '';
+  let warning = false;
+  if (state.locked) {
+    text = 'Unlock KeePass Bridge to find, fill, create, or update logins.';
+    warning = true;
+  } else if (pairingActive) {
+    text = 'Enter the six digit code shown in KeePass to finish pairing.';
+  } else if (state.paired) {
+    text = 'Ready to find, fill, create, and update KeePass logins.';
+  } else {
+    text = 'Pair this browser with KeePass to query and fill logins.';
+  }
+
+  elements.stateNotice.textContent = text;
+  elements.stateNotice.classList.toggle('warning', warning);
 }
 
 function syncCredentialActionAvailability() {
