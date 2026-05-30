@@ -173,6 +173,11 @@ async function checkStatus() {
   const state = await send({ type: 'KBB_GET_STATE' });
   renderState(state);
 
+  if (state.locked) {
+    setMessage('KeePass bridge is reachable. Unlock KeePass Bridge to use logins.');
+    return;
+  }
+
   if (state.paired) {
     await send({ type: 'KBB_STATUS' });
     setStatus('Paired', 'paired');

@@ -259,6 +259,11 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#newLogin')).toBeDisabled();
     await expect(page.locator('#stateNotice')).toHaveText('Unlock KeePass Bridge to find, fill, create, or update logins.');
 
+    await page.locator('#checkStatus').click();
+    await expect(page.locator('#statusBadge')).toHaveText('Locked');
+    await expect(page.locator('#message')).toHaveText('KeePass bridge is reachable. Unlock KeePass Bridge to use logins.');
+    await expect(page.locator('#stateNotice')).toHaveText('Unlock KeePass Bridge to find, fill, create, or update logins.');
+
     await page.locator('#lockBridge').click();
 
     await expect(page.locator('#lockBridge')).toHaveText('Lock');
