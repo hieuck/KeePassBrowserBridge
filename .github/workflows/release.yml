@@ -68,11 +68,14 @@ jobs:
         shell: pwsh
         run: |
           $expected = "${{ inputs.version }}"
-          $extension = "artifacts\KeePassBrowserBridge-chrome-extension-$expected.zip"
-          if (-not (Test-Path -LiteralPath $extension)) {
-            throw "Expected extension artifact was not created: $extension"
+          $chromeExtension = "artifacts\KeePassBrowserBridge-chrome-extension-$expected.zip"
+          $firefoxExtension = "artifacts\KeePassBrowserBridge-firefox-extension-$expected.zip"
+          foreach ($extension in @($chromeExtension, $firefoxExtension)) {
+            if (-not (Test-Path -LiteralPath $extension)) {
+              throw "Expected extension artifact was not created: $extension"
+            }
           }
-          foreach ($path in @("artifacts\KeePassBrowserBridge.dll", "artifacts\KeePassBrowserBridge.plgx", $extension)) {
+          foreach ($path in @("artifacts\KeePassBrowserBridge.dll", "artifacts\KeePassBrowserBridge.plgx", $chromeExtension, $firefoxExtension)) {
             if (-not (Test-Path -LiteralPath $path)) {
               throw "Missing release artifact: $path"
             }
@@ -95,6 +98,12 @@ jobs:
         with:
           name: KeePassBrowserBridge-chrome-extension-${{ inputs.version }}
           path: artifacts\KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip
+
+      - name: Upload Firefox extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeePassBrowserBridge-firefox-extension-${{ inputs.version }}
+          path: artifacts\KeePassBrowserBridge-firefox-extension-${{ inputs.version }}.zip
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v4

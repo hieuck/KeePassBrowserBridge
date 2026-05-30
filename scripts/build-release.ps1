@@ -70,6 +70,47 @@ function Move-ItemWithRetry {
     }
 }
 
+function New-ExtensionPackage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $StagingDir,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DestinationPath,
+
+        [string] $ManifestOverride = ""
+    )
+
+    if (Test-Path -LiteralPath $StagingDir) {
+        Remove-Item -LiteralPath $StagingDir -Recurse -Force
+    }
+
+    New-Item -ItemType Directory -Force -Path $StagingDir | Out-Null
+
+    $excludedItems = @(".git", "node_modules", "manifest.firefox.json")
+    $extensionItems = Get-ChildItem -LiteralPath $extensionDir -Force |
+        Where-Object { $_.Name -notin $excludedItems }
+
+    foreach ($item in $extensionItems) {
+        Copy-Item -LiteralPath $item.FullName -Destination $StagingDir -Recurse -Force
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ManifestOverride)) {
+        if (-not (Test-Path -LiteralPath $ManifestOverride)) {
+            throw "Cannot find extension manifest override: $ManifestOverride"
+        }
+
+        Copy-Item -LiteralPath $ManifestOverride -Destination (Join-Path $StagingDir "manifest.json") -Force
+    }
+
+    if (Test-Path -LiteralPath $DestinationPath) {
+        Remove-Item -LiteralPath $DestinationPath -Force
+    }
+
+    $packageItems = Get-ChildItem -LiteralPath $StagingDir -Force
+    Compress-Archive -Path $packageItems.FullName -DestinationPath $DestinationPath -Force
+}
+
 $frameworkDir = Join-Path $env:WINDIR "Microsoft.NET\Framework64\v4.0.30319"
 $csc = Join-Path $frameworkDir "csc.exe"
 if (-not (Test-Path -LiteralPath $csc)) {
@@ -154,18 +195,21 @@ if (-not $createdPlgx) {
 $plgxTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge.plgx"
 Move-ItemWithRetry -LiteralPath $createdPlgx.FullName -Destination $plgxTarget
 
-$extensionTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge-chrome-extension-$version.zip"
-if (Test-Path -LiteralPath $extensionTarget) {
-    Remove-Item -LiteralPath $extensionTarget -Force
-}
+$chromeExtensionTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge-chrome-extension-$version.zip"
+$firefoxExtensionTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge-firefox-extension-$version.zip"
+$chromeStagingDir = Join-Path $ArtifactsDir "_chrome-extension"
+$firefoxStagingDir = Join-Path $ArtifactsDir "_firefox-extension"
+$firefoxManifestPath = Join-Path $extensionDir "manifest.firefox.json"
 
-$extensionItems = Get-ChildItem -LiteralPath $extensionDir -Force |
-    Where-Object { $_.Name -notin @(".git", "node_modules") }
+New-ExtensionPackage -StagingDir $chromeStagingDir -DestinationPath $chromeExtensionTarget
+New-ExtensionPackage -StagingDir $firefoxStagingDir -DestinationPath $firefoxExtensionTarget -ManifestOverride $firefoxManifestPath
 
-Compress-Archive -Path $extensionItems.FullName -DestinationPath $extensionTarget -Force
+Remove-Item -LiteralPath $chromeStagingDir -Recurse -Force
+Remove-Item -LiteralPath $firefoxStagingDir -Recurse -Force
 
 Write-Host ""
 Write-Host "Release artifacts:"
 Write-Host " - $pluginDllTarget"
 Write-Host " - $plgxTarget"
-Write-Host " - $extensionTarget"
+Write-Host " - $chromeExtensionTarget"
+Write-Host " - $firefoxExtensionTarget"

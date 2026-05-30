@@ -59,8 +59,23 @@ jobs:
         shell: pwsh
         run: dotnet run --project tests\KeePassBrowserBridge.Tests.csproj -p:KeePassExe="${{ github.workspace }}\tools\KeePass\KeePass.exe"
 
-      - name: Package Chrome extension
+      - name: Package browser extensions
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          Compress-Archive -Path extension\* -DestinationPath artifacts\KeePassBrowserBridge-chrome-extension-ci.zip -Force
+          $chromeStage = "artifacts\chrome-extension"
+          $firefoxStage = "artifacts\firefox-extension"
+          foreach ($stage in @($chromeStage, $firefoxStage)) {
+            if (Test-Path -LiteralPath $stage) {
+              Remove-Item -LiteralPath $stage -Recurse -Force
+            }
+            New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          }
+          foreach ($item in Get-ChildItem -LiteralPath extension -Force | Where-Object { $_.Name -notin @("manifest.firefox.json") }) {
+            Copy-Item -LiteralPath $item.FullName -Destination $chromeStage -Recurse -Force
+            Copy-Item -LiteralPath $item.FullName -Destination $firefoxStage -Recurse -Force
+          }
+          Copy-Item -LiteralPath extension\manifest.firefox.json -Destination "$firefoxStage\manifest.json" -Force
+          Compress-Archive -Path (Get-ChildItem -LiteralPath $chromeStage -Force).FullName -DestinationPath artifacts\KeePassBrowserBridge-chrome-extension-ci.zip -Force
+          Compress-Archive -Path (Get-ChildItem -LiteralPath $firefoxStage -Force).FullName -DestinationPath artifacts\KeePassBrowserBridge-firefox-extension-ci.zip -Force

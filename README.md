@@ -24,7 +24,7 @@ From this repository:
 .\scripts\build-release.ps1
 ```
 
-This creates a KeePass `.dll` plugin artifact, a KeePass `.plgx` source plugin artifact using KeePass' `--plgx-create` command, and a zipped Chrome extension artifact under `%TEMP%\KeePassBrowserBridge-artifacts\` by default. Keeping DLL/PLGX outputs outside this repository matters when the repository itself is inside KeePass' `Plugins` directory, because KeePass scans plugin subdirectories on startup.
+This creates a KeePass `.dll` plugin artifact, a KeePass `.plgx` source plugin artifact using KeePass' `--plgx-create` command, and zipped Chrome/Firefox extension artifacts under `%TEMP%\KeePassBrowserBridge-artifacts\` by default. Keeping DLL/PLGX outputs outside this repository matters when the repository itself is inside KeePass' `Plugins` directory, because KeePass scans plugin subdirectories on startup.
 
 ## Install
 
