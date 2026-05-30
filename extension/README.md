@@ -19,6 +19,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 - Username-first login support across navigation and same-page password reveal flows.
 - HTTP Basic Auth credential lookup.
 - Site-specific auto-fill and auto-submit overrides.
+- Popup lock/unlock to temporarily block credential queries and filling.
 - Trusted browser listing and revocation from popup/options.
 - About panel showing extension and KeePass plugin versions plus GitHub release update check.
 

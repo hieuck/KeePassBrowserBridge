@@ -89,6 +89,7 @@ const ids = [
   'autoFill',
   'autoSubmit',
   'listClients',
+  'lockBridge',
   'clientsPanel',
   'pairingPanel',
   'pairingTimer',
@@ -127,7 +128,7 @@ const fakeDocument = {
   addEventListener() {},
   querySelectorAll(selector) {
     if (selector === 'button') {
-      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.pastePairingCode, elements.completePair, elements.cancelPair, elements.queryLogins, elements.newLogin, elements.toggleSiteAutoFill, elements.toggleSiteAutoSubmit, elements.checkUpdates];
+      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.lockBridge, elements.pastePairingCode, elements.completePair, elements.cancelPair, elements.queryLogins, elements.newLogin, elements.toggleSiteAutoFill, elements.toggleSiteAutoSubmit, elements.checkUpdates];
     }
 
     return [];

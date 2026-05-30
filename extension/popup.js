@@ -10,6 +10,7 @@ const elements = {
   autoFill: document.getElementById('autoFill'),
   autoSubmit: document.getElementById('autoSubmit'),
   listClients: document.getElementById('listClients'),
+  lockBridge: document.getElementById('lockBridge'),
   clientsPanel: document.getElementById('clientsPanel'),
   pairingPanel: document.getElementById('pairingPanel'),
   pairingTimer: document.getElementById('pairingTimer'),
@@ -49,6 +50,7 @@ function init() {
   elements.autoFill.addEventListener('change', () => runAction(setAutoFill));
   elements.autoSubmit.addEventListener('change', () => runAction(setAutoSubmit));
   elements.listClients.addEventListener('click', () => runAction(listClients));
+  elements.lockBridge.addEventListener('click', () => runAction(toggleLocked));
   elements.pastePairingCode.addEventListener('click', () => runAction(pastePairingCode));
   elements.completePair.addEventListener('click', () => runAction(completePair));
   elements.cancelPair.addEventListener('click', () => runAction(cancelPair));
@@ -208,6 +210,12 @@ async function setAutoSubmit() {
     : 'Auto-submit disabled.');
 }
 
+async function toggleLocked() {
+  const state = await send({ type: 'KBB_SET_LOCKED', locked: elements.lockBridge.textContent !== 'Unlock' });
+  renderState(state);
+  setMessage(state.locked ? 'KeePass Bridge is locked.' : 'KeePass Bridge is unlocked.');
+}
+
 async function listClients() {
   const result = await send({ type: 'KBB_LIST_CLIENTS' });
   renderClients(result.Clients || []);
@@ -275,6 +283,13 @@ async function cancelPair() {
 }
 
 async function queryLogins() {
+  const state = await send({ type: 'KBB_GET_STATE' });
+  renderState(state);
+  if (state.locked) {
+    setMessage('Unlock KeePass Bridge before querying logins.', true);
+    return;
+  }
+
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
   elements.currentUrl.textContent = result.url || '';
   currentEntries = sortCredentialEntries(result.entries || []);
@@ -286,6 +301,13 @@ async function queryLogins() {
 }
 
 async function beginCreateLogin() {
+  const state = await send({ type: 'KBB_GET_STATE' });
+  renderState(state);
+  if (state.locked) {
+    setMessage('Unlock KeePass Bridge before creating logins.', true);
+    return;
+  }
+
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
   const pageCredential = await collectPageCredential();
   const url = result.url || '';
@@ -558,6 +580,7 @@ function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
   elements.autoSubmit.checked = Boolean(state.autoSubmitEnabled);
+  elements.lockBridge.textContent = state.locked ? 'Unlock' : 'Lock';
   const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
   if (!pairingActive) {
@@ -566,7 +589,11 @@ function renderState(state) {
   } else {
     elements.pairingTimer.textContent = formatPairingTimeRemaining(state.pairingExpiresAt);
   }
-  setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');
+  if (state.locked) {
+    setStatus('Locked', 'error');
+  } else {
+    setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');
+  }
   syncPairingCodeState();
   if (pairingActive) {
     elements.pairingCode.focus();

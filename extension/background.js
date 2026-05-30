@@ -73,6 +73,8 @@ async function handleMessage(message) {
       return setAutoFill(message.enabled);
     case 'KBB_SET_AUTO_SUBMIT':
       return setAutoSubmit(message.enabled);
+    case 'KBB_SET_LOCKED':
+      return setLocked(message.locked);
     case 'KBB_HELLO':
       return bridgeCall('hello', {});
     case 'KBB_PAIR_BEGIN':
@@ -186,7 +188,7 @@ function compareVersions(left, right) {
 }
 
 async function getState() {
-  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled']);
+  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked']);
   const paired = Boolean(state.clientId);
   if (paired && state.pairingSessionId) {
     await clearPairingSession();
@@ -210,7 +212,8 @@ async function getState() {
     pairingSessionId: pairingActive ? state.pairingSessionId : '',
     pairingExpiresAt: pairingActive && pairingStartedAt ? pairingStartedAt + PAIRING_SESSION_MAX_AGE_MS : 0,
     autoFillEnabled: booleanSetting(state.autoFillEnabled, DEFAULT_AUTO_FILL_ENABLED),
-    autoSubmitEnabled: booleanSetting(state.autoSubmitEnabled, DEFAULT_AUTO_SUBMIT_ENABLED)
+    autoSubmitEnabled: booleanSetting(state.autoSubmitEnabled, DEFAULT_AUTO_SUBMIT_ENABLED),
+    locked: state.locked === true
   };
 }
 
@@ -231,6 +234,11 @@ async function setAutoFill(enabled) {
 
 async function setAutoSubmit(enabled) {
   await chrome.storage.local.set({ autoSubmitEnabled: Boolean(enabled) });
+  return getState();
+}
+
+async function setLocked(locked) {
+  await chrome.storage.local.set({ locked: Boolean(locked) });
   return getState();
 }
 
@@ -349,6 +357,7 @@ async function queryLogins() {
 }
 
 async function queryLoginsForUrl(url) {
+  await assertUnlocked();
   const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
   return queryResultFromResponse(url, response);
 }
@@ -371,6 +380,7 @@ async function queryHttpAuth(url) {
 }
 
 async function createLogin(login) {
+  await assertUnlocked();
   const response = await bridgeCall('logins.create', login, true);
   const result = parsePayload(response);
   if (result && result.Success !== false) {
@@ -380,6 +390,7 @@ async function createLogin(login) {
 }
 
 async function updateLogin(login) {
+  await assertUnlocked();
   const response = await bridgeCall('logins.update', login, true);
   const result = parsePayload(response);
   if (result && result.Success !== false) {
@@ -490,6 +501,7 @@ async function collectPageCredential() {
 }
 
 async function fillLogin(credential, fieldRole, customFieldName) {
+  await assertUnlocked();
   const tab = await getActiveTab();
   if (!tab || !tab.id) {
     throw new Error('No active tab.');
@@ -566,7 +578,7 @@ async function copyToClipboard(text, clearAfterMs) {
 
 async function autoFillTab(tabId, url) {
   const state = await getState();
-  if (!state.autoFillEnabled || !state.paired) {
+  if (state.locked || !state.autoFillEnabled || !state.paired) {
     await updateBadgeCount(tabId, 0);
     return;
   }
@@ -600,6 +612,13 @@ async function autoFillTab(tabId, url) {
   } catch (error) {
     await updateBadgeCount(tabId, 0);
     // Auto-fill is intentionally silent
+  }
+}
+
+async function assertUnlocked() {
+  const state = await storageGet(['locked']);
+  if (state.locked === true) {
+    throw new Error('KeePass Bridge is locked.');
   }
 }
 

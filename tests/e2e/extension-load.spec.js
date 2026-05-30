@@ -9,7 +9,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
         pairingSessionId: '',
         pairingExpiresAt: 0,
         autoFillEnabled: false,
-        autoSubmitEnabled: false
+        autoSubmitEnabled: false,
+        locked: false
       };
       window.__kbbPopupMessages = [];
       window.__kbbPopupState = state;
@@ -56,7 +57,14 @@ test.describe('KeePassBrowserBridge Extension', () => {
               state.pairingExpiresAt = 0;
               return { ok: true, response: { ...state } };
             }
+            if (message && message.type === 'KBB_SET_LOCKED') {
+              state.locked = message.locked;
+              return { ok: true, response: { ...state } };
+            }
             if (message && message.type === 'KBB_QUERY_LOGINS') {
+              if (state.locked) {
+                return { ok: false, error: 'KeePass Bridge is locked.' };
+              }
               return {
                 ok: true,
                 response: {
@@ -237,6 +245,28 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('.login-meta')).toContainText('alice@example.com');
     await expect(page.locator('.login-meta')).toContainText('Accounts/Work');
     await expect(page.locator('#message')).toHaveText('1 login(s) found.');
+  });
+
+  test('locks and unlocks credential access from the popup', async ({ page }) => {
+    await expect(page.locator('#lockBridge')).toHaveText('Lock');
+
+    await page.locator('#lockBridge').click();
+
+    await expect(page.locator('#lockBridge')).toHaveText('Unlock');
+    await expect(page.locator('#statusBadge')).toHaveText('Locked');
+    await expect(page.locator('#message')).toHaveText('KeePass Bridge is locked.');
+
+    await page.locator('#queryLogins').click();
+    await expect(page.locator('#message')).toHaveText('Unlock KeePass Bridge before querying logins.');
+
+    await page.locator('#lockBridge').click();
+
+    await expect(page.locator('#lockBridge')).toHaveText('Lock');
+    await expect(page.locator('#statusBadge')).toHaveText('Unpaired');
+    await expect(page.locator('#message')).toHaveText('KeePass Bridge is unlocked.');
+    await expect.poll(() => page.evaluate(() => window.__kbbPopupMessages.map((message) => message.type))).toEqual(
+      expect.arrayContaining(['KBB_SET_LOCKED'])
+    );
   });
 
   test('fills a selected popup login through the background contract', async ({ page }) => {

@@ -321,6 +321,26 @@ assert.equal(pairedState.paired, true);
 assert.equal(pairedState.pairingSessionId, '', 'paired state should not expose a stale pairing session');
 assert.equal(storage.pairingStartedAt, 0, 'paired state should clear stale pairing timestamp');
 
+storage.locked = true;
+const lockedState = await sandbox.getState();
+assert.equal(lockedState.locked, true, 'state should report extension lock status');
+requests.length = 0;
+await assert.rejects(
+  () => sandbox.queryLoginsForUrl('https://example.com/login'),
+  /locked/i,
+  'locked extension should reject login queries'
+);
+assert.equal(requests.length, 0, 'locked extension should not query KeePass');
+await sandbox.autoFillTab(45, 'https://example.com/login');
+assert.equal(requests.length, 0, 'locked extension should not auto-fill or query KeePass');
+let lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: false });
+assert.equal(lockState.locked, false, 'unlock message should clear lock state');
+assert.equal(storage.locked, false, 'unlock message should persist lock state');
+lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: true });
+assert.equal(lockState.locked, true, 'lock message should set lock state');
+assert.equal(storage.locked, true, 'lock message should persist lock state');
+storage.locked = false;
+
 delete storage.clientId;
 delete storage.sharedSecret;
 storage.pairingSessionId = 'cancel-session';

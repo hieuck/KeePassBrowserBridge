@@ -24,6 +24,7 @@ KeePass Browser Bridge has two release artifacts:
 - Username-first login support across navigation and same-page password reveal flows.
 - HTTP Basic Auth fill support.
 - Site-specific auto-fill and auto-submit overrides.
+- Popup lock/unlock to temporarily block credential queries and filling.
 - Trusted browser listing and revocation.
 - About panel showing extension and KeePass plugin versions plus GitHub release update check.
 - KeePass plugin About dialog with version, endpoint, server status, and update metadata URL.
