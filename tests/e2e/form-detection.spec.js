@@ -468,6 +468,28 @@ test.describe('content script form detection', () => {
     await expect(page.locator('.kbb-inline-picker-empty')).toContainText('Enter a username and password, then submit the form to save a new KeePass entry.');
   });
 
+  test('inline picker explains KeePass query errors at the field', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async () => ({
+            ok: false,
+            error: 'KeePass Bridge is locked.'
+          })
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+
+    await expect(page.locator('.kbb-inline-picker')).toBeVisible();
+    await expect(page.locator('.kbb-inline-picker-error')).toContainText('KeePass Bridge is locked.');
+    await expect(page.locator('.kbb-inline-picker-error')).toContainText('Open the extension popup to unlock or pair this browser.');
+  });
+
   test('inline picker can fill a selected password field action', async ({ page }) => {
     await page.addInitScript(() => {
       window.chrome = {

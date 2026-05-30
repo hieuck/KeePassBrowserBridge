@@ -731,8 +731,39 @@ async function fillFromInlineButton(button) {
     acknowledgeFilledEntry(entries[0]);
     setInlineButtonState(button, "ok");
   } catch (error) {
+    showInlineErrorPicker(button, error && error.message ? error.message : String(error));
     setInlineButtonState(button, "!");
   }
+}
+function showInlineErrorPicker(button, messageText) {
+  closeInlinePicker();
+  const picker = document.createElement("div");
+  picker.className = "kbb-inline-picker";
+  picker.setAttribute("role", "alert");
+  applyPickerStyle(picker);
+
+  const error = document.createElement("div");
+  error.className = "kbb-inline-picker-error";
+  error.style.padding = "10px";
+  error.style.color = "#b42318";
+  error.style.font =
+    '12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+  const title = document.createElement("div");
+  title.textContent = messageText || "KeePass query failed.";
+  title.style.fontWeight = "700";
+
+  const hint = document.createElement("div");
+  hint.textContent = "Open the extension popup to unlock or pair this browser.";
+  hint.style.marginTop = "6px";
+  hint.style.color = "#667085";
+
+  error.appendChild(title);
+  error.appendChild(hint);
+  picker.appendChild(error);
+  document.documentElement.appendChild(picker);
+  positionInlinePicker(button, picker);
+  window.__keepassBrowserBridgeActivePicker = picker;
 }
 function showInlineEmptyPicker(button) {
   closeInlinePicker();
