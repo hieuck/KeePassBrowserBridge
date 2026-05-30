@@ -10,6 +10,7 @@ const storage = {
 const requests = [];
 const extensionSessionStorage = {};
 const notifications = [];
+const badgeCalls = [];
 let now = 10000;
 let loginEntries = [];
 
@@ -121,6 +122,14 @@ const sandbox = {
       id: 'abcdefghijklmnopabcdefghijklmnop',
       onMessage: { addListener(fn) { sandbox.runtimeMessageHandler = fn; } },
       onInstalled: { addListener() {} }
+    },
+    action: {
+      setBadgeText: async (details) => {
+        badgeCalls.push({ method: 'setBadgeText', details });
+      },
+      setBadgeBackgroundColor: async (details) => {
+        badgeCalls.push({ method: 'setBadgeBackgroundColor', details });
+      }
     },
     tabs: {
       onUpdated: { addListener() {} },
@@ -387,16 +396,47 @@ sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
 await sandbox.autoFillTab(99, 'https://example.com/login');
 assert.equal(requests.some((request) => request.Method === 'logins.query'), false, 'site override should disable auto-fill before querying KeePass');
 assert.equal(autofillMessage, null, 'disabled site override should not send a fill message');
+let badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 99);
+assert.equal(badgeTextCall.details.text, '', 'disabled site override should clear the tab badge');
 
 requests.length = 0;
+badgeCalls.length = 0;
 storage.siteOverrides = [{ host: 'example.com', autoFillEnabled: true, autoSubmitEnabled: true }];
 storage.autoSubmitEnabled = false;
 await sandbox.autoFillTab(100, 'https://example.com/login');
 assert.ok(requests.some((request) => request.Method === 'logins.query'), 'enabled site override should allow KeePass query');
 assert.equal(autofillMessage.type, 'KBB_FILL');
 assert.equal(autofillMessage.autoSubmit, true, 'site override should control auto-submit for the matching host');
+badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 100);
+assert.equal(badgeTextCall.details.text, '1', 'single match should show a count badge on the tab');
 
 requests.length = 0;
+badgeCalls.length = 0;
+loginEntries = [
+  { EntryId: 'entry-1', Title: 'Example A', UserName: 'alice', Password: 'secret', Url: 'https://example.com/login' },
+  { EntryId: 'entry-2', Title: 'Example B', UserName: 'bob', Password: 'secret', Url: 'https://example.com/login' }
+];
+let multipleMatchFillAttempts = 0;
+sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
+  multipleMatchFillAttempts += 1;
+  autofillMessage = msg;
+  return { filled: true };
+};
+await sandbox.autoFillTab(102, 'https://example.com/login');
+assert.equal(requests.some((request) => request.Method === 'logins.query'), true, 'multiple matches should still query KeePass');
+assert.equal(multipleMatchFillAttempts, 0, 'multiple matches should not auto-fill without user selection');
+badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 102);
+assert.equal(badgeTextCall.details.text, '2', 'multiple matches should show their count in the toolbar badge');
+
+requests.length = 0;
+badgeCalls.length = 0;
+loginEntries = [{
+  EntryId: 'entry-1',
+  Title: 'Example',
+  UserName: 'alice',
+  Password: 'secret',
+  Url: 'https://example.com/login'
+}];
 sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
   autofillMessage = msg;
   return { filled: false };

@@ -478,17 +478,20 @@ async function copyToClipboard(text, clearAfterMs) {
 async function autoFillTab(tabId, url) {
   const state = await getState();
   if (!state.autoFillEnabled || !state.paired) {
+    await updateBadgeCount(tabId, 0);
     return;
   }
 
   const siteOverride = await getSiteOverride(url);
   if (siteOverride && siteOverride.autoFillEnabled === false) {
+    await updateBadgeCount(tabId, 0);
     return;
   }
 
   try {
     const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
     const result = queryResultFromResponse(url, response);
+    await updateBadgeCount(tabId, result.entries.length);
     
     if (result.entries.length !== 1) {
       return;
@@ -506,7 +509,24 @@ async function autoFillTab(tabId, url) {
       await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);
     }
   } catch (error) {
+    await updateBadgeCount(tabId, 0);
     // Auto-fill is intentionally silent
+  }
+}
+
+async function updateBadgeCount(tabId, count) {
+  if (!chrome.action || !chrome.action.setBadgeText) {
+    return;
+  }
+
+  const text = count > 0 ? String(Math.min(count, 99)) : '';
+  try {
+    await chrome.action.setBadgeText({ tabId, text });
+    if (text && chrome.action.setBadgeBackgroundColor) {
+      await chrome.action.setBadgeBackgroundColor({ tabId, color: '#1f6f8b' });
+    }
+  } catch (_) {
+    // Badge updates are best-effort UI feedback.
   }
 }
 
