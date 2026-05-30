@@ -4,6 +4,8 @@ import vm from 'node:vm';
 
 const DOCUMENT_POSITION_FOLLOWING = 4;
 let activeDocument = null;
+const sessionValues = new Map();
+const runtimeMessages = [];
 
 class MockInput {
   constructor(order, attrs, value = '') {
@@ -13,6 +15,7 @@ class MockInput {
     this.disabled = false;
     this.readOnly = false;
     this.parentElement = null;
+    this.labelText = attrs.labelText || '';
     this.dispatchedEvents = [];
   }
 
@@ -39,12 +42,25 @@ class MockInput {
   dispatchEvent(event) {
     this.dispatchedEvents.push(event.type);
   }
+
+  addEventListener() {}
+
+  closest(selector) {
+    if (selector === 'label' && this.labelText) {
+      return { textContent: this.labelText };
+    }
+
+    return null;
+  }
 }
 
 class MockRoot {
   constructor(inputs) {
     this.inputs = inputs;
-    for (const input of inputs) input.parentElement = this;
+    for (const input of inputs) {
+      input.parentElement = this;
+      if (!input.form) input.form = this;
+    }
   }
 
   querySelectorAll(selector) {
@@ -56,7 +72,20 @@ class MockRoot {
       return this.inputs.filter((input) => (input.getAttribute('type') || '').toLowerCase() === 'password');
     }
 
+    if (selector === 'button[type="submit"], input[type="submit"]') {
+       return this.submitButtons || [];
+    }
+
     return [];
+  }
+
+  querySelector(selector) {
+    const matches = this.querySelectorAll(selector);
+    return matches.length ? matches[0] : null;
+  }
+
+  submit() {
+    this.submitted = true;
   }
 
   appendChild() {}
@@ -117,6 +146,31 @@ const quotaPageSizeInput = new MockInput(30, {
   'aria-label': 'Custom accounts per page'
 }, '20');
 
+const viotpHistorySearchInput = new MockInput(31, {
+  id: '',
+  name: '',
+  type: 'text',
+  labelText: 'Search:'
+}, '');
+
+const newsletterEmailInput = new MockInput(32, {
+  id: 'newsletter-email',
+  name: 'email',
+  type: 'email',
+  autocomplete: 'email',
+  placeholder: 'Email address',
+  labelText: 'Subscribe to newsletter'
+}, '');
+
+const googleVietnameseTotpInput = new MockInput(33, {
+  id: '',
+  name: '',
+  type: 'tel',
+  inputmode: 'numeric',
+  labelText: 'Nhập mã',
+  'aria-label': ''
+}, '');
+
 const unrelatedForm = new MockRoot([unrelatedUser]);
 const targetForm = new MockRoot([targetUser, targetPassword]);
 const documentRoot = new MockRoot([
@@ -126,7 +180,10 @@ const documentRoot = new MockRoot([
   focusedStepEmail,
   otherStepEmail,
   ...splitOtpInputs,
-  quotaPageSizeInput
+  quotaPageSizeInput,
+  viotpHistorySearchInput,
+  newsletterEmailInput,
+  googleVietnameseTotpInput
 ]);
 
 const sandbox = {
@@ -137,8 +194,30 @@ const sandbox = {
   },
   chrome: {
     runtime: {
-      onMessage: { addListener() {} },
-      sendMessage: async () => ({ ok: false })
+      onMessage: { addListener(fn) { sandbox.onMessageListener = fn; } },
+      sendMessage: async (message) => {
+        runtimeMessages.push(message);
+        if (message.type === 'KBB_CONSUME_PENDING_CREDENTIAL') {
+          return {
+            ok: true,
+            response: {
+              credential: {
+                EntryId: 'entry-work',
+                UserName: 'work@example.com',
+                Password: 'work-secret'
+              }
+            }
+          };
+        }
+        if (message.type === 'KBB_CONSUME_SUBMITTED_CREDENTIAL') {
+          return {
+            ok: true,
+            response: { credential: null }
+          };
+        }
+
+        return { ok: true, response: { Success: true } };
+      }
     }
   },
   document: {
@@ -146,6 +225,14 @@ const sandbox = {
     title: 'Scoped Login',
     documentElement: documentRoot,
     querySelectorAll: (selector) => documentRoot.querySelectorAll(selector),
+    querySelector: () => null,
+    createElement: () => ({
+      dataset: {}, setAttribute() {}, addEventListener() {}, style: {},
+      remove() {},
+      parentElement: { removeChild() {}, getBoundingClientRect() { return { left: 0, top: 0 }; } },
+      getBoundingClientRect() { return { right: 0, top: 0, height: 0 }; },
+      appendChild() {}
+    }),
     addEventListener() {}
   },
   Event: class {
@@ -156,17 +243,24 @@ const sandbox = {
   window: {
     location: { href: 'https://example.com/login' },
     getComputedStyle: () => ({ visibility: 'visible', display: 'block' }),
-    setTimeout() {},
+    setTimeout(fn) { fn(); },
     addEventListener() {},
     sessionStorage: {
-      getItem: () => null,
-      setItem() {},
-      removeItem() {}
+      getItem: (key) => sessionValues.has(key) ? sessionValues.get(key) : null,
+      setItem: (key, value) => sessionValues.set(key, String(value)),
+      removeItem: (key) => sessionValues.delete(key)
+    },
+    __kbbCustomFields: {
+      lastFields: null,
+      fillCustomFields(fields) {
+        this.lastFields = fields;
+        return { filled: fields.length, fields: fields.map((field) => ({ name: field.Name, filled: true })) };
+      }
     }
   }
 };
 
-sandbox.window.__keepassBrowserBridgeContentScriptLoaded = true;
+sandbox.window.__keepassBrowserBridgeContentScriptLoaded = false;
 sandbox.globalThis = sandbox;
 activeDocument = sandbox.document;
 
@@ -179,6 +273,12 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
 
 assert.equal(sandbox.scoreOtpCandidate(quotaPageSizeInput) <= 0, true, 'numeric page-size input should not score as OTP');
+assert.equal(sandbox.scoreUsernameCandidate(viotpHistorySearchInput) < -50, true, 'datatable search input should not score as username');
+assert.equal(sandbox.scoreUsernameCandidate(newsletterEmailInput) < -50, true, 'newsletter email input should not score as username');
+assert.equal(sandbox.findUsernameInput(null, new MockRoot([newsletterEmailInput])), null, 'newsletter-only pages should not expose email signup as username');
+assert.equal(sandbox.scoreOtpCandidate(googleVietnameseTotpInput) > 0, true, 'Google Vietnamese authenticator code input should score as OTP');
+assert.equal(sandbox.scoreUsernameCandidate(googleVietnameseTotpInput) < -50, true, 'Google Vietnamese authenticator code input should not score as username');
+assert.equal(sandbox.findUsernameInput(null, new MockRoot([googleVietnameseTotpInput])), null, 'OTP-only pages should not expose an OTP field as username');
 
 const pickerItems = [
   { dataset: { kbbSearchText: 'github hieu https://github.com' }, style: {} },
@@ -198,6 +298,22 @@ assert.equal(credential.userName, 'right@example.com');
 assert.equal(credential.password, 'secret');
 assert.equal(sandbox.collectCredentialFromForm(unrelatedForm).userName, 'wrong@example.com');
 
+sandbox.window.__keepassBrowserBridgeLastMultiStepCredential = { UserName: 'step@example.com' };
+targetUser.disabled = true;
+const passwordOnlyCredential = sandbox.collectCredentialFromForm(targetForm);
+assert.equal(passwordOnlyCredential.userName, 'step@example.com', 'password-only submit should reuse selected multi-step username');
+targetUser.disabled = false;
+sandbox.window.__keepassBrowserBridgeLastMultiStepCredential = null;
+
+sandbox.storePendingCredential({
+  url: 'https://example.com/login',
+  userName: 'submitted@example.com',
+  password: 'submitted-secret'
+});
+const submittedRememberMessage = runtimeMessages.find((message) => message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL');
+assert.equal(submittedRememberMessage.credential.password, 'submitted-secret', 'submitted credential should be sent to background for secure temporary storage');
+assert.equal(sessionValues.has('__kbbPendingCredential'), false, 'submitted credential should not be stored in page sessionStorage');
+
 focusedStepEmail.focus();
 targetPassword.disabled = true;
 const fillResult = sandbox.fillLogin({ UserName: 'alice@example.com' });
@@ -205,8 +321,44 @@ assert.equal(fillResult.usernameFilled, true);
 assert.equal(focusedStepEmail.value, 'alice@example.com');
 assert.equal(otherStepEmail.value, '');
 
+const usernameOnlyResult = sandbox.fillCredentialForButton({
+  dataset: { kbbFillRole: 'username' },
+  __kbbTargetInput: focusedStepEmail
+}, {
+  EntryId: 'entry-work',
+  UserName: 'work@example.com',
+  Password: 'work-secret'
+});
+sandbox.rememberMultiStepCredentialIfNeeded(usernameOnlyResult, {
+  EntryId: 'entry-work',
+  UserName: 'work@example.com',
+  Password: 'work-secret'
+});
+const rememberMessage = runtimeMessages.find((message) => message.type === 'KBB_REMEMBER_PENDING_CREDENTIAL');
+assert.equal(rememberMessage.credential.EntryId, 'entry-work', 'username-only fill should ask background to remember selected credential');
+assert.equal(sessionValues.has('__kbbPendingMultiStepCredential'), false, 'multi-step credential should not be stored in page sessionStorage');
+
 const otpResult = sandbox.fillLogin({ OneTimePassword: '123456' });
 assert.equal(otpResult.otpFilled, true);
 assert.deepEqual(splitOtpInputs.map((input) => input.value), ['1', '2', '3', '4', '5', '6']);
+
+const customFieldResult = sandbox.fillLogin({
+  CustomFields: [
+    { Name: 'Tenant', Value: 'production', IsProtected: false },
+    { Name: 'ApiKey', Value: 'protected-secret', IsProtected: true }
+  ]
+});
+assert.equal(customFieldResult.customFieldsFilled, 1, 'fillLogin should delegate custom fields to the custom field module');
+assert.equal(sandbox.window.__kbbCustomFields.lastFields.length, 1, 'fillLogin should not delegate protected custom fields to page autofill');
+assert.equal(sandbox.window.__kbbCustomFields.lastFields[0].Name, 'Tenant');
+
+// Test auto-submit
+targetPassword.disabled = false;
+sandbox.window.__keepassBrowserBridgeMessageListener(
+  { type: 'KBB_FILL', credential: { UserName: 'u', Password: 'p' }, autoSubmit: true },
+  {},
+  () => {}
+);
+assert.equal(targetForm.submitted, true, 'autoSubmit should call form.submit()');
 
 console.log('Content script tests passed.');

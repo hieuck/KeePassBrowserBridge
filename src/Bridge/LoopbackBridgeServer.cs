@@ -116,21 +116,19 @@ namespace KeePassBrowserBridge.Bridge
 
         private void ProcessContext(HttpListenerContext context)
         {
-            if (context.Request.HttpMethod == "OPTIONS")
+            if (!AddCorsHeadersForAllowedOrigin(context.Request, context.Response))
             {
-                if (!AddCorsHeadersForAllowedOrigin(context.Request, context.Response))
-                {
-                    context.Response.StatusCode = 403;
-                    context.Response.Close();
-                    return;
-                }
-
-                context.Response.StatusCode = 204;
+                context.Response.StatusCode = 403;
                 context.Response.Close();
                 return;
             }
 
-            AddCorsHeadersForAllowedOrigin(context.Request, context.Response);
+            if (context.Request.HttpMethod == "OPTIONS")
+            {
+                context.Response.StatusCode = 204;
+                context.Response.Close();
+                return;
+            }
 
             if (context.Request.HttpMethod != "POST" || context.Request.Url == null ||
                 !string.Equals(context.Request.Url.AbsolutePath, "/bridge", StringComparison.OrdinalIgnoreCase))

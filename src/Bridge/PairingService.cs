@@ -33,11 +33,14 @@ namespace KeePassBrowserBridge.Bridge
 
         public PairingSession BeginPairing(string clientName)
         {
+            string normalizedClientName = NormalizeClientName(clientName);
+            CancelExistingSessionsForClient(normalizedClientName);
+
             PairingSession session = new PairingSession
             {
                 PairingSessionId = Guid.NewGuid().ToString("N"),
                 PairingCode = m_secretGenerator.CreatePairingCode(),
-                ClientName = NormalizeClientName(clientName),
+                ClientName = normalizedClientName,
                 CreatedUtcMs = m_nowProvider()
             };
 
@@ -94,6 +97,23 @@ namespace KeePassBrowserBridge.Bridge
         private static string NormalizeClientName(string clientName)
         {
             return string.IsNullOrWhiteSpace(clientName) ? "Browser" : clientName.Trim();
+        }
+
+        private void CancelExistingSessionsForClient(string clientName)
+        {
+            List<string> sessionIds = new List<string>();
+            foreach (KeyValuePair<string, PairingSession> item in m_sessions)
+            {
+                if (string.Equals(item.Value.ClientName, clientName, StringComparison.OrdinalIgnoreCase))
+                {
+                    sessionIds.Add(item.Key);
+                }
+            }
+
+            foreach (string sessionId in sessionIds)
+            {
+                m_sessions.Remove(sessionId);
+            }
         }
     }
 

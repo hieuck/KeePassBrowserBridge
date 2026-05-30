@@ -1,19 +1,65 @@
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace KeePassBrowserBridge.Bridge
 {
     internal static class UrlMatcher
     {
+        private static readonly Dictionary<string, Regex> _regexCache = new Dictionary<string, Regex>();
+        private static readonly object _cacheLock = new object();
+
         public static bool IsMatch(string entryUrl, string pageUrl)
         {
+            return IsMatch(entryUrl, pageUrl, new CredentialQueryOptions
+            {
+                StrictUrlMatching = true,
+                RegexUrlMatching = true
+            });
+        }
+
+        public static bool IsMatch(string entryUrl, string pageUrl, CredentialQueryOptions options)
+        {
+            if (string.IsNullOrWhiteSpace(entryUrl) || string.IsNullOrWhiteSpace(pageUrl))
+                return false;
+
+            CredentialQueryOptions effectiveOptions = options ?? new CredentialQueryOptions();
+
+            // Support regex: prefix for regex patterns
+            if (entryUrl.StartsWith("regex:", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!effectiveOptions.RegexUrlMatching) return false;
+
+                string regexPattern = entryUrl.Substring(6);
+                if (string.IsNullOrWhiteSpace(regexPattern))
+                    return false;
+
+                try
+                {
+                    Regex regex;
+                    lock (_cacheLock)
+                    {
+                        if (!_regexCache.TryGetValue(regexPattern, out regex))
+                        {
+                            regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                            _regexCache[regexPattern] = regex;
+                        }
+                    }
+                    return regex.IsMatch(pageUrl);
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+            }
+
             UrlPattern entryPattern;
             Uri pageUri;
 
             if (!TryGetPattern(entryUrl, out entryPattern)) return false;
             if (!TryGetUri(pageUrl, out pageUri)) return false;
 
-            if (!HostMatches(entryPattern.Host, pageUri.IdnHost)) return false;
+            if (!HostMatches(entryPattern.Host, pageUri.IdnHost, effectiveOptions.StrictUrlMatching)) return false;
             return PathMatches(entryPattern.Path, pageUri.AbsolutePath);
         }
 
@@ -60,12 +106,13 @@ namespace KeePassBrowserBridge.Bridge
             return true;
         }
 
-        private static bool HostMatches(string entryHost, string pageHost)
+        private static bool HostMatches(string entryHost, string pageHost, bool strictUrlMatching)
         {
             if (string.IsNullOrWhiteSpace(entryHost) || string.IsNullOrWhiteSpace(pageHost)) return false;
 
             string entry = entryHost.ToLowerInvariant();
             string page = pageHost.ToLowerInvariant();
+            
             if (entry.StartsWith("*.", StringComparison.Ordinal))
             {
                 string suffix = entry.Substring(1);
@@ -77,7 +124,23 @@ namespace KeePassBrowserBridge.Bridge
                 return WildcardMatches(entry, page);
             }
 
-            return string.Equals(entry, page, StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(entry, page, StringComparison.OrdinalIgnoreCase)) return true;
+            if (strictUrlMatching) return false;
+
+            if (page.EndsWith("." + entry, StringComparison.OrdinalIgnoreCase)) return true;
+
+            string entryWithoutWww = StripWwwPrefix(entry);
+            string pageWithoutWww = StripWwwPrefix(page);
+            return string.Equals(entryWithoutWww, pageWithoutWww, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string StripWwwPrefix(string host)
+        {
+            const string Prefix = "www.";
+            if (string.IsNullOrWhiteSpace(host)) return host;
+            return host.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase)
+                ? host.Substring(Prefix.Length)
+                : host;
         }
 
         private static bool PathMatches(string entryPath, string pagePath)

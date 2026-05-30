@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KeePass Browser Bridge - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>KeePass Browser Bridge Settings</h1>
+      <button id="themeToggle" type="button" class="icon-button" aria-label="Toggle theme" title="Toggle dark/light mode">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </header>
+
+    <section class="settings-section">
+      <h2>General Settings</h2>
+      
+      <div class="setting-group">
+        <label for="bridgeEndpoint">Bridge Endpoint</label>
+        <input id="bridgeEndpoint" type="url" placeholder="http://127.0.0.1:19455/bridge">
+        <p class="help-text">The local address where KeePass plugin listens for requests.</p>
+      </div>
+
+      <div class="setting-group">
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="system">System (Recommended)</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+        <p class="help-text">Choose your preferred color scheme.</p>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2>Auto-fill Settings</h2>
+      
+      <div class="setting-group">
+        <label class="checkbox-label">
+          <input id="autoFillEnabled" type="checkbox">
+          <span>Enable auto-fill for single matching login</span>
+        </label>
+        <p class="help-text">Automatically fill credentials when exactly one login matches the current page.</p>
+      </div>
+
+      <div class="setting-group">
+        <label class="checkbox-label">
+          <input id="autoSubmitEnabled" type="checkbox">
+          <span>Auto-submit form after filling</span>
+        </label>
+        <p class="help-text">Automatically submit the login form after filling credentials.</p>
+      </div>
+
+      <div class="setting-group">
+        <label for="autoFillDelay">Auto-fill delay (ms)</label>
+        <input id="autoFillDelay" type="number" min="0" max="5000" step="100" value="1200">
+        <p class="help-text">Delay before auto-filling (in milliseconds). Increase if pages load slowly.</p>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2>Site Overrides</h2>
+
+      <div class="setting-group">
+        <label for="siteOverrideHost">Host</label>
+        <div class="site-override-editor">
+          <input id="siteOverrideHost" type="text" placeholder="example.com" autocomplete="off">
+          <button id="addSiteOverride" type="button" class="secondary">Add</button>
+        </div>
+        <p class="help-text">Override auto-fill behavior for specific domains.</p>
+      </div>
+
+      <div class="setting-group site-override-flags">
+        <label class="checkbox-label">
+          <input id="siteOverrideAutoFill" type="checkbox" checked>
+          <span>Allow auto-fill on this host</span>
+        </label>
+        <label class="checkbox-label">
+          <input id="siteOverrideAutoSubmit" type="checkbox">
+          <span>Auto-submit on this host</span>
+        </label>
+      </div>
+
+      <div id="siteOverrideList" class="site-override-list" aria-live="polite"></div>
+    </section>
+
+    <section class="settings-section">
+      <h2>URL Matching</h2>
+      
+      <div class="setting-group">
+        <label class="checkbox-label">
+          <input id="strictUrlMatching" type="checkbox">
+          <span>Strict URL matching</span>
+        </label>
+        <p class="help-text">Only match exact domain. Disable to match subdomains.</p>
+      </div>
+
+      <div class="setting-group">
+        <label class="checkbox-label">
+          <input id="regexUrlMatching" type="checkbox">
+          <span>Enable regex URL matching</span>
+        </label>
+        <p class="help-text">Allow regular expressions in entry URLs for advanced matching.</p>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2>Security</h2>
+      
+      <div class="setting-group">
+        <label class="checkbox-label">
+          <input id="showPasswordsInPopup" type="checkbox">
+          <span>Show passwords in popup</span>
+        </label>
+        <p class="help-text">Display passwords in the credential list (less secure).</p>
+      </div>
+
+      <div class="setting-group">
+        <label for="clipboardClearDelay">Clear clipboard after (seconds)</label>
+        <input id="clipboardClearDelay" type="number" min="0" max="300" step="5" value="30">
+        <p class="help-text">Automatically clear copied passwords from clipboard. Set to 0 to disable.</p>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2>Advanced</h2>
+      
+      <div class="setting-group">
+        <label class="checkbox-label">
+          <input id="debugMode" type="checkbox">
+          <span>Debug mode</span>
+        </label>
+        <p class="help-text">Enable verbose logging to browser console.</p>
+      </div>
+
+      <div class="setting-group">
+        <button id="exportSettings" type="button" class="secondary">📥 Export Settings</button>
+        <button id="importSettings" type="button" class="secondary">📤 Import Settings</button>
+        <input id="importFile" type="file" accept=".json" style="display: none;">
+        <p class="help-text">Backup and restore your settings.</p>
+      </div>
+
+      <div class="setting-group">
+        <button id="resetSettings" type="button" class="danger">🔄 Reset to Defaults</button>
+        <p class="help-text">Restore all settings to their default values.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <button id="saveSettings" type="button" class="primary">✓ Save Settings</button>
+      <span id="message" class="message"></span>
+    </footer>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -10,7 +10,12 @@
   <main class="shell">
     <header class="header">
       <h1>KeePass Bridge</h1>
-      <span id="statusBadge" class="badge">Checking</span>
+      <div class="header-actions">
+        <button id="themeToggle" type="button" class="icon-button" aria-label="Toggle theme" title="Toggle dark/light mode">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <span id="statusBadge" class="badge">Checking</span>
+      </div>
     </header>
 
     <section class="section">
@@ -32,6 +37,11 @@
         <span>Auto-fill when exactly one login matches</span>
       </label>
 
+      <label class="toggle">
+        <input id="autoSubmit" type="checkbox">
+        <span>Auto-submit form after filling</span>
+      </label>
+
       <div class="toolbar secondary-toolbar">
         <button id="listClients" class="secondary" type="button">Trusted Browsers</button>
       </div>
@@ -42,6 +52,7 @@
         <div id="pairingTimer" class="pairing-timer"></div>
         <div class="row">
           <input id="pairingCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" placeholder="Pairing code">
+          <button id="pastePairingCode" class="secondary" type="button">Paste</button>
           <button id="completePair" type="button">Confirm</button>
           <button id="cancelPair" class="secondary" type="button">Cancel</button>
         </div>
@@ -51,8 +62,12 @@
     <section class="section">
       <div class="toolbar">
         <button id="queryLogins" type="button">Find Logins</button>
+        <button id="newLogin" class="secondary" type="button">New Login</button>
+        <button id="toggleSiteAutoFill" class="secondary" type="button">Site Auto-fill</button>
+        <button id="toggleSiteAutoSubmit" class="secondary" type="button">Site Auto-submit</button>
       </div>
       <div id="currentUrl" class="url"></div>
+      <input id="loginSearch" class="login-search hidden" type="search" placeholder="Search logins" aria-label="Search matching KeePass logins" spellcheck="false">
       <div id="results" class="results"></div>
     </section>
 

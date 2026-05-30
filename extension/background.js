@@ -5,7 +5,16 @@ const PROTOCOL_VERSION = 1;
 const CLIENT_NAME = 'Chrome';
 const AUTO_FILL_DEBOUNCE_MS = 1200;
 const PAIRING_SESSION_MAX_AGE_MS = 5 * 60 * 1000;
+const PENDING_MULTI_STEP_MAX_AGE_MS = 10 * 60 * 1000;
+const PENDING_MULTI_STEP_KEY = 'kbbPendingMultiStepCredential';
+const PENDING_SUBMITTED_MAX_AGE_MS = 2 * 60 * 1000;
+const PENDING_SUBMITTED_KEY = 'kbbPendingSubmittedCredential';
+const HTTP_AUTH_MAX_ATTEMPTS = 2;
+const DEFAULT_AUTO_FILL_ENABLED = true;
+const DEFAULT_AUTO_SUBMIT_ENABLED = false;
 const autoFillTimers = new Map();
+const clipboardTimers = new Map();
+const httpAuthAttempts = new Map();
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status !== 'complete' || !tab || !isFillableUrl(tab.url)) {
@@ -15,8 +24,22 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   scheduleAutoFill(tabId, tab.url);
 });
 
+if (chrome.webRequest && chrome.webRequest.onAuthRequired) {
+  chrome.webRequest.onAuthRequired.addListener(
+    (details, callback) => {
+      handleHttpAuthRequired(details)
+        .then((credentials) => callback(credentials ? { authCredentials: credentials } : {}))
+        .catch(() => callback({}));
+    },
+    { urls: ['http://*/*', 'https://*/*'] },
+    ['asyncBlocking']
+  );
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  handleMessage(message)
+  Promise.resolve()
+    .then(() => assertAllowedSender(sender))
+    .then(() => handleMessage(message))
     .then((response) => sendResponse({ ok: true, response }))
     .catch((error) => sendResponse({
       ok: false,
@@ -26,6 +49,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
+function assertAllowedSender(sender) {
+  if (sender && sender.id && sender.id !== chrome.runtime.id) {
+    throw new Error('Message sender is not allowed.');
+  }
+}
+
 async function handleMessage(message) {
   switch (message && message.type) {
     case 'KBB_GET_STATE':
@@ -34,6 +63,8 @@ async function handleMessage(message) {
       return saveEndpoint(message.endpoint);
     case 'KBB_SET_AUTO_FILL':
       return setAutoFill(message.enabled);
+    case 'KBB_SET_AUTO_SUBMIT':
+      return setAutoSubmit(message.enabled);
     case 'KBB_HELLO':
       return bridgeCall('hello', {});
     case 'KBB_PAIR_BEGIN':
@@ -52,19 +83,33 @@ async function handleMessage(message) {
       return queryLogins();
     case 'KBB_QUERY_FOR_URL':
       return queryLoginsForUrl(message.url);
+    case 'KBB_QUERY_HTTP_AUTH':
+      return queryHttpAuth(message.url);
     case 'KBB_CREATE_LOGIN':
       return createLogin(message.login);
     case 'KBB_UPDATE_LOGIN':
       return updateLogin(message.login);
     case 'KBB_FILL_LOGIN':
       return fillLogin(message.credential);
+    case 'KBB_FILL_ACK':
+      return acknowledgeFill(message.entryId, message.url);
+    case 'KBB_REMEMBER_PENDING_CREDENTIAL':
+      return rememberPendingCredential(message.origin, message.credential);
+    case 'KBB_CONSUME_PENDING_CREDENTIAL':
+      return consumePendingCredential(message.origin);
+    case 'KBB_REMEMBER_SUBMITTED_CREDENTIAL':
+      return rememberSubmittedCredential(message.origin, message.credential);
+    case 'KBB_CONSUME_SUBMITTED_CREDENTIAL':
+      return consumeSubmittedCredential(message.origin);
+    case 'KBB_COPY_TO_CLIPBOARD':
+      return copyToClipboard(message.text, message.clearAfterMs);
     default:
       throw new Error('Unknown message type.');
   }
 }
 
 async function getState() {
-  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled']);
+  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled']);
   const paired = Boolean(state.clientId);
   if (paired && state.pairingSessionId) {
     await clearPairingSession();
@@ -87,8 +132,13 @@ async function getState() {
     clientId: state.clientId || '',
     pairingSessionId: pairingActive ? state.pairingSessionId : '',
     pairingExpiresAt: pairingActive && pairingStartedAt ? pairingStartedAt + PAIRING_SESSION_MAX_AGE_MS : 0,
-    autoFillEnabled: Boolean(state.autoFillEnabled)
+    autoFillEnabled: booleanSetting(state.autoFillEnabled, DEFAULT_AUTO_FILL_ENABLED),
+    autoSubmitEnabled: booleanSetting(state.autoSubmitEnabled, DEFAULT_AUTO_SUBMIT_ENABLED)
   };
+}
+
+function booleanSetting(value, defaultValue) {
+  return typeof value === 'boolean' ? value : defaultValue;
 }
 
 async function saveEndpoint(endpoint) {
@@ -99,6 +149,11 @@ async function saveEndpoint(endpoint) {
 
 async function setAutoFill(enabled) {
   await chrome.storage.local.set({ autoFillEnabled: Boolean(enabled) });
+  return getState();
+}
+
+async function setAutoSubmit(enabled) {
+  await chrome.storage.local.set({ autoSubmitEnabled: Boolean(enabled) });
   return getState();
 }
 
@@ -125,6 +180,15 @@ async function revokeClient(clientId) {
 }
 
 async function pairBegin() {
+  const state = await storageGet(['pairingSessionId']);
+  if (state.pairingSessionId) {
+    try {
+      await bridgeCall('pair.cancel', { PairingSessionId: state.pairingSessionId });
+    } catch (error) {
+      // A stale local session should not block starting a fresh pairing flow.
+    }
+  }
+
   const response = await bridgeCall('pair.begin', { ClientName: CLIENT_NAME });
   const payload = parsePayload(response);
   if (!payload.PairingSessionId) {
@@ -145,10 +209,6 @@ async function pairComplete(pairingCode) {
   }
 
   const state = await storageGet(['pairingSessionId']);
-  if (!state.pairingSessionId) {
-    throw new Error('Start pairing before completing it.');
-  }
-
   let response;
   try {
     response = await bridgeCall('pair.complete', {
@@ -164,17 +224,15 @@ async function pairComplete(pairingCode) {
     throw error;
   }
   const payload = parsePayload(response);
-
   if (!payload.ClientId || !payload.SharedSecret) {
-    throw new Error('KeePass did not return client credentials.');
+    throw new Error('KeePass pairing failed.');
   }
 
   await chrome.storage.local.set({
     clientId: payload.ClientId,
-    sharedSecret: payload.SharedSecret,
-    pairingSessionId: '',
-    pairingStartedAt: 0
+    sharedSecret: payload.SharedSecret
   });
+  await clearPairingSession();
   return getState();
 }
 
@@ -207,115 +265,295 @@ function isTerminalPairingError(error) {
 async function queryLogins() {
   const tab = await getActiveTab();
   if (!tab || !tab.url) {
-    throw new Error('No active tab URL is available.');
+    throw new Error('No active tab.');
   }
 
   return queryLoginsForUrl(tab.url);
 }
 
 async function queryLoginsForUrl(url) {
-  if (!isFillableUrl(url)) {
-    throw new Error('This page URL cannot be filled.');
-  }
-
-  const response = await bridgeCall('logins.query', { Url: url }, true);
+  const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
   return queryResultFromResponse(url, response);
 }
 
-async function fillLogin(credential) {
-  if (!credential || !credential.EntryId) {
-    throw new Error('Select a login first.');
+async function queryHttpAuth(url) {
+  const result = await queryLoginsForUrl(url);
+  const entry = result.entries.find((candidate) => candidate.UserName && candidate.Password);
+  if (!entry) {
+    return null;
   }
 
-  const tab = await getActiveTab();
-  if (!tab || !tab.id) {
-    throw new Error('No active tab is available.');
+  if (entry.EntryId) {
+    await acknowledgeFill(entry.EntryId, url);
   }
 
-  await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    files: ['contentScript.js']
-  });
-
-  const result = await chrome.tabs.sendMessage(tab.id, {
-    type: 'KBB_FILL',
-    credential
-  });
-
-  await bridgeCall('logins.fillAck', {
-    EntryId: credential.EntryId,
-    Url: tab.url || ''
-  }, true);
-
-  return result || { filled: true };
+  return {
+    username: entry.UserName,
+    password: entry.Password
+  };
 }
 
 async function createLogin(login) {
-  const payload = {
-    Title: login && login.title ? String(login.title) : '',
-    Url: login && login.url ? String(login.url) : '',
-    UserName: login && login.userName ? String(login.userName) : '',
-    Password: login && login.password ? String(login.password) : ''
-  };
-
-  const response = await bridgeCall('logins.create', payload, true);
+  const response = await bridgeCall('logins.create', login, true);
   return parsePayload(response);
 }
 
 async function updateLogin(login) {
-  const payload = {
-    EntryId: login && login.entryId ? String(login.entryId) : '',
-    Title: login && login.title ? String(login.title) : '',
-    Url: login && login.url ? String(login.url) : '',
-    PageUrl: login && login.pageUrl ? String(login.pageUrl) : '',
-    UserName: login && login.userName ? String(login.userName) : '',
-    Password: login && login.password ? String(login.password) : ''
-  };
-
-  const response = await bridgeCall('logins.update', payload, true);
+  const response = await bridgeCall('logins.update', login, true);
   return parsePayload(response);
 }
 
-async function autoFillTab(tabId, url) {
-  const state = await storageGet(['autoFillEnabled', 'clientId', 'sharedSecret']);
-  if (!state.autoFillEnabled || !state.clientId || !state.sharedSecret || !isFillableUrl(url)) {
-    return { filled: false, reason: 'disabled_or_unpaired' };
+async function acknowledgeFill(entryId, url) {
+  if (!entryId) {
+    return { Success: false, ErrorCode: 'missing_entry_id', Error: 'Entry ID is required.' };
   }
 
-  const response = await bridgeCall('logins.query', { Url: url }, true);
-  const result = queryResultFromResponse(url, response);
-  if (result.entries.length !== 1) {
-    return {
-      filled: false,
-      reason: result.entries.length === 0 ? 'no_match' : 'multiple_matches',
-      count: result.entries.length
-    };
-  }
-
-  await fillCredentialInTab(tabId, result.entries[0], url);
-  return { filled: true, count: 1 };
+  const response = await bridgeCall('logins.fillAck', { EntryId: entryId, Url: url || '' }, true);
+  return parsePayload(response);
 }
 
-async function fillCredentialInTab(tabId, credential, url) {
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    files: ['contentScript.js']
-  });
+async function rememberPendingCredential(origin, credential) {
+  const normalizedOrigin = normalizeWebOrigin(origin);
+  if (!normalizedOrigin || !credential || !credential.Password) {
+    return { remembered: false };
+  }
 
-  const result = await chrome.tabs.sendMessage(tabId, {
+  await sessionStorageSet({
+    [PENDING_MULTI_STEP_KEY]: {
+      origin: normalizedOrigin,
+      credential,
+      savedAt: Date.now()
+    }
+  });
+  return { remembered: true };
+}
+
+async function consumePendingCredential(origin) {
+  const normalizedOrigin = normalizeWebOrigin(origin);
+  if (!normalizedOrigin) {
+    return { credential: null };
+  }
+
+  const state = await sessionStorageGet([PENDING_MULTI_STEP_KEY]);
+  const pending = state[PENDING_MULTI_STEP_KEY];
+  if (!pending || !pending.credential) {
+    return { credential: null };
+  }
+
+  if (Date.now() - Number(pending.savedAt || 0) > PENDING_MULTI_STEP_MAX_AGE_MS) {
+    await sessionStorageRemove([PENDING_MULTI_STEP_KEY]);
+    return { credential: null };
+  }
+
+  if (pending.origin !== normalizedOrigin) {
+    return { credential: null };
+  }
+
+  await sessionStorageRemove([PENDING_MULTI_STEP_KEY]);
+  return { credential: pending.credential };
+}
+
+async function rememberSubmittedCredential(origin, credential) {
+  const normalizedOrigin = normalizeWebOrigin(origin);
+  if (!normalizedOrigin || !credential || !credential.password) {
+    return { remembered: false };
+  }
+
+  await sessionStorageSet({
+    [PENDING_SUBMITTED_KEY]: {
+      origin: normalizedOrigin,
+      credential,
+      savedAt: Date.now()
+    }
+  });
+  return { remembered: true };
+}
+
+async function consumeSubmittedCredential(origin) {
+  const normalizedOrigin = normalizeWebOrigin(origin);
+  if (!normalizedOrigin) {
+    return { credential: null };
+  }
+
+  const state = await sessionStorageGet([PENDING_SUBMITTED_KEY]);
+  const pending = state[PENDING_SUBMITTED_KEY];
+  if (!pending || !pending.credential) {
+    return { credential: null };
+  }
+
+  if (Date.now() - Number(pending.savedAt || 0) > PENDING_SUBMITTED_MAX_AGE_MS) {
+    await sessionStorageRemove([PENDING_SUBMITTED_KEY]);
+    return { credential: null };
+  }
+
+  if (pending.origin !== normalizedOrigin) {
+    return { credential: null };
+  }
+
+  await sessionStorageRemove([PENDING_SUBMITTED_KEY]);
+  return { credential: pending.credential };
+}
+
+async function fillLogin(credential) {
+  const tab = await getActiveTab();
+  if (!tab || !tab.id) {
+    throw new Error('No active tab.');
+  }
+
+  const state = await getState();
+  const autoSubmit = await getAutoSubmitForUrl(tab.url, state.autoSubmitEnabled);
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['contentScript.js'] });
+  const result = await chrome.tabs.sendMessage(tab.id, {
     type: 'KBB_FILL',
-    credential
+    credential,
+    autoSubmit
   });
 
-  await bridgeCall('logins.fillAck', {
-    EntryId: credential.EntryId,
-    Url: url || ''
-  }, true);
+  if (credential && credential.EntryId && (!result || result.filled !== false)) {
+    await acknowledgeFill(credential.EntryId, tab.url || '');
+  }
 
-  return result || { filled: true };
+  return result;
 }
 
-async function bridgeCall(method, payload, authenticated) {
+async function copyToClipboard(text, clearAfterMs) {
+  try {
+    await navigator.clipboard.writeText(text);
+    
+    if (clearAfterMs && clearAfterMs > 0) {
+      const timerId = setTimeout(() => {
+        navigator.clipboard.writeText('').catch(() => {});
+        clipboardTimers.delete(timerId);
+      }, clearAfterMs);
+      clipboardTimers.set(timerId, true);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    throw new Error('Failed to copy to clipboard: ' + error.message);
+  }
+}
+
+async function autoFillTab(tabId, url) {
+  const state = await getState();
+  if (!state.autoFillEnabled || !state.paired) {
+    return;
+  }
+
+  const siteOverride = await getSiteOverride(url);
+  if (siteOverride && siteOverride.autoFillEnabled === false) {
+    return;
+  }
+
+  try {
+    const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
+    const result = queryResultFromResponse(url, response);
+    
+    if (result.entries.length !== 1) {
+      return;
+    }
+
+    const entry = result.entries[0];
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
+    const fillResult = await chrome.tabs.sendMessage(tabId, {
+      type: 'KBB_FILL',
+      credential: entry,
+      autoSubmit: getEffectiveAutoSubmit(state.autoSubmitEnabled, siteOverride)
+    });
+
+    if (entry.EntryId && (!fillResult || fillResult.filled !== false)) {
+      await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);
+    }
+  } catch (error) {
+    // Auto-fill is intentionally silent
+  }
+}
+
+async function handleHttpAuthRequired(details) {
+  if (!details || !isFillableUrl(details.url)) {
+    return null;
+  }
+
+  const key = [
+    details.requestId || '',
+    details.isProxy ? 'proxy' : 'server',
+    details.challenger && details.challenger.host ? details.challenger.host : '',
+    details.realm || '',
+    details.url
+  ].join('\n');
+  const attempts = httpAuthAttempts.get(key) || 0;
+  if (attempts >= HTTP_AUTH_MAX_ATTEMPTS) {
+    return null;
+  }
+
+  const credentials = await queryHttpAuth(details.url);
+  if (!credentials) {
+    return null;
+  }
+
+  httpAuthAttempts.set(key, attempts + 1);
+  return credentials;
+}
+
+async function getAutoSubmitForUrl(url, fallback) {
+  const siteOverride = await getSiteOverride(url);
+  return getEffectiveAutoSubmit(fallback, siteOverride);
+}
+
+async function buildLoginsQueryPayload(url) {
+  const state = await storageGet(['strictUrlMatching', 'regexUrlMatching']);
+  return {
+    Url: url,
+    StrictUrlMatching: Boolean(state.strictUrlMatching),
+    RegexUrlMatching: Boolean(state.regexUrlMatching)
+  };
+}
+
+function getEffectiveAutoSubmit(fallback, siteOverride) {
+  if (siteOverride && typeof siteOverride.autoSubmitEnabled === 'boolean') {
+    return siteOverride.autoSubmitEnabled;
+  }
+
+  return Boolean(fallback);
+}
+
+async function getSiteOverride(url) {
+  const host = normalizeHostFromUrl(url);
+  if (!host) {
+    return null;
+  }
+
+  const state = await storageGet(['siteOverrides']);
+  const rules = Array.isArray(state.siteOverrides) ? state.siteOverrides : [];
+  return rules.find((rule) => normalizeHost(rule && rule.host) === host) || null;
+}
+
+function normalizeHostFromUrl(url) {
+  try {
+    return normalizeHost(new URL(url).hostname);
+  } catch (error) {
+    return '';
+  }
+}
+
+function normalizeHost(host) {
+  return String(host || '').trim().toLowerCase().replace(/^\.+|\.+$/g, '');
+}
+
+function normalizeWebOrigin(origin) {
+  try {
+    const url = new URL(String(origin || ''));
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return '';
+    }
+
+    return url.origin;
+  } catch (error) {
+    return '';
+  }
+}
+
+async function bridgeCall(method, payload, requiresAuth) {
   const state = await storageGet(['endpoint', 'clientId', 'sharedSecret']);
   const request = {
     ProtocolVersion: PROTOCOL_VERSION,
@@ -323,36 +561,40 @@ async function bridgeCall(method, payload, authenticated) {
     Method: method,
     TimestampUtcMs: Date.now(),
     Origin: `chrome-extension://${chrome.runtime.id}`,
-    ClientId: authenticated ? (state.clientId || '') : '',
+    ClientId: requiresAuth ? (state.clientId || '') : '',
     Authentication: '',
     Payload: JSON.stringify(payload || {})
   };
 
-  if (authenticated) {
+  if (requiresAuth) {
     if (!state.clientId || !state.sharedSecret) {
       throw new Error('Pair this browser with KeePass first.');
     }
 
     request.Authentication = await createAuthentication(request, state.sharedSecret);
   }
-
-  const endpoint = state.endpoint || DEFAULT_ENDPOINT;
-  const httpResponse = await fetch(endpoint, {
+  
+  const response = await fetch(state.endpoint || DEFAULT_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
   });
 
-  if (!httpResponse.ok) {
-    throw new Error(`KeePass bridge returned HTTP ${httpResponse.status}.`);
+  if (!response.ok) {
+    throw new Error(`Bridge returned ${response.status}: ${response.statusText}`);
   }
 
-  const bridgeResponse = await httpResponse.json();
+  const bridgeResponse = await response.json();
   if (!bridgeResponse.Success) {
     throw new Error(bridgeResponse.Error || bridgeResponse.ErrorCode || 'KeePass bridge request failed.');
   }
 
   return bridgeResponse;
+}
+
+async function getEndpoint() {
+  const state = await storageGet(['endpoint']);
+  return state.endpoint || DEFAULT_ENDPOINT;
 }
 
 async function createAuthentication(request, sharedSecret) {
@@ -422,14 +664,15 @@ function scheduleAutoFill(tabId, url) {
     clearTimeout(autoFillTimers.get(tabId));
   }
 
-  const timerId = setTimeout(() => {
-    autoFillTimers.delete(tabId);
-    autoFillTab(tabId, url).catch(() => {
-      // Auto-fill is intentionally silent. Manual popup actions surface errors.
-    });
-  }, AUTO_FILL_DEBOUNCE_MS);
+  chrome.storage.local.get(['autoFillDelay'], (result) => {
+    const delay = result.autoFillDelay || AUTO_FILL_DEBOUNCE_MS;
+    const timerId = setTimeout(() => {
+      autoFillTimers.delete(tabId);
+      autoFillTab(tabId, url).catch(() => {});
+    }, delay);
 
-  autoFillTimers.set(tabId, timerId);
+    autoFillTimers.set(tabId, timerId);
+  });
 }
 
 function isFillableUrl(url) {
@@ -449,6 +692,21 @@ function storageGet(keys) {
   return chrome.storage.local.get(keys);
 }
 
+function sessionStorageGet(keys) {
+  const area = chrome.storage.session || chrome.storage.local;
+  return area.get(keys);
+}
+
+function sessionStorageSet(values) {
+  const area = chrome.storage.session || chrome.storage.local;
+  return area.set(values);
+}
+
+function sessionStorageRemove(keys) {
+  const area = chrome.storage.session || chrome.storage.local;
+  return area.remove(keys);
+}
+
 function createRequestId() {
   if (crypto.randomUUID) {
     return crypto.randomUUID().replace(/-/g, '');
@@ -466,4 +724,66 @@ function base64FromBytes(bytes) {
   }
 
   return btoa(binary);
+}
+
+// --- Context Menu Features ---
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({ id: 'kbb_fill_username', title: 'Fill Username', contexts: ['editable'] });
+  chrome.contextMenus.create({ id: 'kbb_fill_password', title: 'Fill Password', contexts: ['editable'] });
+  chrome.contextMenus.create({ id: 'kbb_fill_totp', title: 'Fill TOTP', contexts: ['editable'] });
+  chrome.contextMenus.create({ id: 'kbb_generate_password', title: 'Generate Password', contexts: ['editable'] });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (!tab || !tab.id) return;
+  if (info.menuItemId === 'kbb_fill_username') {
+    fillFromContextMenu(tab.id, tab.url, 'username');
+  } else if (info.menuItemId === 'kbb_fill_password') {
+    fillFromContextMenu(tab.id, tab.url, 'password');
+  } else if (info.menuItemId === 'kbb_fill_totp') {
+    fillFromContextMenu(tab.id, tab.url, 'otp');
+  } else if (info.menuItemId === 'kbb_generate_password') {
+    generateAndFillPassword(tab.id);
+  }
+});
+
+async function fillFromContextMenu(tabId, url, role) {
+  try {
+    const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(url), true);
+    const result = queryResultFromResponse(url, response);
+    if (result.entries.length === 0) return;
+    
+    const entry = result.entries[0];
+    
+    let credentialToFill = {};
+    if (role === 'username') credentialToFill = { UserName: entry.UserName };
+    else if (role === 'password') credentialToFill = { Password: entry.Password };
+    else if (role === 'otp') credentialToFill = { OneTimePassword: entry.OneTimePassword };
+    
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
+    const fillResult = await chrome.tabs.sendMessage(tabId, { type: 'KBB_FILL', credential: credentialToFill });
+    
+    if (entry.EntryId && (!fillResult || fillResult.filled !== false)) {
+      await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);
+    }
+  } catch (error) {
+    console.error('Context menu fill failed:', error);
+  }
+}
+
+async function generateAndFillPassword(tabId) {
+  try {
+    const result = new Uint32Array(16);
+    crypto.getRandomValues(result);
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+~|}{[]:;?><,./-=';
+    let password = '';
+    for (let i = 0; i < 16; i++) {
+      password += charset[result[i] % charset.length];
+    }
+    
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
+    await chrome.tabs.sendMessage(tabId, { type: 'KBB_FILL', credential: { Password: password } });
+  } catch (error) {
+    console.error('Password generation failed:', error);
+  }
 }

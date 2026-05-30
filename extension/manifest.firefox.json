@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "KeePass Browser Bridge",
+  "description": "Fill browser logins from KeePass through a local bridge plugin.",
+  "version": "0.3.0",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "kbb@keepass.local",
+      "strict_min_version": "109.0"
+    }
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "KeePass Browser Bridge"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "httpAuth.js",
+        "passwordQuality.js",
+        "customFields.js",
+        "contentScript.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "clipboardWrite",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://*/*",
+    "https://*/*"
+  ]
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Split OTP Fixture</title>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; margin: 48px; }
+    main { width: 460px; margin: 0 auto; }
+    fieldset { border: 0; padding: 0; display: flex; gap: 8px; }
+    legend { margin-bottom: 12px; font-weight: 700; }
+    label { display: block; }
+    input { width: 42px; min-height: 42px; text-align: center; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Two-step verification</h1>
+    <p>Enter the verification code from your authenticator app.</p>
+    <fieldset aria-label="Verification code">
+      <legend>Verification code</legend>
+      <label><span>Digit 1</span><input id="otp-1" name="otp-1" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="1"></label>
+      <label><span>Digit 2</span><input id="otp-2" name="otp-2" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="1"></label>
+      <label><span>Digit 3</span><input id="otp-3" name="otp-3" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="1"></label>
+      <label><span>Digit 4</span><input id="otp-4" name="otp-4" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="1"></label>
+      <label><span>Digit 5</span><input id="otp-5" name="otp-5" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="1"></label>
+      <label><span>Digit 6</span><input id="otp-6" name="otp-6" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="1"></label>
+    </fieldset>
+  </main>
+</body>
+</html>

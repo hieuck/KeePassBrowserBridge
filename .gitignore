@@ -8,3 +8,6 @@ obj/
 *.suo
 .DS_Store
 Thumbs.db
+/node_modules
+/playwright-report
+/test-results

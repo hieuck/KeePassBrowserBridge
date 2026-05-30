@@ -1,42 +1,153 @@
 'use strict';
 
 const elements = {
+  themeToggle: document.getElementById('themeToggle'),
   statusBadge: document.getElementById('statusBadge'),
   endpoint: document.getElementById('endpoint'),
   saveEndpoint: document.getElementById('saveEndpoint'),
   checkStatus: document.getElementById('checkStatus'),
   beginPair: document.getElementById('beginPair'),
   autoFill: document.getElementById('autoFill'),
+  autoSubmit: document.getElementById('autoSubmit'),
   listClients: document.getElementById('listClients'),
   clientsPanel: document.getElementById('clientsPanel'),
   pairingPanel: document.getElementById('pairingPanel'),
   pairingTimer: document.getElementById('pairingTimer'),
   pairingCode: document.getElementById('pairingCode'),
+  pastePairingCode: document.getElementById('pastePairingCode'),
   completePair: document.getElementById('completePair'),
   cancelPair: document.getElementById('cancelPair'),
   queryLogins: document.getElementById('queryLogins'),
+  newLogin: document.getElementById('newLogin'),
+  toggleSiteAutoFill: document.getElementById('toggleSiteAutoFill'),
+  toggleSiteAutoSubmit: document.getElementById('toggleSiteAutoSubmit'),
   currentUrl: document.getElementById('currentUrl'),
+  loginSearch: document.getElementById('loginSearch'),
   results: document.getElementById('results'),
   message: document.getElementById('message')
 };
 
 let currentEntries = [];
+let visibleEntries = [];
 
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
+  detectAndApplyTheme();
+  elements.themeToggle.addEventListener('click', toggleTheme);
+  document.addEventListener('keydown', handleKeyboardShortcuts);
+  
   elements.saveEndpoint.addEventListener('click', () => runAction(saveEndpoint));
   elements.checkStatus.addEventListener('click', () => runAction(checkStatus));
   elements.beginPair.addEventListener('click', () => runAction(beginPair));
   elements.autoFill.addEventListener('change', () => runAction(setAutoFill));
+  elements.autoSubmit.addEventListener('change', () => runAction(setAutoSubmit));
   elements.listClients.addEventListener('click', () => runAction(listClients));
+  elements.pastePairingCode.addEventListener('click', () => runAction(pastePairingCode));
   elements.completePair.addEventListener('click', () => runAction(completePair));
   elements.cancelPair.addEventListener('click', () => runAction(cancelPair));
   elements.pairingCode.addEventListener('input', syncPairingCodeState);
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
+  elements.newLogin.addEventListener('click', () => runAction(beginCreateLogin));
+  elements.toggleSiteAutoFill.addEventListener('click', () => runAction(toggleSiteAutoFill));
+  elements.toggleSiteAutoSubmit.addEventListener('click', () => runAction(toggleSiteAutoSubmit));
+  elements.loginSearch.addEventListener('input', () => runAction(filterCurrentLogins));
 
   syncPairingCodeState();
   runAction(refreshState);
+}
+
+function handleKeyboardShortcuts(event) {
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+    return;
+  }
+
+  switch (event.key) {
+    case 'Enter':
+      if (!elements.pairingPanel.classList.contains('hidden')) {
+        event.preventDefault();
+        if (elements.completePair.disabled === false) {
+          runAction(completePair);
+        }
+        return;
+      }
+      if (visibleEntries.length > 0 && elements.results.children.length > 0) {
+        event.preventDefault();
+        const firstEntry = visibleEntries[0];
+        runAction(() => fillLogin(firstEntry));
+        return;
+      }
+      break;
+    case 'Escape':
+      if (!elements.pairingPanel.classList.contains('hidden')) {
+        event.preventDefault();
+        runAction(cancelPair);
+        return;
+      }
+      if (!elements.clientsPanel.classList.contains('hidden')) {
+        event.preventDefault();
+        elements.clientsPanel.classList.add('hidden');
+        return;
+      }
+      break;
+    case ' ':
+      if (document.activeElement === elements.autoFill) {
+        elements.autoFill.checked = !elements.autoFill.checked;
+        runAction(() => setAutoFill(elements.autoFill.checked));
+        return;
+      }
+      break;
+    case 'f':
+    case 'F':
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        elements.queryLogins.click();
+        return;
+      }
+      break;
+    case 'p':
+    case 'P':
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        elements.beginPair.click();
+        return;
+      }
+      break;
+  }
+}
+
+function detectAndApplyTheme() {
+  chrome.storage.local.get(['theme'], (result) => {
+    let theme = result.theme || 'system';
+    
+    if (theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    
+    applyTheme(theme);
+  });
+}
+
+function applyTheme(theme) {
+  const html = document.documentElement;
+  if (theme === 'dark') {
+    html.setAttribute('data-theme', 'dark');
+    elements.themeToggle.querySelector('.theme-icon').textContent = '☀️';
+  } else {
+    html.removeAttribute('data-theme');
+    elements.themeToggle.querySelector('.theme-icon').textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  chrome.storage.local.get(['theme'], (result) => {
+    let currentTheme = result.theme || 'system';
+    let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    chrome.storage.local.set({ theme: newTheme }, () => {
+      applyTheme(newTheme);
+    });
+  });
 }
 
 async function saveEndpoint() {
@@ -78,6 +189,17 @@ async function setAutoFill() {
     : 'Auto-fill disabled.');
 }
 
+async function setAutoSubmit() {
+  const state = await send({
+    type: 'KBB_SET_AUTO_SUBMIT',
+    enabled: elements.autoSubmit.checked
+  });
+  renderState(state);
+  setMessage(state.autoSubmitEnabled
+    ? 'Auto-submit form after filling enabled.'
+    : 'Auto-submit disabled.');
+}
+
 async function listClients() {
   const result = await send({ type: 'KBB_LIST_CLIENTS' });
   renderClients(result.Clients || []);
@@ -115,6 +237,28 @@ async function completePair() {
   setMessage('Browser paired with KeePass.');
 }
 
+async function pastePairingCode() {
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    throw new Error('Clipboard read is not available. Paste the pairing code manually.');
+  }
+
+  const text = await navigator.clipboard.readText();
+  const code = extractPairingCode(text);
+  if (!code) {
+    throw new Error('Clipboard does not contain a six digit pairing code.');
+  }
+
+  elements.pairingCode.value = code;
+  syncPairingCodeState();
+  elements.completePair.focus();
+  setMessage('Pairing code pasted.');
+}
+
+function extractPairingCode(text) {
+  const digits = String(text || '').replace(/\D/g, '');
+  return digits.length >= 6 ? digits.slice(0, 6) : '';
+}
+
 async function cancelPair() {
   const state = await send({ type: 'KBB_PAIR_CANCEL' });
   elements.pairingCode.value = '';
@@ -125,11 +269,103 @@ async function cancelPair() {
 async function queryLogins() {
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
   elements.currentUrl.textContent = result.url || '';
-  currentEntries = result.entries || [];
-  renderResults(currentEntries);
+  currentEntries = sortCredentialEntries(result.entries || []);
+  elements.loginSearch.value = '';
+  await renderResults(currentEntries);
   setMessage(result.entries && result.entries.length
     ? `${result.entries.length} login(s) found.`
     : 'No matching logins found.');
+}
+
+async function beginCreateLogin() {
+  const result = await send({ type: 'KBB_QUERY_LOGINS' });
+  const url = result.url || '';
+  currentEntries = sortCredentialEntries(result.entries || []);
+  elements.loginSearch.value = '';
+  elements.currentUrl.textContent = url;
+  updateSearchVisibility();
+  showCreateForm(url);
+  setMessage('Create a new KeePass login for this page.');
+}
+
+async function toggleSiteAutoFill() {
+  const context = await getCurrentSiteOverrideContext();
+  const { host, overrides, existingIndex, existing } = context;
+  const isDisabled = existing && existing.autoFillEnabled === false;
+
+  if (isDisabled) {
+    overrides.splice(existingIndex, 1);
+    await chrome.storage.local.set({ siteOverrides: overrides });
+    setMessage(`Auto-fill enabled for ${host}.`);
+    return;
+  }
+
+  const nextRule = {
+    host,
+    autoFillEnabled: false,
+    autoSubmitEnabled: Boolean(existing && existing.autoSubmitEnabled === true)
+  };
+  if (existingIndex >= 0) {
+    overrides[existingIndex] = nextRule;
+  } else {
+    overrides.push(nextRule);
+  }
+
+  await chrome.storage.local.set({ siteOverrides: overrides });
+  setMessage(`Auto-fill disabled for ${host}.`);
+}
+
+async function toggleSiteAutoSubmit() {
+  const context = await getCurrentSiteOverrideContext();
+  const { host, overrides, existingIndex, existing } = context;
+  const isEnabled = existing && existing.autoSubmitEnabled === true;
+
+  if (isEnabled) {
+    if (existing.autoFillEnabled === false) {
+      overrides[existingIndex] = {
+        host,
+        autoFillEnabled: false,
+        autoSubmitEnabled: false
+      };
+    } else {
+      overrides.splice(existingIndex, 1);
+    }
+    await chrome.storage.local.set({ siteOverrides: overrides });
+    setMessage(`Auto-submit disabled for ${host}.`);
+    return;
+  }
+
+  const nextRule = {
+    host,
+    autoFillEnabled: existing && existing.autoFillEnabled === false ? false : true,
+    autoSubmitEnabled: true
+  };
+  if (existingIndex >= 0) {
+    overrides[existingIndex] = nextRule;
+  } else {
+    overrides.push(nextRule);
+  }
+
+  await chrome.storage.local.set({ siteOverrides: overrides });
+  setMessage(`Auto-submit enabled for ${host}.`);
+}
+
+async function getCurrentSiteOverrideContext() {
+  const result = await send({ type: 'KBB_QUERY_LOGINS' });
+  const url = result.url || elements.currentUrl.textContent || '';
+  const host = hostFromUrl(url);
+  if (!host) {
+    throw new Error('Current page URL is not available.');
+  }
+
+  elements.currentUrl.textContent = url;
+  currentEntries = sortCredentialEntries(result.entries || currentEntries || []);
+
+  const settings = await chrome.storage.local.get(['siteOverrides']);
+  const overrides = normalizeSiteOverrides(settings.siteOverrides);
+  const existingIndex = overrides.findIndex((rule) => rule.host === host);
+  const existing = existingIndex >= 0 ? overrides[existingIndex] : null;
+  return { host, overrides, existingIndex, existing };
 }
 
 async function fillLogin(credential) {
@@ -141,14 +377,47 @@ async function fillLogin(credential) {
   setMessage('Login filled.');
 }
 
+async function copyToClipboard(label, text) {
+  if (!text) {
+    throw new Error(`${label} is empty.`);
+  }
+
+  const clearAfterMs = await getClipboardClearDelayMs();
+  const result = await send({
+    type: 'KBB_COPY_TO_CLIPBOARD',
+    text,
+    clearAfterMs
+  });
+  if (!result || result.success === false) {
+    throw new Error(result && result.error ? result.error : `${label} could not be copied.`);
+  }
+
+  setMessage(`Copied ${label} to clipboard.`);
+}
+
+async function getClipboardClearDelayMs() {
+  const settings = await chrome.storage.local.get(['clipboardClearDelay']);
+  const seconds = Number(settings.clipboardClearDelay);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+
+  return 30000;
+}
+
 async function updateLogin(entry, form) {
   const login = {
     entryId: entry.EntryId,
     title: form.querySelector('[name="title"]').value,
+    group: form.querySelector('[name="group"]').value,
     url: form.querySelector('[name="url"]').value,
     userName: form.querySelector('[name="userName"]').value,
-    password: form.querySelector('[name="password"]').value
+    password: form.querySelector('[name="password"]').value,
+    clearOtp: form.querySelector('[name="clearOtp"]').checked
   };
+  if (!login.clearOtp) {
+    addOptionalSecret(login, 'otp', form.querySelector('[name="otp"]').value);
+  }
 
   const result = await send({ type: 'KBB_UPDATE_LOGIN', login });
   if (!result || !result.Success) {
@@ -157,12 +426,57 @@ async function updateLogin(entry, form) {
 
   Object.assign(entry, result.Entry || {}, {
     Title: login.title,
+    Group: login.group,
     Url: login.url,
     UserName: login.userName,
     Password: login.password
   });
-  renderResults(currentEntries);
+  await renderResults(currentEntries);
   setMessage('Entry updated.');
+}
+
+async function createLogin(form) {
+  const login = {
+    title: form.querySelector('[name="title"]').value,
+    group: form.querySelector('[name="group"]').value,
+    url: form.querySelector('[name="url"]').value,
+    userName: form.querySelector('[name="userName"]').value,
+    password: form.querySelector('[name="password"]').value
+  };
+  addOptionalSecret(login, 'otp', form.querySelector('[name="otp"]').value);
+
+  const result = await send({ type: 'KBB_CREATE_LOGIN', login });
+  if (!result || !result.Success) {
+    throw new Error(result && result.Error ? result.Error : 'KeePass entry could not be created.');
+  }
+
+  const entry = result.Entry || {
+    Title: login.title,
+    Group: login.group,
+    Url: login.url,
+    UserName: login.userName,
+    Password: login.password
+  };
+  currentEntries = sortCredentialEntries([entry].concat(currentEntries || []));
+  await renderResults(currentEntries);
+  setMessage('Entry created.');
+}
+
+function addOptionalSecret(payload, name, value) {
+  const trimmed = String(value || '').trim();
+  if (trimmed) {
+    payload[name] = trimmed;
+  }
+}
+
+async function filterCurrentLogins() {
+  await renderResults(currentEntries);
+  const total = currentEntries.length;
+  const shown = visibleEntries.length;
+  const hasQuery = Boolean(elements.loginSearch.value.trim());
+  if (hasQuery) {
+    setMessage(`${shown} of ${total} login(s) shown.`);
+  }
 }
 
 async function refreshState() {
@@ -174,6 +488,7 @@ async function refreshState() {
 function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
+  elements.autoSubmit.checked = Boolean(state.autoSubmitEnabled);
   const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
   if (!pairingActive) {
@@ -202,11 +517,22 @@ function formatPairingTimeRemaining(expiresAt) {
   return `Code expires in ${minutes}:${seconds}`;
 }
 
-function renderResults(entries) {
+async function renderResults(entries) {
   elements.results.textContent = '';
-  currentEntries = entries;
+  currentEntries = sortCredentialEntries(entries || []);
+  updateSearchVisibility();
+  const showPasswords = await shouldShowPasswordsInPopup();
+  visibleEntries = filterEntries(currentEntries, elements.loginSearch.value);
 
-  for (const entry of entries) {
+  if (currentEntries.length && !visibleEntries.length) {
+    const empty = document.createElement('div');
+    empty.className = 'login-empty';
+    empty.textContent = 'No matching logins in this list.';
+    elements.results.append(empty);
+    return;
+  }
+
+  for (const entry of visibleEntries) {
     const item = document.createElement('article');
     item.className = 'login';
 
@@ -216,27 +542,93 @@ function renderResults(entries) {
 
     const meta = document.createElement('div');
     meta.className = 'login-meta';
-    meta.textContent = [entry.UserName, entry.Url].filter(Boolean).join(' - ');
+    meta.textContent = [entry.Group, entry.UserName, entry.Url].filter(Boolean).join(' - ');
+
+    const secret = document.createElement('div');
+    secret.className = 'login-secret';
+    secret.textContent = showPasswords && entry.Password ? `Password: ${entry.Password}` : '';
 
     const actions = document.createElement('div');
     actions.className = 'login-actions';
 
     const fill = document.createElement('button');
     fill.type = 'button';
-    fill.textContent = 'Fill';
+    fill.textContent = '✓ Fill';
     fill.addEventListener('click', () => runAction(() => fillLogin(entry)));
 
     const edit = document.createElement('button');
     edit.type = 'button';
     edit.className = 'secondary';
-    edit.textContent = 'Edit';
+    edit.textContent = '✎ Edit';
     edit.addEventListener('click', () => showEditForm(item, entry));
 
     actions.append(fill, edit);
+    item.append(title, meta);
+    if (secret.textContent) {
+      item.append(secret);
+    }
+    item.append(actions);
 
-    item.append(title, meta, actions);
+    const copyActions = document.createElement('div');
+    copyActions.className = 'copy-actions';
+    if (entry.UserName) {
+      copyActions.appendChild(createCopyButton('Copy User', 'username', entry.UserName));
+    }
+    if (entry.Password) {
+      copyActions.appendChild(createCopyButton('Copy Pass', 'password', entry.Password));
+    }
+    if (entry.OneTimePassword) {
+      copyActions.appendChild(createCopyButton('Copy OTP', 'OTP', entry.OneTimePassword));
+    }
+    if (copyActions.children.length) {
+      item.append(copyActions);
+    }
+
+    // Add custom fields display
+    if (entry.CustomFields && entry.CustomFields.length > 0) {
+      const customFieldsDiv = document.createElement('div');
+      customFieldsDiv.className = 'custom-fields';
+      
+      for (const field of entry.CustomFields) {
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'custom-field';
+        fieldDiv.innerHTML = `
+          <span class="field-name">${escapeHtml(field.Name)}:</span>
+          <span class="field-value">${field.IsProtected ? '••••••••' : escapeHtml(field.Value)}</span>
+        `;
+
+        if (!field.IsProtected) {
+          const copyBtn = document.createElement('button');
+          copyBtn.type = 'button';
+          copyBtn.className = 'copy-btn';
+          copyBtn.title = 'Copy to clipboard';
+          copyBtn.textContent = '📋';
+          copyBtn.addEventListener('click', () => runAction(() => copyToClipboard(field.Name, field.Value)));
+          fieldDiv.append(copyBtn);
+        }
+        
+        customFieldsDiv.appendChild(fieldDiv);
+      }
+      
+      item.appendChild(customFieldsDiv);
+    }
+
     elements.results.append(item);
   }
+}
+
+async function shouldShowPasswordsInPopup() {
+  const settings = await chrome.storage.local.get(['showPasswordsInPopup']);
+  return settings.showPasswordsInPopup === true;
+}
+
+function createCopyButton(text, label, value) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'secondary';
+  button.textContent = text;
+  button.addEventListener('click', () => runAction(() => copyToClipboard(label, value)));
+  return button;
 }
 
 function renderClients(clients) {
@@ -257,7 +649,7 @@ function renderClients(clients) {
     const revoke = document.createElement('button');
     revoke.type = 'button';
     revoke.className = 'secondary';
-    revoke.textContent = client.Current ? 'Revoke This Browser' : 'Revoke';
+    revoke.textContent = client.Current ? '✕ Revoke This Browser' : '✕ Revoke';
     revoke.addEventListener('click', () => runAction(() => revokeClient(client)));
 
     item.append(name, meta, revoke);
@@ -278,6 +670,131 @@ function formatDate(ms) {
   return new Date(value).toLocaleString();
 }
 
+function sortCredentialEntries(entries) {
+  return (entries || [])
+    .map((entry, index) => ({ entry, index }))
+    .sort((left, right) => {
+      const usageDelta = Number(right.entry.UsageCount || 0) - Number(left.entry.UsageCount || 0);
+      if (usageDelta !== 0) return usageDelta;
+
+      const lastUsedDelta = Number(right.entry.LastUsed || 0) - Number(left.entry.LastUsed || 0);
+      if (lastUsedDelta !== 0) return lastUsedDelta;
+
+      return left.index - right.index;
+    })
+    .map((item) => item.entry);
+}
+
+function updateSearchVisibility() {
+  const show = currentEntries.length > 1;
+  elements.loginSearch.classList.toggle('hidden', !show);
+  if (!show) {
+    elements.loginSearch.value = '';
+  }
+}
+
+function filterEntries(entries, query) {
+  const words = String(query || '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!words.length) return entries || [];
+
+  return (entries || []).filter((entry) => {
+    const text = credentialSearchText(entry);
+    return words.every((word) => text.indexOf(word) !== -1);
+  });
+}
+
+function credentialSearchText(entry) {
+  return [
+    entry.Title || '',
+    entry.Group || '',
+    entry.UserName || '',
+    entry.Url || ''
+  ].join(' ').toLowerCase();
+}
+
+function showCreateForm(url) {
+  elements.results.textContent = '';
+  visibleEntries = [];
+  elements.loginSearch.classList.add('hidden');
+  elements.loginSearch.value = '';
+  const form = document.createElement('form');
+  form.className = 'create-form edit-form';
+  form.innerHTML = `
+    <label>Title<input name="title" type="text"></label>
+    <label>Group<input name="group" type="text" spellcheck="false" placeholder="Accounts/Work"></label>
+    <label>Username<input name="userName" type="text" autocomplete="username"></label>
+    <label>URL<input name="url" type="url" spellcheck="false"></label>
+    <label>Password
+      <div class="password-row">
+        <input name="password" type="password" autocomplete="new-password">
+        <button type="button" class="secondary" data-action="generate-password">Generate</button>
+        <button type="button" class="secondary" data-action="toggle-password-visibility">Show</button>
+      </div>
+    </label>
+    <label>TOTP secret<input name="otp" type="password" spellcheck="false" autocomplete="off" placeholder="Base32 or otpauth:// URI"></label>
+    <div class="login-actions">
+      <button type="submit">✓ Save</button>
+      <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>
+    </div>
+  `;
+
+  form.querySelector('[name="title"]').value = titleFromUrl(url);
+  form.querySelector('[name="url"]').value = url || '';
+  form.querySelector('[data-action="generate-password"]').addEventListener('click', () => {
+    const passwordInput = form.querySelector('[name="password"]');
+    passwordInput.value = generatePassword(20);
+    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+    passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+    passwordInput.focus();
+    setMessage('Generated a new password. Save to create the KeePass entry.');
+  });
+  wirePasswordVisibilityToggle(form);
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    runAction(() => createLogin(form));
+  });
+  form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+    runAction(async () => {
+      await renderResults(currentEntries);
+      setMessage(currentEntries.length ? `${currentEntries.length} login(s) found.` : 'No matching logins found.');
+    });
+  });
+  elements.results.append(form);
+}
+
+function titleFromUrl(url) {
+  try {
+    return new URL(url).hostname || 'New Login';
+  } catch (error) {
+    return 'New Login';
+  }
+}
+
+function hostFromUrl(url) {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch (error) {
+    return '';
+  }
+}
+
+function normalizeSiteOverrides(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((rule) => ({
+      host: String(rule && rule.host ? rule.host : '').trim().toLowerCase(),
+      autoFillEnabled: rule ? rule.autoFillEnabled : undefined,
+      autoSubmitEnabled: rule ? rule.autoSubmitEnabled : undefined
+    }))
+    .filter((rule) => rule.host);
+}
+
 function showEditForm(item, entry) {
   const existing = item.querySelector('.edit-form');
   if (existing) {
@@ -289,16 +806,26 @@ function showEditForm(item, entry) {
   form.className = 'edit-form';
   form.innerHTML = `
     <label>Title<input name="title" type="text"></label>
+    <label>Group<input name="group" type="text" spellcheck="false" placeholder="Accounts/Work"></label>
     <label>Username<input name="userName" type="text" autocomplete="username"></label>
     <label>URL<input name="url" type="url" spellcheck="false"></label>
-    <label>Password<input name="password" type="password" autocomplete="current-password"></label>
+    <label>Password
+      <div class="password-row">
+        <input name="password" type="password" autocomplete="current-password">
+        <button type="button" class="secondary" data-action="generate-password">Generate</button>
+        <button type="button" class="secondary" data-action="toggle-password-visibility">Show</button>
+      </div>
+    </label>
+    <label>TOTP secret<input name="otp" type="password" spellcheck="false" autocomplete="off" placeholder="Leave blank to keep existing"></label>
+    <label><input name="clearOtp" type="checkbox"> Clear TOTP secret</label>
     <div class="login-actions">
-      <button type="submit">Save</button>
-      <button type="button" class="secondary" data-action="cancel">Cancel</button>
+      <button type="submit">✓ Save</button>
+      <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>
     </div>
   `;
 
   form.querySelector('[name="title"]').value = entry.Title || '';
+  form.querySelector('[name="group"]').value = entry.Group || '';
   form.querySelector('[name="userName"]').value = entry.UserName || '';
   form.querySelector('[name="url"]').value = entry.Url || '';
   form.querySelector('[name="password"]').value = entry.Password || '';
@@ -306,8 +833,38 @@ function showEditForm(item, entry) {
     event.preventDefault();
     runAction(() => updateLogin(entry, form));
   });
+  form.querySelector('[data-action="generate-password"]').addEventListener('click', () => {
+    const passwordInput = form.querySelector('[name="password"]');
+    passwordInput.value = generatePassword(20);
+    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+    passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+    passwordInput.focus();
+    setMessage('Generated a new password. Save to update KeePass.');
+  });
+  wirePasswordVisibilityToggle(form);
   form.querySelector('[data-action="cancel"]').addEventListener('click', () => form.remove());
   item.append(form);
+}
+
+function wirePasswordVisibilityToggle(form) {
+  const passwordInput = form.querySelector('[name="password"]');
+  const toggle = form.querySelector('[data-action="toggle-password-visibility"]');
+  if (!passwordInput || !toggle) return;
+
+  toggle.addEventListener('click', () => {
+    const visible = passwordInput.type === 'text';
+    passwordInput.type = visible ? 'password' : 'text';
+    toggle.textContent = visible ? 'Show' : 'Hide';
+    passwordInput.focus();
+  });
+}
+
+function generatePassword(length) {
+  const targetLength = Math.max(12, Number(length || 20));
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*-_=+';
+  const bytes = new Uint8Array(targetLength);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join('');
 }
 
 async function runAction(action) {
@@ -343,6 +900,12 @@ function setMessage(text, isError) {
 
 function clearMessage() {
   setMessage('', false);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 function send(message) {

@@ -36,6 +36,8 @@ class Element {
     this.checked = false;
     this.disabled = false;
     this.textContent = '';
+    this.children = [];
+    this.innerHTML = '';
     this.classList = new ClassList();
     this.listeners = new Map();
   }
@@ -52,24 +54,53 @@ class Element {
     const handler = this.listeners.get(type);
     if (handler) handler({ target: this });
   }
+
+  click() {
+    this.dispatch('click');
+  }
+
+  querySelector(selector) {
+    if (selector === '.theme-icon') {
+      if (!this.themeIcon) this.themeIcon = new Element('themeIcon', 'span');
+      return this.themeIcon;
+    }
+
+    return null;
+  }
+
+  append(...children) {
+    this.children.push(...children);
+  }
+
+  appendChild(child) {
+    this.children.push(child);
+    return child;
+  }
 }
 
 const ids = [
+  'themeToggle',
   'statusBadge',
   'endpoint',
   'saveEndpoint',
   'checkStatus',
   'beginPair',
   'autoFill',
+  'autoSubmit',
   'listClients',
   'clientsPanel',
   'pairingPanel',
   'pairingTimer',
   'pairingCode',
+  'pastePairingCode',
   'completePair',
   'cancelPair',
   'queryLogins',
+  'newLogin',
+  'toggleSiteAutoFill',
+  'toggleSiteAutoSubmit',
   'currentUrl',
+  'loginSearch',
   'results',
   'message'
 ];
@@ -79,13 +110,17 @@ elements.pairingPanel.classList.add('hidden');
 
 const fakeDocument = {
   activeElement: null,
+  documentElement: {
+    setAttribute() {},
+    removeAttribute() {}
+  },
   getElementById(id) {
     return elements[id];
   },
   addEventListener() {},
   querySelectorAll(selector) {
     if (selector === 'button') {
-      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.completePair, elements.cancelPair, elements.queryLogins];
+      return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.pastePairingCode, elements.completePair, elements.cancelPair, elements.queryLogins, elements.newLogin, elements.toggleSiteAutoFill, elements.toggleSiteAutoSubmit];
     }
 
     return [];
@@ -98,9 +133,27 @@ const fakeDocument = {
 const sandbox = {
   console,
   document: fakeDocument,
+  window: {
+    matchMedia: () => ({ matches: false })
+  },
   chrome: {
     runtime: {
       sendMessage: async () => ({ ok: true, response: {} })
+    },
+    storage: {
+      local: {
+        get(keys, callback) {
+          callback({});
+        },
+        set(values, callback) {
+          if (callback) callback();
+        }
+      }
+    }
+  },
+  navigator: {
+    clipboard: {
+      readText: async () => 'code: 955-963'
     }
   }
 };
@@ -133,6 +186,12 @@ assert.equal(elements.completePair.disabled, true, 'confirm should stay disabled
 elements.pairingCode.value = '123456';
 elements.pairingCode.dispatch('input');
 assert.equal(elements.completePair.disabled, false, 'confirm should enable for a six digit code');
+
+elements.pairingCode.value = '';
+await sandbox.pastePairingCode();
+assert.equal(elements.pairingCode.value, '955963', 'paste should extract the six digit pairing code from clipboard text');
+assert.equal(elements.completePair.disabled, false, 'paste should enable confirm when clipboard contains a pairing code');
+assert.equal(elements.message.textContent, 'Pairing code pasted.', 'paste should confirm success to the user');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',

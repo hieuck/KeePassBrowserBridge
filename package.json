@@ -1,0 +1,36 @@
+{
+  "name": "keepass-browser-bridge",
+  "version": "0.9.0",
+  "description": "KeePass browser integration extension",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "lint": "eslint extension/ src/ tests/ --ext .js,.ts,.mjs",
+    "dev": "node tests/e2e/server.mjs",
+    "build": "npm run build:extension && npm run build:plugin",
+    "build:extension": "zip -r dist/kbb-extension.zip extension/",
+    "build:plugin": "dotnet build src/KeePassBrowserBridge.csproj -c Release",
+    "ci": "npm run lint && npm run test && npm run test:coverage && npm run test:e2e:chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "jsdom": "^29.1.1",
+    "playwright": "^1.60.0",
+    "prettier": "^3.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -18,6 +18,7 @@ internal static class Program
         InvalidUrlsDoNotMatch();
         HttpAndHttpsWithSameHostMatch();
         DifferentHostsDoNotMatch();
+        BridgeClockConvertsUnixMillisecondsToUtcDateTime();
         TotpGeneratorMatchesRfcVector();
         TotpGeneratorParsesOtpAuthUri();
         ValidHelloRequestPassesValidation();
@@ -29,6 +30,7 @@ internal static class Program
         WrongProtocolVersionFailsValidation();
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
+        NewPairingSessionCancelsOlderSessionForSameClient();
         PairingSessionLocksAfterRepeatedWrongCodes();
         CancelledPairingSessionCannotComplete();
         ExpiredPairingCodeIsRejected();
@@ -36,26 +38,44 @@ internal static class Program
         RevokedClientIsNoLongerTrusted();
         TrustedClientStorePersistsRoundTrip();
         CredentialQueryReturnsExactHostMatch();
+        CredentialQueryMatchesParentDomainWhenStrictMatchingIsDisabled();
+        CredentialQueryMatchesWwwEntryToApexPageWhenStrictMatchingIsDisabled();
+        CredentialQueryIgnoresRegexPatternWhenRegexMatchingIsDisabled();
         CredentialQueryMatchesAdditionalUrlField();
+        CredentialQueryIncludesKeePassGroupPath();
+        CredentialQueryIncludesUsageMetadata();
         CredentialQueryIncludesOneTimePassword();
+        CredentialQueryRedactsProtectedCustomFieldValues();
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
         CredentialMutationCreatesEntryInDatabase();
+        CredentialMutationCreatesEntryInRequestedGroup();
+        CredentialMutationCreatesEntryWithTotpSecret();
         CredentialMutationUpdatesExistingEntryPassword();
         CredentialMutationAcceptsPageUrlFromAdditionalUrlField();
         CredentialMutationUpdatesExistingEntryFields();
+        CredentialMutationMovesExistingEntryToRequestedGroup();
+        CredentialMutationMovesExistingEntryToRootWhenGroupIsBlank();
+        CredentialMutationUpdatesExistingEntryTotpSecret();
+        CredentialMutationClearsExistingEntryTotpSecret();
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
+        BridgeHandlerRejectsReplayedAuthenticatedRequestId();
         BridgeHandlerCancelsPairingSession();
         BridgeHandlerListsTrustedClientsWithoutSecrets();
         BridgeHandlerRevokesTrustedClient();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
+        BridgeHandlerSavesDatabaseAfterSuccessfulCreate();
+        BridgeHandlerDoesNotSaveDatabaseAfterFailedCreate();
         BridgeHandlerUpdatesLoginForAuthenticatedRequest();
+        BridgeHandlerSavesDatabaseAfterSuccessfulUpdate();
+        BridgeHandlerUpdatesUsageAfterFillAck();
         LoopbackBridgeServerRespondsToHello();
         LoopbackBridgeServerRejectsWebPreflightOrigin();
         LoopbackBridgeServerAllowsExtensionPreflightOrigin();
+        LoopbackBridgeServerRejectsWebPostOriginBeforeHandling();
         LoopbackBridgeServerTryStartReportsPortConflict();
         return 0;
     }
@@ -108,6 +128,16 @@ internal static class Program
     {
         AssertFalse(UrlMatcher.IsMatch("https://example.com", "https://evil.example.net"),
             "different hosts should not match");
+    }
+
+    private static void BridgeClockConvertsUnixMillisecondsToUtcDateTime()
+    {
+        DateTime value = BridgeClock.FromUtcMilliseconds(1779960000000);
+
+        AssertEqual(DateTimeKind.Utc, value.Kind, "bridge clock conversion should return UTC");
+        AssertEqual(2026, value.Year, "bridge clock year mismatch");
+        AssertEqual(5, value.Month, "bridge clock month mismatch");
+        AssertEqual(28, value.Day, "bridge clock day mismatch");
     }
 
     private static void TotpGeneratorMatchesRfcVector()
@@ -223,6 +253,22 @@ internal static class Program
 
         AssertFalse(result.Success, "wrong pairing code should fail");
         AssertEqual(0, store.ListClients().Length, "wrong code should not add a trusted client");
+    }
+
+    private static void NewPairingSessionCancelsOlderSessionForSameClient()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(new DeterministicSecretGenerator("123456", "secret"));
+        PairingSession oldSession = service.BeginPairing("Chrome");
+        PairingSession newSession = service.BeginPairing("Chrome");
+
+        PairingResult oldResult = service.CompletePairing(store, oldSession.PairingSessionId, "123456", "Chrome");
+        PairingResult newResult = service.CompletePairing(store, newSession.PairingSessionId, "123456", "Chrome");
+
+        AssertFalse(oldResult.Success, "older pairing session for the same client should be cancelled");
+        AssertEqual("pairing_session_not_found", oldResult.ErrorCode, "cancelled older session error mismatch");
+        AssertTrue(newResult.Success, "newest pairing session for the same client should remain usable");
+        AssertEqual(1, store.ListClients().Length, "only the newest session should add a trusted client");
     }
 
     private static void PairingSessionLocksAfterRepeatedWrongCodes()
@@ -344,6 +390,66 @@ internal static class Program
         AssertEqual("secret", result.Entries[0].Password, "entry password mismatch");
     }
 
+    private static void CredentialQueryMatchesParentDomainWhenStrictMatchingIsDisabled()
+    {
+        PwDatabase database = CreateDatabase(CreateEntry("Example", "alice", "secret", "https://example.com/login"));
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult looseResult = service.Query(database, "https://accounts.example.com/login", new CredentialQueryOptions
+        {
+            StrictUrlMatching = false,
+            RegexUrlMatching = false
+        });
+        CredentialQueryResult strictResult = service.Query(database, "https://accounts.example.com/login", new CredentialQueryOptions
+        {
+            StrictUrlMatching = true,
+            RegexUrlMatching = false
+        });
+
+        AssertEqual(1, looseResult.Entries.Length, "loose URL matching should match child hosts");
+        AssertEqual(0, strictResult.Entries.Length, "strict URL matching should reject child hosts");
+    }
+
+    private static void CredentialQueryMatchesWwwEntryToApexPageWhenStrictMatchingIsDisabled()
+    {
+        PwDatabase database = CreateDatabase(CreateEntry("Example", "alice", "secret", "https://www.example.com/login"));
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult looseResult = service.Query(database, "https://example.com/login", new CredentialQueryOptions
+        {
+            StrictUrlMatching = false,
+            RegexUrlMatching = false
+        });
+        CredentialQueryResult strictResult = service.Query(database, "https://example.com/login", new CredentialQueryOptions
+        {
+            StrictUrlMatching = true,
+            RegexUrlMatching = false
+        });
+
+        AssertEqual(1, looseResult.Entries.Length, "loose URL matching should match www entry hosts to apex pages");
+        AssertEqual(0, strictResult.Entries.Length, "strict URL matching should reject www/apex host differences");
+    }
+
+    private static void CredentialQueryIgnoresRegexPatternWhenRegexMatchingIsDisabled()
+    {
+        PwDatabase database = CreateDatabase(CreateEntry("Regex", "alice", "secret", "regex:^https://accounts\\.example\\.com/login$"));
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult disabledResult = service.Query(database, "https://accounts.example.com/login", new CredentialQueryOptions
+        {
+            StrictUrlMatching = false,
+            RegexUrlMatching = false
+        });
+        CredentialQueryResult enabledResult = service.Query(database, "https://accounts.example.com/login", new CredentialQueryOptions
+        {
+            StrictUrlMatching = false,
+            RegexUrlMatching = true
+        });
+
+        AssertEqual(0, disabledResult.Entries.Length, "regex URL matching should be opt-in");
+        AssertEqual(1, enabledResult.Entries.Length, "enabled regex URL matching should match regex entries");
+    }
+
     private static void CredentialQueryMatchesAdditionalUrlField()
     {
         PwEntry entry = CreateEntry("ChatGPT", "alice@example.com", "secret", "https://auth.openai.com/");
@@ -358,6 +464,40 @@ internal static class Program
         AssertEqual("ChatGPT", result.Entries[0].Title, "URL (2) entry title mismatch");
         AssertEqual("alice@example.com", result.Entries[0].UserName, "URL (2) username mismatch");
         AssertEqual("https://auth.openai.com/", result.Entries[0].Url, "primary URL should remain visible");
+        AssertEqual(0, result.Entries[0].CustomFields.Length, "additional URL fields should not be exposed as custom fields");
+    }
+
+    private static void CredentialQueryIncludesKeePassGroupPath()
+    {
+        PwDatabase database = CreateDatabase();
+        PwGroup accounts = new PwGroup(true, true, "Accounts", PwIcon.Folder);
+        PwGroup work = new PwGroup(true, true, "Work", PwIcon.Folder);
+        PwEntry entry = CreateEntry("Example", "alice", "secret", "https://example.com/login");
+        database.RootGroup.AddGroup(accounts, true);
+        accounts.AddGroup(work, true);
+        work.AddEntry(entry, true);
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(database, "https://example.com/account");
+
+        AssertTrue(result.Success, "credential query should include group path: " + result.Error);
+        AssertEqual(1, result.Entries.Length, "group path query should return one entry");
+        AssertEqual("Accounts/Work", result.Entries[0].Group, "entry group path mismatch");
+    }
+
+    private static void CredentialQueryIncludesUsageMetadata()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "secret", "https://example.com/login");
+        entry.UsageCount = 7;
+        PwDatabase database = CreateDatabase(entry);
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(database, "https://example.com/account");
+
+        AssertTrue(result.Success, "credential query should include usage metadata: " + result.Error);
+        AssertEqual(1, result.Entries.Length, "usage metadata query should return one entry");
+        AssertEqual((ulong)7, result.Entries[0].UsageCount, "entry usage count mismatch");
+        AssertTrue(result.Entries[0].LastUsed > 0, "entry last used timestamp should be populated");
     }
 
     private static void CredentialQueryIncludesOneTimePassword()
@@ -374,6 +514,29 @@ internal static class Program
         AssertTrue(!string.IsNullOrEmpty(result.Entries[0].OneTimePassword), "query should include generated TOTP");
         AssertEqual(6, result.Entries[0].OneTimePassword.Length, "default TOTP length mismatch");
         AssertTrue(IsDigitsOnly(result.Entries[0].OneTimePassword), "TOTP should contain digits only");
+    }
+
+    private static void CredentialQueryRedactsProtectedCustomFieldValues()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "secret", "https://example.com/login");
+        entry.Strings.Set("Tenant", new ProtectedString(false, "production"));
+        entry.Strings.Set("ApiKey", new ProtectedString(true, "protected-secret"));
+        PwDatabase database = CreateDatabase(entry);
+        CredentialQueryService service = new CredentialQueryService();
+
+        CredentialQueryResult result = service.Query(database, "https://example.com/account");
+
+        AssertTrue(result.Success, "credential query with custom fields should succeed: " + result.Error);
+        AssertEqual(1, result.Entries.Length, "custom field query result count mismatch");
+        AssertEqual(2, result.Entries[0].CustomFields.Length, "custom field count mismatch");
+        CustomField tenant = FindCustomField(result.Entries[0].CustomFields, "Tenant");
+        CustomField apiKey = FindCustomField(result.Entries[0].CustomFields, "ApiKey");
+        AssertTrue(tenant != null, "public custom field should be returned");
+        AssertTrue(apiKey != null, "protected custom field metadata should be returned");
+        AssertEqual("production", tenant.Value, "public custom field value mismatch");
+        AssertFalse(tenant.IsProtected, "public custom field should not be protected");
+        AssertEqual(string.Empty, apiKey.Value, "protected custom field value should be redacted");
+        AssertTrue(apiKey.IsProtected, "protected custom field flag mismatch");
     }
 
     private static void CredentialQueryRejectsUnrelatedDomain()
@@ -415,6 +578,48 @@ internal static class Program
         AssertEqual("example.com", result.Entry.Title, "default title should use host");
         AssertEqual("alice", result.Entry.UserName, "created username mismatch");
         AssertEqual("secret", result.Entry.Password, "created password mismatch");
+    }
+
+    private static void CredentialMutationCreatesEntryInRequestedGroup()
+    {
+        PwDatabase database = CreateDatabase();
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Create(database, new CreateLoginPayload
+        {
+            Title = "Example",
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret",
+            Group = "Accounts/Work"
+        });
+
+        AssertTrue(result.Success, "credential create in group should succeed: " + result.Error);
+        AssertEqual(0, (int)database.RootGroup.Entries.UCount, "root group should not contain grouped entry");
+        PwGroup accounts = FindChildGroup(database.RootGroup, "Accounts");
+        PwGroup work = accounts == null ? null : FindChildGroup(accounts, "Work");
+        AssertTrue(work != null, "requested group path should exist");
+        AssertEqual(1, (int)work.Entries.UCount, "requested group should contain created entry");
+        AssertEqual("Accounts/Work", result.Entry.Group, "created result group mismatch");
+    }
+
+    private static void CredentialMutationCreatesEntryWithTotpSecret()
+    {
+        PwDatabase database = CreateDatabase();
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Create(database, new CreateLoginPayload
+        {
+            Title = "Example",
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret",
+            Otp = "JBSWY3DPEHPK3PXP"
+        });
+
+        AssertTrue(result.Success, "credential create with TOTP should succeed: " + result.Error);
+        PwEntry entry = database.RootGroup.Entries.GetAt(0);
+        AssertEqual("JBSWY3DPEHPK3PXP", entry.Strings.ReadSafe("otp"), "created entry should store TOTP secret in otp field");
     }
 
     private static void CredentialMutationUpdatesExistingEntryPassword()
@@ -481,6 +686,85 @@ internal static class Program
         AssertEqual("https://accounts.example.com/sign-in", result.Entry.Url, "updated result URL mismatch");
     }
 
+    private static void CredentialMutationMovesExistingEntryToRequestedGroup()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Group = "Accounts/Work"
+        });
+
+        AssertTrue(result.Success, "credential update should move entry to requested group: " + result.Error);
+        AssertEqual(0, (int)database.RootGroup.Entries.UCount, "root group should no longer contain moved entry");
+        PwGroup accounts = FindChildGroup(database.RootGroup, "Accounts");
+        PwGroup work = accounts == null ? null : FindChildGroup(accounts, "Work");
+        AssertTrue(work != null, "requested destination group should exist");
+        AssertEqual(1, (int)work.Entries.UCount, "destination group should contain moved entry");
+        AssertEqual(entry.Uuid.ToHexString(), work.Entries.GetAt(0).Uuid.ToHexString(), "destination group should contain original entry");
+        AssertEqual("Accounts/Work", result.Entry.Group, "updated result group mismatch");
+    }
+
+    private static void CredentialMutationMovesExistingEntryToRootWhenGroupIsBlank()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase();
+        PwGroup accounts = new PwGroup(true, true, "Accounts", PwIcon.Folder);
+        PwGroup work = new PwGroup(true, true, "Work", PwIcon.Folder);
+        database.RootGroup.AddGroup(accounts, true);
+        accounts.AddGroup(work, true);
+        work.AddEntry(entry, true);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Group = string.Empty
+        });
+
+        AssertTrue(result.Success, "credential update should move entry to root when group is blank: " + result.Error);
+        AssertEqual(1, (int)database.RootGroup.Entries.UCount, "root group should contain moved entry");
+        AssertEqual(entry.Uuid.ToHexString(), database.RootGroup.Entries.GetAt(0).Uuid.ToHexString(), "root group should contain original entry");
+        AssertEqual(0, (int)work.Entries.UCount, "source group should no longer contain moved entry");
+        AssertEqual(string.Empty, result.Entry.Group, "updated result group should be root path");
+    }
+
+    private static void CredentialMutationUpdatesExistingEntryTotpSecret()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Otp = "JBSWY3DPEHPK3PXP"
+        });
+
+        AssertTrue(result.Success, "credential update should store TOTP secret: " + result.Error);
+        AssertEqual("JBSWY3DPEHPK3PXP", entry.Strings.ReadSafe("otp"), "updated entry should store TOTP secret in otp field");
+    }
+
+    private static void CredentialMutationClearsExistingEntryTotpSecret()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        entry.Strings.Set("otp", new ProtectedString(true, "JBSWY3DPEHPK3PXP"));
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            ClearOtp = true
+        });
+
+        AssertTrue(result.Success, "credential update should clear TOTP secret: " + result.Error);
+        AssertEqual(string.Empty, entry.Strings.ReadSafe("otp"), "updated entry should remove TOTP secret");
+    }
+
     private static void BridgeHandlerHelloDoesNotRequireAuthentication()
     {
         BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
@@ -517,6 +801,20 @@ internal static class Program
         AssertTrue(payload.Trusted, "client.status should report trusted client");
     }
 
+    private static void BridgeHandlerRejectsReplayedAuthenticatedRequestId()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientStatus, "client-1", "secret", "");
+
+        BridgeResponse first = handler.Handle(request);
+        BridgeResponse second = handler.Handle(request);
+
+        AssertTrue(first.Success, "first authenticated request should succeed: " + first.Error);
+        AssertFalse(second.Success, "replayed authenticated request should fail");
+        AssertEqual("replayed_request", second.ErrorCode, "replayed request error code mismatch");
+    }
+
     private static void BridgeHandlerCancelsPairingSession()
     {
         PairingService pairing = new PairingService(new DeterministicSecretGenerator("123456", "shared-secret"));
@@ -527,7 +825,8 @@ internal static class Program
             new CredentialQueryService(),
             new CredentialMutationService(),
             delegate { return (PwDatabase)null; },
-            delegate(PairingSession session) { });
+            delegate(PairingSession session) { },
+            delegate(PwDatabase database) { });
         PairingSession session = pairing.BeginPairing("Chrome");
         string payload = BridgeJsonSerializer.Serialize(new PairCancelPayload { PairingSessionId = session.PairingSessionId });
         BridgeRequest request = CreateValidRequest(BridgeMethods.PairCancel);
@@ -627,6 +926,56 @@ internal static class Program
         AssertEqual("alice", result.Entry.UserName, "logins.create username mismatch");
     }
 
+    private static void BridgeHandlerSavesDatabaseAfterSuccessfulCreate()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        PwDatabase database = CreateDatabase();
+        int saveCount = 0;
+        BridgeRequestHandler handler = CreateHandler(database, store, delegate(PwDatabase changedDatabase)
+        {
+            if (object.ReferenceEquals(database, changedDatabase)) saveCount += 1;
+        });
+        string payload = BridgeJsonSerializer.Serialize(new CreateLoginPayload
+        {
+            Title = "Example",
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsCreate, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertTrue(response.Success, "authenticated logins.create should return bridge success: " + response.Error);
+        AssertEqual(1, saveCount, "successful logins.create should save the database once");
+    }
+
+    private static void BridgeHandlerDoesNotSaveDatabaseAfterFailedCreate()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        PwDatabase database = CreateDatabase();
+        int saveCount = 0;
+        BridgeRequestHandler handler = CreateHandler(database, store, delegate(PwDatabase changedDatabase)
+        {
+            saveCount += 1;
+        });
+        string payload = BridgeJsonSerializer.Serialize(new CreateLoginPayload
+        {
+            Title = "Example",
+            Url = "not a url",
+            UserName = "alice",
+            Password = "secret"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsCreate, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        CredentialMutationResult result = BridgeJsonSerializer.Deserialize<CredentialMutationResult>(response.Payload);
+
+        AssertTrue(response.Success, "failed mutation should still return bridge success envelope: " + response.Error);
+        AssertFalse(result.Success, "invalid create payload should fail mutation");
+        AssertEqual(0, saveCount, "failed logins.create should not save the database");
+    }
+
     private static void BridgeHandlerUpdatesLoginForAuthenticatedRequest()
     {
         TrustedClientStore store = CreateTrustedStore("client-1", "secret");
@@ -648,6 +997,55 @@ internal static class Program
         AssertTrue(response.Success, "authenticated logins.update should return bridge success: " + response.Error);
         AssertTrue(result.Success, "authenticated logins.update should update entry: " + result.Error);
         AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "logins.update password mismatch");
+    }
+
+    private static void BridgeHandlerSavesDatabaseAfterSuccessfulUpdate()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        int saveCount = 0;
+        BridgeRequestHandler handler = CreateHandler(database, store, delegate(PwDatabase changedDatabase)
+        {
+            if (object.ReferenceEquals(database, changedDatabase)) saveCount += 1;
+        });
+        string payload = BridgeJsonSerializer.Serialize(new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Password = "new-secret"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsUpdate, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertTrue(response.Success, "authenticated logins.update should return bridge success: " + response.Error);
+        AssertEqual(1, saveCount, "successful logins.update should save the database once");
+    }
+
+    private static void BridgeHandlerUpdatesUsageAfterFillAck()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        PwEntry entry = CreateEntry("Example", "alice", "secret", "https://example.com/login");
+        entry.UsageCount = 3;
+        PwDatabase database = CreateDatabase(entry);
+        int saveCount = 0;
+        BridgeRequestHandler handler = CreateHandler(database, store, delegate(PwDatabase changedDatabase)
+        {
+            if (object.ReferenceEquals(database, changedDatabase)) saveCount += 1;
+        });
+        string payload = BridgeJsonSerializer.Serialize(new FillAckPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Url = "https://example.com/account"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsFillAck, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertTrue(response.Success, "authenticated logins.fillAck should return bridge success: " + response.Error);
+        AssertEqual((ulong)4, entry.UsageCount, "fillAck should increment KeePass usage count");
+        AssertTrue(database.Modified, "fillAck should mark database modified");
+        AssertEqual(1, saveCount, "successful fillAck should save the database once");
     }
 
     private static void LoopbackBridgeServerRespondsToHello()
@@ -709,6 +1107,45 @@ internal static class Program
         }
     }
 
+    private static void LoopbackBridgeServerRejectsWebPostOriginBeforeHandling()
+    {
+        int port = FindFreePort();
+        int pairingPromptCount = 0;
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
+            new TrustedClientStore(),
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { pairingPromptCount += 1; },
+            delegate(PwDatabase changedDatabase) { });
+
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+
+            BridgeRequest request = CreateValidRequest(BridgeMethods.PairBegin);
+            request.Payload = BridgeJsonSerializer.Serialize(new PairBeginPayload
+            {
+                ClientName = "Evil Web"
+            });
+            byte[] bodyBytes = Encoding.UTF8.GetBytes(BridgeJsonSerializer.Serialize(request));
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: https://evil.example\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + bodyBytes.Length + "\r\n" +
+                "Connection: close\r\n\r\n",
+                bodyBytes);
+
+            AssertEqual(403, response.StatusCode, "web-origin POST should be rejected");
+            AssertFalse(response.Headers.ContainsKey("Access-Control-Allow-Origin"),
+                "rejected web-origin POST should not include an allow-origin header");
+            AssertEqual(0, pairingPromptCount, "web-origin POST should not reach pair.begin handler");
+        }
+    }
+
     private static void LoopbackBridgeServerTryStartReportsPortConflict()
     {
         int port = FindFreePort();
@@ -747,6 +1184,27 @@ internal static class Program
         return entry;
     }
 
+    private static PwGroup FindChildGroup(PwGroup parent, string name)
+    {
+        if (parent == null) return null;
+        foreach (PwGroup child in parent.Groups)
+        {
+            if (string.Equals(child.Name, name, StringComparison.Ordinal)) return child;
+        }
+        return null;
+    }
+
+    private static CustomField FindCustomField(CustomField[] fields, string name)
+    {
+        if (fields == null) return null;
+        foreach (CustomField field in fields)
+        {
+            if (field != null && string.Equals(field.Name, name, StringComparison.OrdinalIgnoreCase))
+                return field;
+        }
+        return null;
+    }
+
     private static BridgeRequest CreateValidRequest(string method)
     {
         return new BridgeRequest
@@ -770,13 +1228,19 @@ internal static class Program
 
     private static BridgeRequestHandler CreateHandler(PwDatabase database, TrustedClientStore store)
     {
+        return CreateHandler(database, store, delegate(PwDatabase changedDatabase) { });
+    }
+
+    private static BridgeRequestHandler CreateHandler(PwDatabase database, TrustedClientStore store, Action<PwDatabase> databaseChanged)
+    {
         return new BridgeRequestHandler(
             new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
             store,
             new CredentialQueryService(),
             new CredentialMutationService(),
             delegate { return database; },
-            delegate(PairingSession session) { });
+            delegate(PairingSession session) { },
+            databaseChanged);
     }
 
     private static TrustedClientStore CreateTrustedStore(string clientId, string secret)

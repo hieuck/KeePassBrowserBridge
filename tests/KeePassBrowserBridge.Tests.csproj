@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <BaseOutputPath Condition="'$(BaseOutputPath)' == ''">$(TEMP)\KeePassBrowserBridgeTests\bin\</BaseOutputPath>
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(TEMP)\KeePassBrowserBridgeTests\obj\</BaseIntermediateOutputPath>
   </PropertyGroup>
@@ -27,5 +28,6 @@
     <Compile Include="..\src\Bridge\TrustedClientStore.cs" Link="TrustedClientStore.cs" />
     <Compile Include="..\src\Bridge\TotpGenerator.cs" Link="TotpGenerator.cs" />
     <Compile Include="..\src\Bridge\UrlMatcher.cs" Link="UrlMatcher.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>

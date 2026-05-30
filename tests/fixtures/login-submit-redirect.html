@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Login Submit Redirect Fixture</title>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; margin: 48px; }
+    main { width: 420px; margin: 0 auto; }
+    label { display: block; margin: 12px 0 6px; }
+    input, button { box-sizing: border-box; min-height: 36px; width: 100%; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Redirect Login Fixture</h1>
+    <form action="/tests/fixtures/login-page.html" method="get">
+      <label for="redirect-username">Username</label>
+      <input id="redirect-username" name="username" type="email" autocomplete="username">
+
+      <label for="redirect-password">Password</label>
+      <input id="redirect-password" name="password" type="password" autocomplete="current-password">
+
+      <button type="submit">Sign in</button>
+    </form>
+  </main>
+</body>
+</html>

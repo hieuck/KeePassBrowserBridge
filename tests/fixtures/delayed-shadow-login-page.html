@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Delayed Shadow Login Fixture</title>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; margin: 48px; }
+    main { width: 460px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Delayed Shadow Login</h1>
+    <delayed-shadow-login></delayed-shadow-login>
+  </main>
+  <script>
+    customElements.define('delayed-shadow-login', class extends HTMLElement {
+      connectedCallback() {
+        const root = this.attachShadow({ mode: 'open' });
+        root.innerHTML = '<p>Loading sign in...</p>';
+        window.setTimeout(() => {
+          root.innerHTML = `
+            <style>
+              form { display: grid; gap: 10px; }
+              label { display: grid; gap: 4px; }
+              input { min-height: 38px; }
+            </style>
+            <form>
+              <label>Email
+                <input id="delayed-shadow-username" name="email" type="email" autocomplete="username">
+              </label>
+              <label>Password
+                <input id="delayed-shadow-password" name="password" type="password" autocomplete="current-password">
+              </label>
+              <button type="submit">Sign in</button>
+            </form>
+          `;
+          root.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+        }, 120);
+      }
+    });
+  </script>
+</body>
+</html>

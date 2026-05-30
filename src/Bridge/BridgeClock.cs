@@ -10,5 +10,10 @@ namespace KeePassBrowserBridge.Bridge
         {
             return (long)(DateTime.UtcNow - UnixEpochUtc).TotalMilliseconds;
         }
+
+        public static DateTime FromUtcMilliseconds(long utcMilliseconds)
+        {
+            return UnixEpochUtc.AddMilliseconds(utcMilliseconds);
+        }
     }
 }

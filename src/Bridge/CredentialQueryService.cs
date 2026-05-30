@@ -9,6 +9,15 @@ namespace KeePassBrowserBridge.Bridge
     {
         public CredentialQueryResult Query(PwDatabase database, string pageUrl)
         {
+            return Query(database, pageUrl, new CredentialQueryOptions
+            {
+                StrictUrlMatching = true,
+                RegexUrlMatching = true
+            });
+        }
+
+        public CredentialQueryResult Query(PwDatabase database, string pageUrl, CredentialQueryOptions options)
+        {
             if (database == null || database.RootGroup == null)
                 return CredentialQueryResult.Fail("database_not_open", "KeePass database is not open.");
 
@@ -17,19 +26,21 @@ namespace KeePassBrowserBridge.Bridge
                 return CredentialQueryResult.Fail("invalid_url", "Page URL is invalid.");
 
             List<CredentialEntry> matches = new List<CredentialEntry>();
-            CollectMatches(database.RootGroup, pageUrl, matches);
+            CollectMatches(database.RootGroup, pageUrl, options ?? new CredentialQueryOptions(), matches, string.Empty);
 
             return CredentialQueryResult.Ok(matches.ToArray());
         }
 
-        private static void CollectMatches(PwGroup group, string pageUrl, List<CredentialEntry> matches)
+        private static void CollectMatches(PwGroup group, string pageUrl, CredentialQueryOptions options, List<CredentialEntry> matches, string groupPath)
         {
             if (group == null) return;
 
             foreach (PwEntry entry in group.Entries)
             {
                 string entryUrl = entry.Strings.ReadSafe(PwDefs.UrlField);
-                if (!EntryUrlMatcher.IsMatch(entry, pageUrl)) continue;
+                if (!EntryUrlMatcher.IsMatch(entry, pageUrl, options)) continue;
+
+                var customFields = ExtractCustomFields(entry);
 
                 matches.Add(new CredentialEntry
                 {
@@ -37,15 +48,83 @@ namespace KeePassBrowserBridge.Bridge
                     Title = entry.Strings.ReadSafe(PwDefs.TitleField),
                     UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
                     Url = entryUrl,
+                    Group = groupPath,
+                    UsageCount = entry.UsageCount,
+                    LastUsed = ToUnixTimeMilliseconds(entry.LastAccessTime),
                     Password = ReadProtectedString(entry.Strings.GetSafe(PwDefs.PasswordField)),
-                    OneTimePassword = GenerateOneTimePassword(entry)
+                    OneTimePassword = GenerateOneTimePassword(entry),
+                    CustomFields = customFields
                 });
             }
 
             foreach (PwGroup child in group.Groups)
             {
-                CollectMatches(child, pageUrl, matches);
+                string childPath = JoinGroupPath(groupPath, child.Name);
+                CollectMatches(child, pageUrl, options, matches, childPath);
             }
+        }
+
+        private static string JoinGroupPath(string parentPath, string groupName)
+        {
+            string name = (groupName ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(name)) return parentPath ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(parentPath)) return name;
+            return parentPath + "/" + name;
+        }
+
+        private static long ToUnixTimeMilliseconds(DateTime value)
+        {
+            DateTime utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
+            return new DateTimeOffset(utc).ToUnixTimeMilliseconds();
+        }
+
+        private static CustomField[] ExtractCustomFields(PwEntry entry)
+        {
+            if (entry == null || entry.Strings == null)
+                return new CustomField[0];
+
+            List<CustomField> fields = new List<CustomField>();
+            var standardFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                PwDefs.TitleField,
+                PwDefs.UserNameField,
+                PwDefs.PasswordField,
+                PwDefs.UrlField,
+                "otp",
+                "TOTP Seed",
+                "TOTP Secret",
+                "TOTP",
+                "TimeOtp-Secret-Base32"
+            };
+
+            foreach (KeyValuePair<string, ProtectedString> item in entry.Strings)
+            {
+                if (IsUrlFieldName(item.Key))
+                    continue;
+
+                if (standardFields.Contains(item.Key))
+                    continue;
+
+                string value = ReadProtectedString(item.Value);
+                if (string.IsNullOrWhiteSpace(value))
+                    continue;
+
+                fields.Add(new CustomField
+                {
+                    Name = item.Key,
+                    Value = item.Value.IsProtected ? string.Empty : value,
+                    IsProtected = item.Value.IsProtected
+                });
+            }
+
+            return fields.ToArray();
+        }
+
+        private static bool IsUrlFieldName(string fieldName)
+        {
+            if (string.IsNullOrWhiteSpace(fieldName)) return false;
+            if (string.Equals(fieldName, PwDefs.UrlField, StringComparison.OrdinalIgnoreCase)) return true;
+            return fieldName.StartsWith(PwDefs.UrlField + " (", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReadProtectedString(ProtectedString value)
@@ -80,6 +159,33 @@ namespace KeePassBrowserBridge.Bridge
         }
     }
 
+    public sealed class CredentialQueryOptions
+    {
+        public bool StrictUrlMatching { get; set; }
+        public bool RegexUrlMatching { get; set; }
+    }
+
+    public sealed class CredentialEntry
+    {
+        public string EntryId { get; set; }
+        public string Title { get; set; }
+        public string UserName { get; set; }
+        public string Url { get; set; }
+        public string Group { get; set; }
+        public ulong UsageCount { get; set; }
+        public long LastUsed { get; set; }
+        public string Password { get; set; }
+        public string OneTimePassword { get; set; }
+        public CustomField[] CustomFields { get; set; }
+    }
+
+    public sealed class CustomField
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
+        public bool IsProtected { get; set; }
+    }
+
     public sealed class CredentialQueryResult
     {
         public bool Success { get; set; }
@@ -106,15 +212,5 @@ namespace KeePassBrowserBridge.Bridge
                 Entries = new CredentialEntry[0]
             };
         }
-    }
-
-    public sealed class CredentialEntry
-    {
-        public string EntryId { get; set; }
-        public string Title { get; set; }
-        public string UserName { get; set; }
-        public string Url { get; set; }
-        public string Password { get; set; }
-        public string OneTimePassword { get; set; }
     }
 }

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ARIA OTP Fixture</title>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; margin: 48px; }
+    main { width: 460px; margin: 0 auto; }
+    input { min-height: 42px; width: 100%; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Security challenge</h1>
+    <div id="challenge-label">Authenticator code</div>
+    <p id="challenge-help">Enter the verification code from your authenticator app.</p>
+    <input id="challenge-field" name="field" type="tel" inputmode="numeric" aria-labelledby="challenge-label" aria-describedby="challenge-help">
+  </main>
+</body>
+</html>

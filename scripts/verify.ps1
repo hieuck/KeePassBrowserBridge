@@ -1,5 +1,6 @@
 param(
-    [string] $KeePassExe = ""
+    [string] $KeePassExe = "",
+    [switch] $SkipE2E
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,24 +25,61 @@ if (-not (Test-Path -LiteralPath $csc)) {
     throw "Cannot find csc.exe at $csc."
 }
 
+function Invoke-NativeChecked {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $FilePath,
+
+        [string[]] $Arguments = @()
+    )
+
+    & $FilePath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "$FilePath failed with exit code $LASTEXITCODE."
+    }
+}
+
 Push-Location $repoRoot
 try {
     Write-Host "Checking Chrome extension JavaScript..."
-    node --check extension\background.js
-    node --check extension\contentScript.js
-    node --check extension\popup.js
-    node tests\extension\background.test.mjs
-    node tests\extension\protocol.test.mjs
-    node tests\extension\content-script.test.mjs
-    node tests\extension\popup.test.mjs
+    Invoke-NativeChecked "node" @("--check", "extension\background.js")
+    Invoke-NativeChecked "node" @("--check", "extension\contentScript.js")
+    Invoke-NativeChecked "node" @("--check", "extension\options.js")
+    Invoke-NativeChecked "node" @("--check", "extension\popup.js")
+    Invoke-NativeChecked "node" @("tests\extension\manifest.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\background.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\protocol.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\http-auth.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\custom-fields.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\content-script.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\popup.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\generator.test.mjs")
+
+    Write-Host ""
+    Write-Host "Running extension module tests..."
+    Invoke-NativeChecked "npx" @(
+        "vitest",
+        "run",
+        "tests/extension/group-organization.test.mjs",
+        "tests/extension/multi-page-login.test.mjs",
+        "tests/extension/multi-database.test.mjs",
+        "tests/extension/enhanced-security.test.mjs")
+
+    if (-not $SkipE2E) {
+        Write-Host ""
+        Write-Host "Running Chromium end-to-end tests..."
+        Invoke-NativeChecked "npx" @("playwright", "test", "--project=chromium")
+    }
 
     Write-Host ""
     Write-Host "Running bridge tests..."
     $testOutputRoot = Join-Path $env:TEMP "KeePassBrowserBridgeTests"
-    dotnet run `
-        --project tests\KeePassBrowserBridge.Tests.csproj `
-        /p:BaseOutputPath="$testOutputRoot\bin\" `
-        /p:BaseIntermediateOutputPath="$testOutputRoot\obj\"
+    Invoke-NativeChecked "dotnet" @(
+        "run",
+        "--project",
+        "tests\KeePassBrowserBridge.Tests.csproj",
+        "/p:BaseOutputPath=$testOutputRoot\bin\",
+        "/p:BaseIntermediateOutputPath=$testOutputRoot\obj\")
 
     Write-Host ""
     Write-Host "Compiling KeePass plugin sources..."
@@ -81,11 +119,7 @@ try {
         "/reference:$formsDll"
     ) + $sources
 
-    & $csc @cscArgs
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "C# compile failed with exit code $LASTEXITCODE."
-    }
+    Invoke-NativeChecked $csc $cscArgs
 
     $compiled = Get-Item -LiteralPath $verifyDll
     Write-Host ""

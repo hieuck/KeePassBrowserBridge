@@ -9,12 +9,21 @@ namespace KeePassBrowserBridge.Bridge
     {
         public static bool IsMatch(PwEntry entry, string pageUrl)
         {
+            return IsMatch(entry, pageUrl, new CredentialQueryOptions
+            {
+                StrictUrlMatching = true,
+                RegexUrlMatching = true
+            });
+        }
+
+        public static bool IsMatch(PwEntry entry, string pageUrl, CredentialQueryOptions options)
+        {
             if (entry == null) return false;
 
             foreach (KeyValuePair<string, ProtectedString> item in entry.Strings)
             {
                 if (!IsUrlFieldName(item.Key)) continue;
-                if (UrlMatcher.IsMatch(ReadProtectedString(item.Value), pageUrl)) return true;
+                if (UrlMatcher.IsMatch(ReadProtectedString(item.Value), pageUrl, options)) return true;
             }
 
             return false;

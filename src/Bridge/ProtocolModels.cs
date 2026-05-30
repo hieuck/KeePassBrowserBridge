@@ -122,14 +122,18 @@ namespace KeePassBrowserBridge.Bridge
     public sealed class LoginsQueryPayload
     {
         public string Url { get; set; }
+        public bool? StrictUrlMatching { get; set; }
+        public bool? RegexUrlMatching { get; set; }
     }
 
     public sealed class CreateLoginPayload
     {
         public string Title { get; set; }
         public string Url { get; set; }
+        public string Group { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
+        public string Otp { get; set; }
     }
 
     public sealed class UpdateLoginPayload
@@ -137,8 +141,17 @@ namespace KeePassBrowserBridge.Bridge
         public string EntryId { get; set; }
         public string Title { get; set; }
         public string Url { get; set; }
+        public string Group { get; set; }
         public string PageUrl { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
+        public string Otp { get; set; }
+        public bool ClearOtp { get; set; }
+    }
+
+    public sealed class FillAckPayload
+    {
+        public string EntryId { get; set; }
+        public string Url { get; set; }
     }
 }

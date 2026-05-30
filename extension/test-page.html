@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KBB Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>KeePassBrowserBridge Test Page</h1>
+    
+    <div class="test-section">
+        <h2>1. Content Script Loaded</h2>
+        <p id="script-loaded">Checking...</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Extension API Available</h2>
+        <p id="api-available">Checking...</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Form Detection</h2>
+        <form id="test-form">
+            <input type="text" id="username" placeholder="Username"><br><br>
+            <input type="password" id="password" placeholder="Password"><br><br>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Custom Fields</h2>
+        <input type="text" id="security-question" placeholder="Security Question"><br><br>
+        <input type="text" id="recovery-code" placeholder="Recovery Code">
+    </div>
+    
+    <script>
+        // Test 1: Content Script Loaded
+        const scriptLoaded = document.getElementById('script-loaded');
+        if (window.__keepassBrowserBridgeContentScriptLoaded) {
+            scriptLoaded.innerHTML = '<span class="success">✓ Content script loaded</span>';
+            scriptLoaded.innerHTML += '<br>Version: ' + window.__keepassBrowserBridgeContentScriptLoaded;
+        } else {
+            scriptLoaded.innerHTML = '<span class="error">✗ Content script NOT loaded</span>';
+        }
+        
+        // Test 2: Extension API Available
+        const apiAvailable = document.getElementById('api-available');
+        if (window.chrome && window.chrome.runtime) {
+            apiAvailable.innerHTML = '<span class="success">✓ chrome.runtime API available</span>';
+            
+            // Test sending message
+            window.chrome.runtime.sendMessage({type: 'KBB_GET_STATE'}, function(response) {
+                if (chrome.runtime.lastError) {
+                    apiAvailable.innerHTML += '<br><span class="error">Error: ' + chrome.runtime.lastError.message + '</span>';
+                } else {
+                    apiAvailable.innerHTML += '<br><span class="success">✓ Response: ' + JSON.stringify(response) + '</span>';
+                }
+            });
+        } else {
+            apiAvailable.innerHTML = '<span class="error">✗ chrome.runtime API NOT available</span>';
+        }
+        
+        // Test 3: Form Detection
+        const form = document.getElementById('test-form');
+        if (form) {
+            const usernameInput = form.querySelector('#username');
+            const passwordInput = form.querySelector('#password');
+            console.log('Form detected:', { username: !!usernameInput, password: !!passwordInput });
+        }
+    </script>
+</body>
+</html>

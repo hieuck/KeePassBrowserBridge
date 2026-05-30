@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using KeePassLib;
 
 namespace KeePassBrowserBridge.Bridge
@@ -11,6 +12,9 @@ namespace KeePassBrowserBridge.Bridge
         private readonly CredentialMutationService m_credentialMutationService;
         private readonly Func<PwDatabase> m_databaseProvider;
         private readonly Action<PairingSession> m_pairingSessionCreated;
+        private readonly Action<PwDatabase> m_databaseChanged;
+        private readonly Dictionary<string, long> m_seenAuthenticatedRequests = new Dictionary<string, long>(StringComparer.Ordinal);
+        private readonly object m_seenAuthenticatedRequestsLock = new object();
 
         public BridgeRequestHandler(
             PairingService pairingService,
@@ -18,7 +22,8 @@ namespace KeePassBrowserBridge.Bridge
             CredentialQueryService credentialQueryService,
             CredentialMutationService credentialMutationService,
             Func<PwDatabase> databaseProvider,
-            Action<PairingSession> pairingSessionCreated)
+            Action<PairingSession> pairingSessionCreated,
+            Action<PwDatabase> databaseChanged)
         {
             if (pairingService == null) throw new ArgumentNullException("pairingService");
             if (trustedClients == null) throw new ArgumentNullException("trustedClients");
@@ -31,16 +36,21 @@ namespace KeePassBrowserBridge.Bridge
             m_credentialMutationService = credentialMutationService;
             m_databaseProvider = databaseProvider ?? delegate { return null; };
             m_pairingSessionCreated = pairingSessionCreated ?? delegate(PairingSession session) { };
+            m_databaseChanged = databaseChanged ?? delegate(PwDatabase database) { };
         }
 
         public BridgeResponse Handle(BridgeRequest request)
         {
-            ProtocolValidationResult validation = ProtocolValidator.Validate(request, BridgeClock.UtcNowMilliseconds());
+            long nowUtcMs = BridgeClock.UtcNowMilliseconds();
+            ProtocolValidationResult validation = ProtocolValidator.Validate(request, nowUtcMs);
             if (!validation.IsValid)
                 return Error(request, validation.ErrorCode, validation.Error);
 
             if (RequiresAuthentication(request.Method) && !VerifyAuthentication(request))
                 return Error(request, "invalid_authentication", "Request authentication is invalid.");
+
+            if (RequiresAuthentication(request.Method) && !TrackAuthenticatedRequest(request, nowUtcMs))
+                return Error(request, "replayed_request", "Request ID has already been used.");
 
             if (request.Method == BridgeMethods.Hello) return Hello(request);
             if (request.Method == BridgeMethods.PairBegin) return PairBegin(request);
@@ -52,7 +62,7 @@ namespace KeePassBrowserBridge.Bridge
             if (request.Method == BridgeMethods.LoginsQuery) return LoginsQuery(request);
             if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
             if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
-            if (request.Method == BridgeMethods.LoginsFillAck) return Success(request, "{}");
+            if (request.Method == BridgeMethods.LoginsFillAck) return LoginsFillAck(request);
 
             return Error(request, "unknown_method", "Unknown method.");
         }
@@ -153,21 +163,38 @@ namespace KeePassBrowserBridge.Bridge
         private BridgeResponse LoginsQuery(BridgeRequest request)
         {
             LoginsQueryPayload payload = BridgeJsonSerializer.Deserialize<LoginsQueryPayload>(request.Payload);
-            CredentialQueryResult result = m_credentialQueryService.Query(m_databaseProvider(), payload.Url);
+            CredentialQueryResult result = m_credentialQueryService.Query(m_databaseProvider(), payload == null ? null : payload.Url, new CredentialQueryOptions
+            {
+                StrictUrlMatching = payload == null || payload.StrictUrlMatching.GetValueOrDefault(true),
+                RegexUrlMatching = payload != null && payload.RegexUrlMatching.GetValueOrDefault(false)
+            });
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 
         private BridgeResponse LoginsCreate(BridgeRequest request)
         {
             CreateLoginPayload payload = BridgeJsonSerializer.Deserialize<CreateLoginPayload>(request.Payload);
-            CredentialMutationResult result = m_credentialMutationService.Create(m_databaseProvider(), payload);
+            PwDatabase database = m_databaseProvider();
+            CredentialMutationResult result = m_credentialMutationService.Create(database, payload);
+            if (result.Success) m_databaseChanged(database);
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 
         private BridgeResponse LoginsUpdate(BridgeRequest request)
         {
             UpdateLoginPayload payload = BridgeJsonSerializer.Deserialize<UpdateLoginPayload>(request.Payload);
-            CredentialMutationResult result = m_credentialMutationService.Update(m_databaseProvider(), payload);
+            PwDatabase database = m_databaseProvider();
+            CredentialMutationResult result = m_credentialMutationService.Update(database, payload);
+            if (result.Success) m_databaseChanged(database);
+            return Success(request, BridgeJsonSerializer.Serialize(result));
+        }
+
+        private BridgeResponse LoginsFillAck(BridgeRequest request)
+        {
+            FillAckPayload payload = BridgeJsonSerializer.Deserialize<FillAckPayload>(request.Payload);
+            PwDatabase database = m_databaseProvider();
+            CredentialMutationResult result = m_credentialMutationService.AcknowledgeFill(database, payload);
+            if (result.Success) m_databaseChanged(database);
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 
@@ -175,6 +202,36 @@ namespace KeePassBrowserBridge.Bridge
         {
             TrustedClient client = m_trustedClients.Get(request.ClientId);
             return client != null && BridgeAuthentication.Verify(request, client.SharedSecret);
+        }
+
+        private bool TrackAuthenticatedRequest(BridgeRequest request, long nowUtcMs)
+        {
+            string key = (request.ClientId ?? string.Empty) + "\n" + request.RequestId;
+            lock (m_seenAuthenticatedRequestsLock)
+            {
+                PruneSeenAuthenticatedRequests(nowUtcMs);
+                if (m_seenAuthenticatedRequests.ContainsKey(key)) return false;
+
+                m_seenAuthenticatedRequests[key] = nowUtcMs;
+                return true;
+            }
+        }
+
+        private void PruneSeenAuthenticatedRequests(long nowUtcMs)
+        {
+            List<string> expiredKeys = null;
+            foreach (KeyValuePair<string, long> item in m_seenAuthenticatedRequests)
+            {
+                if (nowUtcMs - item.Value <= ProtocolValidator.MaxClockSkewMs) continue;
+                if (expiredKeys == null) expiredKeys = new List<string>();
+                expiredKeys.Add(item.Key);
+            }
+
+            if (expiredKeys == null) return;
+            foreach (string key in expiredKeys)
+            {
+                m_seenAuthenticatedRequests.Remove(key);
+            }
         }
 
         private static bool RequiresAuthentication(string method)

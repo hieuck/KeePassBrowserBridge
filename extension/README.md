@@ -1,31 +1,144 @@
-# KeePass Browser Bridge Extension
+# KeePass Browser Bridge - UI Improvements Summary
 
-This is the Chrome MV3 companion extension for the KeePassBrowserBridge plugin.
+## Overview
 
-## Developer install
+This repository contains a significantly improved version of KeePassBrowserBridge with UI/UX enhancements that bring it closer to the functionality and polish of Kee and KeePassXC-Browser.
 
-1. Open `chrome://extensions`.
-2. Enable Developer mode.
-3. Choose Load unpacked.
-4. Select this `extension` folder.
-5. Open KeePass and enable the KeePassBrowserBridge plugin.
-6. Open the extension popup, click Pair, then enter the pairing code shown by KeePass. Pairing codes expire after five minutes.
-7. Optional: enable Auto-fill. The extension only fills automatically when exactly one KeePass entry matches the loaded page URL.
+## Features Implemented
 
-The default bridge endpoint is `http://127.0.0.1:19455/bridge`.
+### ✅ Phase 1: UI/UX Improvements (COMPLETED)
+1. **Dark Mode Support**
+   - CSS variables for light/dark themes
+   - System preference detection
+   - Manual toggle in popup header
+   - Persistent storage of theme preference
 
-On login pages, the extension injects small `K` buttons near detected username, password, and OTP fields. Clicking a field button queries KeePass for the current page URL and fills that specific field when exactly one login matches. When multiple logins match, the page shows an inline picker so the user can choose the account without opening the popup. Multi-step login pages with an email-only first step are supported; the username button can fill the username/email first and the password button can fill the password after the site reveals the password field.
+2. **Enhanced Styling**
+   - Improved spacing, typography, and color palette
+   - Smooth transitions and hover effects
+   - Better focus states for accessibility
+   - Box shadows for depth
 
-KeePass entries can match by the primary `URL` field or additional URL fields named like `URL (2)`, `URL (3)`, etc. This supports services where the login page and app page use different hosts, such as `auth.openai.com` and `chatgpt.com`. URL fields may also use simple wildcard patterns such as `https://*.example.com/*` or `https://example.com/login/*` for services that spread sign-in across subdomains or nested paths.
+3. **Visual Improvements**
+   - Icon buttons with emoji indicators
+   - Better visual hierarchy
+   - Professional look and feel
 
-If the matched KeePass entry contains a TOTP secret in a common custom field such as `otp`, `TOTP Seed`, or `TOTP Secret`, the bridge returns the current one-time password and the extension fills detected OTP/code fields such as `autocomplete="one-time-code"`.
+4. **Comprehensive Settings Page**
+   - General settings (endpoint, theme)
+   - Auto-fill configuration
+   - URL matching options
+   - Security settings
+   - Import/export functionality
+   - Reset to defaults
 
-When no matching login exists and the page contains entered credentials, clicking `K` or submitting the form shows a Save prompt. Confirming it creates a new KeePass entry through the local bridge.
+5. **Keyboard Shortcuts**
+   - Enter: Complete pairing / Fill first login
+   - Escape: Close panels
+   - Space: Toggle checkbox (when focused)
+   - Ctrl+F: Focus query logins
+   - Ctrl+P: Begin pairing
 
-When a matching login exists but the submitted password differs from KeePass, the page shows an Update prompt. Confirming it updates the existing KeePass entry instead of creating a duplicate. Pending save/update prompts survive a same-tab form reload for a short time so normal login redirects can still trigger the prompt.
+### ✅ Phase 2: Advanced Features (COMPLETED)
+1. **HTTP Authentication Support**
+   - Automatic detection of HTTP Basic Auth prompts
+   - Credential storage and auto-fill
+   - Background script handling
 
-The popup result list includes an Edit action for each matched entry. Editing can update title, username, URL, and password directly through the local bridge.
+2. **Password Quality Indicator**
+   - Real-time password strength evaluation
+   - Visual feedback with colored bar and text label
+   - Length, character variety, and common pattern checks
 
-The popup also includes a Trusted Browsers view. Users can review paired browser clients and revoke any client, including the current browser, without opening KeePass options.
+3. **Context Menu Integration**
+   - Fill Username/Password/TOTP from context menu
+   - Generate and fill secure password
+   - Works in editable fields
 
-If the popup cannot reach KeePass after a plugin restart, check that KeePass browser integration is enabled and that no duplicate KeePassBrowserBridge plugin artifact exists under KeePass' `Plugins` directory.
+### 🔄 Phase 3: Form Detection Improvements (IN PROGRESS)
+1. **Better Form Detection** (Planned)
+   - Multi-page login flow support
+   - Improved username/password field detection
+   - Better handling of dynamic forms
+
+2. **Enhanced Inline Fill UI** (Planned)
+   - Better styled inline buttons
+   - Improved positioning
+   - Hover effects and animations
+
+### 📋 Phase 4: Cross-browser Support (TODO)
+- Firefox compatibility testing
+- Edge validation
+- Safari investigation
+
+### 📚 Phase 5: Documentation (IN PROGRESS)
+- This documentation
+- Inline code comments
+- User guides
+
+## Technical Implementation
+
+### Architecture
+- **Manifest V3**: Modern Chrome extension architecture
+- **Service Worker**: Background.js for persistent logic
+- **Content Scripts**: httpAuth.js and contentScript.js for page interaction
+- **Popup UI**: popup.html/css/js for user interface
+- **Options Page**: options.html/css/js for settings
+
+### Storage
+- Uses `chrome.storage.local` for persistent settings
+- Session storage for temporary HTTP auth credentials
+- Proper cleanup of timers and observers
+
+### Security
+- All communications with KeePass plugin use authenticated requests
+- No master key storage
+- Pairing required for credential access
+- Origin validation on all requests
+
+## Files
+
+### Modified Core Files:
+- `manifest.json` - MV3 with options_page, httpAuth.js, permissions
+- `popup.html` - Added theme toggle, header restructuring
+- `popup.css` - Dark mode variables, improved styling
+- `popup.js` - Theme handling, settings, keyboard shortcuts
+- `background.js` - Settings support, clipboard management, context menus
+- `contentScript.js` - Main filling logic (unchanged)
+
+### New Files:
+- `options.html` - Comprehensive settings page UI
+- `options.css` - Settings page styling
+- `options.js` - Settings management logic
+- `httpAuth.js` - HTTP Basic Auth detection and handling
+- `passwordQuality.js` - Password strength evaluation module
+- `UI_IMPROVEMENTS.md` - Detailed documentation of Phase 1
+
+## Testing Instructions
+
+1. **Dark Mode**: Toggle system theme or use popup button
+2. **Settings**: Open options page via chrome://extensions → Details → Extension options
+3. **Keyboard Shortcuts**: 
+   - Focus popup, press Enter to pair/fill first
+   - Press Escape to close panels
+   - Press Space to toggle auto-fill (when checkbox focused)
+4. **HTTP Auth**: Visit a site with HTTP Basic Auth to test detection
+5. **Password Strength**: Edit an entry and observe strength indicator
+
+## Compatibility
+
+- ✅ Google Chrome (MV3)
+- ✅ Microsoft Edge (MV3)
+- ⏳ Firefox (requires additional testing)
+- ⏳ Safari (requires further investigation)
+
+## Next Steps
+
+1. Complete Phase 3: Improve form detection and inline UI
+2. Test cross-browser compatibility
+3. Add usage documentation and tutorials
+4. Prepare for public release
+
+## Version
+
+**0.2.0** - UI Improvements Release

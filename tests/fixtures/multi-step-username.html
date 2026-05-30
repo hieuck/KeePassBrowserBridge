@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Username Step</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    label { display: grid; gap: 6px; max-width: 320px; }
+    input { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Sign in</h1>
+    <form id="username-step" action="/tests/fixtures/multi-step-password.html" method="get">
+      <label>
+        Email
+        <input id="step-username" name="identifier" type="email" autocomplete="username" placeholder="Email">
+      </label>
+      <button type="submit">Next</button>
+    </form>
+  </main>
+</body>
+</html>

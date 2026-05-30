@@ -44,6 +44,32 @@ Write-Host "KeePass: $KeePassExe"
 Write-Host "Source:  $srcDir"
 Write-Host "Output:  $ArtifactsDir"
 
+function Move-ItemWithRetry {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $LiteralPath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Destination,
+
+        [int] $Retries = 10,
+        [int] $DelayMilliseconds = 500
+    )
+
+    for ($attempt = 1; $attempt -le $Retries; $attempt++) {
+        try {
+            Move-Item -LiteralPath $LiteralPath -Destination $Destination -Force
+            return
+        } catch {
+            if ($attempt -eq $Retries) {
+                throw
+            }
+
+            Start-Sleep -Milliseconds $DelayMilliseconds
+        }
+    }
+}
+
 $frameworkDir = Join-Path $env:WINDIR "Microsoft.NET\Framework64\v4.0.30319"
 $csc = Join-Path $frameworkDir "csc.exe"
 if (-not (Test-Path -LiteralPath $csc)) {
@@ -126,7 +152,7 @@ if (-not $createdPlgx) {
 }
 
 $plgxTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge.plgx"
-Move-Item -LiteralPath $createdPlgx.FullName -Destination $plgxTarget -Force
+Move-ItemWithRetry -LiteralPath $createdPlgx.FullName -Destination $plgxTarget
 
 $extensionTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge-chrome-extension-$version.zip"
 if (Test-Path -LiteralPath $extensionTarget) {
