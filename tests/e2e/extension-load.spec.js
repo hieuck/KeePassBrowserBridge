@@ -470,6 +470,14 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#loginSearch')).toHaveValue('');
     await expect(page.locator('.login-title')).toHaveCount(3);
     await expect(page.locator('#message')).toHaveText('3 login(s) found.');
+
+    await page.locator('#loginSearch').fill('bank');
+    await expect(page.locator('.login-title')).toHaveCount(1);
+    await page.locator('#loginSearch').press('Escape');
+
+    await expect(page.locator('#loginSearch')).toHaveValue('');
+    await expect(page.locator('.login-title')).toHaveCount(3);
+    await expect(page.locator('#message')).toHaveText('3 login(s) found.');
   });
 
   test('filters popup logins by non-protected custom fields only', async ({ page }) => {

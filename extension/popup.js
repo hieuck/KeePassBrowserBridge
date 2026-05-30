@@ -64,10 +64,20 @@ function init() {
   elements.toggleSiteAutoSubmit.addEventListener('click', () => runAction(toggleSiteAutoSubmit));
   elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
   elements.loginSearch.addEventListener('input', () => runAction(filterCurrentLogins));
+  elements.loginSearch.addEventListener('keydown', handleLoginSearchKeydown);
 
   syncPairingCodeState();
   runAction(renderAbout);
   runAction(refreshState);
+}
+
+function handleLoginSearchKeydown(event) {
+  if (event.key !== 'Escape' || !elements.loginSearch.value) {
+    return;
+  }
+
+  event.preventDefault();
+  runAction(clearLoginSearch);
 }
 
 function handlePairingCodeKeydown(event) {
