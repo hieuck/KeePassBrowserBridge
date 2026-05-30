@@ -50,6 +50,18 @@ const sandbox = {
 
     const request = JSON.parse(options.body);
     requests.push(request);
+    if (request.Method === 'hello') {
+      return {
+        ok: true,
+        json: async () => ({
+          ProtocolVersion: 1,
+          RequestId: request.RequestId,
+          Success: true,
+          Payload: '{"ProductName":"KeePass Browser Bridge","ProtocolVersion":1}'
+        })
+      };
+    }
+
     if (request.Method === 'pair.cancel') {
       return {
         ok: true,
@@ -132,6 +144,7 @@ const sandbox = {
   chrome: {
     runtime: {
       id: 'abcdefghijklmnopabcdefghijklmnop',
+      getURL: () => 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/',
       getManifest: () => ({
         name: 'KeePass Browser Bridge',
         version: '0.9.0'
@@ -249,6 +262,12 @@ await assert.rejects(
 );
 assert.equal(requests.length, 0, 'background should not send bridge requests to a non-loopback endpoint');
 storage.endpoint = 'http://127.0.0.1:19455/bridge';
+
+requests.length = 0;
+sandbox.chrome.runtime.getURL = () => 'moz-extension://12345678-90ab-cdef-1234-567890abcdef/';
+await sandbox.handleMessage({ type: 'KBB_HELLO' });
+assert.equal(requests[0].Origin, 'moz-extension://12345678-90ab-cdef-1234-567890abcdef', 'background should derive request origin from runtime URL for Firefox');
+sandbox.chrome.runtime.getURL = () => 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/';
 
 storage.pairingSessionId = 'active-session';
 storage.pairingStartedAt = 1000;

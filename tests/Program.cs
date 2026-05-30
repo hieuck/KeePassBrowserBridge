@@ -25,6 +25,7 @@ internal static class Program
         UnknownMethodFailsValidation();
         MissingOriginFailsValidation();
         WebPageOriginFailsValidation();
+        FirefoxExtensionOriginPassesValidation();
         MalformedExtensionOriginFailsValidation();
         StaleTimestampFailsValidation();
         WrongProtocolVersionFailsValidation();
@@ -199,6 +200,16 @@ internal static class Program
 
         AssertFalse(result.IsValid, "web page origin should fail validation");
         AssertEqual("invalid_origin", result.ErrorCode, "web page origin error code mismatch");
+    }
+
+    private static void FirefoxExtensionOriginPassesValidation()
+    {
+        BridgeRequest request = CreateValidRequest(BridgeMethods.Hello);
+        request.Origin = "moz-extension://12345678-90ab-cdef-1234-567890abcdef";
+
+        ProtocolValidationResult result = ProtocolValidator.Validate(request, NowMs());
+
+        AssertTrue(result.IsValid, "Firefox extension origin should pass validation: " + result.Error);
     }
 
     private static void MalformedExtensionOriginFailsValidation()

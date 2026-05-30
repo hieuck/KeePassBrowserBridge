@@ -683,7 +683,7 @@ async function bridgeCall(method, payload, requiresAuth) {
     RequestId: createRequestId(),
     Method: method,
     TimestampUtcMs: Date.now(),
-    Origin: `chrome-extension://${chrome.runtime.id}`,
+    Origin: getExtensionOrigin(),
     ClientId: requiresAuth ? (state.clientId || '') : '',
     Authentication: '',
     Payload: JSON.stringify(payload || {})
@@ -713,6 +713,21 @@ async function bridgeCall(method, payload, requiresAuth) {
   }
 
   return bridgeResponse;
+}
+
+function getExtensionOrigin() {
+  if (chrome.runtime.getURL) {
+    try {
+      const url = new URL(chrome.runtime.getURL(''));
+      if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:') {
+        return `${url.protocol}//${url.host}`;
+      }
+    } catch (_) {
+      // Fall back to Chrome's stable extension id origin below.
+    }
+  }
+
+  return `chrome-extension://${chrome.runtime.id}`;
 }
 
 async function getEndpoint() {

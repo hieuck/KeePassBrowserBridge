@@ -43,7 +43,7 @@ namespace KeePassBrowserBridge.Bridge
                 return ProtocolValidationResult.Fail("missing_origin", "Origin is required.");
 
             if (!IsAllowedExtensionOrigin(request.Origin))
-                return ProtocolValidationResult.Fail("invalid_origin", "Origin must be a Chrome extension origin.");
+                return ProtocolValidationResult.Fail("invalid_origin", "Origin must be a browser extension origin.");
 
             if (request.TimestampUtcMs <= 0)
                 return ProtocolValidationResult.Fail("missing_timestamp", "Timestamp is required.");
@@ -59,10 +59,19 @@ namespace KeePassBrowserBridge.Bridge
         {
             Uri uri;
             if (!Uri.TryCreate(origin.Trim(), UriKind.Absolute, out uri)) return false;
-            if (!string.Equals(uri.Scheme, "chrome-extension", StringComparison.OrdinalIgnoreCase)) return false;
             if (!string.IsNullOrEmpty(uri.AbsolutePath) && uri.AbsolutePath != "/") return false;
 
-            string id = uri.Host;
+            if (string.Equals(uri.Scheme, "chrome-extension", StringComparison.OrdinalIgnoreCase))
+                return IsChromeExtensionId(uri.Host);
+
+            if (string.Equals(uri.Scheme, "moz-extension", StringComparison.OrdinalIgnoreCase))
+                return IsFirefoxExtensionHost(uri.Host);
+
+            return false;
+        }
+
+        private static bool IsChromeExtensionId(string id)
+        {
             if (id == null || id.Length != 32) return false;
             for (int i = 0; i < id.Length; ++i)
             {
@@ -71,6 +80,12 @@ namespace KeePassBrowserBridge.Bridge
             }
 
             return true;
+        }
+
+        private static bool IsFirefoxExtensionHost(string host)
+        {
+            Guid ignored;
+            return !string.IsNullOrWhiteSpace(host) && Guid.TryParse(host, out ignored);
         }
     }
 
