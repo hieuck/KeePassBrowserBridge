@@ -51,9 +51,16 @@ class Element {
     fakeDocument.activeElement = this;
   }
 
-  dispatch(type) {
+  dispatch(type, event = {}) {
     const handler = this.listeners.get(type);
-    if (handler) handler({ target: this });
+    if (handler) handler({
+      target: this,
+      preventDefault() {
+        event.defaultPrevented = true;
+      },
+      ...event
+    });
+    return event;
   }
 
   click() {
@@ -117,6 +124,7 @@ const ids = [
 const elements = Object.fromEntries(ids.map((id) => [id, new Element(id)]));
 elements.pairingPanel.classList.add('hidden');
 const sentMessages = [];
+const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const fakeDocument = {
   activeElement: null,
@@ -182,6 +190,19 @@ const sandbox = {
             response: {
               endpoint: 'http://127.0.0.1:19455/bridge',
               paired: true,
+              pairingSessionId: '',
+              pairingExpiresAt: 0,
+              autoFillEnabled: false
+            }
+          };
+        }
+
+        if (message.type === 'KBB_PAIR_CANCEL') {
+          return {
+            ok: true,
+            response: {
+              endpoint: 'http://127.0.0.1:19455/bridge',
+              paired: false,
               pairingSessionId: '',
               pairingExpiresAt: 0,
               autoFillEnabled: false
@@ -256,6 +277,43 @@ elements.pairingCode.value = '123456';
 elements.pairingCode.dispatch('input');
 assert.equal(elements.completePair.disabled, false, 'confirm should enable for a six digit code');
 
+sentMessages.length = 0;
+const enterEvent = elements.pairingCode.dispatch('keydown', { key: 'Enter' });
+await flushAsync();
+assert.equal(enterEvent.defaultPrevented, true, 'Enter in the pairing code input should not submit the popup page');
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_PAIR_COMPLETE'],
+  'Enter in the pairing code input should submit the pairing code'
+);
+assert.equal(sentMessages[0].pairingCode, '123456', 'Enter should submit the code currently typed in the input');
+assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'Enter should hide the pairing panel after successful pair');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: false,
+  pairingSessionId: 'session-escape',
+  pairingExpiresAt: Date.now() + 125000,
+  autoFillEnabled: false
+});
+sentMessages.length = 0;
+const escapeEvent = elements.pairingCode.dispatch('keydown', { key: 'Escape' });
+await flushAsync();
+assert.equal(escapeEvent.defaultPrevented, true, 'Escape in the pairing code input should be handled');
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_PAIR_CANCEL'],
+  'Escape in the pairing code input should cancel the active pairing session'
+);
+assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'Escape should hide the pairing panel after cancellation');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: false,
+  pairingSessionId: 'session-1',
+  pairingExpiresAt: Date.now() + 125000,
+  autoFillEnabled: false
+});
 elements.pairingCode.value = '';
 sentMessages.length = 0;
 await sandbox.pastePairingCode();

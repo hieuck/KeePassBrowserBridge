@@ -247,6 +247,31 @@ test.describe('KeePassBrowserBridge Extension', () => {
     );
   });
 
+  test('submits and cancels pairing from the pairing code input keyboard', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = false;
+    });
+    await page.locator('#beginPair').click();
+    await page.locator('#pairingCode').fill('955963');
+    await page.locator('#pairingCode').press('Enter');
+
+    await expect(page.locator('#pairingPanel')).toBeHidden();
+    await expect(page.locator('#statusBadge')).toHaveText('Paired');
+    await expect(page.locator('#message')).toHaveText('Browser paired with KeePass.');
+
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = false;
+    });
+    await page.locator('#beginPair').click();
+    await page.locator('#pairingCode').press('Escape');
+
+    await expect(page.locator('#pairingPanel')).toBeHidden();
+    await expect(page.locator('#message')).toHaveText('Pairing cancelled.');
+    await expect.poll(() => page.evaluate(() => window.__kbbPopupMessages.map((message) => message.type))).toEqual(
+      expect.arrayContaining(['KBB_PAIR_COMPLETE', 'KBB_PAIR_CANCEL'])
+    );
+  });
+
   test('checks bridge status and renders matching logins', async ({ page }) => {
     await page.evaluate(() => {
       window.__kbbPopupState.paired = false;

@@ -57,6 +57,7 @@ function init() {
   elements.completePair.addEventListener('click', () => runAction(completePair));
   elements.cancelPair.addEventListener('click', () => runAction(cancelPair));
   elements.pairingCode.addEventListener('input', syncPairingCodeState);
+  elements.pairingCode.addEventListener('keydown', handlePairingCodeKeydown);
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
   elements.newLogin.addEventListener('click', () => runAction(beginCreateLogin));
   elements.toggleSiteAutoFill.addEventListener('click', () => runAction(toggleSiteAutoFill));
@@ -67,6 +68,25 @@ function init() {
   syncPairingCodeState();
   runAction(renderAbout);
   runAction(refreshState);
+}
+
+function handlePairingCodeKeydown(event) {
+  if (elements.pairingPanel.classList.contains('hidden')) {
+    return;
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    if (!elements.completePair.disabled) {
+      runAction(completePair);
+    }
+    return;
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    runAction(cancelPair);
+  }
 }
 
 function handleKeyboardShortcuts(event) {
