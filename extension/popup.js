@@ -679,10 +679,7 @@ async function renderResults(entries) {
   }
 
   if (currentEntries.length && !visibleEntries.length) {
-    const empty = document.createElement('div');
-    empty.className = 'login-empty';
-    empty.textContent = 'No matching logins in this list.';
-    elements.results.append(empty);
+    renderFilteredEmptyState();
     return;
   }
 
@@ -788,6 +785,29 @@ async function renderResults(entries) {
   }
 }
 
+function renderFilteredEmptyState() {
+  const empty = document.createElement('div');
+  empty.className = 'login-empty login-empty-actionable';
+
+  const title = document.createElement('div');
+  title.className = 'login-empty-title';
+  title.textContent = 'No matching logins in this list.';
+
+  const hint = document.createElement('div');
+  hint.className = 'login-empty-hint';
+  hint.textContent = 'Clear the search to show all matching KeePass entries.';
+
+  const clear = document.createElement('button');
+  clear.id = 'clearLoginSearch';
+  clear.type = 'button';
+  clear.className = 'secondary';
+  clear.textContent = 'Clear Search';
+  clear.addEventListener('click', () => runAction(clearLoginSearch));
+
+  empty.append(title, hint, clear);
+  elements.results.append(empty);
+}
+
 function renderNoLoginsEmptyState() {
   const empty = document.createElement('div');
   empty.className = 'login-empty login-empty-actionable';
@@ -808,6 +828,13 @@ function renderNoLoginsEmptyState() {
 
   empty.append(title, hint, create);
   elements.results.append(empty);
+}
+
+async function clearLoginSearch() {
+  elements.loginSearch.value = '';
+  await renderResults(currentEntries);
+  setMessage(`${currentEntries.length} login(s) found.`);
+  elements.loginSearch.focus();
 }
 
 async function shouldShowPasswordsInPopup() {
