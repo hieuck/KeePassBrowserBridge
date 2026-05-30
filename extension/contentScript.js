@@ -762,7 +762,7 @@ function showInlinePicker(button, entries) {
       positionInlinePicker(button, picker);
     });
     search.addEventListener("keydown", (event) =>
-      handlePickerSearchKeydown(event, button, items),
+      handlePickerSearchKeydown(event, button, picker, items, empty, search),
     );
     picker.appendChild(search);
     empty = document.createElement("div");
@@ -924,7 +924,7 @@ function handlePickerItemKeydown(event, sourceButton, picker, items) {
     event.currentTarget.click();
   }
 }
-function handlePickerSearchKeydown(event, sourceButton, items) {
+function handlePickerSearchKeydown(event, sourceButton, picker, items, empty, search) {
   if (event.key === "ArrowDown") {
     event.preventDefault();
     event.stopPropagation();
@@ -935,6 +935,12 @@ function handlePickerSearchKeydown(event, sourceButton, items) {
   if (event.key === "Escape") {
     event.preventDefault();
     event.stopPropagation();
+    if (search && search.value) {
+      search.value = "";
+      filterInlinePickerItems(items, empty, "");
+      positionInlinePicker(sourceButton, picker);
+      return;
+    }
     closeInlinePicker();
     if (sourceButton && sourceButton.focus) sourceButton.focus();
     return;
