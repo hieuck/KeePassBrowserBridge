@@ -132,7 +132,7 @@ const sandbox = {
       }
     },
     tabs: {
-      onUpdated: { addListener() {} },
+      onUpdated: { addListener(fn) { sandbox.tabsUpdatedHandler = fn; } },
       query: async () => []
     },
     scripting: {
@@ -378,6 +378,13 @@ assert.deepEqual(JSON.parse(queryRequest.Payload), {
   RegexUrlMatching: false
 }, 'logins.query should include URL matching settings');
 
+badgeCalls.length = 0;
+assert.ok(sandbox.tabsUpdatedHandler, 'background should register a tab update listener');
+sandbox.tabsUpdatedHandler(44, { status: 'complete' }, { id: 44, url: 'chrome://extensions/' });
+await Promise.resolve();
+let badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 44);
+assert.equal(badgeTextCall.details.text, '', 'navigating to a non-fillable URL should clear stale badge text');
+
 requests.length = 0;
 loginEntries = [{
   EntryId: 'entry-1',
@@ -396,7 +403,7 @@ sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {
 await sandbox.autoFillTab(99, 'https://example.com/login');
 assert.equal(requests.some((request) => request.Method === 'logins.query'), false, 'site override should disable auto-fill before querying KeePass');
 assert.equal(autofillMessage, null, 'disabled site override should not send a fill message');
-let badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 99);
+badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 99);
 assert.equal(badgeTextCall.details.text, '', 'disabled site override should clear the tab badge');
 
 requests.length = 0;

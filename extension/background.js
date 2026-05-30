@@ -17,7 +17,12 @@ const clipboardTimers = new Map();
 const httpAuthAttempts = new Map();
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status !== 'complete' || !tab || !isFillableUrl(tab.url)) {
+  if (changeInfo.status !== 'complete' || !tab) {
+    return;
+  }
+
+  if (!isFillableUrl(tab.url)) {
+    updateBadgeCount(tabId, 0);
     return;
   }
 
