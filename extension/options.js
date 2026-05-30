@@ -14,6 +14,13 @@ const DEFAULT_SETTINGS = {
   siteOverrides: []
 };
 
+const SENSITIVE_SETTING_KEYS = [
+  'clientId',
+  'sharedSecret',
+  'pairingSessionId',
+  'pairingStartedAt'
+];
+
 let siteOverrides = [];
 
 const elements = {
@@ -320,7 +327,7 @@ function formatDate(ms) {
 
 function exportSettings() {
   chrome.storage.local.get(null, (allSettings) => {
-    const dataStr = JSON.stringify(allSettings, null, 2);
+    const dataStr = JSON.stringify(sanitizePortableSettings(allSettings), null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -339,7 +346,7 @@ function importSettings(event) {
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      const settings = JSON.parse(e.target.result);
+      const settings = sanitizePortableSettings(JSON.parse(e.target.result));
       chrome.storage.local.set(settings, () => {
         loadSettings();
         showMessage('Settings imported successfully!', 'success');
@@ -352,6 +359,15 @@ function importSettings(event) {
   
   // Reset file input
   elements.importFile.value = '';
+}
+
+function sanitizePortableSettings(settings) {
+  const sanitized = { ...(settings || {}) };
+  for (const key of SENSITIVE_SETTING_KEYS) {
+    delete sanitized[key];
+  }
+
+  return sanitized;
 }
 
 function resetSettings() {

@@ -261,4 +261,69 @@ test.describe('options page settings', () => {
       ])
     );
   });
+
+  test('exports settings without pairing secrets', async ({ page }) => {
+    await installOptionsStorage(page, {
+      endpoint: 'http://127.0.0.1:19455/bridge',
+      autoFillEnabled: true,
+      clientId: 'client-secret-id',
+      sharedSecret: 'super-secret-hmac-key',
+      pairingSessionId: 'pairing-session',
+      pairingStartedAt: 1779989000000
+    });
+    await page.addInitScript(() => {
+      window.__kbbExportedSettingsText = '';
+      window.__kbbDownloadHref = '';
+      URL.createObjectURL = (blob) => {
+        blob.text().then((text) => {
+          window.__kbbExportedSettingsText = text;
+        });
+        return 'blob:kbb-settings';
+      };
+      URL.revokeObjectURL = () => {};
+      HTMLAnchorElement.prototype.click = function () {
+        window.__kbbDownloadHref = this.href;
+      };
+    });
+
+    await page.goto('/extension/options.html');
+    await page.locator('#exportSettings').click();
+    await expect(page.locator('#message')).toHaveText('Settings exported successfully!');
+    await expect.poll(() => page.evaluate(() => window.__kbbExportedSettingsText)).not.toBe('');
+
+    const exported = JSON.parse(await page.evaluate(() => window.__kbbExportedSettingsText));
+    expect(exported.endpoint).toBe('http://127.0.0.1:19455/bridge');
+    expect(exported.autoFillEnabled).toBe(true);
+    expect(exported).not.toHaveProperty('clientId');
+    expect(exported).not.toHaveProperty('sharedSecret');
+    expect(exported).not.toHaveProperty('pairingSessionId');
+    expect(exported).not.toHaveProperty('pairingStartedAt');
+  });
+
+  test('imports settings without accepting pairing secrets', async ({ page }) => {
+    await installOptionsStorage(page);
+
+    await page.goto('/extension/options.html');
+    await page.locator('#importFile').setInputFiles({
+      name: 'kbb-settings.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        endpoint: 'http://127.0.0.1:19456/bridge',
+        autoFillEnabled: false,
+        clientId: 'imported-client-id',
+        sharedSecret: 'imported-shared-secret',
+        pairingSessionId: 'imported-pairing-session',
+        pairingStartedAt: 1779989000000
+      }))
+    });
+
+    await expect(page.locator('#message')).toHaveText('Settings imported successfully!');
+    const stored = await page.evaluate(() => window.__kbbOptionsStore);
+    expect(stored.endpoint).toBe('http://127.0.0.1:19456/bridge');
+    expect(stored.autoFillEnabled).toBe(false);
+    expect(stored).not.toHaveProperty('clientId');
+    expect(stored).not.toHaveProperty('sharedSecret');
+    expect(stored).not.toHaveProperty('pairingSessionId');
+    expect(stored).not.toHaveProperty('pairingStartedAt');
+  });
 });
