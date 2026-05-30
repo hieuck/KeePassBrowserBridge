@@ -8,6 +8,7 @@ const firefoxManifest = JSON.parse(fs.readFileSync(new URL('../../extension/mani
 const assemblyInfo = fs.readFileSync(new URL('../../src/Properties/AssemblyInfo.cs', import.meta.url), 'utf8');
 const releaseScript = fs.readFileSync(new URL('../../scripts/build-release.ps1', import.meta.url), 'utf8');
 const releaseWorkflow = fs.readFileSync(new URL('../../.github/workflows/release.yml', import.meta.url), 'utf8');
+const ciWorkflow = fs.readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'extension');
 const scripts = manifest.content_scripts.flatMap((entry) => entry.js || []);
 const assemblyVersion = `${manifest.version}.0`;
@@ -28,6 +29,12 @@ assert.equal(releaseScript.includes('manifest.firefox.json'), true, 'release scr
 assert.equal(releaseScript.includes('KeePassBrowserBridge-firefox-extension-$version.zip'), true, 'release script should emit a Firefox extension zip');
 assert.equal(releaseWorkflow.includes('KeePassBrowserBridge-firefox-extension-$expected.zip'), true, 'release workflow should verify the Firefox extension artifact');
 assert.equal(releaseWorkflow.includes('Upload Firefox extension'), true, 'release workflow should upload the Firefox extension artifact');
+assert.equal(ciWorkflow.includes('npm ci'), true, 'CI workflow should install pinned Node dependencies before running verifier tests');
+assert.equal(ciWorkflow.includes('npx playwright install chromium'), true, 'CI workflow should install the Chromium browser used by E2E verification');
+assert.equal(ciWorkflow.includes('.\\scripts\\verify.ps1'), true, 'CI workflow should run the same full verifier used locally');
+assert.equal(releaseWorkflow.includes('npm ci'), true, 'release workflow should install pinned Node dependencies before verifier tests');
+assert.equal(releaseWorkflow.includes('npx playwright install chromium'), true, 'release workflow should install the Chromium browser used by E2E verification');
+assert.equal(releaseWorkflow.includes('.\\scripts\\verify.ps1'), true, 'release workflow should run the same full verifier before packaging');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersion}")]`), true, 'plugin AssemblyVersion should match extension release version');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
 for (const size of ['16', '48', '128']) {

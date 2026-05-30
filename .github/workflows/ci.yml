@@ -28,16 +28,13 @@ jobs:
         with:
           node-version: 24
 
-      - name: Check extension JavaScript
+      - name: Install Node dependencies
         shell: pwsh
-        run: |
-          node --check extension\background.js
-          node --check extension\contentScript.js
-          node --check extension\popup.js
-          node tests\extension\background.test.mjs
-          node tests\extension\protocol.test.mjs
-          node tests\extension\content-script.test.mjs
-          node tests\extension\popup.test.mjs
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        shell: pwsh
+        run: npx playwright install chromium
 
       - name: Download KeePass
         shell: pwsh
@@ -55,9 +52,9 @@ jobs:
           }
           Expand-Archive -Path tools\KeePass.zip -DestinationPath tools\KeePass -Force
 
-      - name: Run bridge tests
+      - name: Verify
         shell: pwsh
-        run: dotnet run --project tests\KeePassBrowserBridge.Tests.csproj -p:KeePassExe="${{ github.workspace }}\tools\KeePass\KeePass.exe"
+        run: .\scripts\verify.ps1 -KeePassExe "${{ github.workspace }}\tools\KeePass\KeePass.exe"
 
       - name: Package browser extensions
         shell: pwsh

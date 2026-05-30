@@ -29,16 +29,18 @@ jobs:
         with:
           node-version: 24
 
-      - name: Check extension JavaScript
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Node dependencies
         shell: pwsh
-        run: |
-          node --check extension\background.js
-          node --check extension\contentScript.js
-          node --check extension\popup.js
-          node tests\extension\background.test.mjs
-          node tests\extension\protocol.test.mjs
-          node tests\extension\content-script.test.mjs
-          node tests\extension\popup.test.mjs
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        shell: pwsh
+        run: npx playwright install chromium
 
       - name: Download KeePass
         shell: pwsh
@@ -56,6 +58,10 @@ jobs:
             throw "Downloaded KeePass file is not a ZIP archive."
           }
           Expand-Archive -Path tools\KeePass.zip -DestinationPath tools\KeePass -Force
+
+      - name: Verify
+        shell: pwsh
+        run: .\scripts\verify.ps1 -KeePassExe "${{ github.workspace }}\tools\KeePass\KeePass.exe"
 
       - name: Build release artifacts
         shell: pwsh
