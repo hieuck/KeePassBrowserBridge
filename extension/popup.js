@@ -36,6 +36,7 @@ const elements = {
 
 let currentEntries = [];
 let visibleEntries = [];
+let currentState = { locked: false };
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -577,6 +578,7 @@ async function checkUpdates() {
 }
 
 function renderState(state) {
+  currentState = state || {};
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
   elements.autoSubmit.checked = Boolean(state.autoSubmitEnabled);
@@ -594,10 +596,17 @@ function renderState(state) {
   } else {
     setStatus(state.paired ? 'Paired' : 'Unpaired', state.paired ? 'paired' : '');
   }
+  syncCredentialActionAvailability();
   syncPairingCodeState();
   if (pairingActive) {
     elements.pairingCode.focus();
   }
+}
+
+function syncCredentialActionAvailability() {
+  const locked = Boolean(currentState && currentState.locked);
+  elements.queryLogins.disabled = locked;
+  elements.newLogin.disabled = locked;
 }
 
 function syncPairingCodeState() {
@@ -1072,6 +1081,10 @@ async function runAction(action) {
 function setBusy(isBusy) {
   for (const button of document.querySelectorAll('button')) {
     button.disabled = isBusy;
+  }
+  if (!isBusy) {
+    syncCredentialActionAvailability();
+    syncPairingCodeState();
   }
 }
 
