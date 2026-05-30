@@ -758,13 +758,15 @@ function showInlineErrorPicker(button, messageText) {
   hint.style.marginTop = "6px";
   hint.style.color = "#667085";
 
+  const close = createInlinePickerCloseButton();
   error.appendChild(title);
   error.appendChild(hint);
-  error.appendChild(createInlinePickerCloseButton());
+  error.appendChild(close);
   picker.appendChild(error);
   document.documentElement.appendChild(picker);
   positionInlinePicker(button, picker);
   window.__keepassBrowserBridgeActivePicker = picker;
+  close.focus();
 }
 function showInlineEmptyPicker(button) {
   closeInlinePicker();
@@ -789,13 +791,15 @@ function showInlineEmptyPicker(button) {
   hint.textContent = "Enter a username and password, then submit the form to save a new KeePass entry.";
   hint.style.marginTop = "6px";
 
+  const close = createInlinePickerCloseButton();
   empty.appendChild(title);
   empty.appendChild(hint);
-  empty.appendChild(createInlinePickerCloseButton());
+  empty.appendChild(close);
   picker.appendChild(empty);
   document.documentElement.appendChild(picker);
   positionInlinePicker(button, picker);
   window.__keepassBrowserBridgeActivePicker = picker;
+  close.focus();
 }
 function createInlinePickerCloseButton() {
   const close = document.createElement("button");
@@ -814,6 +818,12 @@ function createInlinePickerCloseButton() {
   close.style.cursor = "pointer";
   close.addEventListener("mousedown", (event) => event.preventDefault());
   close.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeInlinePicker();
+  });
+  close.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
     event.preventDefault();
     event.stopPropagation();
     closeInlinePicker();
