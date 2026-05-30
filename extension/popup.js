@@ -629,9 +629,9 @@ function renderStateNotice(state, pairingActive) {
 }
 
 function syncCredentialActionAvailability() {
-  const locked = Boolean(currentState && currentState.locked);
-  elements.queryLogins.disabled = locked;
-  elements.newLogin.disabled = locked;
+  const credentialActionsEnabled = Boolean(currentState && currentState.paired && !currentState.locked);
+  elements.queryLogins.disabled = !credentialActionsEnabled;
+  elements.newLogin.disabled = !credentialActionsEnabled;
 }
 
 function syncPairingCodeState() {

@@ -5,7 +5,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await page.addInitScript(() => {
       const state = {
         endpoint: 'http://127.0.0.1:19455/bridge',
-        paired: false,
+        paired: true,
         pairingSessionId: '',
         pairingExpiresAt: 0,
         autoFillEnabled: false,
@@ -207,6 +207,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('starts and cancels pairing from the popup', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = false;
+    });
     await page.locator('#beginPair').click();
 
     await expect(page.locator('#pairingPanel')).toBeVisible();
@@ -224,6 +227,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('pastes a copied pairing code from clipboard', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = false;
+    });
     await page.locator('#beginPair').click();
     await page.locator('#pastePairingCode').click();
 
@@ -233,11 +239,20 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('checks bridge status and renders matching logins', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = false;
+    });
     await page.locator('#checkStatus').click();
 
     await expect(page.locator('#statusBadge')).toHaveText('Ready');
     await expect(page.locator('#message')).toHaveText('KeePass bridge is reachable. Pair this browser to query logins.');
+    await expect(page.locator('#queryLogins')).toBeDisabled();
+    await expect(page.locator('#newLogin')).toBeDisabled();
 
+    await page.evaluate(() => {
+      window.__kbbPopupState.paired = true;
+    });
+    await page.locator('#checkStatus').click();
     await page.locator('#queryLogins').click();
 
     await expect(page.locator('#currentUrl')).toHaveText('https://example.com/login');
@@ -267,11 +282,11 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await page.locator('#lockBridge').click();
 
     await expect(page.locator('#lockBridge')).toHaveText('Lock');
-    await expect(page.locator('#statusBadge')).toHaveText('Unpaired');
+    await expect(page.locator('#statusBadge')).toHaveText('Paired');
     await expect(page.locator('#message')).toHaveText('KeePass Bridge is unlocked.');
     await expect(page.locator('#queryLogins')).toBeEnabled();
     await expect(page.locator('#newLogin')).toBeEnabled();
-    await expect(page.locator('#stateNotice')).toHaveText('Pair this browser with KeePass to query and fill logins.');
+    await expect(page.locator('#stateNotice')).toHaveText('Ready to find, fill, create, and update KeePass logins.');
     await expect.poll(() => page.evaluate(() => window.__kbbPopupMessages.map((message) => message.type))).toEqual(
       expect.arrayContaining(['KBB_SET_LOCKED'])
     );

@@ -228,6 +228,8 @@ sandbox.renderState({
 assert.equal(elements.pairingPanel.classList.contains('hidden'), false, 'pairing panel should be visible');
 assert.equal(elements.pairingTimer.textContent.includes('2:05'), true, 'pairing panel should show time remaining');
 assert.equal(elements.stateNotice.textContent, 'Enter the six digit code shown in KeePass to finish pairing.', 'pairing state should explain the next step');
+assert.equal(elements.queryLogins.disabled, true, 'unpaired pairing state should disable credential query action');
+assert.equal(elements.newLogin.disabled, true, 'unpaired pairing state should disable create action');
 assert.equal(fakeDocument.activeElement, elements.pairingCode, 'pairing code input should receive focus');
 assert.equal(elements.completePair.disabled, true, 'confirm should be disabled before a complete code is entered');
 
@@ -256,6 +258,8 @@ sandbox.renderState({
 assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'paired popup should hide stale pairing sessions');
 assert.equal(elements.pairingTimer.textContent, '', 'paired popup should clear pairing countdown');
 assert.equal(elements.stateNotice.textContent, 'Ready to find, fill, create, and update KeePass logins.', 'paired state should explain available actions');
+assert.equal(elements.queryLogins.disabled, false, 'paired state should enable credential query action');
+assert.equal(elements.newLogin.disabled, false, 'paired state should enable create action');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
