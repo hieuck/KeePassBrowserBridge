@@ -27,6 +27,7 @@
     <Compile Include="..\src\Bridge\PairingService.cs" Link="PairingService.cs" />
     <Compile Include="..\src\Bridge\TrustedClientStore.cs" Link="TrustedClientStore.cs" />
     <Compile Include="..\src\Bridge\TotpGenerator.cs" Link="TotpGenerator.cs" />
+    <Compile Include="..\src\Bridge\UpdateChecker.cs" Link="UpdateChecker.cs" />
     <Compile Include="..\src\Bridge\UrlMatcher.cs" Link="UrlMatcher.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>

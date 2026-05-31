@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Net;
 using System.Windows.Forms;
 using KeePass.Plugins;
 using KeePassBrowserBridge.Bridge;
@@ -43,6 +45,7 @@ namespace KeePassBrowserBridge
                 SaveDatabaseAfterMutation);
 
             if (IsEnabled()) StartServer(false);
+            StartAutoUpdateCheck();
             return true;
         }
 
@@ -67,6 +70,10 @@ namespace KeePassBrowserBridge
             root.DropDownItems.Add(clientsItem);
 
             root.DropDownItems.Add(new ToolStripSeparator());
+
+            ToolStripMenuItem updateItem = new ToolStripMenuItem("Check for Updates...");
+            updateItem.Click += OnCheckForUpdates;
+            root.DropDownItems.Add(updateItem);
 
             ToolStripMenuItem aboutItem = new ToolStripMenuItem("About...");
             aboutItem.Click += OnAbout;
@@ -123,6 +130,11 @@ namespace KeePassBrowserBridge
                 IWin32Window owner = (m_host == null) ? null : m_host.MainWindow;
                 dialog.ShowDialog(owner);
             }
+        }
+
+        private void OnCheckForUpdates(object sender, EventArgs e)
+        {
+            CheckForUpdatesAsync(true);
         }
 
         private bool IsEnabled()
@@ -509,6 +521,7 @@ namespace KeePassBrowserBridge
                 "Bridge endpoint: " + endpoint + "\r\n" +
                 "Server status: " + status + "\r\n" +
                 "Update metadata: " + BridgeSettings.UpdateInfoUrl + "\r\n\r\n" +
+                "Use Check for Updates to download and install the latest KeePassBrowserBridge.plgx automatically.\r\n\r\n" +
                 "Install exactly one KeePassBrowserBridge plugin artifact in the KeePass Plugins directory. Duplicate DLL/PLGX artifacts can cause port conflicts.";
 
             FlowLayoutPanel actions = new FlowLayoutPanel();
@@ -554,6 +567,163 @@ namespace KeePassBrowserBridge
         {
             if (string.IsNullOrEmpty(clientId) || clientId.Length <= 16) return clientId ?? "";
             return clientId.Substring(0, 16) + "...";
+        }
+
+        private void StartAutoUpdateCheck()
+        {
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                System.Threading.Thread.Sleep(4000);
+                CheckForUpdates(false);
+            });
+        }
+
+        private void CheckForUpdatesAsync(bool interactive)
+        {
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                CheckForUpdates(interactive);
+            });
+        }
+
+        private void CheckForUpdates(bool interactive)
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol = ServicePointManager.SecurityProtocol | (SecurityProtocolType)3072;
+                UpdateInfo info = UpdateChecker.CheckLatest();
+
+                if (info == null || !info.IsUpdateAvailable)
+                {
+                    if (interactive)
+                    {
+                        ShowOnUi(delegate
+                        {
+                            MessageBox.Show(GetOwner(),
+                                "You are using the latest version: " + BridgeSettings.PluginVersion,
+                                BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        });
+                    }
+                    return;
+                }
+
+                ShowOnUi(delegate { PromptForUpdate(info); });
+            }
+            catch (Exception ex)
+            {
+                if (!interactive) return;
+
+                ShowOnUi(delegate
+                {
+                    MessageBox.Show(GetOwner(),
+                        "Could not check for updates." + Environment.NewLine + ex.Message,
+                        BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                });
+            }
+        }
+
+        private void PromptForUpdate(UpdateInfo info)
+        {
+            string message =
+                "A new KeePass Browser Bridge version is available." + Environment.NewLine +
+                Environment.NewLine +
+                "Current: " + BridgeSettings.PluginVersion + Environment.NewLine +
+                "Latest: " + info.LatestVersion + Environment.NewLine +
+                Environment.NewLine +
+                "Download and install the update now?";
+
+            DialogResult result = MessageBox.Show(GetOwner(), message, BridgeSettings.ProductName + " Update",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+            if (result == DialogResult.Yes)
+            {
+                InstallUpdateAsync(info);
+            }
+        }
+
+        private void InstallUpdateAsync(UpdateInfo info)
+        {
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    ServicePointManager.SecurityProtocol = ServicePointManager.SecurityProtocol | (SecurityProtocolType)3072;
+                    string targetPath = GetPluginPackagePath();
+                    string tempPath = targetPath + ".download";
+
+                    using (WebClient client = new WebClient())
+                    {
+                        client.Headers[HttpRequestHeader.UserAgent] = "KeePassBrowserBridge";
+                        client.DownloadFile(info.AssetUrl, tempPath);
+                    }
+
+                    try
+                    {
+                        File.Copy(tempPath, targetPath, true);
+                        File.Delete(tempPath);
+
+                        ShowOnUi(delegate
+                        {
+                            MessageBox.Show(GetOwner(),
+                                "KeePass Browser Bridge was updated. Restart KeePass to use the new version.",
+                                BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        });
+                    }
+                    catch (Exception copyEx)
+                    {
+                        string pendingPath = targetPath + ".new";
+                        File.Copy(tempPath, pendingPath, true);
+                        File.Delete(tempPath);
+
+                        ShowOnUi(delegate
+                        {
+                            MessageBox.Show(GetOwner(),
+                                "The update was downloaded but the active plugin file could not be replaced." + Environment.NewLine +
+                                "New file: " + pendingPath + Environment.NewLine +
+                                "Reason: " + copyEx.Message,
+                                BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ShowOnUi(delegate
+                    {
+                        MessageBox.Show(GetOwner(),
+                            "Could not download the update." + Environment.NewLine + ex.Message,
+                            BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    });
+                }
+            });
+        }
+
+        private string GetPluginPackagePath()
+        {
+            string keepassDir = Path.GetDirectoryName(Application.ExecutablePath);
+            string pluginsDir = Path.Combine(keepassDir, "Plugins");
+            Directory.CreateDirectory(pluginsDir);
+            return Path.Combine(pluginsDir, "KeePassBrowserBridge.plgx");
+        }
+
+        private void ShowOnUi(MethodInvoker action)
+        {
+            Form owner = GetOwner();
+            if (owner != null && !owner.IsDisposed)
+            {
+                if (owner.InvokeRequired)
+                    owner.BeginInvoke(action);
+                else
+                    action();
+            }
+            else
+            {
+                action();
+            }
+        }
+
+        private Form GetOwner()
+        {
+            return (m_host != null) ? m_host.MainWindow : null;
         }
 
         public override void Terminate()

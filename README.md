@@ -29,7 +29,7 @@ KeePass Browser Bridge has two release artifacts:
 - Trusted browser listing and revocation.
 - About panel showing extension and KeePass plugin versions plus GitHub release update check.
 - KeePass plugin About dialog with version, endpoint, server status, and update metadata URL.
-- KeePass plugin update checking through the built-in KeePass updater.
+- KeePass plugin auto-update check that downloads and installs the latest GitHub Release `.plgx`.
 - Chrome and Firefox extension packaging.
 
 ## Security Model
@@ -52,6 +52,8 @@ KeePass Browser Bridge has two release artifacts:
 6. Load the extension manually in the browser, then pair it with KeePass from the extension popup.
 
 Chrome does not allow one-click extension installation directly from GitHub. One-click install requires publishing to the Chrome Web Store.
+
+After the first plugin install, KeePass Browser Bridge checks GitHub Releases on startup and prompts when a newer `.plgx` is available. You can also run this manually from `Tools -> KeePass Browser Bridge -> Check for Updates...`; the plugin downloads the release asset into the KeePass `Plugins` directory and asks you to restart KeePass.
 
 ## Local Verification
 
@@ -81,7 +83,7 @@ This creates release artifacts under `%TEMP%\KeePassBrowserBridge-artifacts\` by
 
 Keeping generated DLL/PLGX outputs outside this repository matters when the repository itself is inside KeePass' `Plugins` directory, because KeePass scans plugin subdirectories on startup.
 
-`versioninfo.txt` is the KeePass plugin update metadata. Publish the same content at the URL configured by the plugin's `UpdateUrl` property so KeePass can report newer plugin releases from its built-in update check.
+`versioninfo.txt` is still emitted for compatibility with KeePass update metadata, while the plugin's own update checker installs `KeePassBrowserBridge.plgx` directly from GitHub Releases.
 
 ## Repository Layout
 

@@ -29,6 +29,10 @@ internal static class Program
         MalformedExtensionOriginFailsValidation();
         StaleTimestampFailsValidation();
         WrongProtocolVersionFailsValidation();
+        UpdateCheckerDetectsNewerSemanticVersions();
+        UpdateCheckerIgnoresSameOrInvalidVersions();
+        UpdateCheckerSelectsNewestSemanticTag();
+        UpdateCheckerBuildsPluginAssetUrl();
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
         NewPairingSessionCancelsOlderSessionForSameClient();
@@ -248,6 +252,36 @@ internal static class Program
 
         AssertFalse(result.IsValid, "wrong protocol version should fail validation");
         AssertEqual("unsupported_protocol", result.ErrorCode, "protocol version error code mismatch");
+    }
+
+    private static void UpdateCheckerDetectsNewerSemanticVersions()
+    {
+        AssertTrue(UpdateChecker.IsNewerVersion("0.9.0", "v0.9.1"), "patch update should be detected");
+        AssertTrue(UpdateChecker.IsNewerVersion("0.9.0", "v1.0.0"), "major update should be detected");
+    }
+
+    private static void UpdateCheckerIgnoresSameOrInvalidVersions()
+    {
+        AssertFalse(UpdateChecker.IsNewerVersion("0.9.0", "0.9.0"), "same version should not be detected as update");
+        AssertFalse(UpdateChecker.IsNewerVersion("0.9.0", "latest"), "non-version tags should not be detected as update");
+    }
+
+    private static void UpdateCheckerSelectsNewestSemanticTag()
+    {
+        string tag = UpdateChecker.GetNewestVersionTag(new string[] { "latest", "v0.9.1", "v1.0.0", "draft" });
+
+        AssertEqual("v1.0.0", tag, "newest semantic release tag mismatch");
+    }
+
+    private static void UpdateCheckerBuildsPluginAssetUrl()
+    {
+        UpdateInfo info = UpdateChecker.CreateUpdateInfo("v1.2.3");
+
+        AssertEqual("v1.2.3", info.LatestVersion, "latest version mismatch");
+        AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v1.2.3", info.ReleaseUrl,
+            "release URL mismatch");
+        AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/KeePassBrowserBridge.plgx",
+            info.AssetUrl, "PLGX asset URL mismatch");
     }
 
     private static void PairingSessionGeneratesSixDigitCode()

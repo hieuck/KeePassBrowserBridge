@@ -44,6 +44,10 @@ assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersio
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
 assert.equal(bridgeSettings.includes(`PluginVersion = "${manifest.version}"`), true, 'bridge-reported plugin version should match extension release version');
 assert.equal(pluginExt.includes('public override string UpdateUrl'), true, 'plugin should expose a KeePass update URL');
+assert.equal(pluginExt.includes('StartAutoUpdateCheck();'), true, 'plugin should check for updates after loading');
+assert.equal(pluginExt.includes('new ToolStripMenuItem("Check for Updates...")'), true, 'plugin menu should expose a manual update check');
+assert.equal(pluginExt.includes('InstallUpdateAsync'), true, 'plugin should install downloaded PLGX updates');
+assert.equal(pluginExt.includes('KeePassBrowserBridge.plgx'), true, 'plugin updater should install the PLGX release asset');
 assert.equal(pluginExt.includes('new ToolStripMenuItem("About...")'), true, 'plugin menu should expose an About dialog');
 assert.equal(pluginExt.includes('CreateAboutDialog()'), true, 'plugin should build a KeePass-side About dialog');
 assert.equal(pluginExt.includes('BridgeSettings.PluginVersion'), true, 'plugin About dialog should display plugin version');
