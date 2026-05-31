@@ -579,6 +579,8 @@ delete extensionSessionStorage.kbbPendingSubmittedCredential;
 
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
+now = 6500;
+storage.lastCredentialActivityAt = 0;
 const rememberPendingResult = await sandbox.handleMessage({
   type: 'KBB_REMEMBER_PENDING_CREDENTIAL',
   origin: 'https://example.com',
@@ -590,6 +592,7 @@ const rememberPendingResult = await sandbox.handleMessage({
 });
 assert.equal(rememberPendingResult.remembered, true, 'background should remember a pending multi-step credential');
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential.credential.EntryId, 'entry-work', 'pending credential should be stored in extension session storage');
+assert.equal(storage.lastCredentialActivityAt, now, 'remembering pending credentials should refresh credential activity for auto-lock');
 
 const wrongOriginPendingResult = await sandbox.handleMessage({
   type: 'KBB_CONSUME_PENDING_CREDENTIAL',
@@ -624,6 +627,7 @@ assert.equal(expiredPendingResult.credential, null, 'expired pending multi-step 
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'expired pending credential should be removed');
 
 now = 8000;
+storage.lastCredentialActivityAt = 0;
 const rememberSubmittedResult = await sandbox.handleMessage({
   type: 'KBB_REMEMBER_SUBMITTED_CREDENTIAL',
   origin: 'https://example.com',
@@ -635,6 +639,7 @@ const rememberSubmittedResult = await sandbox.handleMessage({
 });
 assert.equal(rememberSubmittedResult.remembered, true, 'background should remember a submitted credential for save-after-redirect');
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential.credential.password, 'new-secret', 'submitted credential should be stored in extension session storage');
+assert.equal(storage.lastCredentialActivityAt, now, 'remembering submitted credentials should refresh credential activity for auto-lock');
 
 const submittedWrongOrigin = await sandbox.handleMessage({
   type: 'KBB_CONSUME_SUBMITTED_CREDENTIAL',

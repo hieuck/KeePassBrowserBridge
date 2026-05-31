@@ -470,6 +470,7 @@ async function acknowledgeFill(entryId, url) {
 
 async function rememberPendingCredential(origin, credential) {
   await assertCanAccessCredentials();
+  await rememberCredentialActivity();
   const normalizedOrigin = normalizeWebOrigin(origin);
   if (!normalizedOrigin || !credential || !credential.Password) {
     return { remembered: false };
@@ -513,6 +514,7 @@ async function consumePendingCredential(origin) {
 
 async function rememberSubmittedCredential(origin, credential) {
   await assertCanAccessCredentials();
+  await rememberCredentialActivity();
   const normalizedOrigin = normalizeWebOrigin(origin);
   if (!normalizedOrigin || !credential || !credential.password) {
     return { remembered: false };
