@@ -1753,6 +1753,35 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#contact-message')).toHaveValue('');
   });
 
+  test('does not treat account settings contact fields as username-first login', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/account-settings-contact-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#settings-email')).toHaveValue('');
+    await expect(page.locator('#settings-username')).toHaveValue('');
+  });
+
   test('treats username-first email address step as a login field', async ({ page }) => {
     await page.addInitScript(() => {
       window.__kbbMessages = [];

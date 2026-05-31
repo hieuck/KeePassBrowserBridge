@@ -50,7 +50,7 @@ namespace KeePassBrowserBridge.Bridge
             TrustedClient client = Get(clientId);
             if (client == null) return false;
 
-            client.Permissions = TrustedClientPermissions.Normalize(permissions);
+            client.Permissions = TrustedClientPermissions.NormalizeForUpdate(permissions);
             OnChanged();
             return true;
         }
@@ -124,18 +124,14 @@ namespace KeePassBrowserBridge.Bridge
 
         public static string[] Normalize(string[] permissions)
         {
-            if (permissions == null || permissions.Length == 0) return Default();
+            string[] normalized = NormalizeKnown(permissions);
+            return normalized.Length == 0 ? Default() : normalized;
+        }
 
-            List<string> normalized = new List<string>();
-            foreach (string permission in permissions)
-            {
-                if (string.IsNullOrWhiteSpace(permission)) continue;
-                string trimmed = permission.Trim();
-                if (!IsKnown(trimmed)) continue;
-                if (!normalized.Contains(trimmed)) normalized.Add(trimmed);
-            }
-
-            return normalized.Count == 0 ? Default() : normalized.ToArray();
+        public static string[] NormalizeForUpdate(string[] permissions)
+        {
+            string[] normalized = NormalizeKnown(permissions);
+            return normalized.Length == 0 ? new string[] { Read } : normalized;
         }
 
         public static bool Has(TrustedClient client, string permission)
@@ -152,6 +148,22 @@ namespace KeePassBrowserBridge.Bridge
         private static bool IsKnown(string permission)
         {
             return permission == Read || permission == Write || permission == ManageClients;
+        }
+
+        private static string[] NormalizeKnown(string[] permissions)
+        {
+            if (permissions == null || permissions.Length == 0) return new string[0];
+
+            List<string> normalized = new List<string>();
+            foreach (string permission in permissions)
+            {
+                if (string.IsNullOrWhiteSpace(permission)) continue;
+                string trimmed = permission.Trim();
+                if (!IsKnown(trimmed)) continue;
+                if (!normalized.Contains(trimmed)) normalized.Add(trimmed);
+            }
+
+            return normalized.ToArray();
         }
     }
 

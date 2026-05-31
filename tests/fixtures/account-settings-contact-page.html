@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Account settings contact fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    main { max-width: 520px; }
+    form { display: grid; gap: 12px; }
+    label { display: grid; gap: 6px; }
+    input { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Account settings</h1>
+    <form id="contact-settings">
+      <h2>Contact email</h2>
+      <p>This address receives product notifications and billing receipts.</p>
+      <label>
+        Email address
+        <input id="settings-email" name="email" type="email" autocomplete="username">
+      </label>
+      <label>
+        Public username
+        <input id="settings-username" name="username" type="text" autocomplete="username">
+      </label>
+      <button type="submit">Save changes</button>
+    </form>
+  </main>
+</body>
+</html>
