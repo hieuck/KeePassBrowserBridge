@@ -189,8 +189,8 @@ function compareVersions(left, right) {
 }
 
 async function getState() {
-  const state = await storageGet(['endpoint', 'clientId', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
-  const paired = Boolean(state.clientId);
+  const state = await storageGet(['endpoint', 'clientId', 'sharedSecret', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
+  const paired = Boolean(state.clientId && state.sharedSecret);
   if (paired && state.pairingSessionId) {
     await clearPairingSession();
     state.pairingSessionId = '';

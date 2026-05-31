@@ -357,6 +357,13 @@ assert.equal(pairedState.paired, true);
 assert.equal(pairedState.pairingSessionId, '', 'paired state should not expose a stale pairing session');
 assert.equal(storage.pairingStartedAt, 0, 'paired state should clear stale pairing timestamp');
 
+storage.clientId = 'client-without-secret';
+delete storage.sharedSecret;
+storage.pairingSessionId = '';
+storage.pairingStartedAt = 0;
+const partialPairingState = await sandbox.getState();
+assert.equal(partialPairingState.paired, false, 'state should not report paired when the shared secret is missing');
+
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
 storage.pairingSessionId = 'stale-session';
