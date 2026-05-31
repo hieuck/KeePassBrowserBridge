@@ -1779,11 +1779,16 @@ function scoreUsernameCandidate(input) {
 function isUsernameFirstLoginCandidate(input, score) {
   if (!input || score < 40) return false;
   const context = credentialContextText(input);
+  if (isNonLoginCommunicationContext(context)) return false;
   if (isProfileOrPaymentFieldText(context)) return false;
-  return /autocomplete=["']?username|current-password|sign\s*in|log\s*in|\blogin\b|account|identifier|continue|next|email/.test(context);
+  return /\busername\b|current-password|sign\s*in|log\s*in|\blogin\b|identifier|continue|next/.test(context);
 }
 function isProfileOrPaymentFieldText(text) {
-  return /\b(city|address|street|postal|postcode|zip|state|province|country|shipping|billing|checkout|receipt|profile|full\s*name|first\s*name|last\s*name|card|cardholder|ccname|cc-name|ccnumber|cc-number|cc-csc|cvc|cvv|security\s*code|payment|pay\s*now|accounts\s*per\s*page|pagesize)\b/.test(text);
+  const normalized = String(text || "").replace(/\be-?mail[\s_-]+address\b/g, "email");
+  return /\b(city|address|street|postal|postcode|zip|state|province|country|shipping|billing|checkout|receipt|profile|full\s*name|first\s*name|last\s*name|card|cardholder|ccname|cc-name|ccnumber|cc-number|cc-csc|cvc|cvv|security\s*code|payment|pay\s*now|accounts\s*per\s*page|pagesize)\b/.test(normalized);
+}
+function isNonLoginCommunicationContext(text) {
+  return /\b(contact|support|message|send\s+message|feedback|comment|inquiry|enquiry|help\s+request|ticket)\b/.test(String(text || ""));
 }
 function scoreOtpCandidate(input) {
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();

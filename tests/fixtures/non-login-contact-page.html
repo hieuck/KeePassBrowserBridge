@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Contact support</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    form { display: grid; gap: 14px; max-width: 420px; }
+    label { display: grid; gap: 6px; }
+    input, textarea { padding: 8px 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Contact support</h1>
+    <form id="contact">
+      <label>
+        Your name
+        <input id="contact-name" name="name" type="text" autocomplete="name">
+      </label>
+      <label>
+        Email address
+        <input id="contact-email" name="email" type="email" autocomplete="email">
+      </label>
+      <label>
+        Message
+        <textarea id="contact-message" name="message"></textarea>
+      </label>
+      <button type="submit">Send message</button>
+    </form>
+  </main>
+</body>
+</html>

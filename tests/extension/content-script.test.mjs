@@ -55,8 +55,9 @@ class MockInput {
 }
 
 class MockRoot {
-  constructor(inputs) {
+  constructor(inputs, textContent = '') {
     this.inputs = inputs;
+    this.textContent = textContent;
     for (const input of inputs) {
       input.parentElement = this;
       if (!input.form) input.form = this;
@@ -171,6 +172,22 @@ const googleVietnameseTotpInput = new MockInput(33, {
   'aria-label': ''
 }, '');
 
+const contactEmailInput = new MockInput(34, {
+  id: 'contact-email',
+  name: 'email',
+  type: 'email',
+  autocomplete: 'email',
+  labelText: 'Email address'
+}, '');
+
+const usernameFirstEmailAddressInput = new MockInput(35, {
+  id: 'email-address-login',
+  name: 'email',
+  type: 'email',
+  autocomplete: 'username',
+  labelText: 'Email address'
+}, '');
+
 const unrelatedForm = new MockRoot([unrelatedUser]);
 const targetForm = new MockRoot([targetUser, targetPassword]);
 const documentRoot = new MockRoot([
@@ -183,7 +200,9 @@ const documentRoot = new MockRoot([
   quotaPageSizeInput,
   viotpHistorySearchInput,
   newsletterEmailInput,
-  googleVietnameseTotpInput
+  googleVietnameseTotpInput,
+  contactEmailInput,
+  usernameFirstEmailAddressInput
 ]);
 
 const sandbox = {
@@ -276,6 +295,12 @@ assert.equal(sandbox.scoreOtpCandidate(quotaPageSizeInput) <= 0, true, 'numeric 
 assert.equal(sandbox.scoreUsernameCandidate(viotpHistorySearchInput) < -50, true, 'datatable search input should not score as username');
 assert.equal(sandbox.scoreUsernameCandidate(newsletterEmailInput) < -50, true, 'newsletter email input should not score as username');
 assert.equal(sandbox.findUsernameInput(null, new MockRoot([newsletterEmailInput])), null, 'newsletter-only pages should not expose email signup as username');
+assert.equal(sandbox.findUsernameInput(null, new MockRoot([contactEmailInput], 'Contact support Email address Message Send message')), null, 'contact support pages should not expose email fields as username');
+assert.equal(
+  sandbox.findUsernameInput(null, new MockRoot([usernameFirstEmailAddressInput], 'Sign in Email address Continue')),
+  usernameFirstEmailAddressInput,
+  'username-first login pages should support Email address labels'
+);
 assert.equal(sandbox.scoreOtpCandidate(googleVietnameseTotpInput) > 0, true, 'Google Vietnamese authenticator code input should score as OTP');
 assert.equal(sandbox.scoreUsernameCandidate(googleVietnameseTotpInput) < -50, true, 'Google Vietnamese authenticator code input should not score as username');
 assert.equal(sandbox.findUsernameInput(null, new MockRoot([googleVietnameseTotpInput])), null, 'OTP-only pages should not expose an OTP field as username');
