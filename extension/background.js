@@ -244,7 +244,7 @@ async function applyAutoLock(state) {
   if (Date.now() - lastActivityAt >= timeoutMinutes * 60 * 1000) {
     state.locked = true;
     await chrome.storage.local.set({ locked: true });
-    await clearPendingCredentialState();
+    await clearSensitiveRuntimeState();
   }
 }
 
@@ -272,7 +272,7 @@ async function setLocked(locked) {
 
   await chrome.storage.local.set(values);
   if (values.locked) {
-    await clearPendingCredentialState();
+    await clearSensitiveRuntimeState();
   }
   return getState();
 }
@@ -294,7 +294,7 @@ async function revokeClient(clientId) {
   if (result.Revoked && state.clientId === targetClientId) {
     await chrome.storage.local.remove(['clientId', 'sharedSecret']);
     await clearPairingSession();
-    await clearPendingCredentialState();
+    await clearSensitiveRuntimeState();
   }
 
   return result;
@@ -380,6 +380,26 @@ async function clearPairingSession() {
 
 async function clearPendingCredentialState() {
   await sessionStorageRemove([PENDING_MULTI_STEP_KEY, PENDING_SUBMITTED_KEY]);
+}
+
+async function clearSensitiveRuntimeState() {
+  await clearPendingCredentialState();
+  await clearClipboardState();
+}
+
+async function clearClipboardState() {
+  for (const timerId of clipboardTimers.keys()) {
+    clearTimeout(timerId);
+  }
+  clipboardTimers.clear();
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText('');
+    } catch (_) {
+      // Clipboard clearing is best-effort and should not block lock/revoke.
+    }
+  }
 }
 
 function isTerminalPairingError(error) {

@@ -14,6 +14,8 @@ const extensionSessionStorage = {};
 const notifications = [];
 const badgeCalls = [];
 const scriptCalls = [];
+const clipboardWrites = [];
+const timerCalls = [];
 let now = 10000;
 let loginEntries = [];
 
@@ -21,6 +23,14 @@ const sandbox = {
   console,
   URL,
   TextEncoder,
+  setTimeout(handler, delay) {
+    const timer = { handler, delay, cleared: false };
+    timerCalls.push(timer);
+    return timer;
+  },
+  clearTimeout(timer) {
+    if (timer) timer.cleared = true;
+  },
   Date: class extends Date {
     static now() {
       return now;
@@ -36,6 +46,13 @@ const sandbox = {
     subtle: {
       importKey: async () => ({}),
       sign: async () => new Uint8Array([1, 2, 3]).buffer
+    }
+  },
+  navigator: {
+    clipboard: {
+      writeText: async (text) => {
+        clipboardWrites.push(String(text));
+      }
     }
   },
   fetch: async (url, options) => {
@@ -385,6 +402,13 @@ assert.equal(requests.length, 0, 'locked extension should not auto-fill or query
 let lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: false });
 assert.equal(lockState.locked, false, 'unlock message should clear lock state');
 assert.equal(storage.locked, false, 'unlock message should persist lock state');
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
+clipboardWrites.length = 0;
+timerCalls.length = 0;
+await sandbox.handleMessage({ type: 'KBB_COPY_TO_CLIPBOARD', text: 'clipboard-secret', clearAfterMs: 30000 });
+assert.equal(clipboardWrites.at(-1), 'clipboard-secret', 'copy should write the requested secret to the clipboard');
+assert.equal(timerCalls.length, 1, 'copy should schedule delayed clipboard clearing');
 extensionSessionStorage.kbbPendingMultiStepCredential = {
   origin: 'https://example.com',
   credential: {
@@ -406,6 +430,8 @@ extensionSessionStorage.kbbPendingSubmittedCredential = {
 lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: true });
 assert.equal(lockState.locked, true, 'lock message should set lock state');
 assert.equal(storage.locked, true, 'lock message should persist lock state');
+assert.equal(clipboardWrites.at(-1), '', 'lock message should clear copied clipboard secrets immediately');
+assert.equal(timerCalls[0].cleared, true, 'lock message should cancel delayed clipboard clear timers');
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'lock message should clear pending multi-step credentials');
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'lock message should clear pending submitted credentials');
 storage.locked = false;
