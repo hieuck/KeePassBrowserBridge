@@ -310,7 +310,12 @@ function credentialCollectionRoot() {
 function credentialFillRoot() {
   const input = editableInputFromElement(document.activeElement) ||
     editableInputFromElement(window.__keepassBrowserBridgeLastFocusedInput);
-  return credentialScopeForInput(input) || null;
+  const scope = credentialScopeForInput(input);
+  return scope && hasCredentialFillTarget(scope) ? scope : null;
+}
+function hasCredentialFillTarget(root) {
+  const passwordInput = findPasswordInput(root);
+  return Boolean(passwordInput || findUsernameInput(passwordInput, root) || findOtpInput(passwordInput, root));
 }
 async function maybePromptSaveLogin(credential) {
   if (!credential.password) {
