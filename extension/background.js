@@ -388,10 +388,7 @@ async function clearSensitiveRuntimeState() {
 }
 
 async function clearClipboardState() {
-  for (const timerId of clipboardTimers.keys()) {
-    clearTimeout(timerId);
-  }
-  clipboardTimers.clear();
+  cancelClipboardClearTimers();
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
@@ -631,6 +628,7 @@ async function copyToClipboard(text, clearAfterMs) {
   try {
     await assertCanAccessCredentials();
     await rememberCredentialActivity();
+    cancelClipboardClearTimers();
     await navigator.clipboard.writeText(text);
     
     if (clearAfterMs && clearAfterMs > 0) {
@@ -645,6 +643,13 @@ async function copyToClipboard(text, clearAfterMs) {
   } catch (error) {
     throw new Error('Failed to copy to clipboard: ' + error.message);
   }
+}
+
+function cancelClipboardClearTimers() {
+  for (const timerId of clipboardTimers.keys()) {
+    clearTimeout(timerId);
+  }
+  clipboardTimers.clear();
 }
 
 async function autoFillTab(tabId, url) {
