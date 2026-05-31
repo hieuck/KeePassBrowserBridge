@@ -460,6 +460,7 @@ async function updateLogin(login) {
 }
 
 async function acknowledgeFill(entryId, url) {
+  await assertCanAccessCredentials();
   if (!entryId) {
     return { Success: false, ErrorCode: 'missing_entry_id', Error: 'Entry ID is required.' };
   }

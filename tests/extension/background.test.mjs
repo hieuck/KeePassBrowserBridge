@@ -388,6 +388,8 @@ assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, '
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'current client revoke should clear pending submitted credentials');
 
 storage.locked = true;
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
 const lockedState = await sandbox.getState();
 assert.equal(lockedState.locked, true, 'state should report extension lock status');
 requests.length = 0;
@@ -399,6 +401,19 @@ await assert.rejects(
 assert.equal(requests.length, 0, 'locked extension should not query KeePass');
 await sandbox.autoFillTab(45, 'https://example.com/login');
 assert.equal(requests.length, 0, 'locked extension should not auto-fill or query KeePass');
+await assert.rejects(
+  () => sandbox.handleMessage({ type: 'KBB_FILL_ACK', entryId: 'entry-locked', url: 'https://example.com/login' }),
+  /locked/i,
+  'locked extension should reject direct fill acknowledgements'
+);
+assert.equal(requests.some((request) => request.Method === 'logins.fillAck'), false, 'locked fill acknowledgement should not call KeePass');
+clipboardWrites.length = 0;
+await assert.rejects(
+  () => sandbox.handleMessage({ type: 'KBB_COPY_TO_CLIPBOARD', text: 'locked-copy-secret', clearAfterMs: 30000 }),
+  /locked/i,
+  'locked extension should reject direct clipboard copy requests'
+);
+assert.equal(clipboardWrites.length, 0, 'locked extension should not write copied secrets to the clipboard');
 let lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: false });
 assert.equal(lockState.locked, false, 'unlock message should clear lock state');
 assert.equal(storage.locked, false, 'unlock message should persist lock state');
