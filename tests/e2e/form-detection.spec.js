@@ -182,6 +182,44 @@ test.describe('content script form detection', () => {
     await expect(prompt.locator('button', { hasText: 'Retry' })).toBeVisible();
   });
 
+  test('does not show save prompt when browser has read-only permission', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read'] } };
+            }
+            if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#username').fill('readonly@example.com');
+    await page.locator('#password').fill('secret');
+    await page.locator('button[type="submit"]').click();
+
+    await page.waitForTimeout(700);
+    await expect(page.locator('.kbb-save-prompt')).toHaveCount(0);
+    const createMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_CREATE_LOGIN'));
+    expect(createMessage).toBeUndefined();
+  });
+
   test('restores save prompt after form submit navigates to another page', async ({ page }) => {
     let pendingSubmittedCredential = null;
     let resolveRememberedCredential;

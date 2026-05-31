@@ -380,6 +380,10 @@ async function maybePromptSaveLogin(credential) {
     return;
   }
   try {
+    if (!(await canMutateKeePassEntries())) {
+      return;
+    }
+
     const pageUrl = credential.url || window.location.href;
     const result = await chrome.runtime.sendMessage({
       type: "KBB_QUERY_FOR_URL",
@@ -400,6 +404,21 @@ async function maybePromptSaveLogin(credential) {
     }
   } catch (error) {
     /* Save prompts are opportunistic; manual extension actions surface bridge errors. */
+  }
+}
+async function canMutateKeePassEntries() {
+  if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
+    return true;
+  }
+
+  try {
+    const result = await chrome.runtime.sendMessage({ type: "KBB_STATUS" });
+    if (!result || !result.ok || !result.response) return true;
+    if (result.response.Trusted === false) return false;
+    if (!Array.isArray(result.response.Permissions)) return true;
+    return result.response.Permissions.includes("write");
+  } catch (error) {
+    return true;
   }
 }
 function storePendingCredential(credential) {
