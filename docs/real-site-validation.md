@@ -15,10 +15,12 @@ extension test.
 | Real-site behavior | Local fixture | Automated coverage |
 | --- | --- | --- |
 | Standard username/password login | `login-page.html` | `fills username and password on a standard login form` |
+| Phone number plus password login | `phone-login-page.html` | `fills phone number username when a tel field belongs to a password login form` |
 | Hidden decoy login fields from animations/honeypots must not receive credentials | `opacity-hidden-login-page.html` | `ignores opacity-hidden login decoys when filling a visible login form` |
 | Username-first login across navigation, like Dropbox-style email then password | `multi-step-username.html`, `multi-step-password.html` | `remembers selected login across username-first multi-step flow` |
 | Username-first login on one page, where password appears after Continue | `same-page-username-first.html` | `fills password after same-page username-first step reveals password field` |
 | Login label says "Email address" and should still be treated as a login step | `username-first-email-address.html` | `treats username-first email address step as a login field` |
+| Username-first login using a phone number identifier | `phone-username-first.html` | `treats username-first phone number step as a login field` |
 | Additional KeePass URL fields, like `auth.openai.com` entry matching `chatgpt.com` | bridge tests in `tests/Program.cs` | `CredentialQueryMatchesAdditionalUrlField` and `CredentialMutationAcceptsPageUrlFromAdditionalUrlField` |
 | Google-style Vietnamese authenticator prompt | `google-totp-vi-page.html` | `adds OTP inline button to Google-style Vietnamese authenticator input`, `fills OTP on Google-style Vietnamese authenticator input` |
 | Split OTP inputs | `split-otp-page.html` | `fills split OTP inputs across sibling labels` |
@@ -42,6 +44,7 @@ extension test.
 | Embedded login widgets in child frames | extension manifest | `content scripts should run in iframes for embedded login widgets` |
 | Save new login after submit | `login-page.html`, `login-submit-redirect.html` | save-prompt and restored-save-prompt tests |
 | Update changed password after submit | `login-page.html`, `multi-step-password.html` | update-prompt tests |
+| Change-password form with current password plus new/confirm password | `change-password-page.html` | `prompts to update an existing login with the new password from a change-password form` |
 
 ## Manual Smoke Checklist
 

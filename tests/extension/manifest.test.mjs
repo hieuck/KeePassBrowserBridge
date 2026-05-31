@@ -14,6 +14,7 @@ const releaseWorkflow = fs.readFileSync(new URL('../../.github/workflows/release
 const ciWorkflow = fs.readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const rootReadme = fs.readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
 const extensionReadme = fs.readFileSync(new URL('../../extension/README.md', import.meta.url), 'utf8');
+const realSiteValidation = fs.readFileSync(new URL('../../docs/real-site-validation.md', import.meta.url), 'utf8');
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'extension');
 const scripts = manifest.content_scripts.flatMap((entry) => entry.js || []);
 const contentScriptEntries = manifest.content_scripts || [];
@@ -52,6 +53,7 @@ assert.equal(releaseWorkflow.includes('artifacts/KeePassBrowserBridge.plgx'), tr
 assert.equal(releaseWorkflow.includes('artifacts/versioninfo.txt'), true, 'release workflow should attach KeePass update metadata to the release');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersion}")]`), true, 'plugin AssemblyVersion should match extension release version');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
+assert.equal(assemblyInfo.includes(`[assembly: AssemblyInformationalVersion("${manifest.version}")]`), true, 'plugin informational version should match extension release version for auto-update checks');
 assert.equal(bridgeSettings.includes(`PluginVersion = "${manifest.version}"`), true, 'bridge-reported plugin version should match extension release version');
 assert.equal(pluginExt.includes('public override string UpdateUrl'), true, 'plugin should expose a KeePass update URL');
 assert.equal(pluginExt.includes('StartAutoUpdateCheck();'), true, 'plugin should check for updates after loading');
@@ -72,6 +74,9 @@ assert.equal(rootReadme.includes('Chrome/Firefox extension'), true, 'root README
 assert.equal(extensionReadme.includes(`Version ${manifest.version}`), true, 'extension README should document the current extension version');
 assert.equal(extensionReadme.includes('0.2.0'), false, 'extension README should not describe an obsolete release version');
 assert.equal(extensionReadme.includes('contentScript.js - Main filling logic (unchanged)'), false, 'extension README should not claim current filling logic is unchanged from an older phase');
+assert.equal(realSiteValidation.includes('phone-login-page.html'), true, 'real-site validation matrix should track phone username/password login coverage');
+assert.equal(realSiteValidation.includes('phone-username-first.html'), true, 'real-site validation matrix should track phone username-first login coverage');
+assert.equal(realSiteValidation.includes('change-password-page.html'), true, 'real-site validation matrix should track change-password update coverage');
 for (const size of ['16', '48', '128']) {
   assert.equal(typeof manifest.icons?.[size], 'string', `manifest should declare ${size}px extension icon`);
   assert.equal(fs.existsSync(path.join(extensionRoot, manifest.icons[size])), true, `${size}px extension icon should exist`);

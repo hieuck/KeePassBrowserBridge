@@ -139,6 +139,24 @@ test.describe('content script form detection', () => {
   });
 
   test('restores save prompt after form submit navigates to another page', async ({ page }) => {
+    let pendingSubmittedCredential = null;
+    let resolveRememberedCredential;
+    const rememberedCredential = new Promise((resolve) => {
+      resolveRememberedCredential = resolve;
+    });
+    await page.exposeFunction('__testKbbRememberSubmittedCredential', (pending) => {
+      pendingSubmittedCredential = pending;
+      resolveRememberedCredential(pending);
+      return true;
+    });
+    await page.exposeFunction('__testKbbConsumeSubmittedCredential', (origin) => {
+      if (!pendingSubmittedCredential || pendingSubmittedCredential.origin !== origin) {
+        return null;
+      }
+      const credential = pendingSubmittedCredential.credential;
+      pendingSubmittedCredential = null;
+      return credential;
+    });
     await page.addInitScript(() => {
       window.__kbbMessages = [];
       window.chrome = {
@@ -147,19 +165,15 @@ test.describe('content script form detection', () => {
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
-              sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
+              await window.__testKbbRememberSubmittedCredential({
                 origin: message.origin,
                 credential: message.credential
-              }));
+              });
               return { ok: true, response: { remembered: true } };
             }
             if (message.type === 'KBB_CONSUME_SUBMITTED_CREDENTIAL') {
-              const pending = JSON.parse(sessionStorage.getItem('__testKbbPendingSubmittedCredential') || 'null');
-              if (!pending || pending.origin !== message.origin) {
-                return { ok: true, response: { credential: null } };
-              }
-              sessionStorage.removeItem('__testKbbPendingSubmittedCredential');
-              return { ok: true, response: { credential: pending.credential } };
+              const credential = await window.__testKbbConsumeSubmittedCredential(message.origin);
+              return { ok: true, response: { credential } };
             }
             if (message.type === 'KBB_QUERY_FOR_URL') {
               return { ok: true, response: { entries: [] } };
@@ -175,14 +189,18 @@ test.describe('content script form detection', () => {
     await page.locator('#redirect-username').fill('redirect@example.com');
     await page.locator('#redirect-password').fill('redirect-secret');
     await Promise.all([
-      page.waitForFunction(() => Boolean(sessionStorage.getItem('__testKbbPendingSubmittedCredential'))),
+      rememberedCredential,
       page.locator('button[type="submit"]').click()
     ]);
+    expect(pendingSubmittedCredential).not.toBeNull();
     await page.waitForURL(/login-page\.html/);
 
     await page.addScriptTag({ path: 'extension/contentScript.js' });
 
-    await expect(page.locator('.kbb-save-prompt')).toBeVisible();
+    await expect.poll(async () => page.evaluate(() => window.__kbbMessages.map((message) => message.type)), {
+      timeout: 15000
+    }).toContain('KBB_QUERY_FOR_URL');
+    await expect(page.locator('.kbb-save-prompt')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('.kbb-save-prompt [name="userName"]')).toHaveValue('redirect@example.com');
     const queryMessages = await page.evaluate(() => window.__kbbMessages.filter((message) => message.type === 'KBB_QUERY_FOR_URL'));
     expect(queryMessages.length).toBeGreaterThan(0);

@@ -29,6 +29,7 @@ internal static class Program
         MalformedExtensionOriginFailsValidation();
         StaleTimestampFailsValidation();
         WrongProtocolVersionFailsValidation();
+        UpdateCheckerReadsCurrentVersionFromAssembly();
         UpdateCheckerDetectsNewerSemanticVersions();
         UpdateCheckerIgnoresSameOrInvalidVersions();
         UpdateCheckerSelectsNewestSemanticTag();
@@ -258,6 +259,16 @@ internal static class Program
     {
         AssertTrue(UpdateChecker.IsNewerVersion("0.9.0", "v0.9.1"), "patch update should be detected");
         AssertTrue(UpdateChecker.IsNewerVersion("0.9.0", "v1.0.0"), "major update should be detected");
+    }
+
+    private static void UpdateCheckerReadsCurrentVersionFromAssembly()
+    {
+        string currentVersion = UpdateChecker.GetCurrentVersion();
+
+        AssertFalse(currentVersion.Contains("+"),
+            "update checker should strip build metadata from the running assembly version");
+        AssertTrue(UpdateChecker.IsNewerVersion(currentVersion, "v9.0.0"),
+            "current version should remain parseable after reading it from the running assembly");
     }
 
     private static void UpdateCheckerIgnoresSameOrInvalidVersions()

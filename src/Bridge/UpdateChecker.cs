@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace KeePassBrowserBridge.Bridge
@@ -19,6 +20,21 @@ namespace KeePassBrowserBridge.Bridge
         public const string ReleasesUrl = "https://github.com/hieuck/KeePassBrowserBridge/releases";
         private const string PluginAssetName = "KeePassBrowserBridge.plgx";
 
+        public static string GetCurrentVersion()
+        {
+            Assembly assembly = typeof(UpdateChecker).Assembly;
+            object[] attrs = assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false);
+            if (attrs.Length > 0)
+            {
+                AssemblyInformationalVersionAttribute attr = (AssemblyInformationalVersionAttribute)attrs[0];
+                if (!string.IsNullOrEmpty(attr.InformationalVersion))
+                    return StripVersionMetadata(attr.InformationalVersion);
+            }
+
+            Version version = assembly.GetName().Version;
+            return (version != null) ? version.ToString(3) : BridgeSettings.PluginVersion;
+        }
+
         public static bool IsNewerVersion(string currentVersion, string candidateVersion)
         {
             Version current;
@@ -30,14 +46,20 @@ namespace KeePassBrowserBridge.Bridge
 
         public static UpdateInfo CheckLatest()
         {
+#if NET8_0_OR_GREATER
+#pragma warning disable SYSLIB0014
+#endif
             using (WebClient client = new WebClient())
+#if NET8_0_OR_GREATER
+#pragma warning restore SYSLIB0014
+#endif
             {
                 client.Headers[HttpRequestHeader.UserAgent] = "KeePassBrowserBridge";
                 client.Headers[HttpRequestHeader.Accept] = "application/vnd.github+json";
                 string json = client.DownloadString(ReleasesApiUrl);
                 string tagName = GetNewestVersionTag(ExtractJsonStrings(json, "tag_name").ToArray());
                 UpdateInfo info = CreateUpdateInfo(tagName);
-                info.IsUpdateAvailable = IsNewerVersion(BridgeSettings.PluginVersion, tagName);
+                info.IsUpdateAvailable = IsNewerVersion(GetCurrentVersion(), tagName);
                 return info;
             }
         }
@@ -48,7 +70,7 @@ namespace KeePassBrowserBridge.Bridge
             info.LatestVersion = tagName ?? string.Empty;
             info.ReleaseUrl = BuildReleaseUrl(tagName);
             info.AssetUrl = BuildPlgxAssetUrl(tagName);
-            info.IsUpdateAvailable = IsNewerVersion(BridgeSettings.PluginVersion, tagName);
+            info.IsUpdateAvailable = IsNewerVersion(GetCurrentVersion(), tagName);
             return info;
         }
 
@@ -77,11 +99,23 @@ namespace KeePassBrowserBridge.Bridge
             version = null;
             if (string.IsNullOrEmpty(value)) return false;
 
-            string normalized = value.Trim();
+            string normalized = StripVersionMetadata(value);
             if (normalized.StartsWith("v", StringComparison.OrdinalIgnoreCase))
                 normalized = normalized.Substring(1);
 
             return Version.TryParse(normalized, out version);
+        }
+
+        private static string StripVersionMetadata(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+
+            string normalized = value.Trim();
+            int metadataIndex = normalized.IndexOf('+');
+            if (metadataIndex >= 0)
+                normalized = normalized.Substring(0, metadataIndex);
+
+            return normalized;
         }
 
         private static string BuildPlgxAssetUrl(string tagName)

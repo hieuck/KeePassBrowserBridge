@@ -600,7 +600,7 @@ namespace KeePassBrowserBridge
                         ShowOnUi(delegate
                         {
                             MessageBox.Show(GetOwner(),
-                                "You are using the latest version: " + BridgeSettings.PluginVersion,
+                                "You are using the latest version: " + UpdateChecker.GetCurrentVersion(),
                                 BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
                         });
                     }
@@ -627,7 +627,7 @@ namespace KeePassBrowserBridge
             string message =
                 "A new KeePass Browser Bridge version is available." + Environment.NewLine +
                 Environment.NewLine +
-                "Current: " + BridgeSettings.PluginVersion + Environment.NewLine +
+                "Current: " + UpdateChecker.GetCurrentVersion() + Environment.NewLine +
                 "Latest: " + info.LatestVersion + Environment.NewLine +
                 Environment.NewLine +
                 "Download and install the update now?";
