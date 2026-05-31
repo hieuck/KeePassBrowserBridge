@@ -422,7 +422,7 @@ function credentialKey(credential) {
 function findPasswordInput(root) {
   return (
     visibleInputs('input[type="password"]', root).find(
-      (input) => !input.disabled && !input.readOnly,
+      (input) => !input.disabled && !input.readOnly && isLoginPasswordInput(input),
     ) || null
   );
 }
@@ -631,7 +631,7 @@ function setInputValue(input, value) {
 }
 function installInlineFillButtons() {
   const passwordInputs = visibleInputs('input[type="password"]').filter(
-    (input) => !input.disabled && !input.readOnly,
+    (input) => !input.disabled && !input.readOnly && isLoginPasswordInput(input),
   );
   const attached = new Set();
   for (const passwordInput of passwordInputs) {
@@ -1823,6 +1823,14 @@ function scoreUsernameCandidate(input) {
     score -= 100;
   if (/\bcode\b|\btoken\b|\bpin\b/.test(text)) score -= 100;
   return score;
+}
+function isLoginPasswordInput(input) {
+  const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
+  const text = fieldText(input);
+  if (autocomplete === "current-password") return true;
+  if (autocomplete === "new-password") return false;
+  if (/\b(new|confirm|confirmation|repeat|retype)\b/.test(text)) return false;
+  return true;
 }
 function isUsernameFirstLoginCandidate(input, score) {
   if (!input || score < 40) return false;

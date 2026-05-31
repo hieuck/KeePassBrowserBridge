@@ -115,6 +115,14 @@ const targetPassword = new MockInput(3, {
   autocomplete: 'current-password'
 }, 'secret');
 
+const newPasswordInput = new MockInput(6, {
+  id: 'signup-password',
+  name: 'password',
+  type: 'password',
+  autocomplete: 'new-password',
+  labelText: 'New password'
+}, '');
+
 const focusedStepEmail = new MockInput(4, {
   id: 'signin-email',
   name: 'email',
@@ -196,6 +204,7 @@ const documentRoot = new MockRoot([
   targetPassword,
   focusedStepEmail,
   otherStepEmail,
+  newPasswordInput,
   ...splitOtpInputs,
   quotaPageSizeInput,
   viotpHistorySearchInput,
@@ -292,6 +301,8 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
 
 assert.equal(sandbox.scoreOtpCandidate(quotaPageSizeInput) <= 0, true, 'numeric page-size input should not score as OTP');
+assert.equal(sandbox.isLoginPasswordInput(targetPassword), true, 'current password fields should be login password targets');
+assert.equal(sandbox.isLoginPasswordInput(newPasswordInput), false, 'new password fields should not be login password targets');
 assert.equal(sandbox.scoreUsernameCandidate(viotpHistorySearchInput) < -50, true, 'datatable search input should not score as username');
 assert.equal(sandbox.isCredentialHostileField(quotaPageSizeInput), true, 'profile/settings fields should block document-level autofill fallback');
 assert.equal(sandbox.isCredentialHostileField(viotpHistorySearchInput), false, 'neutral search fields should still allow document-level login fallback');

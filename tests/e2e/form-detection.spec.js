@@ -1256,6 +1256,36 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#accounts-per-page')).toHaveValue('20');
   });
 
+  test('does not autofill sign-up forms that only ask for a new password', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/signup-new-password-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#signup-email')).toHaveValue('');
+    await expect(page.locator('#signup-password')).toHaveValue('');
+    await expect(page.locator('#signup-password-confirm')).toHaveValue('');
+  });
+
   test('does not fallback to a different form when focus is inside non-login fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/mixed-fill-dev-page.html');
