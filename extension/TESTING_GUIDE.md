@@ -69,6 +69,7 @@
    - [ ] Password filled
    - [ ] TOTP filled if present
    - [ ] Custom fields filled if present
+   - [ ] On pages with multiple login forms, the focused form is filled
 
 ### 7. Test Context Menu
 
@@ -176,19 +177,21 @@ test('should fill login credentials', async ({ page }) => {
 | TOTP | ✅ | ✅ | ✅ | ✅ |
 | Custom Fields | ✅ | ✅ | ✅ | ✅ |
 | HTTP Auth | ✅ | ✅ | ✅ | ✅ |
-| Password Quality | ✅ | ✅ | ✅ | ✅ |
-| Inline Fill | ✅ | ✅ | ⚠️ | ⚠️ Needs polish |
-| Auto-save | ✅ | ✅ | ❌ | ❌ Not implemented |
-| Notifications | ✅ | ✅ | ❌ | ❌ Not implemented |
+| Inline Fill | ✅ | ✅ | ✅ | Inline picker, search, keyboard, custom-field actions |
+| Save new logins | ✅ | ✅ | ✅ | Page prompt and popup create |
+| Update changed passwords | ✅ | ✅ | ✅ | Page prompt and popup edit |
+| Site overrides | ✅ | ✅ | ✅ | Auto-fill and auto-submit overrides |
+| Trusted browser management | ✅ | ✅ | ✅ | List and revoke |
 
 ---
 
-## Known Issues
+## Real-Site Validation
 
-1. **HMAC Authentication**: Test script có lỗi với HMAC - cần fix PowerShell script
-2. **Inline Fill**: Basic implementation - UI cần polish
-3. **Auto-save**: Not implemented - cần thêm
-4. **Desktop Notifications**: Not implemented - cần thêm
+Use `docs/real-site-validation.md` as the source of truth for site-inspired
+coverage. It maps Dropbox-style username-first login, ChatGPT/OpenAI additional
+URLs, Google OTP, viotp/DataTables search, fill.dev-style profile/payment forms,
+multi-form pages, Shadow DOM, save prompts, and update prompts to deterministic
+fixtures and automated tests.
 
 ---
 
@@ -197,4 +200,4 @@ test('should fill login credentials', async ({ page }) => {
 1. **Manual Testing**: Follow Quick Test guide above
 2. **Automated Testing**: Expand Playwright tests
 3. **Cross-browser Testing**: Test on Firefox, Edge
-4. **Real Website Testing**: Test on Google, GitHub, Facebook
+4. **Real Website Testing**: Convert every new real-site issue into a local fixture and E2E test

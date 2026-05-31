@@ -63,6 +63,8 @@ From this repository:
 
 The verifier runs extension syntax checks, unit tests, Chromium E2E tests, bridge tests, and plugin compilation.
 
+Real-site-inspired autofill coverage is tracked in `docs/real-site-validation.md`.
+
 ## Build Release Artifacts
 
 ```powershell
