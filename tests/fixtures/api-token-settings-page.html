@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>API token settings fixture</title>
+  <style>
+    body { font: 14px/1.4 system-ui, sans-serif; margin: 40px; }
+    form { display: grid; gap: 12px; max-width: 440px; }
+    label { display: grid; gap: 6px; }
+    input { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Developer settings</h1>
+    <form id="api-token">
+      <p>Rotate the API token used by command line tools.</p>
+      <label>
+        Token name
+        <input id="token-name" name="token_name" type="text" autocomplete="off">
+      </label>
+      <label>
+        New API token
+        <input id="api-token-secret" name="api_token" type="password" autocomplete="off">
+      </label>
+      <label>
+        Confirm API token
+        <input id="api-token-confirm" name="api_token_confirm" type="password" autocomplete="off">
+      </label>
+      <button type="submit">Save token</button>
+    </form>
+  </main>
+</body>
+</html>

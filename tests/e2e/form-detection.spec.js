@@ -1487,6 +1487,36 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#signup-password-confirm')).toHaveValue('');
   });
 
+  test('does not treat API token settings as password login fields', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/api-token-settings-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#token-name')).toHaveValue('');
+    await expect(page.locator('#api-token-secret')).toHaveValue('');
+    await expect(page.locator('#api-token-confirm')).toHaveValue('');
+  });
+
   test('does not prompt to save sign-up forms that only ask for a new password', async ({ page }) => {
     await page.addInitScript(() => {
       window.__kbbMessages = [];

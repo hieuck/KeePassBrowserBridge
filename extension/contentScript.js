@@ -1897,6 +1897,7 @@ function isLoginPasswordInput(input) {
   if (isNonCredentialAutocomplete(input)) return false;
   if (isProfileOrPaymentFieldText(context)) return false;
   if (autocomplete === "current-password") return true;
+  if (isDeveloperSecretContext(context)) return false;
   if (autocomplete === "new-password") return false;
   if (/\b(new|confirm|confirmation|repeat|retype)\b/.test(text)) return false;
   return true;
@@ -1925,13 +1926,17 @@ function isNonLoginCommunicationContext(text) {
 function isAccountRecoveryContext(text) {
   return /\b(forgot|reset|recover|recovery|trouble\s+signing\s+in|account\s+help|password\s+help|send\s+(a\s+)?(recovery|reset)\s+link)\b/.test(String(text || ""));
 }
+function isDeveloperSecretContext(text) {
+  return /\b(api|developer|dev\s*tools|command\s+line|cli|personal\s+access|access\s+token|auth\s+token|client\s+secret|webhook\s+secret|secret\s+key|api\s+key|token\s+name|rotate\s+the\s+api\s+token)\b/.test(String(text || ""));
+}
 function scoreOtpCandidate(input) {
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
   const inputMode = (input.getAttribute("inputmode") || "").toLowerCase();
   const text = fieldText(input);
+  const context = credentialContextText(input);
   let score = 0;
   if (isNonCredentialAutocomplete(input)) score -= 999;
-  if (isProfileOrPaymentFieldText(text)) score -= 999;
+  if (isProfileOrPaymentFieldText(text) || isDeveloperSecretContext(context)) score -= 999;
   if (autocomplete === "one-time-code") score += 120;
   if (/otp|totp|2fa|mfa|authenticator|verification|passcode/.test(text))
     score += 90;
