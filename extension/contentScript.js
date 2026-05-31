@@ -1898,8 +1898,13 @@ function fieldText(input) {
 function credentialContextText(input) {
   const parts = [fieldText(input)];
   const form = input && input.form ? input.form : input && input.closest ? input.closest("form") : null;
-  if (form && form.textContent) parts.push(form.textContent);
-  const region = input && input.closest ? input.closest("main, section, article, dialog") : null;
+  if (form && form.textContent) {
+    parts.push(form.textContent);
+    return parts.join(" ").toLowerCase();
+  }
+  const region = input && input.closest
+    ? input.closest('fieldset, [role="form"], dialog, section, article')
+    : null;
   if (region && region.textContent) parts.push(region.textContent.slice(0, 2000));
   return parts.join(" ").toLowerCase();
 }

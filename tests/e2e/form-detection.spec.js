@@ -1411,6 +1411,41 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#login-password')).toHaveValue('correct horse battery staple');
   });
 
+  test('does not treat fill.dev-style profile and payment fields as username fields', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/fill-dev-mixed-fields-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await expect(page.locator('.kbb-inline-button')).toHaveCount(1);
+    await expect(page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]')).toHaveCount(1);
+
+    await page.locator('#profile-email').focus();
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#profile-name')).toHaveValue('');
+    await expect(page.locator('#profile-email')).toHaveValue('');
+    await expect(page.locator('#profile-city')).toHaveValue('');
+    await expect(page.locator('#card-name')).toHaveValue('');
+    await expect(page.locator('#card-number')).toHaveValue('');
+    await expect(page.locator('#login-email')).toHaveValue('');
+  });
+
   test('does not treat contact support email fields as username-first login', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/non-login-contact-page.html');

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>fill.dev mixed fields</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    main { display: grid; gap: 28px; max-width: 520px; }
+    form { display: grid; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid #d0d7de; }
+    label { display: grid; gap: 6px; }
+    input { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>fill.dev form coverage</h1>
+
+    <form id="profile">
+      <h2>Contact details</h2>
+      <label>
+        Name
+        <input id="profile-name" name="name" type="text" autocomplete="name">
+      </label>
+      <label>
+        Email
+        <input id="profile-email" name="email" type="email" autocomplete="email">
+      </label>
+      <label>
+        City
+        <input id="profile-city" name="city" type="text" autocomplete="address-level2">
+      </label>
+      <button type="submit">Save profile</button>
+    </form>
+
+    <form id="payment">
+      <h2>Payment details</h2>
+      <label>
+        Name on card
+        <input id="card-name" name="ccname" type="text" autocomplete="cc-name">
+      </label>
+      <label>
+        Card number
+        <input id="card-number" name="ccnumber" type="text" autocomplete="cc-number">
+      </label>
+    </form>
+
+    <form id="username-first-login">
+      <h2>Login</h2>
+      <label>
+        Email
+        <input id="login-email" name="email" type="email" autocomplete="username">
+      </label>
+      <button type="submit">Continue</button>
+    </form>
+  </main>
+</body>
+</html>
