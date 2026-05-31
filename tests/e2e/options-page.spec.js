@@ -368,6 +368,29 @@ test.describe('options page settings', () => {
     );
   });
 
+  test('explains when the current browser is revoked from settings', async ({ page }) => {
+    await installOptionsStorage(page);
+
+    await page.goto('/extension/options.html');
+    await page.locator('#refreshTrustedBrowsers').click();
+
+    const revokeCurrentBrowser = page.locator('[data-client-id="client-current"] [data-action="revoke-client"]');
+    page.once('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Revoke browser "Chrome"?');
+      await dialog.accept();
+    });
+    await revokeCurrentBrowser.click();
+
+    await expect(page.locator('#trustedBrowserList')).not.toContainText('Chrome');
+    await expect(page.locator('#message')).toHaveText('This browser was revoked. Pair again to use KeePass.');
+    const messages = await page.evaluate(() => window.__kbbOptionsMessages);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'KBB_REVOKE_CLIENT', clientId: 'client-current' })
+      ])
+    );
+  });
+
   test('exports settings without pairing secrets', async ({ page }) => {
     await installOptionsStorage(page, {
       endpoint: 'http://127.0.0.1:19455/bridge',
