@@ -1409,6 +1409,40 @@ test.describe('content script form detection', () => {
     });
   });
 
+  test('fills focused login form for popup full-entry fill', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/two-login-forms.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#admin-password').focus();
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'admin@example.com',
+            Password: 'admin-secret'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: true,
+      result: {
+        usernameFilled: true,
+        passwordFilled: true
+      }
+    });
+    await expect(page.locator('#admin-username')).toHaveValue('admin@example.com');
+    await expect(page.locator('#admin-password')).toHaveValue('admin-secret');
+    await expect(page.locator('#customer-username')).toHaveValue('');
+    await expect(page.locator('#customer-password')).toHaveValue('');
+  });
+
   test('adds OTP inline button to Google-style Vietnamese authenticator input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/google-totp-vi-page.html');

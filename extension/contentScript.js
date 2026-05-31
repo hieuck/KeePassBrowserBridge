@@ -26,7 +26,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
 
       const result = message.fieldRole
         ? fillFocusedField(message.credential || {}, message.fieldRole, message.customFieldName || "")
-        : fillLogin(message.credential || {});
+        : fillLogin(message.credential || {}, credentialFillRoot());
       
       if (message.autoSubmit && (result.usernameFilled || result.passwordFilled)) {
         const passwordInput = findPasswordInput();
@@ -299,6 +299,11 @@ function collectCredentialFromForm(root) {
 function credentialCollectionRoot() {
   const input = getFocusedEditableInput();
   return credentialScopeForInput(input) || document;
+}
+function credentialFillRoot() {
+  const input = editableInputFromElement(document.activeElement) ||
+    editableInputFromElement(window.__keepassBrowserBridgeLastFocusedInput);
+  return credentialScopeForInput(input) || null;
 }
 async function maybePromptSaveLogin(credential) {
   if (!credential.password) {
