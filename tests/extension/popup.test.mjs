@@ -313,6 +313,8 @@ assert.equal(elements.pairingTimer.textContent.includes('1:55'), true, 'pairing 
 assert.equal(elements.stateNotice.textContent, 'Enter the six digit code shown in KeePass to finish pairing.', 'pairing state should explain the next step');
 assert.equal(elements.queryLogins.disabled, true, 'unpaired pairing state should disable credential query action');
 assert.equal(elements.newLogin.disabled, true, 'unpaired pairing state should disable create action');
+assert.equal(elements.toggleSiteAutoFill.disabled, true, 'unpaired pairing state should disable site auto-fill action');
+assert.equal(elements.toggleSiteAutoSubmit.disabled, true, 'unpaired pairing state should disable site auto-submit action');
 assert.equal(fakeDocument.activeElement, elements.pairingCode, 'pairing code input should receive focus');
 assert.equal(elements.completePair.disabled, true, 'confirm should be disabled before a complete code is entered');
 
@@ -426,6 +428,8 @@ assert.equal(elements.pairingTimer.textContent, '', 'paired popup should clear p
 assert.equal(elements.stateNotice.textContent, 'Ready to find, fill, create, and update KeePass logins.', 'paired state should explain available actions');
 assert.equal(elements.queryLogins.disabled, false, 'paired state should enable credential query action');
 assert.equal(elements.newLogin.disabled, false, 'paired state should enable create action');
+assert.equal(elements.toggleSiteAutoFill.disabled, false, 'paired state should enable site auto-fill action');
+assert.equal(elements.toggleSiteAutoSubmit.disabled, false, 'paired state should enable site auto-submit action');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
@@ -438,6 +442,8 @@ assert.equal(elements.stateNotice.textContent, 'Unlock KeePass Bridge to find, f
 assert.equal(elements.stateNotice.classList.contains('warning'), true, 'locked state notice should use warning styling');
 assert.equal(elements.queryLogins.disabled, true, 'locked state should disable credential query action');
 assert.equal(elements.newLogin.disabled, true, 'locked state should disable create action');
+assert.equal(elements.toggleSiteAutoFill.disabled, true, 'locked state should disable site auto-fill action');
+assert.equal(elements.toggleSiteAutoSubmit.disabled, true, 'locked state should disable site auto-submit action');
 
 await sandbox.renderResults([
   {

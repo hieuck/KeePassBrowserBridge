@@ -385,6 +385,7 @@ async function collectPageCredential() {
 }
 
 async function toggleSiteAutoFill() {
+  ensureCredentialActionsEnabled();
   const context = await getCurrentSiteOverrideContext();
   const { host, overrides, existingIndex, existing } = context;
   const isDisabled = existing && existing.autoFillEnabled === false;
@@ -412,6 +413,7 @@ async function toggleSiteAutoFill() {
 }
 
 async function toggleSiteAutoSubmit() {
+  ensureCredentialActionsEnabled();
   const context = await getCurrentSiteOverrideContext();
   const { host, overrides, existingIndex, existing } = context;
   const isEnabled = existing && existing.autoSubmitEnabled === true;
@@ -721,6 +723,8 @@ function syncCredentialActionAvailability() {
   const enabled = credentialActionsEnabled();
   elements.queryLogins.disabled = !enabled;
   elements.newLogin.disabled = !enabled;
+  elements.toggleSiteAutoFill.disabled = !enabled;
+  elements.toggleSiteAutoSubmit.disabled = !enabled;
 }
 
 function credentialActionsEnabled() {
