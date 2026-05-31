@@ -748,12 +748,12 @@ async function handleHttpAuthRequired(details) {
     return null;
   }
 
+  httpAuthAttempts.set(key, attempts + 1);
   const credentials = await queryHttpAuth(details.url);
   if (!credentials) {
     return null;
   }
 
-  httpAuthAttempts.set(key, attempts + 1);
   return credentials;
 }
 

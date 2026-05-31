@@ -806,6 +806,29 @@ const httpAuthChallengeResult = await new Promise((resolve) => {
 assert.equal(httpAuthChallengeResult.authCredentials.username, 'alice', 'HTTP auth listener should return username credentials');
 assert.equal(httpAuthChallengeResult.authCredentials.password, 'secret', 'HTTP auth listener should return password credentials');
 
+loginEntries = [];
+requests.length = 0;
+for (let attempt = 0; attempt < 3; attempt += 1) {
+  const noCredentialChallengeResult = await new Promise((resolve) => {
+    sandbox.httpAuthRequiredHandler({
+      requestId: 'request-no-credential',
+      url: 'https://example.com/missing',
+      realm: 'private',
+      challenger: { host: 'example.com' }
+    }, resolve);
+  });
+  assert.equal(Object.keys(noCredentialChallengeResult).length, 0, 'HTTP auth listener should return no credentials when KeePass has no matching entry');
+}
+const noCredentialQueries = requests.filter((request) => request.Method === 'logins.query');
+assert.equal(noCredentialQueries.length, 2, 'HTTP auth listener should cap repeated no-credential KeePass queries for the same challenge');
+loginEntries = [{
+  EntryId: 'entry-1',
+  Title: 'Example',
+  UserName: 'alice',
+  Password: 'secret',
+  Url: 'https://example.com/login'
+}];
+
 let sentMessage = null;
 requests.length = 0;
 sandbox.chrome.tabs.query = async () => [{ id: 77, url: 'https://example.com/login' }];
