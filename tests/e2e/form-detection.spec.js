@@ -1443,6 +1443,49 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#customer-password')).toHaveValue('');
   });
 
+  test('auto-submits the focused login form after popup full-entry fill', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/two-login-forms.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      window.__submittedForms = [];
+      for (const form of document.querySelectorAll('form')) {
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          window.__submittedForms.push(form.id);
+        });
+      }
+    });
+
+    await page.locator('#admin-password').focus();
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          autoSubmit: true,
+          credential: {
+            UserName: 'admin@example.com',
+            Password: 'admin-secret'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: true,
+      result: {
+        usernameFilled: true,
+        passwordFilled: true
+      }
+    });
+    await expect.poll(async () => page.evaluate(() => window.__submittedForms)).toEqual(['admin-login']);
+    await expect(page.locator('#admin-username')).toHaveValue('admin@example.com');
+    await expect(page.locator('#customer-username')).toHaveValue('');
+  });
+
   test('adds OTP inline button to Google-style Vietnamese authenticator input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/google-totp-vi-page.html');

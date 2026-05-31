@@ -24,30 +24,15 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
         return;
       }
 
+      const fillRoot = message.fieldRole
+        ? credentialScopeForInput(getFocusedEditableInput())
+        : credentialFillRoot();
       const result = message.fieldRole
         ? fillFocusedField(message.credential || {}, message.fieldRole, message.customFieldName || "")
-        : fillLogin(message.credential || {}, credentialFillRoot());
+        : fillLogin(message.credential || {}, fillRoot);
       
       if (message.autoSubmit && (result.usernameFilled || result.passwordFilled)) {
-        const passwordInput = findPasswordInput();
-        const usernameInput = findUsernameInput(passwordInput);
-        const input = passwordInput || usernameInput;
-        if (input) {
-          const form = input.form || input.closest('form');
-          window.setTimeout(() => {
-            if (form) {
-              const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
-              if (submitBtn) {
-                submitBtn.click();
-              } else {
-                form.submit();
-              }
-            } else {
-              const submitBtn = document.querySelector('button[type="submit"], input[type="submit"]');
-              if (submitBtn) submitBtn.click();
-            }
-          }, 100);
-        }
+        autoSubmitLoginForm(fillRoot);
       }
 
       sendResponse({ filled: true, result });
@@ -149,6 +134,28 @@ function isSubmitControl(element) {
   if (tagName === "input") return type === "submit";
   if (tagName === "button") return type === "" || type === "submit";
   return false;
+}
+function autoSubmitLoginForm(root) {
+  const passwordInput = findPasswordInput(root);
+  const usernameInput = findUsernameInput(passwordInput, root);
+  const input = passwordInput || usernameInput;
+  if (!input) return;
+
+  const form = input.form || (input.closest ? input.closest("form") : null);
+  window.setTimeout(() => {
+    if (form) {
+      const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+      if (submitBtn) {
+        submitBtn.click();
+      } else {
+        form.submit();
+      }
+    } else {
+      const scope = root && root.querySelector ? root : document;
+      const submitBtn = scope.querySelector('button[type="submit"], input[type="submit"]');
+      if (submitBtn) submitBtn.click();
+    }
+  }, 100);
 }
 function fillLogin(credential, root) {
   const passwordInput = findPasswordInput(root);
