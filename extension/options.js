@@ -350,7 +350,8 @@ function renderTrustedBrowsers(clients) {
     meta.className = 'trusted-browser-meta';
     meta.textContent = [
       client.Current ? 'This browser' : '',
-      formatDate(client.CreatedUtcMs)
+      formatDate(client.CreatedUtcMs),
+      formatClientPermissions(client.Permissions)
     ].filter(Boolean).join(' / ');
 
     details.append(name, meta);
@@ -365,6 +366,19 @@ function renderTrustedBrowsers(clients) {
     row.append(details, revoke);
     elements.trustedBrowserList.appendChild(row);
   }
+}
+
+function formatClientPermissions(permissions) {
+  const labels = {
+    read: 'Read',
+    write: 'Write',
+    manageClients: 'Manage browsers'
+  };
+  const values = Array.isArray(permissions) && permissions.length ? permissions : ['read', 'write', 'manageClients'];
+  return values
+    .map((permission) => labels[permission])
+    .filter(Boolean)
+    .join(', ');
 }
 
 function normalizeSiteOverrides(rules) {

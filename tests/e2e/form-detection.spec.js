@@ -188,11 +188,12 @@ test.describe('content script form detection', () => {
 
     await page.locator('#redirect-username').fill('redirect@example.com');
     await page.locator('#redirect-password').fill('redirect-secret');
-    await Promise.all([
+    const [remembered] = await Promise.all([
       rememberedCredential,
       page.locator('button[type="submit"]').click()
     ]);
-    expect(pendingSubmittedCredential).not.toBeNull();
+    expect(remembered).not.toBeNull();
+    pendingSubmittedCredential = remembered;
     await page.waitForURL(/login-page\.html/);
 
     await page.addScriptTag({ path: 'extension/contentScript.js' });

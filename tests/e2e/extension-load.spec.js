@@ -137,12 +137,14 @@ test.describe('KeePassBrowserBridge Extension', () => {
                       ClientId: 'client-current',
                       ClientName: 'This Chrome',
                       Current: true,
+                      Permissions: ['read', 'write', 'manageClients'],
                       CreatedUtcMs: 1779990000000
                     },
                     {
                       ClientId: 'client-old',
                       ClientName: 'Old Browser',
                       Current: false,
+                      Permissions: ['read'],
                       CreatedUtcMs: 1779900000000
                     }
                   ]
@@ -863,6 +865,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await expect(page.locator('#clientsPanel')).toBeVisible();
     await expect(page.locator('.client-title')).toContainText(['This Chrome', 'Old Browser']);
+    await expect(page.locator('.client', { hasText: 'This Chrome' })).toContainText('Read, Write, Manage browsers');
+    await expect(page.locator('.client', { hasText: 'Old Browser' })).toContainText('Read');
     await expect(page.locator('#message')).toHaveText('2 trusted browser(s).');
 
     const oldBrowserRevoke = page.locator('.client', { hasText: 'Old Browser' }).locator('button', { hasText: 'Revoke' });

@@ -53,6 +53,9 @@ namespace KeePassBrowserBridge.Bridge
             if (RequiresAuthentication(request.Method) && !TrackAuthenticatedRequest(request, nowUtcMs))
                 return Error(request, "replayed_request", "Request ID has already been used.");
 
+            if (RequiresAuthentication(request.Method) && !HasPermission(request))
+                return Error(request, "permission_denied", "Trusted browser is not allowed to perform this action.");
+
             try
             {
                 if (request.Method == BridgeMethods.Hello) return Hello(request);
@@ -147,6 +150,7 @@ namespace KeePassBrowserBridge.Bridge
                     ClientId = client.ClientId,
                     ClientName = client.ClientName,
                     CreatedUtcMs = client.CreatedUtcMs,
+                    Permissions = TrustedClientPermissions.Normalize(client.Permissions),
                     Trusted = true,
                     Current = string.Equals(client.ClientId, request.ClientId, StringComparison.Ordinal)
                 };
@@ -255,6 +259,28 @@ namespace KeePassBrowserBridge.Bridge
                 method != BridgeMethods.PairBegin &&
                 method != BridgeMethods.PairComplete &&
                 method != BridgeMethods.PairCancel;
+        }
+
+        private bool HasPermission(BridgeRequest request)
+        {
+            TrustedClient client = m_trustedClients.Get(request.ClientId);
+            if (client == null) return false;
+
+            string required = RequiredPermission(request.Method);
+            return string.IsNullOrEmpty(required) || TrustedClientPermissions.Has(client, required);
+        }
+
+        private static string RequiredPermission(string method)
+        {
+            if (method == BridgeMethods.LoginsQuery || method == BridgeMethods.ClientStatus)
+                return TrustedClientPermissions.Read;
+            if (method == BridgeMethods.LoginsCreate ||
+                method == BridgeMethods.LoginsUpdate ||
+                method == BridgeMethods.LoginsFillAck)
+                return TrustedClientPermissions.Write;
+            if (method == BridgeMethods.ClientsList || method == BridgeMethods.ClientsRevoke)
+                return TrustedClientPermissions.ManageClients;
+            return string.Empty;
         }
 
         private static BridgeResponse Success(BridgeRequest request, string payload)

@@ -77,6 +77,8 @@ internal static class Program
         BridgeHandlerCancelsPairingSession();
         BridgeHandlerListsTrustedClientsWithoutSecrets();
         BridgeHandlerRevokesTrustedClient();
+        BridgeHandlerRejectsWriteWhenTrustedClientIsReadOnly();
+        BridgeHandlerListsTrustedClientPermissions();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerSavesDatabaseAfterSuccessfulCreate();
@@ -1093,6 +1095,43 @@ internal static class Program
         AssertTrue(store.IsTrusted("client-1"), "requesting client should remain trusted when revoking another client");
     }
 
+    private static void BridgeHandlerRejectsWriteWhenTrustedClientIsReadOnly()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret", new string[] { TrustedClientPermissions.Read });
+        PwDatabase database = CreateDatabase();
+        BridgeRequestHandler handler = CreateHandler(database, store);
+        string payload = BridgeJsonSerializer.Serialize(new CreateLoginPayload
+        {
+            Title = "Example",
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsCreate, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "read-only trusted clients should not create KeePass entries");
+        AssertEqual("permission_denied", response.ErrorCode, "write permission error code mismatch");
+        AssertEqual(0, (int)database.RootGroup.Entries.UCount, "permission denied write should not mutate the database");
+    }
+
+    private static void BridgeHandlerListsTrustedClientPermissions()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret", new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.Write, TrustedClientPermissions.ManageClients });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientsList, "client-1", "secret", "{}");
+
+        BridgeResponse response = handler.Handle(request);
+        ClientsListResponsePayload payload = BridgeJsonSerializer.Deserialize<ClientsListResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "clients.list should succeed for permission inspection: " + response.Error);
+        AssertEqual(3, payload.Clients[0].Permissions.Length, "clients.list should include trusted client permissions");
+        AssertEqual(TrustedClientPermissions.Read, payload.Clients[0].Permissions[0], "first listed permission mismatch");
+        AssertEqual(TrustedClientPermissions.Write, payload.Clients[0].Permissions[1], "second listed permission mismatch");
+        AssertEqual(TrustedClientPermissions.ManageClients, payload.Clients[0].Permissions[2], "third listed permission mismatch");
+    }
+
     private static void BridgeHandlerReturnsLoginsForAuthenticatedQuery()
     {
         TrustedClientStore store = CreateTrustedStore("client-1", "secret");
@@ -1451,12 +1490,18 @@ internal static class Program
 
     private static TrustedClientStore CreateTrustedStore(string clientId, string secret)
     {
+        return CreateTrustedStore(clientId, secret, TrustedClientPermissions.Default());
+    }
+
+    private static TrustedClientStore CreateTrustedStore(string clientId, string secret, string[] permissions)
+    {
         TrustedClientStore store = new TrustedClientStore();
         store.AddOrUpdate(new TrustedClient
         {
             ClientId = clientId,
             ClientName = "Chrome",
             SharedSecret = secret,
+            Permissions = permissions,
             CreatedUtcMs = NowMs()
         });
         return store;

@@ -103,6 +103,7 @@ namespace KeePassBrowserBridge.Bridge
         public long CreatedUtcMs { get; set; }
         public bool Trusted { get; set; }
         public bool Current { get; set; }
+        public string[] Permissions { get; set; }
     }
 
     public sealed class ClientsListResponsePayload

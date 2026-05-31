@@ -85,6 +85,7 @@ namespace KeePassBrowserBridge.Bridge
                 ClientName = NormalizeClientName(clientName),
                 SharedSecret = m_secretGenerator.CreateSecret(),
                 ExtensionOrigin = NormalizeExtensionOrigin(extensionOrigin),
+                Permissions = TrustedClientPermissions.Default(),
                 CreatedUtcMs = m_nowProvider()
             };
 

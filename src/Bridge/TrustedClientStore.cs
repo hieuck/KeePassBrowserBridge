@@ -65,7 +65,10 @@ namespace KeePassBrowserBridge.Bridge
             foreach (TrustedClient client in data.Clients)
             {
                 if (client != null && !string.IsNullOrWhiteSpace(client.ClientId))
+                {
+                    client.Permissions = TrustedClientPermissions.Normalize(client.Permissions);
                     m_clients[client.ClientId] = client;
+                }
             }
         }
 
@@ -93,6 +96,53 @@ namespace KeePassBrowserBridge.Bridge
 
         [DataMember]
         public long CreatedUtcMs { get; set; }
+
+        [DataMember]
+        public string[] Permissions { get; set; }
+    }
+
+    internal static class TrustedClientPermissions
+    {
+        public const string Read = "read";
+        public const string Write = "write";
+        public const string ManageClients = "manageClients";
+
+        public static string[] Default()
+        {
+            return new string[] { Read, Write, ManageClients };
+        }
+
+        public static string[] Normalize(string[] permissions)
+        {
+            if (permissions == null || permissions.Length == 0) return Default();
+
+            List<string> normalized = new List<string>();
+            foreach (string permission in permissions)
+            {
+                if (string.IsNullOrWhiteSpace(permission)) continue;
+                string trimmed = permission.Trim();
+                if (!IsKnown(trimmed)) continue;
+                if (!normalized.Contains(trimmed)) normalized.Add(trimmed);
+            }
+
+            return normalized.Count == 0 ? Default() : normalized.ToArray();
+        }
+
+        public static bool Has(TrustedClient client, string permission)
+        {
+            if (client == null) return false;
+            string[] permissions = Normalize(client.Permissions);
+            foreach (string value in permissions)
+            {
+                if (string.Equals(value, permission, StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
+
+        private static bool IsKnown(string permission)
+        {
+            return permission == Read || permission == Write || permission == ManageClients;
+        }
     }
 
     [DataContract]

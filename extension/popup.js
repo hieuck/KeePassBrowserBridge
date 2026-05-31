@@ -957,7 +957,11 @@ function renderClients(clients) {
 
     const meta = document.createElement('div');
     meta.className = 'client-meta';
-    meta.textContent = `${client.Current ? 'This browser - ' : ''}${formatDate(client.CreatedUtcMs)}`;
+    meta.textContent = [
+      client.Current ? 'This browser' : '',
+      formatDate(client.CreatedUtcMs),
+      formatClientPermissions(client.Permissions)
+    ].filter(Boolean).join(' - ');
 
     const revoke = document.createElement('button');
     revoke.type = 'button';
@@ -975,6 +979,19 @@ function renderClients(clients) {
     empty.textContent = 'No trusted browsers.';
     elements.clientsPanel.append(empty);
   }
+}
+
+function formatClientPermissions(permissions) {
+  const labels = {
+    read: 'Read',
+    write: 'Write',
+    manageClients: 'Manage browsers'
+  };
+  const values = Array.isArray(permissions) && permissions.length ? permissions : ['read', 'write', 'manageClients'];
+  return values
+    .map((permission) => labels[permission])
+    .filter(Boolean)
+    .join(', ');
 }
 
 function formatDate(ms) {
