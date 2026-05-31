@@ -128,6 +128,7 @@ const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 const timerCalls = [];
 const intervalCalls = [];
 let fakeNow = 1779990000000;
+let clipboardText = 'code: 955-963';
 
 const fakeDocument = {
   activeElement: null,
@@ -254,7 +255,7 @@ const sandbox = {
   },
   navigator: {
     clipboard: {
-      readText: async () => 'code: 955-963'
+      readText: async () => clipboardText
     }
   }
 };
@@ -349,6 +350,7 @@ sandbox.renderState({
 });
 elements.pairingCode.value = '';
 sentMessages.length = 0;
+clipboardText = 'code: 955-963';
 await sandbox.pastePairingCode();
 assert.deepEqual(
   sentMessages.map((message) => message.type),
@@ -358,6 +360,24 @@ assert.deepEqual(
 assert.equal(sentMessages[0].pairingCode, '955963', 'paste should submit the extracted pairing code');
 assert.equal(elements.pairingPanel.classList.contains('hidden'), true, 'paste and pair should hide the pairing panel after success');
 assert.equal(elements.message.textContent, 'Browser paired with KeePass.', 'paste and pair should confirm success to the user');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: false,
+  pairingSessionId: 'session-invalid-clipboard',
+  pairingExpiresAt: fakeNow + 125000,
+  autoFillEnabled: false
+});
+elements.pairingCode.value = '';
+sentMessages.length = 0;
+clipboardText = 'session 123456789';
+await assert.rejects(
+  () => sandbox.pastePairingCode(),
+  /Clipboard does not contain a six digit pairing code/,
+  'paste should reject ambiguous clipboard text with more than six digits'
+);
+assert.deepEqual(sentMessages, [], 'paste should not submit an ambiguous clipboard code to the background');
+assert.equal(elements.pairingCode.value, '', 'paste should leave the pairing input empty after an ambiguous clipboard code');
 
 timerCalls.length = 0;
 sandbox.renderState({

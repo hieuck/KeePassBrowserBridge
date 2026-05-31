@@ -319,7 +319,7 @@ async function pastePairingCode() {
 
 function extractPairingCode(text) {
   const digits = String(text || '').replace(/\D/g, '');
-  return digits.length >= 6 ? digits.slice(0, 6) : '';
+  return digits.length === 6 ? digits : '';
 }
 
 async function cancelPair() {
