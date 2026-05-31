@@ -138,6 +138,50 @@ test.describe('content script form detection', () => {
     });
   });
 
+  test('save prompt shows permission errors from KeePass', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_CREATE_LOGIN') {
+              return {
+                ok: false,
+                errorCode: 'permission_denied',
+                error: 'Trusted browser is not allowed to save KeePass entries.'
+              };
+            }
+            if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#username').fill('readonly@example.com');
+    await page.locator('#password').fill('secret');
+    await page.locator('button[type="submit"]').click();
+    const prompt = page.locator('.kbb-save-prompt');
+    await expect(prompt).toBeVisible();
+
+    await prompt.locator('button', { hasText: 'Save' }).click();
+
+    await expect(prompt).toContainText('Trusted browser is not allowed to save KeePass entries.');
+    await expect(prompt.locator('button', { hasText: 'Retry' })).toBeVisible();
+  });
+
   test('restores save prompt after form submit navigates to another page', async ({ page }) => {
     let pendingSubmittedCredential = null;
     let resolveRememberedCredential;

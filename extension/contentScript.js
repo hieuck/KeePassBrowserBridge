@@ -1525,6 +1525,7 @@ function showSaveLoginPrompt(credential) {
   fields.appendChild(usernameInput.label);
   fields.appendChild(urlInput.label);
   fields.appendChild(otpInput.label);
+  const errorMessage = createPromptErrorMessage();
   const actions = document.createElement("div");
   actions.style.display = "flex";
   actions.style.justifyContent = "flex-end";
@@ -1542,6 +1543,7 @@ function showSaveLoginPrompt(credential) {
   save.addEventListener("click", async () => {
     save.disabled = true;
     save.textContent = "Saving...";
+    clearPromptError(errorMessage);
     const login = {
       title: titleInput.input.value,
       group: groupInput.input.value,
@@ -1560,12 +1562,14 @@ function showSaveLoginPrompt(credential) {
     } else {
       save.disabled = false;
       save.textContent = "Retry";
+      showPromptError(errorMessage, mutationResponseError(result, "KeePass entry could not be saved."));
     }
   });
   actions.appendChild(dismiss);
   actions.appendChild(save);
   prompt.appendChild(title);
   prompt.appendChild(fields);
+  prompt.appendChild(errorMessage);
   prompt.appendChild(actions);
   document.documentElement.appendChild(prompt);
   window.__keepassBrowserBridgeMutationPrompt = prompt;
@@ -1647,6 +1651,7 @@ function showUpdateLoginPrompt(entry, credential) {
   fields.appendChild(passwordInput.label);
   fields.appendChild(otpInput.label);
   fields.appendChild(clearOtpInput.label);
+  const errorMessage = createPromptErrorMessage();
   const actions = document.createElement("div");
   actions.style.display = "flex";
   actions.style.justifyContent = "flex-end";
@@ -1664,6 +1669,7 @@ function showUpdateLoginPrompt(entry, credential) {
   update.addEventListener("click", async () => {
     update.disabled = true;
     update.textContent = "Updating...";
+    clearPromptError(errorMessage);
     const login = {
       entryId: entry.EntryId,
       pageUrl: credential.url,
@@ -1687,15 +1693,49 @@ function showUpdateLoginPrompt(entry, credential) {
     } else {
       update.disabled = false;
       update.textContent = "Retry";
+      showPromptError(errorMessage, mutationResponseError(result, "KeePass entry could not be updated."));
     }
   });
   actions.appendChild(dismiss);
   actions.appendChild(update);
   prompt.appendChild(title);
   prompt.appendChild(fields);
+  prompt.appendChild(errorMessage);
   prompt.appendChild(actions);
   document.documentElement.appendChild(prompt);
   window.__keepassBrowserBridgeMutationPrompt = prompt;
+}
+function createPromptErrorMessage() {
+  const message = document.createElement("div");
+  message.className = "kbb-prompt-error";
+  message.setAttribute("role", "alert");
+  message.style.display = "none";
+  message.style.marginTop = "8px";
+  message.style.padding = "7px 8px";
+  message.style.border = "1px solid #f3b4ad";
+  message.style.borderRadius = "6px";
+  message.style.background = "#fff5f4";
+  message.style.color = "#b42318";
+  message.style.font =
+    '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  return message;
+}
+function showPromptError(target, message) {
+  if (!target) return;
+  target.textContent = message;
+  target.style.display = "block";
+}
+function clearPromptError(target) {
+  if (!target) return;
+  target.textContent = "";
+  target.style.display = "none";
+}
+function mutationResponseError(result, fallback) {
+  if (!result) return fallback;
+  if (result.error) return result.error;
+  if (result.response && result.response.Error) return result.response.Error;
+  if (result.response && result.response.ErrorCode) return result.response.ErrorCode;
+  return fallback;
 }
 function closeMutationPrompt() {
   const prompt = window.__keepassBrowserBridgeMutationPrompt;
