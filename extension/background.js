@@ -1061,7 +1061,11 @@ async function generateAndFillPassword(tabId) {
     }
     
     await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
-    await chrome.tabs.sendMessage(tabId, { type: 'KBB_FILL', credential: { Password: password } });
+    await chrome.tabs.sendMessage(tabId, {
+      type: 'KBB_FILL',
+      credential: { Password: password },
+      fieldRole: 'password'
+    });
   } catch (error) {
     if (isExpectedAccessStateError(error)) return;
     console.error('Password generation failed:', error);

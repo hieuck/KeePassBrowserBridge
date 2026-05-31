@@ -948,5 +948,6 @@ await new Promise(r => setTimeout(r, 100)); // wait for async handler
 assert.ok(sentMessage, 'sendMessage should be called on context menu click');
 assert.equal(sentMessage.type, 'KBB_FILL');
 assert.ok(sentMessage.credential.Password.length === 16, 'should generate 16 char password');
+assert.equal(sentMessage.fieldRole, 'password', 'generated passwords should fill the focused editable field');
 
 console.log('Background tests passed.');
