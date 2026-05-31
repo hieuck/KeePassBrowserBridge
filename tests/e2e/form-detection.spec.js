@@ -1221,6 +1221,41 @@ test.describe('content script form detection', () => {
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
   });
 
+  test('does not treat profile, payment, or numeric settings forms as login fields', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/non-login-profile-payment-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple',
+            OneTimePassword: '123456'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#full-name')).toHaveValue('');
+    await expect(page.locator('#receipt-email')).toHaveValue('');
+    await expect(page.locator('#city')).toHaveValue('');
+    await expect(page.locator('#card-name')).toHaveValue('');
+    await expect(page.locator('#card-number')).toHaveValue('');
+    await expect(page.locator('#card-cvc')).toHaveValue('');
+    await expect(page.locator('#accounts-per-page')).toHaveValue('20');
+  });
+
   test('adds OTP inline button to Google-style Vietnamese authenticator input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/google-totp-vi-page.html');

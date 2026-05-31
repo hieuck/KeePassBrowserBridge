@@ -389,6 +389,7 @@ function findPasswordInput(root) {
   );
 }
 function findUsernameInput(passwordInput, root) {
+  const hasPasswordContext = Boolean(passwordInput);
   const candidates = visibleInputs("input", root).filter((input) => {
     const type = (input.getAttribute("type") || "text").toLowerCase();
     return (
@@ -403,7 +404,11 @@ function findUsernameInput(passwordInput, root) {
       index,
       score: scoreUsernameCandidate(input),
     }))
-    .filter((candidate) => candidate.score > -50);
+    .filter((candidate) =>
+      hasPasswordContext
+        ? candidate.score > -50
+        : candidate.score >= 40 && isUsernameFirstLoginCandidate(candidate.input, candidate.score),
+    );
   const scoped = passwordInput
     ? scoredCandidates.filter(
         (candidate) =>
@@ -1763,6 +1768,7 @@ function scoreUsernameCandidate(input) {
   if (type === "search") score -= 100;
   if (/\bnewsletter\b|\bsubscribe\b|\bsubscription\b|\bmarketing\b|\bupdates\b/.test(text))
     score -= 220;
+  if (isProfileOrPaymentFieldText(text)) score -= 260;
   if (/otp|totp|2fa|mfa|authenticator|verification|passcode/.test(text))
     score -= 100;
   if (/nhập mã|nhap ma|mã xác minh|ma xac minh|xác minh|xac minh|mã xác thực|ma xac thuc/.test(text))
@@ -1770,11 +1776,21 @@ function scoreUsernameCandidate(input) {
   if (/\bcode\b|\btoken\b|\bpin\b/.test(text)) score -= 100;
   return score;
 }
+function isUsernameFirstLoginCandidate(input, score) {
+  if (!input || score < 40) return false;
+  const context = credentialContextText(input);
+  if (isProfileOrPaymentFieldText(context)) return false;
+  return /autocomplete=["']?username|current-password|sign\s*in|log\s*in|\blogin\b|account|identifier|continue|next|email/.test(context);
+}
+function isProfileOrPaymentFieldText(text) {
+  return /\b(city|address|street|postal|postcode|zip|state|province|country|shipping|billing|checkout|receipt|profile|full\s*name|first\s*name|last\s*name|card|cardholder|ccname|cc-name|ccnumber|cc-number|cc-csc|cvc|cvv|security\s*code|payment|pay\s*now|accounts\s*per\s*page|pagesize)\b/.test(text);
+}
 function scoreOtpCandidate(input) {
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
   const inputMode = (input.getAttribute("inputmode") || "").toLowerCase();
   const text = fieldText(input);
   let score = 0;
+  if (isProfileOrPaymentFieldText(text)) score -= 999;
   if (autocomplete === "one-time-code") score += 120;
   if (/otp|totp|2fa|mfa|authenticator|verification|passcode/.test(text))
     score += 90;
@@ -1804,6 +1820,14 @@ function fieldText(input) {
   ];
   const label = input.closest ? input.closest("label") : null;
   if (label && label.textContent) parts.push(label.textContent);
+  return parts.join(" ").toLowerCase();
+}
+function credentialContextText(input) {
+  const parts = [fieldText(input)];
+  const form = input && input.form ? input.form : input && input.closest ? input.closest("form") : null;
+  if (form && form.textContent) parts.push(form.textContent);
+  const region = input && input.closest ? input.closest("main, section, article, dialog") : null;
+  if (region && region.textContent) parts.push(region.textContent.slice(0, 2000));
   return parts.join(" ").toLowerCase();
 }
 function referencedElementText(input, attributeName) {

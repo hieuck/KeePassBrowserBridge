@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Profile and payment forms</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    form { display: grid; gap: 14px; max-width: 420px; margin-bottom: 32px; }
+    label { display: grid; gap: 6px; }
+    input, select { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Checkout details</h1>
+    <form id="shipping">
+      <label>
+        Full name
+        <input id="full-name" name="name" type="text" autocomplete="name">
+      </label>
+      <label>
+        Email receipt
+        <input id="receipt-email" name="email" type="email" autocomplete="email">
+      </label>
+      <label>
+        City
+        <input id="city" name="city" type="text" autocomplete="address-level2">
+      </label>
+      <button type="submit">Save shipping address</button>
+    </form>
+
+    <form id="payment">
+      <label>
+        Name on card
+        <input id="card-name" name="ccname" type="text" autocomplete="cc-name">
+      </label>
+      <label>
+        Card number
+        <input id="card-number" name="ccnumber" type="text" autocomplete="cc-number" inputmode="numeric">
+      </label>
+      <label>
+        Security code
+        <input id="card-cvc" name="cvc" type="text" autocomplete="cc-csc" inputmode="numeric">
+      </label>
+      <button type="submit">Pay now</button>
+    </form>
+
+    <form id="pagination">
+      <label>
+        Custom accounts per page
+        <input id="accounts-per-page" name="pageSize" type="number" min="1" max="100" value="20">
+      </label>
+    </form>
+  </main>
+</body>
+</html>
