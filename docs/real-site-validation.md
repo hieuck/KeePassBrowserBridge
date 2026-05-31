@@ -30,6 +30,7 @@ extension test.
 | Password reset/recovery email forms must not be username-first login | `password-reset-email-page.html` | `does not treat password reset email forms as username-first login` |
 | fill.dev-style profile/payment/settings fields must not be login or OTP | `non-login-profile-payment-page.html` | `does not treat profile, payment, or numeric settings forms as login fields` |
 | Sign-up/create-account forms with only new-password fields must not be auto-filled as logins | `signup-new-password-page.html` | `does not autofill sign-up forms that only ask for a new password` |
+| Sign-up/create-account forms with only new-password fields must not trigger save prompts | `signup-new-password-page.html` | `does not prompt to save sign-up forms that only ask for a new password` |
 | Mixed checkout/payment plus login pages should not fill a different form while focused in non-login fields | `mixed-fill-dev-page.html` | `does not fallback to a different form when focus is inside non-login fields`, `still fills the login form on mixed pages when no non-login field is focused` |
 | Page contains search plus login; popup fill should ignore non-login focus and fall back to login form | `search-and-login-page.html` | `falls back to page login form when popup fill focus is outside login fields` |
 | Page contains two login forms; inline fill should use the clicked form | `two-login-forms.html` | `fills the login form that owns the clicked inline button` |

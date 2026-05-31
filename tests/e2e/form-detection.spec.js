@@ -1376,6 +1376,41 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#signup-password-confirm')).toHaveValue('');
   });
 
+  test('does not prompt to save sign-up forms that only ask for a new password', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/signup-new-password-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#signup-email').fill('new-account@example.com');
+    await page.locator('#signup-password').fill('new-account-secret');
+    await page.locator('#signup-password-confirm').fill('new-account-secret');
+    await page.locator('button[type="submit"]').click();
+
+    await expect(page.locator('.kbb-save-prompt')).toHaveCount(0);
+    const rememberMessages = await page.evaluate(() => window.__kbbMessages.filter((message) => message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL'));
+    expect(rememberMessages).toHaveLength(0);
+  });
+
   test('does not fallback to a different form when focus is inside non-login fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/mixed-fill-dev-page.html');

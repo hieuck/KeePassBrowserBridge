@@ -286,7 +286,11 @@ function collectCredentialFromForm(root) {
     Array.from(scope.querySelectorAll('input[type="password"]'))
       .filter(
         (input) =>
-          isVisible(input) && !input.disabled && !input.readOnly && input.value,
+          isVisible(input) &&
+          !input.disabled &&
+          !input.readOnly &&
+          input.value &&
+          isLoginPasswordInput(input),
       )
       .sort((a, b) => b.value.length - a.value.length)[0] || null;
   const usernameInput = findUsernameInput(passwordInput, scope);
