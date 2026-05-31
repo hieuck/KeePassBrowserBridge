@@ -449,7 +449,9 @@ function findUsernameInput(passwordInput, root) {
     .map((input, index) => ({
       input,
       index,
-      score: scoreUsernameCandidate(input),
+      score:
+        scoreUsernameCandidate(input) +
+        passwordLoginUsernameBoost(input, passwordInput),
     }))
     .filter((candidate) =>
       hasPasswordContext
@@ -478,6 +480,20 @@ function findUsernameInput(passwordInput, root) {
     (a, b) => b.score - a.score || b.index - a.index,
   );
   return ranked[0].input;
+}
+function passwordLoginUsernameBoost(input, passwordInput) {
+  if (!input || !passwordInput) return 0;
+
+  const type = (input.getAttribute("type") || "text").toLowerCase();
+  const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
+  if (type !== "tel" && autocomplete !== "tel") return 0;
+
+  const context = credentialContextText(passwordInput);
+  if (!/\bsign\s*in\b|\blog\s*in\b|\blogin\b|\bpassword\b/.test(context)) {
+    return 0;
+  }
+
+  return 260;
 }
 function findOtpInput(passwordInput, root) {
   const candidates = visibleInputs("input", root)

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Phone login fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    form { display: grid; gap: 12px; max-width: 420px; }
+    label { display: grid; gap: 6px; }
+    input { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <form id="phone-login">
+      <h1>Sign in</h1>
+      <label>
+        Phone number
+        <input id="phone" name="phone" type="tel" autocomplete="tel">
+      </label>
+      <label>
+        Password
+        <input id="password" name="password" type="password" autocomplete="current-password">
+      </label>
+      <button type="submit">Log in</button>
+    </form>
+  </main>
+</body>
+</html>

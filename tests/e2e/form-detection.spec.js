@@ -1205,6 +1205,36 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#password')).toHaveValue('correct horse battery staple');
   });
 
+  test('fills phone number username when a tel field belongs to a password login form', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/phone-login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: '+15551234567',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: true,
+      result: {
+        usernameFilled: true,
+        passwordFilled: true
+      }
+    });
+    await expect(page.locator('#phone')).toHaveValue('+15551234567');
+    await expect(page.locator('#password')).toHaveValue('correct horse battery staple');
+  });
+
   test('ignores opacity-hidden login decoys when filling a visible login form', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/opacity-hidden-login-page.html');
