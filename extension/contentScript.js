@@ -610,11 +610,15 @@ function observeShadowRoot(shadowRoot) {
   });
 }
 function isVisible(element) {
+  if (element.closest && element.closest('[aria-hidden="true"], [hidden]')) {
+    return false;
+  }
   const style = window.getComputedStyle(element);
   const rect = element.getBoundingClientRect();
   return (
     style.visibility !== "hidden" &&
     style.display !== "none" &&
+    style.opacity !== "0" &&
     rect.width > 0 &&
     rect.height > 0
   );

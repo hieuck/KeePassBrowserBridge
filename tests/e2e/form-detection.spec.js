@@ -1205,6 +1205,38 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#password')).toHaveValue('correct horse battery staple');
   });
 
+  test('ignores opacity-hidden login decoys when filling a visible login form', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/opacity-hidden-login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: true,
+      result: {
+        usernameFilled: true,
+        passwordFilled: true
+      }
+    });
+    await expect(page.locator('#hidden-username')).toHaveValue('');
+    await expect(page.locator('#hidden-password')).toHaveValue('');
+    await expect(page.locator('#visible-username')).toHaveValue('alice@example.com');
+    await expect(page.locator('#visible-password')).toHaveValue('correct horse battery staple');
+  });
+
   test('does not add KeePass inline button to dashboard search input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/dashboard-search-page.html');

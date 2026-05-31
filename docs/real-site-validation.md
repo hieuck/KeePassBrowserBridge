@@ -15,6 +15,7 @@ extension test.
 | Real-site behavior | Local fixture | Automated coverage |
 | --- | --- | --- |
 | Standard username/password login | `login-page.html` | `fills username and password on a standard login form` |
+| Hidden decoy login fields from animations/honeypots must not receive credentials | `opacity-hidden-login-page.html` | `ignores opacity-hidden login decoys when filling a visible login form` |
 | Username-first login across navigation, like Dropbox-style email then password | `multi-step-username.html`, `multi-step-password.html` | `remembers selected login across username-first multi-step flow` |
 | Username-first login on one page, where password appears after Continue | `same-page-username-first.html` | `fills password after same-page username-first step reveals password field` |
 | Login label says "Email address" and should still be treated as a login step | `username-first-email-address.html` | `treats username-first email address step as a login field` |
@@ -25,7 +26,10 @@ extension test.
 | Ordinary phone/search input near verification copy must not be treated as OTP | `verification-copy-phone-page.html` | `does not treat ordinary phone input as OTP because nearby copy mentions verification code` |
 | viotp/DataTables search box must not be username | `dashboard-search-page.html` plus unit mock | `does not add KeePass inline button to dashboard search input`, `datatable search input should not score as username` |
 | Newsletter/contact email fields must not be username-first login | `non-login-email-page.html`, `non-login-contact-page.html` | `does not add KeePass inline button to newsletter email signup`, `does not treat contact support email fields as username-first login` |
+| Password reset/recovery email forms must not be username-first login | `password-reset-email-page.html` | `does not treat password reset email forms as username-first login` |
 | fill.dev-style profile/payment/settings fields must not be login or OTP | `non-login-profile-payment-page.html` | `does not treat profile, payment, or numeric settings forms as login fields` |
+| Sign-up/create-account forms with only new-password fields must not be auto-filled as logins | `signup-new-password-page.html` | `does not autofill sign-up forms that only ask for a new password` |
+| Mixed checkout/payment plus login pages should not fill a different form while focused in non-login fields | `mixed-fill-dev-page.html` | `does not fallback to a different form when focus is inside non-login fields`, `still fills the login form on mixed pages when no non-login field is focused` |
 | Page contains search plus login; popup fill should ignore non-login focus and fall back to login form | `search-and-login-page.html` | `falls back to page login form when popup fill focus is outside login fields` |
 | Page contains two login forms; inline fill should use the clicked form | `two-login-forms.html` | `fills the login form that owns the clicked inline button` |
 | Page contains two login forms; popup create should collect the focused form | `two-login-forms.html` | `collects page credential from the focused login form for popup create` |
