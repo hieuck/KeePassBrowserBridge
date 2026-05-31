@@ -133,9 +133,11 @@ namespace KeePassBrowserBridge.Bridge
 
         private BridgeResponse ClientStatus(BridgeRequest request)
         {
+            TrustedClient client = m_trustedClients.Get(request.ClientId);
             return Success(request, BridgeJsonSerializer.Serialize(new ClientStatusResponsePayload
             {
-                Trusted = m_trustedClients.IsTrusted(request.ClientId)
+                Trusted = client != null,
+                Permissions = client == null ? new string[0] : TrustedClientPermissions.Normalize(client.Permissions)
             }));
         }
 

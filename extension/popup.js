@@ -204,18 +204,22 @@ async function saveEndpoint() {
 async function checkStatus() {
   await send({ type: 'KBB_HELLO' });
   const state = await send({ type: 'KBB_GET_STATE' });
-  renderState(state);
 
   if (state.locked) {
+    renderState(state);
     setMessage('KeePass bridge is reachable. Unlock KeePass Bridge to use logins.');
     return;
   }
 
   if (state.paired) {
-    await send({ type: 'KBB_STATUS' });
+    const status = await send({ type: 'KBB_STATUS' });
+    state.permissions = normalizeClientPermissions(status.Permissions);
+    state.trusted = status.Trusted === true;
+    renderState(state);
     setStatus('Paired', 'paired');
     setMessage('KeePass bridge is reachable.');
   } else {
+    renderState(state);
     setStatus('Ready', '');
     setMessage('KeePass bridge is reachable. Pair this browser to query logins.');
   }
@@ -389,11 +393,12 @@ async function queryLogins() {
 
 async function beginCreateLogin() {
   const state = await send({ type: 'KBB_GET_STATE' });
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   if (state.locked) {
     setMessage('Unlock KeePass Bridge before creating logins.', true);
     return;
   }
+  ensureWriteActionsEnabled();
 
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
   const pageCredential = await collectPageCredential();
@@ -551,6 +556,7 @@ async function getClipboardClearDelayMs() {
 
 async function updateLogin(entry, form) {
   ensureCredentialActionsEnabled();
+  ensureWriteActionsEnabled();
   const login = {
     entryId: entry.EntryId,
     title: form.querySelector('[name="title"]').value,
@@ -585,6 +591,7 @@ async function updateLogin(entry, form) {
 
 async function createLogin(form) {
   ensureCredentialActionsEnabled();
+  ensureWriteActionsEnabled();
   const login = {
     title: form.querySelector('[name="title"]').value,
     group: form.querySelector('[name="group"]').value,
@@ -645,8 +652,25 @@ async function filterCurrentLogins() {
 
 async function refreshState() {
   const state = await send({ type: 'KBB_GET_STATE' });
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   setMessage(state.paired ? 'Ready to query KeePass.' : 'Pair this browser with KeePass.');
+}
+
+async function hydrateStatePermissions(state) {
+  if (!state || !state.paired || state.locked) {
+    return state;
+  }
+
+  try {
+    const status = await send({ type: 'KBB_STATUS' });
+    return {
+      ...state,
+      trusted: status.Trusted === true,
+      permissions: normalizeClientPermissions(status.Permissions)
+    };
+  } catch (error) {
+    return state;
+  }
 }
 
 async function renderAbout() {
@@ -740,6 +764,8 @@ function renderStateNotice(state, pairingActive) {
     warning = true;
   } else if (pairingActive) {
     text = 'Enter the six digit code shown in KeePass to finish pairing.';
+  } else if (state.paired && !hasClientPermission('write')) {
+    text = 'Read-only access: this browser can find logins, but cannot create or update KeePass entries.';
   } else if (state.paired) {
     text = 'Ready to find, fill, create, and update KeePass logins.';
   } else {
@@ -753,7 +779,7 @@ function renderStateNotice(state, pairingActive) {
 function syncCredentialActionAvailability() {
   const enabled = credentialActionsEnabled();
   elements.queryLogins.disabled = !enabled;
-  elements.newLogin.disabled = !enabled;
+  elements.newLogin.disabled = !enabled || !hasClientPermission('write');
   elements.toggleSiteAutoFill.disabled = !enabled;
   elements.toggleSiteAutoSubmit.disabled = !enabled;
 }
@@ -766,6 +792,20 @@ function ensureCredentialActionsEnabled() {
   if (!credentialActionsEnabled()) {
     throw new Error('Unlock KeePass Bridge to use logins.');
   }
+}
+
+function ensureWriteActionsEnabled() {
+  if (!hasClientPermission('write')) {
+    throw new Error('This browser is read-only. Enable Write permission to create or update KeePass entries.');
+  }
+}
+
+function hasClientPermission(permission) {
+  if (!currentState || !Array.isArray(currentState.permissions) || !currentState.permissions.length) {
+    return true;
+  }
+
+  return currentState.permissions.includes(permission);
 }
 
 function syncPairingCodeState() {
@@ -826,6 +866,7 @@ async function renderResults(entries) {
     edit.type = 'button';
     edit.className = 'secondary';
     edit.textContent = '✎ Edit';
+    edit.disabled = !hasClientPermission('write');
     edit.addEventListener('click', () => showEditForm(item, entry));
 
     actions.append(fill, edit);

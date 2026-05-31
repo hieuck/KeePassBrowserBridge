@@ -95,6 +95,7 @@ namespace KeePassBrowserBridge.Bridge
     public sealed class ClientStatusResponsePayload
     {
         public bool Trusted { get; set; }
+        public string[] Permissions { get; set; }
     }
 
     public sealed class ClientInfo

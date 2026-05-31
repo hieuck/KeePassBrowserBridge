@@ -116,6 +116,21 @@ const sandbox = {
       };
     }
 
+    if (request.Method === 'client.status') {
+      return {
+        ok: true,
+        json: async () => ({
+          ProtocolVersion: 1,
+          RequestId: request.RequestId,
+          Success: true,
+          Payload: JSON.stringify({
+            Trusted: true,
+            Permissions: ['read', 'write']
+          })
+        })
+      };
+    }
+
     if (request.Method === 'logins.fillAck') {
       return {
         ok: true,
@@ -308,6 +323,14 @@ assert.equal(updateCheck.currentVersion, '0.9.0', 'update check should include c
 assert.equal(updateCheck.latestVersion, '0.10.0', 'update check should normalize latest tag version');
 assert.equal(updateCheck.updateAvailable, true, 'newer GitHub release should be reported');
 assert.equal(updateCheck.releaseUrl, 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0', 'update check should include latest release URL');
+
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
+const clientStatus = await sandbox.handleMessage({ type: 'KBB_STATUS' });
+assert.equal(clientStatus.Trusted, true, 'status should expose trusted status');
+assert.deepEqual(Array.from(clientStatus.Permissions), ['read', 'write'], 'status should expose client permissions');
+delete storage.clientId;
+delete storage.sharedSecret;
 
 requests.length = 0;
 storage.endpoint = 'https://evil.example/bridge';

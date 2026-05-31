@@ -85,7 +85,7 @@ async function handleMessage(message) {
     case 'KBB_PAIR_CANCEL':
       return pairCancel();
     case 'KBB_STATUS':
-      return bridgeCall('client.status', {}, true);
+      return clientStatus();
     case 'KBB_LIST_CLIENTS':
       return listClients();
     case 'KBB_REVOKE_CLIENT':
@@ -281,6 +281,11 @@ async function setLocked(locked) {
 
 async function listClients() {
   const response = await bridgeCall('clients.list', {}, true);
+  return parsePayload(response);
+}
+
+async function clientStatus() {
+  const response = await bridgeCall('client.status', {}, true);
   return parsePayload(response);
 }
 

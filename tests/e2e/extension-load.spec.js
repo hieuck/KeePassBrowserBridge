@@ -62,6 +62,15 @@ test.describe('KeePassBrowserBridge Extension', () => {
             if (message && message.type === 'KBB_HELLO') {
               return { ok: true, response: { Success: true } };
             }
+            if (message && message.type === 'KBB_STATUS') {
+              return {
+                ok: true,
+                response: {
+                  Trusted: true,
+                  Permissions: window.__kbbPopupStatusPermissions || ['read', 'write', 'manageClients']
+                }
+              };
+            }
             if (message && message.type === 'KBB_PAIR_BEGIN') {
               state.paired = false;
               state.pairingSessionId = 'session-1';
@@ -344,6 +353,18 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('.login-meta')).toContainText('alice@example.com');
     await expect(page.locator('.login-meta')).toContainText('Accounts/Work');
     await expect(page.locator('#message')).toHaveText('1 login(s) found.');
+  });
+
+  test('shows read-only permission state and disables write actions', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupStatusPermissions = ['read'];
+    });
+
+    await page.locator('#checkStatus').click();
+
+    await expect(page.locator('#stateNotice')).toHaveText('Read-only access: this browser can find logins, but cannot create or update KeePass entries.');
+    await expect(page.locator('#queryLogins')).toBeEnabled();
+    await expect(page.locator('#newLogin')).toBeDisabled();
   });
 
   test('shows a useful empty state when no logins match the current page', async ({ page }) => {

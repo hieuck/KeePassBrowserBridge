@@ -71,6 +71,7 @@ internal static class Program
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
+        BridgeHandlerClientStatusIncludesPermissions();
         BridgeHandlerPairCompleteStoresExtensionOrigin();
         BridgeHandlerRejectsAuthenticatedRequestFromDifferentExtensionOrigin();
         BridgeHandlerRejectsReplayedAuthenticatedRequestId();
@@ -958,6 +959,20 @@ internal static class Program
 
         AssertTrue(response.Success, "valid HMAC client.status should succeed: " + response.Error);
         AssertTrue(payload.Trusted, "client.status should report trusted client");
+    }
+
+    private static void BridgeHandlerClientStatusIncludesPermissions()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret", new string[] { TrustedClientPermissions.Read });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientStatus, "client-1", "secret", "");
+
+        BridgeResponse response = handler.Handle(request);
+        ClientStatusResponsePayload payload = BridgeJsonSerializer.Deserialize<ClientStatusResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "client.status should succeed for permission inspection: " + response.Error);
+        AssertEqual(1, payload.Permissions.Length, "client.status should include trusted client permissions");
+        AssertEqual(TrustedClientPermissions.Read, payload.Permissions[0], "client.status permission mismatch");
     }
 
     private static void BridgeHandlerPairCompleteStoresExtensionOrigin()
