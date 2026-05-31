@@ -282,17 +282,7 @@ function captureLoginSubmit(form) {
 }
 function collectCredentialFromForm(root) {
   const scope = root && root.querySelectorAll ? root : document;
-  const passwordInput =
-    Array.from(scope.querySelectorAll('input[type="password"]'))
-      .filter(
-        (input) =>
-          isVisible(input) &&
-          !input.disabled &&
-          !input.readOnly &&
-          input.value &&
-          isLoginPasswordInput(input),
-      )
-      .sort((a, b) => b.value.length - a.value.length)[0] || null;
+  const passwordInput = findSubmittedPasswordInput(scope);
   const usernameInput = findUsernameInput(passwordInput, scope);
   if (!passwordInput && !usernameInput) {
     return null;
@@ -306,6 +296,48 @@ function collectCredentialFromForm(root) {
       : (passwordInput && multiStepCredential && multiStepCredential.UserName ? multiStepCredential.UserName : ""),
     password: passwordInput ? passwordInput.value : "",
   };
+}
+function findSubmittedPasswordInput(scope) {
+  const passwordInputs = Array.from(scope.querySelectorAll('input[type="password"]'))
+    .filter(
+      (input) =>
+        isVisible(input) &&
+        !input.disabled &&
+        !input.readOnly &&
+        input.value,
+    );
+  const changedPasswordInput = findChangedPasswordInput(passwordInputs);
+  if (changedPasswordInput) return changedPasswordInput;
+
+  return (
+    passwordInputs
+      .filter((input) => isLoginPasswordInput(input))
+      .sort((a, b) => b.value.length - a.value.length)[0] || null
+  );
+}
+function findChangedPasswordInput(passwordInputs) {
+  const hasCurrentPassword = passwordInputs.some((input) => isCurrentPasswordInput(input));
+  if (!hasCurrentPassword) return null;
+
+  const newPasswordInputs = passwordInputs.filter((input) => isNewPasswordInput(input));
+  if (!newPasswordInputs.length) return null;
+
+  const firstValue = newPasswordInputs[0].value;
+  if (!firstValue || newPasswordInputs.some((input) => input.value !== firstValue)) {
+    return null;
+  }
+
+  return newPasswordInputs[0];
+}
+function isCurrentPasswordInput(input) {
+  const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
+  if (autocomplete === "current-password") return true;
+  return /\b(current|old|existing)\b/.test(fieldText(input));
+}
+function isNewPasswordInput(input) {
+  const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
+  if (autocomplete === "new-password") return true;
+  return /\b(new|confirm|confirmation|repeat|retype)\b/.test(fieldText(input));
 }
 function credentialCollectionRoot() {
   const input = getFocusedEditableInput();

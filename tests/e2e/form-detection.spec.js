@@ -174,7 +174,10 @@ test.describe('content script form detection', () => {
 
     await page.locator('#redirect-username').fill('redirect@example.com');
     await page.locator('#redirect-password').fill('redirect-secret');
-    await page.locator('button[type="submit"]').click();
+    await Promise.all([
+      page.waitForFunction(() => Boolean(sessionStorage.getItem('__testKbbPendingSubmittedCredential'))),
+      page.locator('button[type="submit"]').click()
+    ]);
     await page.waitForURL(/login-page\.html/);
 
     await page.addScriptTag({ path: 'extension/contentScript.js' });
@@ -374,6 +377,66 @@ test.describe('content script form detection', () => {
       }
     });
     expect(updateMessage.login).not.toHaveProperty('otp');
+  });
+
+  test('prompts to update an existing login with the new password from a change-password form', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return {
+                ok: true,
+                response: {
+                  entries: [
+                    {
+                      EntryId: 'entry-change-password',
+                      Title: 'Example',
+                      UserName: 'alice@example.com',
+                      Password: 'old-secret',
+                      Url: 'https://example.com/account'
+                    }
+                  ]
+                }
+              };
+            }
+            if (message.type === 'KBB_UPDATE_LOGIN') {
+              return { ok: true, response: { Success: true } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/change-password-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#account-email').fill('alice@example.com');
+    await page.locator('#current-password').fill('old-secret');
+    await page.locator('#new-password').fill('new-rotated-secret');
+    await page.locator('#confirm-password').fill('new-rotated-secret');
+    await page.locator('button[type="submit"]').click();
+
+    const prompt = page.locator('.kbb-update-prompt');
+    await expect(prompt).toBeVisible();
+    await expect(prompt.locator('[name="password"]')).toHaveValue('new-rotated-secret');
+    await prompt.locator('button', { hasText: 'Update' }).click();
+
+    const updateMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_UPDATE_LOGIN'));
+    expect(updateMessage).toMatchObject({
+      type: 'KBB_UPDATE_LOGIN',
+      login: {
+        entryId: 'entry-change-password',
+        userName: 'alice@example.com',
+        password: 'new-rotated-secret'
+      }
+    });
   });
 
   test('inline picker fills the selected matching login when multiple entries exist', async ({ page }) => {
