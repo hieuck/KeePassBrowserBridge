@@ -323,6 +323,7 @@ function hasCredentialFillTarget(root) {
 function isCredentialHostileField(input) {
   const context = credentialContextText(input);
   return (
+    isNonCredentialAutocomplete(input) ||
     isProfileOrPaymentFieldText(context) ||
     isNonLoginCommunicationContext(context) ||
     isAccountRecoveryContext(context)
@@ -1813,6 +1814,7 @@ function scoreUsernameCandidate(input) {
   const type = (input.getAttribute("type") || "text").toLowerCase();
   const text = fieldText(input);
   let score = 0;
+  if (isNonCredentialAutocomplete(input)) score -= 260;
   if (type === "email") score += 50;
   if (/\busername\b/.test(text)) score += 80;
   if (/\bemail\b|e-mail|mail/.test(text)) score += 70;
@@ -1836,6 +1838,7 @@ function isLoginPasswordInput(input) {
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
   const text = fieldText(input);
   const context = credentialContextText(input);
+  if (isNonCredentialAutocomplete(input)) return false;
   if (isProfileOrPaymentFieldText(context)) return false;
   if (autocomplete === "current-password") return true;
   if (autocomplete === "new-password") return false;
@@ -1865,6 +1868,7 @@ function scoreOtpCandidate(input) {
   const inputMode = (input.getAttribute("inputmode") || "").toLowerCase();
   const text = fieldText(input);
   let score = 0;
+  if (isNonCredentialAutocomplete(input)) score -= 999;
   if (isProfileOrPaymentFieldText(text)) score -= 999;
   if (autocomplete === "one-time-code") score += 120;
   if (/otp|totp|2fa|mfa|authenticator|verification|passcode/.test(text))
@@ -1896,6 +1900,21 @@ function fieldText(input) {
   const label = input.closest ? input.closest("label") : null;
   if (label && label.textContent) parts.push(label.textContent);
   return parts.join(" ").toLowerCase();
+}
+function isNonCredentialAutocomplete(input) {
+  const autocomplete = String(input && input.getAttribute
+    ? input.getAttribute("autocomplete") || ""
+    : "")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .pop() || "";
+  if (!autocomplete || autocomplete === "off" || autocomplete === "on") return false;
+  if (autocomplete === "username" || autocomplete === "current-password" || autocomplete === "one-time-code") {
+    return false;
+  }
+  if (autocomplete === "new-password") return true;
+  return /^(name|honorific-prefix|given-name|additional-name|family-name|honorific-suffix|nickname|organization-title|organization|street-address|address-line1|address-line2|address-line3|address-level1|address-level2|address-level3|address-level4|country|country-name|postal-code|cc-name|cc-given-name|cc-additional-name|cc-family-name|cc-number|cc-exp|cc-exp-month|cc-exp-year|cc-csc|cc-type|transaction-currency|transaction-amount|language|bday|bday-day|bday-month|bday-year|sex|url|photo|tel|tel-country-code|tel-national|tel-area-code|tel-local|tel-local-prefix|tel-local-suffix|tel-extension|impp)$/.test(autocomplete);
 }
 function credentialContextText(input) {
   const parts = [fieldText(input)];

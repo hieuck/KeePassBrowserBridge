@@ -1441,8 +1441,34 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#profile-name')).toHaveValue('');
     await expect(page.locator('#profile-email')).toHaveValue('');
     await expect(page.locator('#profile-city')).toHaveValue('');
+    await expect(page.locator('#profile-company')).toHaveValue('');
+    await expect(page.locator('#profile-phone')).toHaveValue('');
+    await expect(page.locator('#profile-postal')).toHaveValue('');
     await expect(page.locator('#card-name')).toHaveValue('');
     await expect(page.locator('#card-number')).toHaveValue('');
+    await expect(page.locator('#card-exp')).toHaveValue('');
+    await expect(page.locator('#login-email')).toHaveValue('');
+
+    await page.locator('#account-phone').focus();
+    const phoneResponse = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(phoneResponse).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#account-phone')).toHaveValue('');
     await expect(page.locator('#login-email')).toHaveValue('');
   });
 
