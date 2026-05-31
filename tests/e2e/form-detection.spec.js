@@ -1245,6 +1245,36 @@ test.describe('content script form detection', () => {
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
   });
 
+  test('does not fill table filter as username on password-only forms', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/password-with-filter-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: true,
+      result: {
+        usernameFilled: false,
+        passwordFilled: true
+      }
+    });
+    await expect(page.locator('#account-filter')).toHaveValue('');
+    await expect(page.locator('#password-only')).toHaveValue('correct horse battery staple');
+  });
+
   test('does not add KeePass inline button to newsletter email signup', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/non-login-email-page.html');

@@ -25,6 +25,7 @@ extension test.
 | ARIA-described OTP field | `aria-otp-page.html` | `detects OTP input described by ARIA references` |
 | Ordinary phone/search input near verification copy must not be treated as OTP | `verification-copy-phone-page.html` | `does not treat ordinary phone input as OTP because nearby copy mentions verification code` |
 | viotp/DataTables search box must not be username | `dashboard-search-page.html` plus unit mock | `does not add KeePass inline button to dashboard search input`, `datatable search input should not score as username` |
+| Table/list filters near password-only forms must not receive usernames | `password-with-filter-page.html` plus unit mock | `does not fill table filter as username on password-only forms`, `table email filter input should not score as username` |
 | Newsletter/contact email fields must not be username-first login | `non-login-email-page.html`, `non-login-contact-page.html` | `does not add KeePass inline button to newsletter email signup`, `does not treat contact support email fields as username-first login` |
 | Password reset/recovery email forms must not be username-first login | `password-reset-email-page.html` | `does not treat password reset email forms as username-first login` |
 | fill.dev-style profile/payment/settings fields must not be login or OTP | `non-login-profile-payment-page.html` | `does not treat profile, payment, or numeric settings forms as login fields` |

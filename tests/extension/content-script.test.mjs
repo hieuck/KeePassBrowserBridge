@@ -162,7 +162,15 @@ const viotpHistorySearchInput = new MockInput(31, {
   labelText: 'Search:'
 }, '');
 
-const newsletterEmailInput = new MockInput(32, {
+const tableEmailFilterInput = new MockInput(32, {
+  id: 'account-filter',
+  name: 'emailFilter',
+  type: 'text',
+  placeholder: 'Filter by email or name',
+  labelText: 'Filter by email or name'
+}, '');
+
+const newsletterEmailInput = new MockInput(33, {
   id: 'newsletter-email',
   name: 'email',
   type: 'email',
@@ -171,7 +179,7 @@ const newsletterEmailInput = new MockInput(32, {
   labelText: 'Subscribe to newsletter'
 }, '');
 
-const googleVietnameseTotpInput = new MockInput(33, {
+const googleVietnameseTotpInput = new MockInput(34, {
   id: '',
   name: '',
   type: 'tel',
@@ -180,7 +188,7 @@ const googleVietnameseTotpInput = new MockInput(33, {
   'aria-label': ''
 }, '');
 
-const contactEmailInput = new MockInput(34, {
+const contactEmailInput = new MockInput(35, {
   id: 'contact-email',
   name: 'email',
   type: 'email',
@@ -188,7 +196,7 @@ const contactEmailInput = new MockInput(34, {
   labelText: 'Email address'
 }, '');
 
-const usernameFirstEmailAddressInput = new MockInput(35, {
+const usernameFirstEmailAddressInput = new MockInput(36, {
   id: 'email-address-login',
   name: 'email',
   type: 'email',
@@ -196,7 +204,7 @@ const usernameFirstEmailAddressInput = new MockInput(35, {
   labelText: 'Email address'
 }, '');
 
-const passwordResetEmailInput = new MockInput(36, {
+const passwordResetEmailInput = new MockInput(37, {
   id: 'reset-email',
   name: 'email',
   type: 'email',
@@ -216,6 +224,7 @@ const documentRoot = new MockRoot([
   ...splitOtpInputs,
   quotaPageSizeInput,
   viotpHistorySearchInput,
+  tableEmailFilterInput,
   newsletterEmailInput,
   googleVietnameseTotpInput,
   contactEmailInput,
@@ -313,6 +322,7 @@ assert.equal(sandbox.scoreOtpCandidate(quotaPageSizeInput) <= 0, true, 'numeric 
 assert.equal(sandbox.isLoginPasswordInput(targetPassword), true, 'current password fields should be login password targets');
 assert.equal(sandbox.isLoginPasswordInput(newPasswordInput), false, 'new password fields should not be login password targets');
 assert.equal(sandbox.scoreUsernameCandidate(viotpHistorySearchInput) < -50, true, 'datatable search input should not score as username');
+assert.equal(sandbox.scoreUsernameCandidate(tableEmailFilterInput) < -50, true, 'table email filter input should not score as username');
 assert.equal(sandbox.isCredentialHostileField(quotaPageSizeInput), true, 'profile/settings fields should block document-level autofill fallback');
 assert.equal(sandbox.isCredentialHostileField(viotpHistorySearchInput), false, 'neutral search fields should still allow document-level login fallback');
 assert.equal(sandbox.scoreUsernameCandidate(newsletterEmailInput) < -50, true, 'newsletter email input should not score as username');

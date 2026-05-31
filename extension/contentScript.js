@@ -1812,6 +1812,7 @@ function setInlineButtonState(button, state) {
 }
 function scoreUsernameCandidate(input) {
   const type = (input.getAttribute("type") || "text").toLowerCase();
+  const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
   const text = fieldText(input);
   let score = 0;
   if (isNonCredentialAutocomplete(input)) score -= 260;
@@ -1822,7 +1823,7 @@ function scoreUsernameCandidate(input) {
   if (/\bcurrent-password\b|\bnew-password\b/.test(text)) score -= 100;
   if (/\bfname\b|\blname\b|first|last|family|given|surname/.test(text))
     score -= 120;
-  if (/\bsearch\b/.test(text)) score -= 60;
+  if (autocomplete !== "username" && isFilterOrSearchFieldText(text)) score -= 220;
   if (type === "search") score -= 100;
   if (/\bnewsletter\b|\bsubscribe\b|\bsubscription\b|\bmarketing\b|\bupdates\b/.test(text))
     score -= 220;
@@ -1856,6 +1857,9 @@ function isUsernameFirstLoginCandidate(input, score) {
 function isProfileOrPaymentFieldText(text) {
   const normalized = String(text || "").replace(/\be-?mail[\s_-]+address\b/g, "email");
   return /\b(city|address|street|postal|postcode|zip|state|province|country|shipping|billing|checkout|receipt|profile|full\s*name|first\s*name|last\s*name|card|cardholder|ccname|cc-name|ccnumber|cc-number|cc-csc|cvc|cvv|security\s*code|payment|pay\s*now|accounts\s*per\s*page|pagesize)\b/.test(normalized);
+}
+function isFilterOrSearchFieldText(text) {
+  return /\b(search|filter|datatable|data\s*table|table\s*filter|list\s*filter)\b/.test(String(text || ""));
 }
 function isNonLoginCommunicationContext(text) {
   return /\b(contact|support|message|send\s+message|feedback|comment|inquiry|enquiry|help\s+request|ticket)\b/.test(String(text || ""));
