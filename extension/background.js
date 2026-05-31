@@ -270,6 +270,9 @@ async function setLocked(locked) {
   }
 
   await chrome.storage.local.set(values);
+  if (values.locked) {
+    await clearPendingCredentialState();
+  }
   return getState();
 }
 

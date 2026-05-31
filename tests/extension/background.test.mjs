@@ -385,9 +385,29 @@ assert.equal(requests.length, 0, 'locked extension should not auto-fill or query
 let lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: false });
 assert.equal(lockState.locked, false, 'unlock message should clear lock state');
 assert.equal(storage.locked, false, 'unlock message should persist lock state');
+extensionSessionStorage.kbbPendingMultiStepCredential = {
+  origin: 'https://example.com',
+  credential: {
+    EntryId: 'entry-lock',
+    UserName: 'lock@example.com',
+    Password: 'lock-secret'
+  },
+  savedAt: now
+};
+extensionSessionStorage.kbbPendingSubmittedCredential = {
+  origin: 'https://example.com',
+  credential: {
+    url: 'https://example.com/login',
+    userName: 'lock-submitted@example.com',
+    password: 'lock-submitted-secret'
+  },
+  savedAt: now
+};
 lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: true });
 assert.equal(lockState.locked, true, 'lock message should set lock state');
 assert.equal(storage.locked, true, 'lock message should persist lock state');
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'lock message should clear pending multi-step credentials');
+assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'lock message should clear pending submitted credentials');
 storage.locked = false;
 
 now = 10 * 60 * 1000;
