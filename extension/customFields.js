@@ -8,9 +8,10 @@
     /**
      * Fill custom fields into the page
      * @param {Array} customFields - Array of custom field objects
+     * @param {Document|HTMLElement} root - Optional search scope
      * @returns {Object} - Result of filling operation
      */
-    fillCustomFields: function(customFields) {
+    fillCustomFields: function(customFields, root) {
       if (!customFields || customFields.length === 0) {
         return { filled: 0, fields: [] };
       }
@@ -22,7 +23,7 @@
 
       for (const field of customFields) {
         // Try to find input by field name
-        const input = this.findInputByFieldName(field.Name);
+        const input = this.findInputByFieldName(field.Name, root);
         
         if (input) {
           setInputValue(input, field.Value);
@@ -45,23 +46,25 @@
     /**
      * Find input field by custom field name
      * @param {string} fieldName - Name of the custom field
+     * @param {Document|HTMLElement} root - Optional search scope
      * @returns {HTMLElement|null} - Input element or null
      */
-    findInputByFieldName: function(fieldName) {
+    findInputByFieldName: function(fieldName, root) {
+      const scope = root && root.querySelectorAll ? root : document;
       const normalizedName = normalizeText(fieldName);
-      const inputs = Array.from(document.querySelectorAll('input'))
+      const inputs = Array.from(scope.querySelectorAll('input'))
         .filter((input) => isVisible(input) && !input.disabled && !input.readOnly);
 
       let input = findInputByAttribute(inputs, 'placeholder', normalizedName);
       if (input) return input;
 
       // Try to find by label
-      const labels = Array.from(document.querySelectorAll('label'));
+      const labels = Array.from(scope.querySelectorAll('label'));
       for (const label of labels) {
         if (normalizeText(label.textContent).includes(normalizedName)) {
           const forAttr = label.getAttribute('for');
           if (forAttr) {
-            input = document.getElementById(forAttr);
+            input = findElementById(scope, forAttr);
             if (input && isVisible(input) && !input.disabled && !input.readOnly) {
               return input;
             }
@@ -125,6 +128,14 @@
       }
     }
 
+    return null;
+  }
+
+  function findElementById(scope, id) {
+    if (scope.getElementById) return scope.getElementById(id);
+    if (scope.querySelectorAll) {
+      return Array.from(scope.querySelectorAll('input')).find((input) => input.id === id) || null;
+    }
     return null;
   }
 

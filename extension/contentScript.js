@@ -154,7 +154,7 @@ function fillLogin(credential, root) {
   const passwordInput = findPasswordInput(root);
   const usernameInput = findUsernameInput(passwordInput, root);
   const otpInput = findOtpInput(passwordInput, root);
-  const customFieldsResult = fillCustomFields(credential);
+  const customFieldsResult = fillCustomFields(credential, root);
   if (
     !passwordInput &&
     !usernameInput &&
@@ -245,7 +245,7 @@ function editableInputFromElement(element) {
     ? element
     : null;
 }
-function fillCustomFields(credential) {
+function fillCustomFields(credential, root) {
   const fields = credential && Array.isArray(credential.CustomFields)
     ? credential.CustomFields.filter((field) => field && field.IsProtected !== true)
     : [];
@@ -253,7 +253,7 @@ function fillCustomFields(credential) {
     return { filled: 0, fields: [] };
   }
 
-  return window.__kbbCustomFields.fillCustomFields(fields);
+  return window.__kbbCustomFields.fillCustomFields(fields, root);
 }
 function captureLoginSubmit(form) {
   const credential = collectCredentialFromForm(form || document);

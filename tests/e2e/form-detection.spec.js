@@ -1350,7 +1350,10 @@ test.describe('content script form detection', () => {
                     Title: 'Admin',
                     UserName: 'admin@example.com',
                     Password: 'admin-secret',
-                    Url: 'https://example.com/admin'
+                    Url: 'https://example.com/admin',
+                    CustomFields: [
+                      { Name: 'Tenant', Value: 'admin-production', IsProtected: false }
+                    ]
                   }
                 ]
               }
@@ -1360,6 +1363,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/two-login-forms.html');
+    await page.addScriptTag({ path: 'extension/customFields.js' });
     await page.addScriptTag({ path: 'extension/contentScript.js' });
 
     await page.evaluate(() => {
@@ -1371,8 +1375,10 @@ test.describe('content script form detection', () => {
 
     await expect(page.locator('#admin-username')).toHaveValue('admin@example.com');
     await expect(page.locator('#admin-password')).toHaveValue('admin-secret');
+    await expect(page.locator('#admin-tenant')).toHaveValue('admin-production');
     await expect(page.locator('#customer-username')).toHaveValue('');
     await expect(page.locator('#customer-password')).toHaveValue('');
+    await expect(page.locator('#customer-tenant')).toHaveValue('');
   });
 
   test('adds OTP inline button to Google-style Vietnamese authenticator input', async ({ page }) => {
