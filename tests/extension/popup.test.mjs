@@ -125,6 +125,15 @@ const elements = Object.fromEntries(ids.map((id) => [id, new Element(id)]));
 elements.pairingPanel.classList.add('hidden');
 const sentMessages = [];
 const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
+function findChildByText(root, text) {
+  if (!root) return null;
+  if (root.textContent === text) return root;
+  for (const child of root.children || []) {
+    const found = findChildByText(child, text);
+    if (found) return found;
+  }
+  return null;
+}
 const timerCalls = [];
 const intervalCalls = [];
 let fakeNow = 1779990000000;
@@ -245,7 +254,11 @@ const sandbox = {
     storage: {
       local: {
         get(keys, callback) {
-          callback({});
+          if (callback) {
+            callback({});
+            return undefined;
+          }
+          return Promise.resolve({});
         },
         set(values, callback) {
           if (callback) callback();
@@ -425,5 +438,41 @@ assert.equal(elements.stateNotice.textContent, 'Unlock KeePass Bridge to find, f
 assert.equal(elements.stateNotice.classList.contains('warning'), true, 'locked state notice should use warning styling');
 assert.equal(elements.queryLogins.disabled, true, 'locked state should disable credential query action');
 assert.equal(elements.newLogin.disabled, true, 'locked state should disable create action');
+
+await sandbox.renderResults([
+  {
+    EntryId: 'entry-locked',
+    Title: 'Locked Entry',
+    UserName: 'locked@example.com',
+    Password: 'locked-secret',
+    Url: 'https://example.com/login'
+  }
+]);
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  locked: true,
+  autoFillEnabled: false
+});
+sentMessages.length = 0;
+const lockedEnterEvent = {
+  key: 'Enter',
+  target: { tagName: 'BODY' },
+  defaultPrevented: false,
+  preventDefault() {
+    this.defaultPrevented = true;
+  }
+};
+sandbox.handleKeyboardShortcuts(lockedEnterEvent);
+await flushAsync();
+assert.equal(lockedEnterEvent.defaultPrevented, false, 'locked popup should not intercept Enter to fill stale results');
+assert.equal(sentMessages.some((message) => message.type === 'KBB_FILL_LOGIN'), false, 'locked popup should not fill stale rendered results from keyboard shortcuts');
+
+const staleFillButton = findChildByText(elements.results, '✓ Fill');
+assert.notEqual(staleFillButton, null, 'test should find the stale rendered fill button');
+sentMessages.length = 0;
+staleFillButton.click();
+await flushAsync();
+assert.equal(sentMessages.some((message) => message.type === 'KBB_FILL_LOGIN'), false, 'locked popup should not fill stale rendered results from old buttons');
 
 console.log('Popup tests passed.');

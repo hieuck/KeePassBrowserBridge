@@ -115,7 +115,7 @@ function handleKeyboardShortcuts(event) {
         }
         return;
       }
-      if (visibleEntries.length > 0 && elements.results.children.length > 0) {
+      if (credentialActionsEnabled() && visibleEntries.length > 0 && elements.results.children.length > 0) {
         event.preventDefault();
         const firstEntry = visibleEntries[0];
         runAction(() => fillLogin(firstEntry));
@@ -465,6 +465,7 @@ async function getCurrentSiteOverrideContext() {
 }
 
 async function fillLogin(credential, fieldRole, customFieldName) {
+  ensureCredentialActionsEnabled();
   const result = await send({
     type: 'KBB_FILL_LOGIN',
     credential,
@@ -487,6 +488,7 @@ function fieldRoleLabel(fieldRole, customFieldName) {
 }
 
 async function copyToClipboard(label, text) {
+  ensureCredentialActionsEnabled();
   if (!text) {
     throw new Error(`${label} is empty.`);
   }
@@ -515,6 +517,7 @@ async function getClipboardClearDelayMs() {
 }
 
 async function updateLogin(entry, form) {
+  ensureCredentialActionsEnabled();
   const login = {
     entryId: entry.EntryId,
     title: form.querySelector('[name="title"]').value,
@@ -548,6 +551,7 @@ async function updateLogin(entry, form) {
 }
 
 async function createLogin(form) {
+  ensureCredentialActionsEnabled();
   const login = {
     title: form.querySelector('[name="title"]').value,
     group: form.querySelector('[name="group"]').value,
@@ -714,9 +718,19 @@ function renderStateNotice(state, pairingActive) {
 }
 
 function syncCredentialActionAvailability() {
-  const credentialActionsEnabled = Boolean(currentState && currentState.paired && !currentState.locked);
-  elements.queryLogins.disabled = !credentialActionsEnabled;
-  elements.newLogin.disabled = !credentialActionsEnabled;
+  const enabled = credentialActionsEnabled();
+  elements.queryLogins.disabled = !enabled;
+  elements.newLogin.disabled = !enabled;
+}
+
+function credentialActionsEnabled() {
+  return Boolean(currentState && currentState.paired && !currentState.locked);
+}
+
+function ensureCredentialActionsEnabled() {
+  if (!credentialActionsEnabled()) {
+    throw new Error('Unlock KeePass Bridge to use logins.');
+  }
 }
 
 function syncPairingCodeState() {
