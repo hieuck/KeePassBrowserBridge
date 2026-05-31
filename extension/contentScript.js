@@ -150,10 +150,10 @@ function isSubmitControl(element) {
   if (tagName === "button") return type === "" || type === "submit";
   return false;
 }
-function fillLogin(credential) {
-  const passwordInput = findPasswordInput();
-  const usernameInput = findUsernameInput(passwordInput);
-  const otpInput = findOtpInput(passwordInput);
+function fillLogin(credential, root) {
+  const passwordInput = findPasswordInput(root);
+  const usernameInput = findUsernameInput(passwordInput, root);
+  const otpInput = findOtpInput(passwordInput, root);
   const customFieldsResult = fillCustomFields(credential);
   if (
     !passwordInput &&
@@ -1155,6 +1155,9 @@ function fillCredentialAction(button, entry, action, customFieldName) {
       return { usernameFilled: false, passwordFilled: false, otpFilled: false, customFieldsFilled: 1 };
     }
   }
+  if (action === "form") {
+    return fillLogin(entry, credentialScopeForInput(targetInput));
+  }
   if (targetInput) {
     return fillCredentialForButton(button, entry);
   }
@@ -1203,9 +1206,11 @@ function resolveFieldTarget(button, role) {
   if (currentRole === role && button.__kbbTargetInput) {
     return button.__kbbTargetInput;
   }
-  if (role === "username") return findUsernameInput(findPasswordInput());
-  if (role === "password") return findPasswordInput();
-  if (role === "otp") return findOtpInput(findPasswordInput());
+  const scope = credentialScopeForInput(button ? button.__kbbTargetInput : null);
+  const passwordInput = findPasswordInput(scope);
+  if (role === "username") return findUsernameInput(passwordInput, scope);
+  if (role === "password") return passwordInput;
+  if (role === "otp") return findOtpInput(passwordInput, scope);
   return button ? button.__kbbTargetInput : null;
 }
 function filterInlinePickerItems(items, empty, query) {
@@ -1269,7 +1274,12 @@ function fillCredentialForButton(button, entry) {
     setInputValue(targetInput, entry.OneTimePassword);
     return { usernameFilled: false, passwordFilled: false, otpFilled: true };
   }
-  return fillLogin(entry);
+  return fillLogin(entry, credentialScopeForInput(targetInput));
+}
+function credentialScopeForInput(input) {
+  if (!input) return null;
+  if (input.form) return input.form;
+  return input.closest ? input.closest("form, dialog, section, article, main") : null;
 }
 function rememberMultiStepCredentialIfNeeded(result, entry) {
   if (

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Two login forms</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    main { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 32px; }
+    form { display: grid; gap: 12px; border: 1px solid #d0d5dd; padding: 16px; }
+    label { display: grid; gap: 6px; }
+    input { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <form id="customer-login">
+      <h1>Customer sign in</h1>
+      <label>
+        Customer email
+        <input id="customer-username" name="customer_email" type="email" autocomplete="username">
+      </label>
+      <label>
+        Customer password
+        <input id="customer-password" name="customer_password" type="password" autocomplete="current-password">
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+
+    <form id="admin-login">
+      <h1>Admin sign in</h1>
+      <label>
+        Admin email
+        <input id="admin-username" name="admin_email" type="email" autocomplete="username">
+      </label>
+      <label>
+        Admin password
+        <input id="admin-password" name="admin_password" type="password" autocomplete="current-password">
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+  </main>
+</body>
+</html>

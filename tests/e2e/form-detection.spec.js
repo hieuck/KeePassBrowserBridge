@@ -1325,6 +1325,56 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#email-address-login')).toHaveValue('email-address@example.com');
   });
 
+  test('fills the login form that owns the clicked inline button', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            if (message.type === 'KBB_FILL_ACK') {
+              return { ok: true, response: { Success: true } };
+            }
+            return {
+              ok: true,
+              response: {
+                entries: [
+                  {
+                    EntryId: 'entry-customer',
+                    Title: 'Customer',
+                    UserName: 'customer@example.com',
+                    Password: 'customer-secret',
+                    Url: 'https://example.com/customer'
+                  },
+                  {
+                    EntryId: 'entry-admin',
+                    Title: 'Admin',
+                    UserName: 'admin@example.com',
+                    Password: 'admin-secret',
+                    Url: 'https://example.com/admin'
+                  }
+                ]
+              }
+            };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/two-login-forms.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.evaluate(() => {
+      const adminPasswordButton = Array.from(document.querySelectorAll('.kbb-inline-button'))
+        .find((button) => button.__kbbTargetInput && button.__kbbTargetInput.id === 'admin-password');
+      adminPasswordButton.click();
+    });
+    await page.locator('.kbb-inline-picker [data-kbb-entry-title="Admin"] [data-kbb-action="form"]').click();
+
+    await expect(page.locator('#admin-username')).toHaveValue('admin@example.com');
+    await expect(page.locator('#admin-password')).toHaveValue('admin-secret');
+    await expect(page.locator('#customer-username')).toHaveValue('');
+    await expect(page.locator('#customer-password')).toHaveValue('');
+  });
+
   test('adds OTP inline button to Google-style Vietnamese authenticator input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/google-totp-vi-page.html');
