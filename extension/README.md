@@ -18,6 +18,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 - Save/update prompts after submitted login forms, including redirect and multi-step login flows.
 - Username-first login support across navigation and same-page password reveal flows.
 - HTTP Basic Auth credential lookup.
+- Embedded login form support through content scripts running in child frames.
 - Site-specific auto-fill and auto-submit overrides.
 - Popup lock/unlock to temporarily block credential queries and filling.
 - Optional auto-lock after credential inactivity.

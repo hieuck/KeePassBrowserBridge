@@ -23,6 +23,7 @@ KeePass Browser Bridge has two release artifacts:
 - New-login popup form prefilled from fields already typed on the page when available.
 - Username-first login support across navigation and same-page password reveal flows.
 - HTTP Basic Auth fill support.
+- Embedded login form support through content scripts running in child frames.
 - Site-specific auto-fill and auto-submit overrides.
 - Popup lock/unlock to temporarily block credential queries and filling.
 - Optional auto-lock after credential inactivity.

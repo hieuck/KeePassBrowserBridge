@@ -38,6 +38,7 @@ extension test.
 | Popup full-entry fill with auto-submit should submit the same focused form | `two-login-forms.html` | `auto-submits the focused login form after popup full-entry fill` |
 | Open Shadow DOM login form | `shadow-login-page.html` | `fills username and password inside open Shadow DOM login forms` |
 | Delayed Shadow DOM login form | `delayed-shadow-login-page.html` | `adds inline buttons when an open Shadow DOM login form renders later` |
+| Embedded login widgets in child frames | extension manifest | `content scripts should run in iframes for embedded login widgets` |
 | Save new login after submit | `login-page.html`, `login-submit-redirect.html` | save-prompt and restored-save-prompt tests |
 | Update changed password after submit | `login-page.html`, `multi-step-password.html` | update-prompt tests |
 
