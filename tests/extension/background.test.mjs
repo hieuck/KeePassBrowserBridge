@@ -413,9 +413,29 @@ storage.locked = false;
 now = 10 * 60 * 1000;
 storage.autoLockTimeoutMinutes = 5;
 storage.lastCredentialActivityAt = now - (6 * 60 * 1000);
+extensionSessionStorage.kbbPendingMultiStepCredential = {
+  origin: 'https://example.com',
+  credential: {
+    EntryId: 'entry-auto-lock',
+    UserName: 'auto-lock@example.com',
+    Password: 'auto-lock-secret'
+  },
+  savedAt: now
+};
+extensionSessionStorage.kbbPendingSubmittedCredential = {
+  origin: 'https://example.com',
+  credential: {
+    url: 'https://example.com/login',
+    userName: 'auto-lock-submitted@example.com',
+    password: 'auto-lock-submitted-secret'
+  },
+  savedAt: now
+};
 const autoLockedState = await sandbox.getState();
 assert.equal(autoLockedState.locked, true, 'state should lock after the configured inactivity timeout');
 assert.equal(storage.locked, true, 'auto-lock should persist the locked state');
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'auto-lock should clear pending multi-step credentials');
+assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'auto-lock should clear pending submitted credentials');
 storage.locked = false;
 storage.lastCredentialActivityAt = now - (2 * 60 * 1000);
 const activeLockState = await sandbox.getState();

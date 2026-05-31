@@ -244,6 +244,7 @@ async function applyAutoLock(state) {
   if (Date.now() - lastActivityAt >= timeoutMinutes * 60 * 1000) {
     state.locked = true;
     await chrome.storage.local.set({ locked: true });
+    await clearPendingCredentialState();
   }
 }
 
