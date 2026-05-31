@@ -45,6 +45,11 @@ assert.equal(ciWorkflow.includes('.\\scripts\\verify.ps1'), true, 'CI workflow s
 assert.equal(releaseWorkflow.includes('npm ci'), true, 'release workflow should install pinned Node dependencies before verifier tests');
 assert.equal(releaseWorkflow.includes('npx playwright install chromium'), true, 'release workflow should install the Chromium browser used by E2E verification');
 assert.equal(releaseWorkflow.includes('.\\scripts\\verify.ps1'), true, 'release workflow should run the same full verifier before packaging');
+assert.equal(releaseWorkflow.includes('contents: write'), true, 'release workflow should be allowed to publish GitHub Releases');
+assert.equal(releaseWorkflow.includes('softprops/action-gh-release@v2'), true, 'release workflow should publish a GitHub Release for plugin auto-update');
+assert.equal(releaseWorkflow.includes('tag_name: v${{ inputs.version }}'), true, 'release workflow should publish semantic version tags used by the plugin updater');
+assert.equal(releaseWorkflow.includes('artifacts/KeePassBrowserBridge.plgx'), true, 'release workflow should attach the PLGX asset consumed by plugin auto-update');
+assert.equal(releaseWorkflow.includes('artifacts/versioninfo.txt'), true, 'release workflow should attach KeePass update metadata to the release');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyVersion("${assemblyVersion}")]`), true, 'plugin AssemblyVersion should match extension release version');
 assert.equal(assemblyInfo.includes(`[assembly: AssemblyFileVersion("${assemblyVersion}")]`), true, 'plugin AssemblyFileVersion should match extension release version');
 assert.equal(bridgeSettings.includes(`PluginVersion = "${manifest.version}"`), true, 'bridge-reported plugin version should match extension release version');

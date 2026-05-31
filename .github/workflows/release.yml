@@ -13,6 +13,9 @@ on:
         default: 2.61.1
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   package:
     name: Package plugin and extension
@@ -86,6 +89,20 @@ jobs:
               throw "Missing release artifact: $path"
             }
           }
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: KeePass Browser Bridge ${{ inputs.version }}
+          make_latest: true
+          generate_release_notes: true
+          files: |
+            artifacts/KeePassBrowserBridge.dll
+            artifacts/KeePassBrowserBridge.plgx
+            artifacts/KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip
+            artifacts/KeePassBrowserBridge-firefox-extension-${{ inputs.version }}.zip
+            artifacts/versioninfo.txt
 
       - name: Upload plugin DLL
         uses: actions/upload-artifact@v4
