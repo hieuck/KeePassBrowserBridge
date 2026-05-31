@@ -68,6 +68,7 @@ internal static class Program
         BridgeHandlerPairCompleteStoresExtensionOrigin();
         BridgeHandlerRejectsAuthenticatedRequestFromDifferentExtensionOrigin();
         BridgeHandlerRejectsReplayedAuthenticatedRequestId();
+        BridgeHandlerReturnsStructuredErrorForMalformedPayload();
         BridgeHandlerCancelsPairingSession();
         BridgeHandlerListsTrustedClientsWithoutSecrets();
         BridgeHandlerRevokesTrustedClient();
@@ -960,6 +961,19 @@ internal static class Program
         AssertTrue(first.Success, "first authenticated request should succeed: " + first.Error);
         AssertFalse(second.Success, "replayed authenticated request should fail");
         AssertEqual("replayed_request", second.ErrorCode, "replayed request error code mismatch");
+    }
+
+    private static void BridgeHandlerReturnsStructuredErrorForMalformedPayload()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.LoginsQuery, "client-1", "secret", "{not-json");
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "malformed payload should return bridge error");
+        AssertEqual("invalid_payload", response.ErrorCode, "malformed payload error code mismatch");
+        AssertEqual(request.RequestId, response.RequestId, "malformed payload response request ID mismatch");
     }
 
     private static void BridgeHandlerCancelsPairingSession()

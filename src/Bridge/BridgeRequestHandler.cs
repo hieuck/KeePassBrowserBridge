@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using KeePassLib;
 
 namespace KeePassBrowserBridge.Bridge
@@ -52,17 +53,24 @@ namespace KeePassBrowserBridge.Bridge
             if (RequiresAuthentication(request.Method) && !TrackAuthenticatedRequest(request, nowUtcMs))
                 return Error(request, "replayed_request", "Request ID has already been used.");
 
-            if (request.Method == BridgeMethods.Hello) return Hello(request);
-            if (request.Method == BridgeMethods.PairBegin) return PairBegin(request);
-            if (request.Method == BridgeMethods.PairComplete) return PairComplete(request);
-            if (request.Method == BridgeMethods.PairCancel) return PairCancel(request);
-            if (request.Method == BridgeMethods.ClientStatus) return ClientStatus(request);
-            if (request.Method == BridgeMethods.ClientsList) return ClientsList(request);
-            if (request.Method == BridgeMethods.ClientsRevoke) return ClientsRevoke(request);
-            if (request.Method == BridgeMethods.LoginsQuery) return LoginsQuery(request);
-            if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
-            if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
-            if (request.Method == BridgeMethods.LoginsFillAck) return LoginsFillAck(request);
+            try
+            {
+                if (request.Method == BridgeMethods.Hello) return Hello(request);
+                if (request.Method == BridgeMethods.PairBegin) return PairBegin(request);
+                if (request.Method == BridgeMethods.PairComplete) return PairComplete(request);
+                if (request.Method == BridgeMethods.PairCancel) return PairCancel(request);
+                if (request.Method == BridgeMethods.ClientStatus) return ClientStatus(request);
+                if (request.Method == BridgeMethods.ClientsList) return ClientsList(request);
+                if (request.Method == BridgeMethods.ClientsRevoke) return ClientsRevoke(request);
+                if (request.Method == BridgeMethods.LoginsQuery) return LoginsQuery(request);
+                if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
+                if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
+                if (request.Method == BridgeMethods.LoginsFillAck) return LoginsFillAck(request);
+            }
+            catch (SerializationException)
+            {
+                return Error(request, "invalid_payload", "Request payload is not valid JSON for this method.");
+            }
 
             return Error(request, "unknown_method", "Unknown method.");
         }
