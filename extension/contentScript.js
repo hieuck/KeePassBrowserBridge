@@ -1835,6 +1835,8 @@ function scoreUsernameCandidate(input) {
 function isLoginPasswordInput(input) {
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
   const text = fieldText(input);
+  const context = credentialContextText(input);
+  if (isProfileOrPaymentFieldText(context)) return false;
   if (autocomplete === "current-password") return true;
   if (autocomplete === "new-password") return false;
   if (/\b(new|confirm|confirmation|repeat|retype)\b/.test(text)) return false;
