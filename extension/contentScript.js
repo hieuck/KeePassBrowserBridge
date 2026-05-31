@@ -19,7 +19,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
     }
     try {
       if (message.type === "KBB_COLLECT_PAGE_CREDENTIAL") {
-        const credential = collectCredentialFromForm(document);
+        const credential = collectCredentialFromForm(credentialCollectionRoot());
         sendResponse({ collected: Boolean(credential), credential });
         return;
       }
@@ -295,6 +295,10 @@ function collectCredentialFromForm(root) {
       : (passwordInput && multiStepCredential && multiStepCredential.UserName ? multiStepCredential.UserName : ""),
     password: passwordInput ? passwordInput.value : "",
   };
+}
+function credentialCollectionRoot() {
+  const input = getFocusedEditableInput();
+  return credentialScopeForInput(input) || document;
 }
 async function maybePromptSaveLogin(credential) {
   if (!credential.password) {
