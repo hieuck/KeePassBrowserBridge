@@ -1410,11 +1410,40 @@ internal static class Program
 
     private static int FindFreePort()
     {
-        TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
+        for (int attempt = 0; attempt < 20; attempt++)
+        {
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+
+            if (CanStartHttpListener(port)) return port;
+        }
+
+        throw new InvalidOperationException("Could not find a loopback port usable by HttpListener.");
+    }
+
+    private static bool CanStartHttpListener(int port)
+    {
+        HttpListener listener = new HttpListener();
+        listener.Prefixes.Add("http://127.0.0.1:" + port + "/");
+        try
+        {
+            listener.Start();
+            return true;
+        }
+        catch (HttpListenerException)
+        {
+            return false;
+        }
+        finally
+        {
+            try { listener.Stop(); }
+            catch { }
+
+            try { listener.Close(); }
+            catch { }
+        }
     }
 
     private static string PostRawHttp(int port, string body)
