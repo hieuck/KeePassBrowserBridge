@@ -388,6 +388,30 @@ h1 {
   font-size: 12px;
 }
 
+.client-permissions {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.client-permission {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.client-permission input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  padding: 0;
+}
+
 .login button,
 .client button {
   width: 100%;

@@ -15,6 +15,22 @@ test.describe('KeePassBrowserBridge Extension', () => {
       window.__kbbPopupMessages = [];
       window.__kbbPopupState = state;
       window.__kbbPopupStorage = {};
+      window.__kbbPopupTrustedClients = [
+        {
+          ClientId: 'client-current',
+          ClientName: 'This Chrome',
+          Current: true,
+          Permissions: ['read', 'write', 'manageClients'],
+          CreatedUtcMs: 1779990000000
+        },
+        {
+          ClientId: 'client-old',
+          ClientName: 'Old Browser',
+          Current: false,
+          Permissions: ['read'],
+          CreatedUtcMs: 1779900000000
+        }
+      ];
       Object.defineProperty(navigator, 'clipboard', {
         configurable: true,
         value: {
@@ -132,22 +148,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
               return {
                 ok: true,
                 response: {
-                  Clients: [
-                    {
-                      ClientId: 'client-current',
-                      ClientName: 'This Chrome',
-                      Current: true,
-                      Permissions: ['read', 'write', 'manageClients'],
-                      CreatedUtcMs: 1779990000000
-                    },
-                    {
-                      ClientId: 'client-old',
-                      ClientName: 'Old Browser',
-                      Current: false,
-                      Permissions: ['read'],
-                      CreatedUtcMs: 1779900000000
-                    }
-                  ]
+                  Clients: window.__kbbPopupTrustedClients.map((client) => ({ ...client, Permissions: client.Permissions.slice() }))
                 }
               };
             }
@@ -156,6 +157,20 @@ test.describe('KeePassBrowserBridge Extension', () => {
                 state.paired = false;
               }
               return { ok: true, response: { Revoked: true } };
+            }
+            if (message && message.type === 'KBB_UPDATE_CLIENT_PERMISSIONS') {
+              const client = window.__kbbPopupTrustedClients.find((candidate) => candidate.ClientId === message.clientId);
+              if (client) {
+                client.Permissions = message.permissions.slice();
+              }
+              return {
+                ok: true,
+                response: {
+                  Updated: Boolean(client),
+                  ClientId: message.clientId,
+                  Permissions: client ? client.Permissions.slice() : []
+                }
+              };
             }
 
             return { ok: true, response: {} };
@@ -894,6 +909,27 @@ test.describe('KeePassBrowserBridge Extension', () => {
     expect(revokeMessage).toMatchObject({
       type: 'KBB_REVOKE_CLIENT',
       clientId: 'client-old'
+    });
+  });
+
+  test('updates trusted browser permissions from the popup', async ({ page }) => {
+    await page.locator('#listClients').click();
+
+    const oldBrowser = page.locator('.client', { hasText: 'Old Browser' });
+    await expect(oldBrowser).toContainText('Read');
+    await expect(oldBrowser.locator('[data-permission="write"]')).not.toBeChecked();
+
+    await oldBrowser.locator('[data-permission="write"]').check();
+
+    await expect(page.locator('#message')).toHaveText('Browser permissions updated.');
+    await expect(oldBrowser).toContainText('Read, Write');
+    const updateMessage = await page.evaluate(() => window.__kbbPopupMessages.find(
+      (message) => message.type === 'KBB_UPDATE_CLIENT_PERMISSIONS' && message.clientId === 'client-old'
+    ));
+    expect(updateMessage).toMatchObject({
+      type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+      clientId: 'client-old',
+      permissions: ['read', 'write']
     });
   });
 });
