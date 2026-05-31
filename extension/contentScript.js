@@ -486,14 +486,15 @@ function passwordLoginUsernameBoost(input, passwordInput) {
 
   const type = (input.getAttribute("type") || "text").toLowerCase();
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
-  if (type !== "tel" && autocomplete !== "tel") return 0;
+  if (!isTelephoneIdentifierField(type, autocomplete)) return 0;
 
   const context = credentialContextText(passwordInput);
-  if (!/\bsign\s*in\b|\blog\s*in\b|\blogin\b|\bpassword\b/.test(context)) {
-    return 0;
-  }
+  if (!hasLoginIntentText(context)) return 0;
 
   return 260;
+}
+function isTelephoneIdentifierField(type, autocomplete) {
+  return type === "tel" || autocomplete === "tel";
 }
 function findOtpInput(passwordInput, root) {
   const candidates = visibleInputs("input", root)
@@ -1834,9 +1835,11 @@ function scoreUsernameCandidate(input) {
   const type = (input.getAttribute("type") || "text").toLowerCase();
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
   const text = fieldText(input);
+  const context = credentialContextText(input);
   let score = 0;
   if (isNonCredentialAutocomplete(input)) score -= 260;
   if (type === "email") score += 50;
+  if (isTelephoneIdentifierField(type, autocomplete) && hasLoginIntentText(context)) score += 320;
   if (/\busername\b/.test(text)) score += 80;
   if (/\bemail\b|e-mail|mail/.test(text)) score += 70;
   if (/\blogin\b|\buser\b|account/.test(text)) score += 45;
@@ -1873,6 +1876,9 @@ function isUsernameFirstLoginCandidate(input, score) {
   if (isAccountRecoveryContext(context)) return false;
   if (isProfileOrPaymentFieldText(context)) return false;
   return /\busername\b|current-password|sign\s*in|log\s*in|\blogin\b|identifier|continue|next/.test(context);
+}
+function hasLoginIntentText(text) {
+  return /\bsign\s*in\b|\blog\s*in\b|\blogin\b/.test(String(text || ""));
 }
 function isProfileOrPaymentFieldText(text) {
   const normalized = String(text || "").replace(/\be-?mail[\s_-]+address\b/g, "email");

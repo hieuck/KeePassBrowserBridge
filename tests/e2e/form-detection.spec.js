@@ -1636,6 +1636,45 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#email-address-login')).toHaveValue('email-address@example.com');
   });
 
+  test('treats username-first phone number step as a login field', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_FILL_ACK') {
+              return { ok: true, response: { Success: true } };
+            }
+            if (message.type === 'KBB_REMEMBER_PENDING_CREDENTIAL') {
+              return { ok: true, response: { remembered: true } };
+            }
+            return {
+              ok: true,
+              response: {
+                entries: [
+                  {
+                    EntryId: 'entry-phone-first',
+                    Title: 'Phone First Login',
+                    UserName: '+15551234567',
+                    Password: 'secret',
+                    Url: 'https://example.com'
+                  }
+                ]
+              }
+            };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/phone-username-first.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+    await expect(page.locator('#phone-identifier')).toHaveValue('+15551234567');
+  });
+
   test('fills the login form that owns the clicked inline button', async ({ page }) => {
     await page.addInitScript(() => {
       window.chrome = {
