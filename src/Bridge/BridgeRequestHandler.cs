@@ -65,6 +65,7 @@ namespace KeePassBrowserBridge.Bridge
                 if (request.Method == BridgeMethods.ClientStatus) return ClientStatus(request);
                 if (request.Method == BridgeMethods.ClientsList) return ClientsList(request);
                 if (request.Method == BridgeMethods.ClientsRevoke) return ClientsRevoke(request);
+                if (request.Method == BridgeMethods.ClientsUpdatePermissions) return ClientsUpdatePermissions(request);
                 if (request.Method == BridgeMethods.LoginsQuery) return LoginsQuery(request);
                 if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
                 if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
@@ -174,6 +175,21 @@ namespace KeePassBrowserBridge.Bridge
             }));
         }
 
+        private BridgeResponse ClientsUpdatePermissions(BridgeRequest request)
+        {
+            ClientPermissionsUpdatePayload payload = BridgeJsonSerializer.Deserialize<ClientPermissionsUpdatePayload>(request.Payload);
+            string clientId = payload == null ? null : payload.ClientId;
+            string[] permissions = payload == null ? null : payload.Permissions;
+            bool updated = m_trustedClients.UpdatePermissions(clientId, permissions);
+            TrustedClient client = m_trustedClients.Get(clientId);
+            return Success(request, BridgeJsonSerializer.Serialize(new ClientPermissionsUpdateResponsePayload
+            {
+                ClientId = clientId,
+                Updated = updated,
+                Permissions = client == null ? new string[0] : TrustedClientPermissions.Normalize(client.Permissions)
+            }));
+        }
+
         private BridgeResponse LoginsQuery(BridgeRequest request)
         {
             LoginsQueryPayload payload = BridgeJsonSerializer.Deserialize<LoginsQueryPayload>(request.Payload);
@@ -278,7 +294,9 @@ namespace KeePassBrowserBridge.Bridge
                 method == BridgeMethods.LoginsUpdate ||
                 method == BridgeMethods.LoginsFillAck)
                 return TrustedClientPermissions.Write;
-            if (method == BridgeMethods.ClientsList || method == BridgeMethods.ClientsRevoke)
+            if (method == BridgeMethods.ClientsList ||
+                method == BridgeMethods.ClientsRevoke ||
+                method == BridgeMethods.ClientsUpdatePermissions)
                 return TrustedClientPermissions.ManageClients;
             return string.Empty;
         }

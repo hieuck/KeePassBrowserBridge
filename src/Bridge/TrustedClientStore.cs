@@ -45,6 +45,16 @@ namespace KeePassBrowserBridge.Bridge
             return removed;
         }
 
+        public bool UpdatePermissions(string clientId, string[] permissions)
+        {
+            TrustedClient client = Get(clientId);
+            if (client == null) return false;
+
+            client.Permissions = TrustedClientPermissions.Normalize(permissions);
+            OnChanged();
+            return true;
+        }
+
         public string ExportJson()
         {
             TrustedClientStoreData data = new TrustedClientStoreData

@@ -34,6 +34,7 @@ internal static class Program
         UpdateCheckerIgnoresSameOrInvalidVersions();
         UpdateCheckerSelectsNewestSemanticTag();
         UpdateCheckerBuildsPluginAssetUrl();
+        UpdateCheckerBuildsDllAssetUrl();
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
         NewPairingSessionCancelsOlderSessionForSameClient();
@@ -79,6 +80,7 @@ internal static class Program
         BridgeHandlerRevokesTrustedClient();
         BridgeHandlerRejectsWriteWhenTrustedClientIsReadOnly();
         BridgeHandlerListsTrustedClientPermissions();
+        BridgeHandlerUpdatesTrustedClientPermissions();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerSavesDatabaseAfterSuccessfulCreate();
@@ -295,6 +297,14 @@ internal static class Program
             "release URL mismatch");
         AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/KeePassBrowserBridge.plgx",
             info.AssetUrl, "PLGX asset URL mismatch");
+    }
+
+    private static void UpdateCheckerBuildsDllAssetUrl()
+    {
+        UpdateInfo info = UpdateChecker.CreateUpdateInfo("v1.2.3", "KeePassBrowserBridge.dll");
+
+        AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/KeePassBrowserBridge.dll",
+            info.AssetUrl, "DLL asset URL mismatch");
     }
 
     private static void PairingSessionGeneratesSixDigitCode()
@@ -1130,6 +1140,37 @@ internal static class Program
         AssertEqual(TrustedClientPermissions.Read, payload.Clients[0].Permissions[0], "first listed permission mismatch");
         AssertEqual(TrustedClientPermissions.Write, payload.Clients[0].Permissions[1], "second listed permission mismatch");
         AssertEqual(TrustedClientPermissions.ManageClients, payload.Clients[0].Permissions[2], "third listed permission mismatch");
+    }
+
+    private static void BridgeHandlerUpdatesTrustedClientPermissions()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret", new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.ManageClients });
+        store.AddOrUpdate(new TrustedClient
+        {
+            ClientId = "client-2",
+            ClientName = "Limited Browser",
+            SharedSecret = "second-secret",
+            Permissions = new string[] { TrustedClientPermissions.Read },
+            CreatedUtcMs = NowMs()
+        });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        string payload = BridgeJsonSerializer.Serialize(new ClientPermissionsUpdatePayload
+        {
+            ClientId = "client-2",
+            Permissions = new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.Write }
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientsUpdatePermissions, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        ClientPermissionsUpdateResponsePayload result = BridgeJsonSerializer.Deserialize<ClientPermissionsUpdateResponsePayload>(response.Payload);
+        TrustedClient updated = store.Get("client-2");
+
+        AssertTrue(response.Success, "clients.updatePermissions should return bridge success: " + response.Error);
+        AssertTrue(result.Updated, "clients.updatePermissions should report updated");
+        AssertEqual("client-2", result.ClientId, "updated permissions client id mismatch");
+        AssertEqual(2, updated.Permissions.Length, "updated client permission count mismatch");
+        AssertEqual(TrustedClientPermissions.Read, updated.Permissions[0], "updated read permission mismatch");
+        AssertEqual(TrustedClientPermissions.Write, updated.Permissions[1], "updated write permission mismatch");
     }
 
     private static void BridgeHandlerReturnsLoginsForAuthenticatedQuery()

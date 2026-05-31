@@ -27,6 +27,7 @@ const SENSITIVE_SETTING_KEYS = [
 ];
 
 let siteOverrides = [];
+let trustedBrowserClients = [];
 
 const elements = {
   themeToggle: document.getElementById('themeToggle'),
@@ -300,7 +301,8 @@ function renderSiteOverrides() {
 
 async function listTrustedBrowsers() {
   const result = await send({ type: 'KBB_LIST_CLIENTS' });
-  renderTrustedBrowsers(result.Clients || []);
+  trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
+  renderTrustedBrowsers(trustedBrowserClients);
   showMessage(result.Clients && result.Clients.length
     ? `${result.Clients.length} trusted browser(s).`
     : 'No trusted browsers found.', 'success');
@@ -324,6 +326,34 @@ async function revokeTrustedBrowser(client) {
 
   await listTrustedBrowsers();
   showMessage(client && client.Current ? 'This browser was revoked. Pair again to use KeePass.' : 'Browser revoked.', 'success');
+}
+
+async function updateTrustedBrowserPermissions(client, permission, enabled) {
+  const clientId = client && client.ClientId ? client.ClientId : '';
+  const nextPermissions = normalizeClientPermissions(client && client.Permissions);
+  const existingIndex = nextPermissions.indexOf(permission);
+  if (enabled && existingIndex < 0) {
+    nextPermissions.push(permission);
+  } else if (!enabled && existingIndex >= 0) {
+    nextPermissions.splice(existingIndex, 1);
+  }
+
+  const normalized = normalizeClientPermissions(nextPermissions);
+  const result = await send({
+    type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+    clientId,
+    permissions: normalized
+  });
+  if (!result || !result.Updated) {
+    throw new Error('Browser permissions were not updated.');
+  }
+
+  const stored = trustedBrowserClients.find((candidate) => candidate.ClientId === clientId);
+  if (stored) {
+    stored.Permissions = normalizeClientPermissions(result.Permissions || normalized);
+  }
+  renderTrustedBrowsers(trustedBrowserClients);
+  showMessage('Browser permissions updated.', 'success');
 }
 
 function renderTrustedBrowsers(clients) {
@@ -354,7 +384,8 @@ function renderTrustedBrowsers(clients) {
       formatClientPermissions(client.Permissions)
     ].filter(Boolean).join(' / ');
 
-    details.append(name, meta);
+    const permissions = createPermissionControls(client);
+    details.append(name, meta, permissions);
 
     const revoke = document.createElement('button');
     revoke.type = 'button';
@@ -368,17 +399,59 @@ function renderTrustedBrowsers(clients) {
   }
 }
 
+function createPermissionControls(client) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'trusted-browser-permissions';
+
+  for (const definition of getPermissionDefinitions()) {
+    const label = document.createElement('label');
+    label.className = 'trusted-browser-permission';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.dataset.permission = definition.value;
+    checkbox.checked = normalizeClientPermissions(client.Permissions).includes(definition.value);
+    checkbox.addEventListener('change', () => runAction(() =>
+      updateTrustedBrowserPermissions(client, definition.value, checkbox.checked)
+    ));
+
+    const text = document.createElement('span');
+    text.textContent = definition.label;
+
+    label.append(checkbox, text);
+    wrapper.appendChild(label);
+  }
+
+  return wrapper;
+}
+
 function formatClientPermissions(permissions) {
-  const labels = {
-    read: 'Read',
-    write: 'Write',
-    manageClients: 'Manage browsers'
-  };
-  const values = Array.isArray(permissions) && permissions.length ? permissions : ['read', 'write', 'manageClients'];
+  const labels = Object.fromEntries(getPermissionDefinitions().map((definition) => [definition.value, definition.label]));
+  const values = normalizeClientPermissions(permissions);
   return values
     .map((permission) => labels[permission])
     .filter(Boolean)
     .join(', ');
+}
+
+function normalizeClientPermissions(permissions) {
+  const allowed = getPermissionDefinitions().map((definition) => definition.value);
+  const normalized = [];
+  for (const permission of Array.isArray(permissions) ? permissions : []) {
+    if (allowed.includes(permission) && !normalized.includes(permission)) {
+      normalized.push(permission);
+    }
+  }
+
+  return normalized.length ? normalized : ['read'];
+}
+
+function getPermissionDefinitions() {
+  return [
+    { value: 'read', label: 'Read' },
+    { value: 'write', label: 'Write' },
+    { value: 'manageClients', label: 'Manage browsers' }
+  ];
 }
 
 function normalizeSiteOverrides(rules) {

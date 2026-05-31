@@ -9,6 +9,7 @@ namespace KeePassBrowserBridge.Bridge
         public const string ClientStatus = "client.status";
         public const string ClientsList = "clients.list";
         public const string ClientsRevoke = "clients.revoke";
+        public const string ClientsUpdatePermissions = "clients.updatePermissions";
         public const string LoginsQuery = "logins.query";
         public const string LoginsCreate = "logins.create";
         public const string LoginsUpdate = "logins.update";
@@ -120,6 +121,19 @@ namespace KeePassBrowserBridge.Bridge
     {
         public bool Revoked { get; set; }
         public string ClientId { get; set; }
+    }
+
+    public sealed class ClientPermissionsUpdatePayload
+    {
+        public string ClientId { get; set; }
+        public string[] Permissions { get; set; }
+    }
+
+    public sealed class ClientPermissionsUpdateResponsePayload
+    {
+        public bool Updated { get; set; }
+        public string ClientId { get; set; }
+        public string[] Permissions { get; set; }
     }
 
     public sealed class LoginsQueryPayload

@@ -164,6 +164,23 @@ const sandbox = {
       };
     }
 
+    if (request.Method === 'clients.updatePermissions') {
+      const payload = JSON.parse(request.Payload || '{}');
+      return {
+        ok: true,
+        json: async () => ({
+          ProtocolVersion: 1,
+          RequestId: request.RequestId,
+          Success: true,
+          Payload: JSON.stringify({
+            Updated: payload.ClientId === 'client-2',
+            ClientId: payload.ClientId,
+            Permissions: payload.Permissions
+          })
+        })
+      };
+    }
+
     return {
       ok: true,
       json: async () => ({
@@ -393,6 +410,23 @@ assert.equal(storage.sharedSecret, undefined, 'current client revoke should remo
 assert.equal(storage.pairingSessionId, '', 'current client revoke should clear stale pairing session state');
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'current client revoke should clear pending multi-step credentials');
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'current client revoke should clear pending submitted credentials');
+
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
+requests.length = 0;
+const permissionsResult = await sandbox.handleMessage({
+  type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+  clientId: 'client-2',
+  permissions: ['read', 'write', 'write', 'unknown']
+});
+assert.equal(permissionsResult.Updated, true, 'permission update should report success for known clients');
+const permissionsRequest = requests.find((request) => request.Method === 'clients.updatePermissions');
+assert.ok(permissionsRequest, 'permission update should call the bridge');
+assert.deepEqual(
+  JSON.parse(permissionsRequest.Payload).Permissions,
+  ['read', 'write'],
+  'permission update should send normalized permissions'
+);
 
 storage.locked = true;
 storage.clientId = 'client-1';

@@ -46,6 +46,11 @@ namespace KeePassBrowserBridge.Bridge
 
         public static UpdateInfo CheckLatest()
         {
+            return CheckLatest(PluginAssetName);
+        }
+
+        public static UpdateInfo CheckLatest(string pluginAssetName)
+        {
 #if NET8_0_OR_GREATER
 #pragma warning disable SYSLIB0014
 #endif
@@ -58,7 +63,7 @@ namespace KeePassBrowserBridge.Bridge
                 client.Headers[HttpRequestHeader.Accept] = "application/vnd.github+json";
                 string json = client.DownloadString(ReleasesApiUrl);
                 string tagName = GetNewestVersionTag(ExtractJsonStrings(json, "tag_name").ToArray());
-                UpdateInfo info = CreateUpdateInfo(tagName);
+                UpdateInfo info = CreateUpdateInfo(tagName, pluginAssetName);
                 info.IsUpdateAvailable = IsNewerVersion(GetCurrentVersion(), tagName);
                 return info;
             }
@@ -66,10 +71,15 @@ namespace KeePassBrowserBridge.Bridge
 
         public static UpdateInfo CreateUpdateInfo(string tagName)
         {
+            return CreateUpdateInfo(tagName, PluginAssetName);
+        }
+
+        public static UpdateInfo CreateUpdateInfo(string tagName, string pluginAssetName)
+        {
             UpdateInfo info = new UpdateInfo();
             info.LatestVersion = tagName ?? string.Empty;
             info.ReleaseUrl = BuildReleaseUrl(tagName);
-            info.AssetUrl = BuildPlgxAssetUrl(tagName);
+            info.AssetUrl = BuildPluginAssetUrl(tagName, pluginAssetName);
             info.IsUpdateAvailable = IsNewerVersion(GetCurrentVersion(), tagName);
             return info;
         }
@@ -118,10 +128,11 @@ namespace KeePassBrowserBridge.Bridge
             return normalized;
         }
 
-        private static string BuildPlgxAssetUrl(string tagName)
+        private static string BuildPluginAssetUrl(string tagName, string pluginAssetName)
         {
             if (string.IsNullOrEmpty(tagName)) return ReleasesUrl;
-            return ReleasesUrl + "/download/" + tagName + "/" + PluginAssetName;
+            string safeAssetName = string.IsNullOrEmpty(pluginAssetName) ? PluginAssetName : pluginAssetName;
+            return ReleasesUrl + "/download/" + tagName + "/" + safeAssetName;
         }
 
         private static string BuildReleaseUrl(string tagName)

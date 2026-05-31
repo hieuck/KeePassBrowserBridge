@@ -17,6 +17,7 @@ namespace KeePassBrowserBridge.Bridge
             BridgeMethods.ClientStatus,
             BridgeMethods.ClientsList,
             BridgeMethods.ClientsRevoke,
+            BridgeMethods.ClientsUpdatePermissions,
             BridgeMethods.LoginsQuery,
             BridgeMethods.LoginsCreate,
             BridgeMethods.LoginsUpdate,

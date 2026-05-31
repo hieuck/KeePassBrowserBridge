@@ -64,6 +64,21 @@ async function installOptionsStorage(page, initial = {}) {
             });
           }
 
+          if (message.type === 'KBB_UPDATE_CLIENT_PERMISSIONS') {
+            const client = trustedClients.find((candidate) => candidate.ClientId === message.clientId);
+            if (client) {
+              client.Permissions = message.permissions.slice();
+            }
+            return Promise.resolve({
+              ok: true,
+              response: {
+                Updated: Boolean(client),
+                ClientId: message.clientId,
+                Permissions: client ? client.Permissions.slice() : []
+              }
+            });
+          }
+
           if (message.type === 'KBB_GET_ABOUT') {
             return Promise.resolve({
               ok: true,
@@ -368,6 +383,31 @@ test.describe('options page settings', () => {
       expect.arrayContaining([
         expect.objectContaining({ type: 'KBB_LIST_CLIENTS' }),
         expect.objectContaining({ type: 'KBB_REVOKE_CLIENT', clientId: 'client-old' })
+      ])
+    );
+  });
+
+  test('updates trusted browser permissions from settings', async ({ page }) => {
+    await installOptionsStorage(page);
+
+    await page.goto('/extension/options.html');
+    await page.locator('#refreshTrustedBrowsers').click();
+    const oldBrowser = page.locator('.trusted-browser-row', { hasText: 'Old Browser' });
+    await expect(oldBrowser).toContainText('Read');
+    await expect(oldBrowser.locator('[data-permission="write"]')).not.toBeChecked();
+
+    await oldBrowser.locator('[data-permission="write"]').check();
+
+    await expect(page.locator('#message')).toHaveText('Browser permissions updated.');
+    await expect(oldBrowser).toContainText('Read, Write');
+    const messages = await page.evaluate(() => window.__kbbOptionsMessages);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+          clientId: 'client-old',
+          permissions: ['read', 'write']
+        })
       ])
     );
   });

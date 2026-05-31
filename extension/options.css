@@ -350,8 +350,31 @@ label {
 }
 
 .trusted-browser-meta {
+  display: block;
   color: var(--muted);
   font-size: 12px;
+}
+
+.trusted-browser-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+}
+
+.trusted-browser-permission {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trusted-browser-permission input {
+  width: 16px;
+  height: 16px;
 }
 
 .trusted-browser-row button {

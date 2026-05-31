@@ -90,6 +90,8 @@ async function handleMessage(message) {
       return listClients();
     case 'KBB_REVOKE_CLIENT':
       return revokeClient(message.clientId);
+    case 'KBB_UPDATE_CLIENT_PERMISSIONS':
+      return updateClientPermissions(message.clientId, message.permissions);
     case 'KBB_QUERY_LOGINS':
       return queryLogins();
     case 'KBB_QUERY_FOR_URL':
@@ -298,6 +300,31 @@ async function revokeClient(clientId) {
   }
 
   return result;
+}
+
+async function updateClientPermissions(clientId, permissions) {
+  const targetClientId = String(clientId || '').trim();
+  if (!targetClientId) {
+    throw new Error('Select a browser to update.');
+  }
+
+  const response = await bridgeCall('clients.updatePermissions', {
+    ClientId: targetClientId,
+    Permissions: normalizeClientPermissions(permissions)
+  }, true);
+  return parsePayload(response);
+}
+
+function normalizeClientPermissions(permissions) {
+  const allowed = ['read', 'write', 'manageClients'];
+  const normalized = [];
+  for (const permission of Array.isArray(permissions) ? permissions : []) {
+    if (allowed.includes(permission) && !normalized.includes(permission)) {
+      normalized.push(permission);
+    }
+  }
+
+  return normalized.length ? normalized : ['read'];
 }
 
 async function pairBegin() {
