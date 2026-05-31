@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Mixed autofill forms</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    form { display: grid; gap: 12px; max-width: 420px; margin-bottom: 28px; }
+    label { display: grid; gap: 6px; }
+    input { height: 34px; padding: 0 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Autofill field test</h1>
+    <form id="checkout">
+      <label>
+        Email
+        <input id="checkout-email" name="email" type="email" autocomplete="email">
+      </label>
+      <label>
+        City
+        <input id="checkout-city" name="city" type="text" autocomplete="address-level2">
+      </label>
+      <label>
+        Name on card
+        <input id="checkout-card-name" name="ccname" type="text" autocomplete="cc-name">
+      </label>
+      <button type="submit">Save checkout details</button>
+    </form>
+
+    <form id="login">
+      <h2>Sign in</h2>
+      <label>
+        Email address
+        <input id="login-email" name="login_email" type="email" autocomplete="username">
+      </label>
+      <label>
+        Password
+        <input id="login-password" name="password" type="password" autocomplete="current-password">
+      </label>
+      <button type="submit">Log in</button>
+    </form>
+  </main>
+</body>
+</html>

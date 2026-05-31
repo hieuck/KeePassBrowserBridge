@@ -293,6 +293,8 @@ vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
 
 assert.equal(sandbox.scoreOtpCandidate(quotaPageSizeInput) <= 0, true, 'numeric page-size input should not score as OTP');
 assert.equal(sandbox.scoreUsernameCandidate(viotpHistorySearchInput) < -50, true, 'datatable search input should not score as username');
+assert.equal(sandbox.isCredentialHostileField(quotaPageSizeInput), true, 'profile/settings fields should block document-level autofill fallback');
+assert.equal(sandbox.isCredentialHostileField(viotpHistorySearchInput), false, 'neutral search fields should still allow document-level login fallback');
 assert.equal(sandbox.scoreUsernameCandidate(newsletterEmailInput) < -50, true, 'newsletter email input should not score as username');
 assert.equal(sandbox.findUsernameInput(null, new MockRoot([newsletterEmailInput])), null, 'newsletter-only pages should not expose email signup as username');
 assert.equal(sandbox.findUsernameInput(null, new MockRoot([contactEmailInput], 'Contact support Email address Message Send message')), null, 'contact support pages should not expose email fields as username');

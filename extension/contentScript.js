@@ -305,17 +305,34 @@ function collectCredentialFromForm(root) {
 }
 function credentialCollectionRoot() {
   const input = getFocusedEditableInput();
-  return credentialScopeForInput(input) || document;
+  const scope = credentialScopeForInput(input);
+  return scope && hasCredentialFillTarget(scope) ? scope : document;
 }
 function credentialFillRoot() {
   const input = editableInputFromElement(document.activeElement) ||
     editableInputFromElement(window.__keepassBrowserBridgeLastFocusedInput);
+  if (!input) return document;
   const scope = credentialScopeForInput(input);
-  return scope && hasCredentialFillTarget(scope) ? scope : null;
+  if (scope && hasCredentialFillTarget(scope)) return scope;
+  return isCredentialHostileField(input) ? emptyCredentialRoot() : document;
 }
 function hasCredentialFillTarget(root) {
   const passwordInput = findPasswordInput(root);
   return Boolean(passwordInput || findUsernameInput(passwordInput, root) || findOtpInput(passwordInput, root));
+}
+function isCredentialHostileField(input) {
+  const context = credentialContextText(input);
+  return isProfileOrPaymentFieldText(context) || isNonLoginCommunicationContext(context);
+}
+function emptyCredentialRoot() {
+  return {
+    querySelectorAll() {
+      return [];
+    },
+    querySelector() {
+      return null;
+    },
+  };
 }
 async function maybePromptSaveLogin(credential) {
   if (!credential.password) {

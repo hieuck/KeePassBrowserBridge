@@ -1256,6 +1256,71 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#accounts-per-page')).toHaveValue('20');
   });
 
+  test('does not fallback to a different form when focus is inside non-login fields', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/mixed-fill-dev-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#checkout-city').focus();
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#checkout-email')).toHaveValue('');
+    await expect(page.locator('#checkout-city')).toHaveValue('');
+    await expect(page.locator('#checkout-card-name')).toHaveValue('');
+    await expect(page.locator('#login-email')).toHaveValue('');
+    await expect(page.locator('#login-password')).toHaveValue('');
+  });
+
+  test('still fills the login form on mixed pages when no non-login field is focused', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/mixed-fill-dev-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple'
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: true,
+      result: {
+        usernameFilled: true,
+        passwordFilled: true
+      }
+    });
+    await expect(page.locator('#checkout-email')).toHaveValue('');
+    await expect(page.locator('#checkout-city')).toHaveValue('');
+    await expect(page.locator('#checkout-card-name')).toHaveValue('');
+    await expect(page.locator('#login-email')).toHaveValue('alice@example.com');
+    await expect(page.locator('#login-password')).toHaveValue('correct horse battery staple');
+  });
+
   test('does not treat contact support email fields as username-first login', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/non-login-contact-page.html');
@@ -1405,6 +1470,32 @@ test.describe('content script form detection', () => {
       credential: {
         userName: 'admin@example.com',
         password: 'admin-secret'
+      }
+    });
+  });
+
+  test('falls back to page login credential when popup create focus is outside login fields', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/search-and-login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#login-username').fill('login@example.com');
+    await page.locator('#login-password').fill('login-secret');
+    await page.locator('#activity-search').focus();
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        { type: 'KBB_COLLECT_PAGE_CREDENTIAL' },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      collected: true,
+      credential: {
+        userName: 'login@example.com',
+        password: 'login-secret'
       }
     });
   });
