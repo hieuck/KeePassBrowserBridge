@@ -131,6 +131,22 @@ const sandbox = {
       };
     }
 
+    if (request.Method === 'clients.revoke') {
+      const payload = JSON.parse(request.Payload || '{}');
+      return {
+        ok: true,
+        json: async () => ({
+          ProtocolVersion: 1,
+          RequestId: request.RequestId,
+          Success: true,
+          Payload: JSON.stringify({
+            Revoked: payload.ClientId === 'client-1',
+            ClientId: payload.ClientId
+          })
+        })
+      };
+    }
+
     return {
       ok: true,
       json: async () => ({
@@ -323,6 +339,36 @@ const pairedState = await sandbox.getState();
 assert.equal(pairedState.paired, true);
 assert.equal(pairedState.pairingSessionId, '', 'paired state should not expose a stale pairing session');
 assert.equal(storage.pairingStartedAt, 0, 'paired state should clear stale pairing timestamp');
+
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
+storage.pairingSessionId = 'stale-session';
+storage.pairingStartedAt = 1000;
+extensionSessionStorage.kbbPendingMultiStepCredential = {
+  origin: 'https://example.com',
+  credential: {
+    EntryId: 'entry-stale',
+    UserName: 'stale@example.com',
+    Password: 'stale-secret'
+  },
+  savedAt: now
+};
+extensionSessionStorage.kbbPendingSubmittedCredential = {
+  origin: 'https://example.com',
+  credential: {
+    url: 'https://example.com/login',
+    userName: 'submitted@example.com',
+    password: 'submitted-secret'
+  },
+  savedAt: now
+};
+const revokeCurrentResult = await sandbox.handleMessage({ type: 'KBB_REVOKE_CLIENT', clientId: 'client-1' });
+assert.equal(revokeCurrentResult.Revoked, true, 'current client revoke should report success');
+assert.equal(storage.clientId, undefined, 'current client revoke should remove the stored client id');
+assert.equal(storage.sharedSecret, undefined, 'current client revoke should remove the stored shared secret');
+assert.equal(storage.pairingSessionId, '', 'current client revoke should clear stale pairing session state');
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'current client revoke should clear pending multi-step credentials');
+assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'current client revoke should clear pending submitted credentials');
 
 storage.locked = true;
 const lockedState = await sandbox.getState();

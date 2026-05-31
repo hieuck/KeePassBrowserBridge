@@ -290,6 +290,7 @@ async function revokeClient(clientId) {
   if (result.Revoked && state.clientId === targetClientId) {
     await chrome.storage.local.remove(['clientId', 'sharedSecret']);
     await clearPairingSession();
+    await clearPendingCredentialState();
   }
 
   return result;
@@ -371,6 +372,10 @@ async function clearPairingSession() {
     pairingSessionId: '',
     pairingStartedAt: 0
   });
+}
+
+async function clearPendingCredentialState() {
+  await sessionStorageRemove([PENDING_MULTI_STEP_KEY, PENDING_SUBMITTED_KEY]);
 }
 
 function isTerminalPairingError(error) {
