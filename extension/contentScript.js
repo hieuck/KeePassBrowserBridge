@@ -322,7 +322,11 @@ function hasCredentialFillTarget(root) {
 }
 function isCredentialHostileField(input) {
   const context = credentialContextText(input);
-  return isProfileOrPaymentFieldText(context) || isNonLoginCommunicationContext(context);
+  return (
+    isProfileOrPaymentFieldText(context) ||
+    isNonLoginCommunicationContext(context) ||
+    isAccountRecoveryContext(context)
+  );
 }
 function emptyCredentialRoot() {
   return {
@@ -1836,6 +1840,7 @@ function isUsernameFirstLoginCandidate(input, score) {
   if (!input || score < 40) return false;
   const context = credentialContextText(input);
   if (isNonLoginCommunicationContext(context)) return false;
+  if (isAccountRecoveryContext(context)) return false;
   if (isProfileOrPaymentFieldText(context)) return false;
   return /\busername\b|current-password|sign\s*in|log\s*in|\blogin\b|identifier|continue|next/.test(context);
 }
@@ -1845,6 +1850,9 @@ function isProfileOrPaymentFieldText(text) {
 }
 function isNonLoginCommunicationContext(text) {
   return /\b(contact|support|message|send\s+message|feedback|comment|inquiry|enquiry|help\s+request|ticket)\b/.test(String(text || ""));
+}
+function isAccountRecoveryContext(text) {
+  return /\b(forgot|reset|recover|recovery|trouble\s+signing\s+in|account\s+help|password\s+help|send\s+(a\s+)?(recovery|reset)\s+link)\b/.test(String(text || ""));
 }
 function scoreOtpCandidate(input) {
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();

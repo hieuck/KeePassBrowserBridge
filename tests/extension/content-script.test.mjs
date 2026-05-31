@@ -196,6 +196,14 @@ const usernameFirstEmailAddressInput = new MockInput(35, {
   labelText: 'Email address'
 }, '');
 
+const passwordResetEmailInput = new MockInput(36, {
+  id: 'reset-email',
+  name: 'email',
+  type: 'email',
+  autocomplete: 'email',
+  labelText: 'Email address'
+}, '');
+
 const unrelatedForm = new MockRoot([unrelatedUser]);
 const targetForm = new MockRoot([targetUser, targetPassword]);
 const documentRoot = new MockRoot([
@@ -211,7 +219,8 @@ const documentRoot = new MockRoot([
   newsletterEmailInput,
   googleVietnameseTotpInput,
   contactEmailInput,
-  usernameFirstEmailAddressInput
+  usernameFirstEmailAddressInput,
+  passwordResetEmailInput
 ]);
 
 const sandbox = {
@@ -309,6 +318,7 @@ assert.equal(sandbox.isCredentialHostileField(viotpHistorySearchInput), false, '
 assert.equal(sandbox.scoreUsernameCandidate(newsletterEmailInput) < -50, true, 'newsletter email input should not score as username');
 assert.equal(sandbox.findUsernameInput(null, new MockRoot([newsletterEmailInput])), null, 'newsletter-only pages should not expose email signup as username');
 assert.equal(sandbox.findUsernameInput(null, new MockRoot([contactEmailInput], 'Contact support Email address Message Send message')), null, 'contact support pages should not expose email fields as username');
+assert.equal(sandbox.findUsernameInput(null, new MockRoot([passwordResetEmailInput], 'Reset your password Email address Continue Send a recovery link')), null, 'password reset pages should not expose email fields as username-first login');
 assert.equal(
   sandbox.findUsernameInput(null, new MockRoot([usernameFirstEmailAddressInput], 'Sign in Email address Continue')),
   usernameFirstEmailAddressInput,
