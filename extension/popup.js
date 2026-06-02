@@ -859,6 +859,7 @@ async function renderResults(entries) {
 
     const fill = document.createElement('button');
     fill.type = 'button';
+    fill.className = 'fill-login-btn';
     fill.textContent = '✓ Fill';
     fill.addEventListener('click', () => runAction(() => fillLogin(entry)));
 
@@ -917,8 +918,8 @@ async function renderResults(entries) {
           const fillBtn = document.createElement('button');
           fillBtn.type = 'button';
           fillBtn.className = 'field-fill-btn';
-          fillBtn.title = 'Fill focused field';
-          fillBtn.textContent = 'Field';
+          fillBtn.title = `Fill focused field with ${field.Name}`;
+          fillBtn.textContent = `Fill ${field.Name}`;
           fillBtn.addEventListener('click', () => runAction(() => fillLogin(entry, 'custom', field.Name)));
           fieldDiv.append(fillBtn);
 

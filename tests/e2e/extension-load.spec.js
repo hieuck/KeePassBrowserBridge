@@ -419,7 +419,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('fills a selected popup login through the background contract', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'Fill' }).click();
+    await page.locator('.login .fill-login-btn').click();
 
     await expect(page.locator('#message')).toHaveText('Login filled.');
     const fillMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_FILL_LOGIN'));
@@ -647,12 +647,12 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('.custom-field', { hasText: 'ApiKey' })).toContainText('••••••••');
     await expect(page.locator('.custom-field', { hasText: 'ApiKey' })).not.toContainText('protected-secret');
     await expect(page.locator('.custom-field', { hasText: 'Tenant' }).locator('.copy-btn')).toHaveCount(1);
-    await expect(page.locator('.custom-field', { hasText: 'Tenant' }).locator('button', { hasText: 'Field' })).toHaveCount(1);
+    await expect(page.locator('.custom-field', { hasText: 'Tenant' }).locator('button', { hasText: 'Fill Tenant' })).toHaveCount(1);
     await expect(page.locator('.custom-field', { hasText: 'ApiKey' }).locator('.copy-btn')).toHaveCount(0);
-    await expect(page.locator('.custom-field', { hasText: 'ApiKey' }).locator('button', { hasText: 'Field' })).toHaveCount(0);
+    await expect(page.locator('.custom-field', { hasText: 'ApiKey' }).locator('button', { hasText: 'Fill ApiKey' })).toHaveCount(0);
 
     await page.locator('.custom-field', { hasText: 'Tenant' }).locator('.copy-btn').click();
-    await page.locator('.custom-field', { hasText: 'Tenant' }).locator('button', { hasText: 'Field' }).click();
+    await page.locator('.custom-field', { hasText: 'Tenant' }).locator('button', { hasText: 'Fill Tenant' }).click();
     const copyMessages = await page.evaluate(() =>
       window.__kbbPopupMessages.filter((message) => message.type === 'KBB_COPY_TO_CLIPBOARD')
     );
