@@ -1540,6 +1540,36 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#accounts-per-page')).toHaveValue('20');
   });
 
+  test('does not fill custom fields into pages without a login target', async ({ page }) => {
+    await installContentScript(page);
+    await page.goto('/tests/fixtures/non-login-profile-payment-page.html');
+    await page.addScriptTag({ path: 'extension/customFields.js' });
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    const response = await page.evaluate(() => new Promise((resolve) => {
+      window.__keepassBrowserBridgeMessageListener(
+        {
+          type: 'KBB_FILL',
+          credential: {
+            UserName: 'alice@example.com',
+            Password: 'correct horse battery staple',
+            CustomFields: [
+              { Name: 'City', Value: 'Hanoi', IsProtected: false }
+            ]
+          }
+        },
+        {},
+        resolve
+      );
+    }));
+
+    expect(response).toMatchObject({
+      filled: false,
+      error: 'No login field found on this page.'
+    });
+    await expect(page.locator('#city')).toHaveValue('');
+  });
+
   test('does not autofill sign-up forms that only ask for a new password', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/signup-new-password-page.html');

@@ -161,15 +161,14 @@ function fillLogin(credential, root) {
   const passwordInput = findPasswordInput(root);
   const usernameInput = findUsernameInput(passwordInput, root);
   const otpInput = findOtpInput(passwordInput, root);
-  const customFieldsResult = fillCustomFields(credential, root);
   if (
     !passwordInput &&
     !usernameInput &&
-    !otpInput &&
-    (!customFieldsResult || !customFieldsResult.filled)
+    !otpInput
   ) {
     throw new Error("No login field found on this page.");
   }
+  const customFieldsResult = fillCustomFields(credential, root);
   if (usernameInput && credential.UserName) {
     setInputValue(usernameInput, credential.UserName);
   }
