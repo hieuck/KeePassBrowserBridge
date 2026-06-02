@@ -452,6 +452,24 @@ test.describe('KeePassBrowserBridge Extension', () => {
     });
   });
 
+  test('fills a selected popup OTP into the focused field contract', async ({ page }) => {
+    await page.locator('#queryLogins').click();
+    await page.locator('.login button', { hasText: 'OTP Field' }).click();
+
+    await expect(page.locator('#message')).toHaveText('OTP filled into focused field.');
+    const fillMessage = await page.evaluate(() => window.__kbbPopupMessages.find(
+      (message) => message.type === 'KBB_FILL_LOGIN' && message.fieldRole === 'otp'
+    ));
+    expect(fillMessage).toMatchObject({
+      type: 'KBB_FILL_LOGIN',
+      fieldRole: 'otp',
+      credential: {
+        EntryId: 'entry-1',
+        OneTimePassword: '123456'
+      }
+    });
+  });
+
   test('ranks frequently used popup logins first', async ({ page }) => {
     await page.evaluate(() => {
       window.__kbbPopupEntries = [
