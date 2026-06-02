@@ -2182,6 +2182,46 @@ test.describe('content script form detection', () => {
     await expect(page.locator('#otp-6')).toHaveValue('1');
   });
 
+  test('inline picker OTP action fills split OTP inputs', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return {
+                ok: true,
+                response: {
+                  entries: [
+                    { Title: 'Personal', OneTimePassword: '111111', Url: 'https://example.com' },
+                    { Title: 'Work', OneTimePassword: '654321', Url: 'https://example.com' }
+                  ]
+                }
+              };
+            }
+            if (message.type === 'KBB_FILL_ACK') {
+              return { ok: true, response: { Success: true } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/split-otp-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill one-time code from KeePass"]').click();
+    await expect(page.locator('.kbb-inline-picker')).toBeVisible();
+    await page.locator('.kbb-inline-picker [data-kbb-entry-title="Work"] [data-kbb-action="otp"]').click();
+
+    await expect(page.locator('#otp-1')).toHaveValue('6');
+    await expect(page.locator('#otp-2')).toHaveValue('5');
+    await expect(page.locator('#otp-3')).toHaveValue('4');
+    await expect(page.locator('#otp-4')).toHaveValue('3');
+    await expect(page.locator('#otp-5')).toHaveValue('2');
+    await expect(page.locator('#otp-6')).toHaveValue('1');
+  });
+
   test('detects OTP input described by ARIA references', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/aria-otp-page.html');

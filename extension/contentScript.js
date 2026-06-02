@@ -205,7 +205,7 @@ function fillFocusedField(credential, role, customFieldName) {
     return { usernameFilled: false, passwordFilled: true, otpFilled: false };
   }
   if (role === "otp" && credential.OneTimePassword) {
-    setInputValue(target, credential.OneTimePassword);
+    setOneTimePasswordValue(target, credential.OneTimePassword);
     return { usernameFilled: false, passwordFilled: false, otpFilled: true };
   }
   if (role === "custom" && customFieldName) {
@@ -571,6 +571,13 @@ function fillOneTimePassword(otpInput, code) {
   for (let i = 0; i < value.length; ++i) {
     setInputValue(splitInputs[i], value.charAt(i));
   }
+  return true;
+}
+function setOneTimePasswordValue(otpInput, code) {
+  const value = String(code || "").trim();
+  if (!otpInput || !value) return false;
+  if (fillOneTimePassword(otpInput, value)) return true;
+  setInputValue(otpInput, value);
   return true;
 }
 function findSplitOtpInputs(anchorInput, codeLength) {
@@ -1262,7 +1269,7 @@ function fillCredentialAction(button, entry, action, customFieldName) {
     return { usernameFilled: false, passwordFilled: true, otpFilled: false };
   }
   if (action === "otp" && entry.OneTimePassword) {
-    setInputValue(resolveFieldTarget(button, "otp"), entry.OneTimePassword);
+    setOneTimePasswordValue(resolveFieldTarget(button, "otp"), entry.OneTimePassword);
     return { usernameFilled: false, passwordFilled: false, otpFilled: true };
   }
   if (action === "custom-field" && customFieldName && targetInput) {
@@ -1390,7 +1397,7 @@ function fillCredentialForButton(button, entry) {
     return { usernameFilled: false, passwordFilled: true, otpFilled: false };
   }
   if (role === "otp" && targetInput && entry.OneTimePassword) {
-    setInputValue(targetInput, entry.OneTimePassword);
+    setOneTimePasswordValue(targetInput, entry.OneTimePassword);
     return { usernameFilled: false, passwordFilled: false, otpFilled: true };
   }
   return fillLogin(entry, credentialScopeForInput(targetInput));

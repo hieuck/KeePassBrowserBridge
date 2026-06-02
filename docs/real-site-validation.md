@@ -23,7 +23,7 @@ extension test.
 | Username-first login using a phone number identifier | `phone-username-first.html` | `treats username-first phone number step as a login field` |
 | Additional KeePass URL fields, like `auth.openai.com` entry matching `chatgpt.com` | bridge tests in `tests/Program.cs` | `CredentialQueryMatchesAdditionalUrlField` and `CredentialMutationAcceptsPageUrlFromAdditionalUrlField` |
 | Google-style Vietnamese authenticator prompt | `google-totp-vi-page.html` | `adds OTP inline button to Google-style Vietnamese authenticator input`, `fills OTP on Google-style Vietnamese authenticator input` |
-| Split OTP inputs | `split-otp-page.html` | `fills split OTP inputs across sibling labels` |
+| Split OTP inputs | `split-otp-page.html` | `fills split OTP inputs across sibling labels`, `inline picker OTP action fills split OTP inputs` |
 | ARIA-described OTP field | `aria-otp-page.html` | `detects OTP input described by ARIA references` |
 | Ordinary phone/search input near verification copy must not be treated as OTP | `verification-copy-phone-page.html` | `does not treat ordinary phone input as OTP because nearby copy mentions verification code` |
 | viotp/DataTables search box must not be username | `dashboard-search-page.html` plus unit mock | `does not add KeePass inline button to dashboard search input`, `datatable search input should not score as username` |
