@@ -591,7 +591,7 @@ namespace KeePassBrowserBridge
             try
             {
                 ServicePointManager.SecurityProtocol = ServicePointManager.SecurityProtocol | (SecurityProtocolType)3072;
-                UpdateInfo info = UpdateChecker.CheckLatest(GetPluginArtifactName());
+                UpdateInfo info = UpdateChecker.CheckLatest();
 
                 if (info == null || !info.IsUpdateAvailable)
                 {
@@ -702,16 +702,7 @@ namespace KeePassBrowserBridge
             string keepassDir = Path.GetDirectoryName(Application.ExecutablePath);
             string pluginsDir = Path.Combine(keepassDir, "Plugins");
             Directory.CreateDirectory(pluginsDir);
-            return Path.Combine(pluginsDir, GetPluginArtifactName());
-        }
-
-        private string GetPluginArtifactName()
-        {
-            string keepassDir = Path.GetDirectoryName(Application.ExecutablePath);
-            string pluginsDir = Path.Combine(keepassDir, "Plugins");
-            string dllPath = Path.Combine(pluginsDir, "KeePassBrowserBridge.dll");
-            if (File.Exists(dllPath)) return "KeePassBrowserBridge.dll";
-            return "KeePassBrowserBridge.plgx";
+            return Path.Combine(pluginsDir, "KeePassBrowserBridge.plgx");
         }
 
         private void ShowOnUi(MethodInvoker action)

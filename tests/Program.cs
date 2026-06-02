@@ -34,7 +34,7 @@ internal static class Program
         UpdateCheckerIgnoresSameOrInvalidVersions();
         UpdateCheckerSelectsNewestSemanticTag();
         UpdateCheckerBuildsPluginAssetUrl();
-        UpdateCheckerBuildsDllAssetUrl();
+        UpdateCheckerAlwaysBuildsPlgxAssetUrl();
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
         NewPairingSessionCancelsOlderSessionForSameClient();
@@ -302,12 +302,12 @@ internal static class Program
             info.AssetUrl, "PLGX asset URL mismatch");
     }
 
-    private static void UpdateCheckerBuildsDllAssetUrl()
+    private static void UpdateCheckerAlwaysBuildsPlgxAssetUrl()
     {
         UpdateInfo info = UpdateChecker.CreateUpdateInfo("v1.2.3", "KeePassBrowserBridge.dll");
 
-        AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/KeePassBrowserBridge.dll",
-            info.AssetUrl, "DLL asset URL mismatch");
+        AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/KeePassBrowserBridge.plgx",
+            info.AssetUrl, "plugin auto-update should always use the PLGX release asset");
     }
 
     private static void PairingSessionGeneratesSixDigitCode()

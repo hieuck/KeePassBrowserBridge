@@ -63,7 +63,7 @@ namespace KeePassBrowserBridge.Bridge
                 client.Headers[HttpRequestHeader.Accept] = "application/vnd.github+json";
                 string json = client.DownloadString(ReleasesApiUrl);
                 string tagName = GetNewestVersionTag(ExtractJsonStrings(json, "tag_name").ToArray());
-                UpdateInfo info = CreateUpdateInfo(tagName, pluginAssetName);
+                UpdateInfo info = CreateUpdateInfo(tagName);
                 info.IsUpdateAvailable = IsNewerVersion(GetCurrentVersion(), tagName);
                 return info;
             }
@@ -79,7 +79,7 @@ namespace KeePassBrowserBridge.Bridge
             UpdateInfo info = new UpdateInfo();
             info.LatestVersion = tagName ?? string.Empty;
             info.ReleaseUrl = BuildReleaseUrl(tagName);
-            info.AssetUrl = BuildPluginAssetUrl(tagName, pluginAssetName);
+            info.AssetUrl = BuildPluginAssetUrl(tagName);
             info.IsUpdateAvailable = IsNewerVersion(GetCurrentVersion(), tagName);
             return info;
         }
@@ -128,11 +128,10 @@ namespace KeePassBrowserBridge.Bridge
             return normalized;
         }
 
-        private static string BuildPluginAssetUrl(string tagName, string pluginAssetName)
+        private static string BuildPluginAssetUrl(string tagName)
         {
             if (string.IsNullOrEmpty(tagName)) return ReleasesUrl;
-            string safeAssetName = string.IsNullOrEmpty(pluginAssetName) ? PluginAssetName : pluginAssetName;
-            return ReleasesUrl + "/download/" + tagName + "/" + safeAssetName;
+            return ReleasesUrl + "/download/" + tagName + "/" + PluginAssetName;
         }
 
         private static string BuildReleaseUrl(string tagName)
