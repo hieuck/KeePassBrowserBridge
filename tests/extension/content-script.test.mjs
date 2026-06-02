@@ -400,6 +400,24 @@ const otpResult = sandbox.fillLogin({ OneTimePassword: '123456' });
 assert.equal(otpResult.otpFilled, true);
 assert.deepEqual(splitOtpInputs.map((input) => input.value), ['1', '2', '3', '4', '5', '6']);
 
+for (const input of splitOtpInputs) input.value = '';
+splitOtpInputs[0].focus();
+let focusedOtpResponse = null;
+sandbox.window.__keepassBrowserBridgeMessageListener(
+  {
+    type: 'KBB_FILL',
+    credential: { OneTimePassword: '654321' },
+    fieldRole: 'otp'
+  },
+  {},
+  (response) => {
+    focusedOtpResponse = response;
+  }
+);
+assert.equal(focusedOtpResponse.filled, true, 'manual OTP field fill should report success');
+assert.equal(focusedOtpResponse.result.otpFilled, true, 'manual OTP field fill should mark OTP as filled');
+assert.deepEqual(splitOtpInputs.map((input) => input.value), ['6', '5', '4', '3', '2', '1'], 'manual OTP field fill should split one-time codes across digit inputs');
+
 viotpHistorySearchInput.focus();
 let focusedFieldResponse = null;
 sandbox.window.__keepassBrowserBridgeMessageListener(
