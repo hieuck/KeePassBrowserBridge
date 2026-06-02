@@ -83,6 +83,7 @@ internal static class Program
         BridgeHandlerListsTrustedClientPermissions();
         BridgeHandlerUpdatesTrustedClientPermissions();
         BridgeHandlerDoesNotGrantFullPermissionsForEmptyPermissionUpdate();
+        BridgeHandlerKeepsReadPermissionWhenUpdatingElevatedPermissions();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerSavesDatabaseAfterSuccessfulCreate();
@@ -1214,6 +1215,34 @@ internal static class Program
         AssertTrue(response.Success, "empty clients.updatePermissions should return bridge success: " + response.Error);
         AssertEqual(1, updated.Permissions.Length, "empty permission update should leave only read permission");
         AssertEqual(TrustedClientPermissions.Read, updated.Permissions[0], "empty permission update should not grant write or manage-clients");
+    }
+
+    private static void BridgeHandlerKeepsReadPermissionWhenUpdatingElevatedPermissions()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret", new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.ManageClients });
+        store.AddOrUpdate(new TrustedClient
+        {
+            ClientId = "client-2",
+            ClientName = "Limited Browser",
+            SharedSecret = "second-secret",
+            Permissions = new string[] { TrustedClientPermissions.Read },
+            CreatedUtcMs = NowMs()
+        });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        string payload = BridgeJsonSerializer.Serialize(new ClientPermissionsUpdatePayload
+        {
+            ClientId = "client-2",
+            Permissions = new string[] { TrustedClientPermissions.Write }
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientsUpdatePermissions, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        TrustedClient updated = store.Get("client-2");
+
+        AssertTrue(response.Success, "write-only clients.updatePermissions should return bridge success: " + response.Error);
+        AssertEqual(2, updated.Permissions.Length, "elevated permission update should keep read baseline");
+        AssertEqual(TrustedClientPermissions.Read, updated.Permissions[0], "read baseline should be first");
+        AssertEqual(TrustedClientPermissions.Write, updated.Permissions[1], "requested write permission should remain");
     }
 
     private static void BridgeHandlerReturnsLoginsForAuthenticatedQuery()

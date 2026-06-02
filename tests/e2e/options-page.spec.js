@@ -394,6 +394,8 @@ test.describe('options page settings', () => {
     await page.locator('#refreshTrustedBrowsers').click();
     const oldBrowser = page.locator('.trusted-browser-row', { hasText: 'Old Browser' });
     await expect(oldBrowser).toContainText('Read');
+    await expect(oldBrowser.locator('[data-permission="read"]')).toBeChecked();
+    await expect(oldBrowser.locator('[data-permission="read"]')).toBeDisabled();
     await expect(oldBrowser.locator('[data-permission="write"]')).not.toBeChecked();
 
     await oldBrowser.locator('[data-permission="write"]').check();

@@ -938,6 +938,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     const oldBrowser = page.locator('.client', { hasText: 'Old Browser' });
     await expect(oldBrowser).toContainText('Read');
+    await expect(oldBrowser.locator('[data-permission="read"]')).toBeChecked();
+    await expect(oldBrowser.locator('[data-permission="read"]')).toBeDisabled();
     await expect(oldBrowser.locator('[data-permission="write"]')).not.toBeChecked();
 
     await oldBrowser.locator('[data-permission="write"]').check();

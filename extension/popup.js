@@ -1067,6 +1067,7 @@ function createClientPermissionControls(client) {
     checkbox.type = 'checkbox';
     checkbox.dataset.permission = definition.value;
     checkbox.checked = normalizeClientPermissions(client.Permissions).includes(definition.value);
+    checkbox.disabled = definition.value === 'read';
     checkbox.addEventListener('change', () => runAction(() =>
       updateClientPermissions(client, definition.value, checkbox.checked)
     ));
@@ -1092,14 +1093,14 @@ function formatClientPermissions(permissions) {
 
 function normalizeClientPermissions(permissions) {
   const allowed = getPermissionDefinitions().map((definition) => definition.value);
-  const normalized = [];
+  const normalized = ['read'];
   for (const permission of Array.isArray(permissions) ? permissions : []) {
     if (allowed.includes(permission) && !normalized.includes(permission)) {
       normalized.push(permission);
     }
   }
 
-  return normalized.length ? normalized : ['read'];
+  return normalized;
 }
 
 function getPermissionDefinitions() {

@@ -131,7 +131,17 @@ namespace KeePassBrowserBridge.Bridge
         public static string[] NormalizeForUpdate(string[] permissions)
         {
             string[] normalized = NormalizeKnown(permissions);
-            return normalized.Length == 0 ? new string[] { Read } : normalized;
+            if (normalized.Length == 0) return new string[] { Read };
+            if (normalized[0] == Read) return normalized;
+
+            List<string> withRead = new List<string>();
+            withRead.Add(Read);
+            foreach (string permission in normalized)
+            {
+                if (permission != Read) withRead.Add(permission);
+            }
+
+            return withRead.ToArray();
         }
 
         public static bool Has(TrustedClient client, string permission)

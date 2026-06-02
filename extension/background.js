@@ -322,14 +322,14 @@ async function updateClientPermissions(clientId, permissions) {
 
 function normalizeClientPermissions(permissions) {
   const allowed = ['read', 'write', 'manageClients'];
-  const normalized = [];
+  const normalized = ['read'];
   for (const permission of Array.isArray(permissions) ? permissions : []) {
     if (allowed.includes(permission) && !normalized.includes(permission)) {
       normalized.push(permission);
     }
   }
 
-  return normalized.length ? normalized : ['read'];
+  return normalized;
 }
 
 async function pairBegin() {

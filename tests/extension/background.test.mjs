@@ -451,6 +451,19 @@ assert.deepEqual(
   'permission update should send normalized permissions'
 );
 
+requests.length = 0;
+await sandbox.handleMessage({
+  type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+  clientId: 'client-2',
+  permissions: ['write']
+});
+const writeOnlyPermissionsRequest = requests.find((request) => request.Method === 'clients.updatePermissions');
+assert.deepEqual(
+  JSON.parse(writeOnlyPermissionsRequest.Payload).Permissions,
+  ['read', 'write'],
+  'permission update should keep read when elevated permissions are requested'
+);
+
 storage.locked = true;
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
