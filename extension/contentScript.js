@@ -699,7 +699,9 @@ function isVisible(element) {
     style.display !== "none" &&
     style.opacity !== "0" &&
     rect.width > 0 &&
-    rect.height > 0
+    rect.height > 0 &&
+    rect.right > 0 &&
+    rect.left < window.innerWidth
   );
 }
 function setInputValue(input, value) {

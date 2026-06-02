@@ -32,7 +32,7 @@ class MockInput {
   }
 
   getBoundingClientRect() {
-    return { width: 160, height: 32, top: 0, right: 160 };
+    return { width: 160, height: 32, top: 0, left: 0, right: 160, bottom: 32 };
   }
 
   focus() {
@@ -288,6 +288,8 @@ const sandbox = {
   },
   window: {
     location: { href: 'https://example.com/login' },
+    innerWidth: 1024,
+    innerHeight: 768,
     getComputedStyle: () => ({ visibility: 'visible', display: 'block' }),
     setTimeout(fn) { fn(); },
     addEventListener() {},
