@@ -35,6 +35,7 @@ internal static class Program
         UpdateCheckerSelectsNewestSemanticTag();
         UpdateCheckerBuildsPluginAssetUrl();
         UpdateCheckerAlwaysBuildsPlgxAssetUrl();
+        UpdateCheckerSelectsNewestReleaseWithPlgxAsset();
         PairingSessionGeneratesSixDigitCode();
         WrongPairingCodeIsRejected();
         NewPairingSessionCancelsOlderSessionForSameClient();
@@ -309,6 +310,21 @@ internal static class Program
 
         AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/KeePassBrowserBridge.plgx",
             info.AssetUrl, "plugin auto-update should always use the PLGX release asset");
+    }
+
+    private static void UpdateCheckerSelectsNewestReleaseWithPlgxAsset()
+    {
+        string json =
+            "[" +
+            "{\"tag_name\":\"v1.0.0\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.dll\",\"browser_download_url\":\"https://example.invalid/v1/KeePassBrowserBridge.dll\"}]}," +
+            "{\"tag_name\":\"v0.9.1\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.plgx\",\"browser_download_url\":\"https://example.invalid/v091/KeePassBrowserBridge.plgx\"}]}" +
+            "]";
+
+        UpdateInfo info = UpdateChecker.CreateUpdateInfoFromReleasesJson(json);
+
+        AssertEqual("v0.9.1", info.LatestVersion, "update checker should choose newest release with a PLGX asset");
+        AssertEqual("https://example.invalid/v091/KeePassBrowserBridge.plgx", info.AssetUrl,
+            "update checker should use the PLGX asset download URL from GitHub");
     }
 
     private static void PairingSessionGeneratesSixDigitCode()
