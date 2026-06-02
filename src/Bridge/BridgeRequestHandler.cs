@@ -152,6 +152,7 @@ namespace KeePassBrowserBridge.Bridge
                 {
                     ClientId = client.ClientId,
                     ClientName = client.ClientName,
+                    ExtensionOrigin = client.ExtensionOrigin,
                     CreatedUtcMs = client.CreatedUtcMs,
                     Permissions = TrustedClientPermissions.Normalize(client.Permissions),
                     Trusted = true,

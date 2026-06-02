@@ -10,6 +10,7 @@ async function installOptionsStorage(page, initial = {}) {
       {
         ClientId: 'client-current',
         ClientName: 'Chrome',
+        ExtensionOrigin: 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         Current: true,
         Permissions: ['read', 'write', 'manageClients'],
         CreatedUtcMs: 1779989000000
@@ -17,6 +18,7 @@ async function installOptionsStorage(page, initial = {}) {
       {
         ClientId: 'client-old',
         ClientName: 'Old Browser',
+        ExtensionOrigin: 'chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         Current: false,
         Permissions: ['read'],
         CreatedUtcMs: 1779900000000
@@ -355,6 +357,7 @@ test.describe('options page settings', () => {
     await expect(page.locator('#trustedBrowserList')).toContainText('Read, Write, Manage browsers');
     await expect(page.locator('#trustedBrowserList')).toContainText('Old Browser');
     await expect(page.locator('.trusted-browser-row', { hasText: 'Old Browser' })).toContainText('Read');
+    await expect(page.locator('.trusted-browser-row', { hasText: 'Old Browser' })).toContainText('chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
     await expect(page.locator('#message')).toHaveText('2 trusted browser(s).');
 
     const revokeOldBrowser = page.locator('[data-client-id="client-old"] [data-action="revoke-client"]');

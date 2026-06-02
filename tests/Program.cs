@@ -78,6 +78,7 @@ internal static class Program
         BridgeHandlerReturnsStructuredErrorForMalformedPayload();
         BridgeHandlerCancelsPairingSession();
         BridgeHandlerListsTrustedClientsWithoutSecrets();
+        BridgeHandlerListsTrustedClientOrigins();
         BridgeHandlerRevokesTrustedClient();
         BridgeHandlerRejectsWriteWhenTrustedClientIsReadOnly();
         BridgeHandlerListsTrustedClientPermissions();
@@ -1097,6 +1098,28 @@ internal static class Program
         AssertEqual(2, payload.Clients.Length, "clients.list count mismatch");
         AssertEqual("client-1", payload.Clients[0].ClientId, "first client id mismatch");
         AssertTrue(payload.Clients[0].Trusted, "current client should be trusted");
+    }
+
+    private static void BridgeHandlerListsTrustedClientOrigins()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        store.AddOrUpdate(new TrustedClient
+        {
+            ClientId = "client-2",
+            ClientName = "Second Browser",
+            SharedSecret = "second-secret",
+            ExtensionOrigin = "chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            CreatedUtcMs = 1779960000000
+        });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientsList, "client-1", "secret", "{}");
+
+        BridgeResponse response = handler.Handle(request);
+        ClientsListResponsePayload payload = BridgeJsonSerializer.Deserialize<ClientsListResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "clients.list should succeed for origin inspection: " + response.Error);
+        AssertEqual("chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            payload.Clients[1].ExtensionOrigin, "clients.list should expose paired extension origin");
     }
 
     private static void BridgeHandlerRevokesTrustedClient()

@@ -1032,6 +1032,7 @@ function renderClients(clients) {
     meta.className = 'client-meta';
     meta.textContent = [
       client.Current ? 'This browser' : '',
+      client.ExtensionOrigin || '',
       formatDate(client.CreatedUtcMs),
       formatClientPermissions(client.Permissions)
     ].filter(Boolean).join(' - ');

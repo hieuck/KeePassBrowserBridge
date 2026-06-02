@@ -427,9 +427,11 @@ namespace KeePassBrowserBridge
             list.FullRowSelect = true;
             list.MultiSelect = false;
             list.HideSelection = false;
-            list.Columns.Add("Name", 180);
-            list.Columns.Add("Created", 170);
-            list.Columns.Add("Client ID", 220);
+            list.Columns.Add("Name", 150);
+            list.Columns.Add("Origin", 260);
+            list.Columns.Add("Permissions", 150);
+            list.Columns.Add("Created", 150);
+            list.Columns.Add("Client ID", 180);
 
             Button revoke = new Button();
             revoke.Text = "Revoke";
@@ -550,6 +552,8 @@ namespace KeePassBrowserBridge
             foreach (TrustedClient client in clients)
             {
                 ListViewItem item = new ListViewItem(client.ClientName);
+                item.SubItems.Add(FormatClientOrigin(client.ExtensionOrigin));
+                item.SubItems.Add(FormatClientPermissions(client.Permissions));
                 item.SubItems.Add(FormatUtcMilliseconds(client.CreatedUtcMs));
                 item.SubItems.Add(ShortenClientId(client.ClientId));
                 item.Tag = client;
@@ -567,6 +571,31 @@ namespace KeePassBrowserBridge
         {
             if (string.IsNullOrEmpty(clientId) || clientId.Length <= 16) return clientId ?? "";
             return clientId.Substring(0, 16) + "...";
+        }
+
+        private static string FormatClientOrigin(string origin)
+        {
+            return string.IsNullOrWhiteSpace(origin) ? "Unknown" : origin;
+        }
+
+        private static string FormatClientPermissions(string[] permissions)
+        {
+            string[] normalized = TrustedClientPermissions.Normalize(permissions);
+            string result = "";
+            for (int i = 0; i < normalized.Length; ++i)
+            {
+                if (i > 0) result += ", ";
+                result += FormatPermission(normalized[i]);
+            }
+            return result;
+        }
+
+        private static string FormatPermission(string permission)
+        {
+            if (permission == TrustedClientPermissions.Read) return "Read";
+            if (permission == TrustedClientPermissions.Write) return "Write";
+            if (permission == TrustedClientPermissions.ManageClients) return "Manage browsers";
+            return permission ?? "";
         }
 
         private void StartAutoUpdateCheck()

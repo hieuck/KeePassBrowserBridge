@@ -102,6 +102,7 @@ namespace KeePassBrowserBridge.Bridge
     {
         public string ClientId { get; set; }
         public string ClientName { get; set; }
+        public string ExtensionOrigin { get; set; }
         public long CreatedUtcMs { get; set; }
         public bool Trusted { get; set; }
         public bool Current { get; set; }

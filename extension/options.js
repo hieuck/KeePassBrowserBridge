@@ -380,6 +380,7 @@ function renderTrustedBrowsers(clients) {
     meta.className = 'trusted-browser-meta';
     meta.textContent = [
       client.Current ? 'This browser' : '',
+      client.ExtensionOrigin || '',
       formatDate(client.CreatedUtcMs),
       formatClientPermissions(client.Permissions)
     ].filter(Boolean).join(' / ');
