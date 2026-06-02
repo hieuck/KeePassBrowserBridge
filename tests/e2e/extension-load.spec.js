@@ -760,6 +760,29 @@ test.describe('KeePassBrowserBridge Extension', () => {
     expect(createMessage.login).not.toHaveProperty('otp');
   });
 
+  test('rejects duplicate custom field names when creating a popup login', async ({ page }) => {
+    await page.locator('#newLogin').click();
+
+    const form = page.locator('.create-form');
+    await expect(form).toBeVisible();
+    await form.locator('[name="title"]').fill('Duplicate Fields');
+    await form.locator('[name="userName"]').fill('duplicate@example.com');
+    await form.locator('[name="password"]').fill('duplicate-secret');
+    await form.locator('[name="customFieldName"]').fill('Tenant');
+    await form.locator('[name="customFieldValue"]').nth(0).fill('production');
+    await form.locator('[data-action="add-custom-field"]').click();
+    await form.locator('[name="customFieldName"]').nth(1).fill('tenant');
+    await form.locator('[name="customFieldValue"]').nth(1).fill('staging');
+    await form.locator('button[type="submit"]').click();
+
+    await expect(page.locator('#message')).toHaveText('Custom field "tenant" is duplicated.');
+    await expect(page.locator('#message')).toHaveClass(/error/);
+    const createMessages = await page.evaluate(() =>
+      window.__kbbPopupMessages.filter((message) => message.type === 'KBB_CREATE_LOGIN')
+    );
+    expect(createMessages).toEqual([]);
+  });
+
   test('toggles current site auto-fill override from the popup', async ({ page }) => {
     await page.locator('#toggleSiteAutoFill').click();
 

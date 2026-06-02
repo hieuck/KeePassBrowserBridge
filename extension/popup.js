@@ -635,6 +635,15 @@ function addOptionalCustomField(payload, form) {
     }))
     .filter((field) => field.name && field.value);
 
+  const seenNames = new Set();
+  for (const field of fields) {
+    const key = field.name.toLowerCase();
+    if (seenNames.has(key)) {
+      throw new Error(`Custom field "${field.name}" is duplicated.`);
+    }
+    seenNames.add(key);
+  }
+
   if (fields.length) {
     payload.customFields = fields;
   }
