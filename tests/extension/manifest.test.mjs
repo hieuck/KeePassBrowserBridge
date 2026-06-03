@@ -302,6 +302,7 @@ assert.equal(passkeysProxyExperiment.includes('webNavigation.getFrame'), true, '
 assert.equal(passkeysProxyExperiment.includes('context && context.origin'), true, 'passkey proxy experiment should require trusted caller origin context');
 assert.equal(passkeysProxyExperiment.includes('options && options.origin'), false, 'passkey proxy experiment must not trust origin from requestDetailsJson');
 assert.equal(passkeysProxyExperiment.includes('createLifecycle'), true, 'passkey proxy experiment should model attach/detach lifecycle');
+assert.equal(passkeysProxyExperiment.includes('cancelPending'), true, 'passkey proxy experiment should expose explicit pending-request cleanup for browser lock');
 assert.equal(passkeysProxyExperiment.includes('onRequestCanceled'), true, 'passkey proxy experiment should track canceled WebAuthn requests');
 assert.equal(passkeysProxyExperiment.includes('onIsUvpaaRequest'), true, 'passkey proxy experiment should handle UVPAA requests');
 assert.equal(passkeysProxyExperiment.includes('completeIsUvpaa'), true, 'passkey proxy experiment should complete UVPAA requests explicitly');
@@ -330,6 +331,7 @@ assert.equal(backgroundSource.includes('pluginSupportedMethods'), true, 'extensi
 assert.equal(backgroundSource.includes('pluginPasskeysEnabled'), true, 'extension background should expose bridge passkey feature state in about metadata');
 assert.equal(backgroundSource.includes('pluginFeatureDetails'), true, 'extension background should expose bridge feature status metadata');
 assert.equal(backgroundSource.includes('pluginPasskeysStatus'), true, 'extension background should expose passkey feature status metadata');
+assert.equal(backgroundSource.includes('clearPendingPasskeyState'), true, 'extension background lock cleanup should call optional passkey proxy cleanup hooks');
 assert.equal(passkeyServiceSource.includes('PasskeyApprovalRequest'), true, 'passkey backend should model KeePass approval requests');
 assert.equal(passkeyServiceSource.includes('PasskeyApprovalResult'), true, 'passkey backend should model KeePass approval decisions');
 assert.equal(bridgeRequestHandler.includes('RequestPasskeyApproval'), true, 'bridge handler should require KeePass approval for passkey begin methods');

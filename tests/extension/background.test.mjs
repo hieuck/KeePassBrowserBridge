@@ -17,6 +17,7 @@ const scriptCalls = [];
 const clipboardWrites = [];
 const timerCalls = [];
 const contextMenuItems = [];
+const passkeyCleanupCalls = [];
 let now = 10000;
 let loginEntries = [];
 let passkeysFeatureEnabled = false;
@@ -55,6 +56,12 @@ const sandbox = {
       writeText: async (text) => {
         clipboardWrites.push(String(text));
       }
+    }
+  },
+  KeePassBrowserBridgePasskeysProxyLifecycle: {
+    cancelPending: async (reason) => {
+      passkeyCleanupCalls.push(String(reason || ''));
+      return { canceled: 1, reason };
     }
   },
   fetch: async (url, options) => {
@@ -474,6 +481,7 @@ assert.equal(storage.sharedSecret, undefined, 'current client revoke should remo
 assert.equal(storage.pairingSessionId, '', 'current client revoke should clear stale pairing session state');
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'current client revoke should clear pending multi-step credentials');
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'current client revoke should clear pending submitted credentials');
+assert.equal(passkeyCleanupCalls.at(-1), 'client-revoke', 'current client revoke should cancel pending passkey proxy requests');
 
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
@@ -586,6 +594,7 @@ assert.equal(clipboardWrites.at(-1), '', 'lock message should clear copied clipb
 assert.equal(timerCalls[1].cleared, true, 'lock message should cancel the active delayed clipboard clear timer');
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'lock message should clear pending multi-step credentials');
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'lock message should clear pending submitted credentials');
+assert.equal(passkeyCleanupCalls.at(-1), 'lock', 'lock message should cancel pending passkey proxy requests');
 storage.locked = false;
 
 now = 10 * 60 * 1000;
@@ -614,6 +623,7 @@ assert.equal(autoLockedState.locked, true, 'state should lock after the configur
 assert.equal(storage.locked, true, 'auto-lock should persist the locked state');
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'auto-lock should clear pending multi-step credentials');
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'auto-lock should clear pending submitted credentials');
+assert.equal(passkeyCleanupCalls.at(-1), 'auto-lock', 'auto-lock should cancel pending passkey proxy requests');
 storage.locked = false;
 storage.lastCredentialActivityAt = now - (2 * 60 * 1000);
 const activeLockState = await sandbox.getState();

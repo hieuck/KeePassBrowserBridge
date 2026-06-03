@@ -437,7 +437,7 @@ const lifecycle = api.createLifecycle({
     });
   },
   onIsUvpaaRequest: async () => true,
-  onRequestCanceled: (requestId, request) => canceled.push([requestId, request && request.kind])
+  onRequestCanceled: (requestId, request, reason) => canceled.push([requestId, request && request.kind, reason])
 });
 
 await lifecycle.attach();
@@ -461,7 +461,7 @@ const getDispatch = lifecycleGetEvent.dispatch({
 await flushPromises();
 assert.equal(lifecycle.pendingCount(), 1, 'in-flight get request should be tracked');
 await lifecycleCancelEvent.dispatch(78);
-assert.deepEqual(canceled, [['78', 'get']], 'cancellation should report the canceled request kind');
+assert.deepEqual(canceled, [['78', 'get', 'canceled']], 'cancellation should report the canceled request kind and reason');
 releaseGetHandler({
   Assertion: {
     CredentialId: 'Y3JlZC03OA',
@@ -472,6 +472,29 @@ releaseGetHandler({
 });
 await getDispatch;
 assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false, 'canceled get request must not be completed');
+
+const lockDispatch = lifecycleGetEvent.dispatch({
+  requestId: 79,
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+});
+await flushPromises();
+assert.equal(lifecycle.pendingCount(), 1, 'in-flight get request should be tracked before lock cleanup');
+const lockCancelResult = await lifecycle.cancelPending('lock');
+assert.deepEqual(plain(lockCancelResult), { canceled: 1, reason: 'lock' },
+  'explicit lifecycle cleanup should report canceled pending WebAuthn requests');
+assert.deepEqual(canceled.at(-1), ['79', 'get', 'lock'],
+  'explicit lifecycle cleanup should report lock as the cancellation reason');
+releaseGetHandler({
+  Assertion: {
+    CredentialId: 'Y3JlZC03OQ',
+    AuthenticatorData: 'YXV0aA',
+    ClientDataJson: 'Y2xpZW50',
+    Signature: 'c2ln'
+  }
+});
+await lockDispatch;
+assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false,
+  'lock-canceled get request must not be completed after the handler resolves');
 await lifecycle.detach();
 assert.equal(lifecycle.isAttached(), false, 'lifecycle detach should mark proxy detached');
 assert.equal(lifecycleCreateEvent.listenerCount(), 0, 'lifecycle detach should remove create listener');

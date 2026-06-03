@@ -288,7 +288,7 @@ async function applyAutoLock(state) {
   if (Date.now() - lastActivityAt >= timeoutMinutes * 60 * 1000) {
     state.locked = true;
     await chrome.storage.local.set({ locked: true });
-    await clearSensitiveRuntimeState();
+    await clearSensitiveRuntimeState('auto-lock');
   }
 }
 
@@ -316,7 +316,7 @@ async function setLocked(locked) {
 
   await chrome.storage.local.set(values);
   if (values.locked) {
-    await clearSensitiveRuntimeState();
+    await clearSensitiveRuntimeState('lock');
   }
   return getState();
 }
@@ -343,7 +343,7 @@ async function revokeClient(clientId) {
   if (result.Revoked && state.clientId === targetClientId) {
     await chrome.storage.local.remove(['clientId', 'sharedSecret']);
     await clearPairingSession();
-    await clearSensitiveRuntimeState();
+    await clearSensitiveRuntimeState('client-revoke');
   }
 
   return result;
@@ -465,9 +465,24 @@ async function clearPendingCredentialState() {
   await sessionStorageRemove([PENDING_MULTI_STEP_KEY, PENDING_SUBMITTED_KEY]);
 }
 
-async function clearSensitiveRuntimeState() {
+async function clearSensitiveRuntimeState(reason = 'clear') {
   await clearPendingCredentialState();
+  await clearPendingPasskeyState(reason);
   await clearClipboardState();
+}
+
+async function clearPendingPasskeyState(reason) {
+  const globalObject = typeof globalThis !== 'undefined' ? globalThis : null;
+  const lifecycle = globalObject && globalObject.KeePassBrowserBridgePasskeysProxyLifecycle;
+  if (!lifecycle || typeof lifecycle.cancelPending !== 'function') {
+    return;
+  }
+
+  try {
+    await lifecycle.cancelPending(reason || 'clear');
+  } catch (_) {
+    // Experimental passkey cleanup must not block lock, auto-lock, or revoke.
+  }
 }
 
 async function clearClipboardState() {

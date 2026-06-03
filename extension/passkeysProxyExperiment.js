@@ -71,17 +71,26 @@
     async function detachProxy() {
       const api = getApi(chromeLike);
       const wasAttached = state.attached;
-      const pendingRequests = Array.from(pending.entries());
       state.attached = false;
-      pending.clear();
+      await cancelPendingRequests('detach');
       unregisterListeners();
-      for (const [requestId, request] of pendingRequests) {
-        await notifyCanceled(requestId, request, 'detach');
-      }
       if (wasAttached && api && typeof api.detach === 'function') {
         return api.detach();
       }
       return undefined;
+    }
+
+    async function cancelPendingRequests(reason = 'cancel') {
+      const normalizedReason = stringValue(reason).trim() || 'cancel';
+      const pendingRequests = Array.from(pending.entries());
+      pending.clear();
+      for (const [requestId, request] of pendingRequests) {
+        await notifyCanceled(requestId, request, normalizedReason);
+      }
+      return {
+        canceled: pendingRequests.length,
+        reason: normalizedReason
+      };
     }
 
     function registerListeners() {
@@ -204,6 +213,7 @@
     return {
       attach: attachProxy,
       detach: detachProxy,
+      cancelPending: cancelPendingRequests,
       pendingCount() {
         return pending.size;
       },
