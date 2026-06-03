@@ -322,9 +322,14 @@ assert.equal(protocolModels.includes('passkeys.get.begin'), true, 'protocol mode
 assert.equal(protocolModels.includes('passkeys.cancel'), true, 'protocol models should reserve passkey cancellation method name');
 assert.equal(protocolModels.includes('SupportedMethods'), true, 'hello protocol model should advertise supported methods');
 assert.equal(protocolModels.includes('BridgeFeatureInfo'), true, 'hello protocol model should advertise feature flags');
+assert.equal(protocolModels.includes('public string Status'), true, 'hello feature metadata should include feature status');
+assert.equal(protocolModels.includes('public string Reason'), true, 'hello feature metadata should include feature status reasons');
 assert.equal(bridgeRequestHandler.includes('SupportedMethods = BridgeMethodPolicy.AllMethods()'), true, 'hello handler should return the centralized supported method list');
+assert.equal(bridgeRequestHandler.includes('prototype_disabled'), true, 'hello handler should mark disabled passkeys as an explicit prototype status');
 assert.equal(backgroundSource.includes('pluginSupportedMethods'), true, 'extension background should expose bridge method discovery in about metadata');
 assert.equal(backgroundSource.includes('pluginPasskeysEnabled'), true, 'extension background should expose bridge passkey feature state in about metadata');
+assert.equal(backgroundSource.includes('pluginFeatureDetails'), true, 'extension background should expose bridge feature status metadata');
+assert.equal(backgroundSource.includes('pluginPasskeysStatus'), true, 'extension background should expose passkey feature status metadata');
 assert.equal(passkeyServiceSource.includes('PasskeyApprovalRequest'), true, 'passkey backend should model KeePass approval requests');
 assert.equal(passkeyServiceSource.includes('PasskeyApprovalResult'), true, 'passkey backend should model KeePass approval decisions');
 assert.equal(bridgeRequestHandler.includes('RequestPasskeyApproval'), true, 'bridge handler should require KeePass approval for passkey begin methods');

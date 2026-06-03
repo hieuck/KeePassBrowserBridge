@@ -1565,10 +1565,14 @@ internal static class Program
             "hello should advertise password query support");
         AssertTrue(Array.IndexOf(payload.SupportedMethods, BridgeMethods.PasskeysCancel) >= 0,
             "hello should advertise reserved passkey cancel support");
-        AssertEqual(true, FindFeature(payload.Features, "saveUpdate").Enabled,
-            "hello should advertise enabled save/update support");
-        AssertEqual(false, FindFeature(payload.Features, "passkeys").Enabled,
-            "hello should advertise that browser-facing passkeys are disabled");
+        BridgeFeatureInfo saveUpdate = FindFeature(payload.Features, "saveUpdate");
+        BridgeFeatureInfo passkeys = FindFeature(payload.Features, "passkeys");
+        AssertEqual(true, saveUpdate.Enabled, "hello should advertise enabled save/update support");
+        AssertEqual("available", saveUpdate.Status, "hello should advertise available save/update status");
+        AssertEqual(false, passkeys.Enabled, "hello should advertise that browser-facing passkeys are disabled");
+        AssertEqual("prototype_disabled", passkeys.Status, "hello should advertise disabled passkey prototype status");
+        AssertTrue((passkeys.Reason ?? string.Empty).IndexOf("browser-facing WebAuthn", StringComparison.OrdinalIgnoreCase) >= 0,
+            "hello should explain why browser-facing passkeys are disabled");
     }
 
     private static void BridgeHandlerRejectsBadHmacForTrustedMethod()

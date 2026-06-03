@@ -124,6 +124,7 @@ namespace KeePassBrowserBridge.Bridge
 
         private BridgeResponse Hello(BridgeRequest request)
         {
+            bool passkeysEnabled = m_passkeysEnabled();
             return Success(request, BridgeJsonSerializer.Serialize(new HelloResponsePayload
             {
                 ProductName = BridgeSettings.ProductName,
@@ -133,12 +134,20 @@ namespace KeePassBrowserBridge.Bridge
                 SupportedMethods = BridgeMethodPolicy.AllMethods(),
                 Features = new BridgeFeatureInfo[]
                 {
-                    new BridgeFeatureInfo { Name = "passwords", Enabled = true },
-                    new BridgeFeatureInfo { Name = "totp", Enabled = true },
-                    new BridgeFeatureInfo { Name = "customFields", Enabled = true },
-                    new BridgeFeatureInfo { Name = "saveUpdate", Enabled = true },
-                    new BridgeFeatureInfo { Name = "httpAuth", Enabled = true },
-                    new BridgeFeatureInfo { Name = "passkeys", Enabled = m_passkeysEnabled() }
+                    new BridgeFeatureInfo { Name = "passwords", Enabled = true, Status = "available" },
+                    new BridgeFeatureInfo { Name = "totp", Enabled = true, Status = "available" },
+                    new BridgeFeatureInfo { Name = "customFields", Enabled = true, Status = "available" },
+                    new BridgeFeatureInfo { Name = "saveUpdate", Enabled = true, Status = "available" },
+                    new BridgeFeatureInfo { Name = "httpAuth", Enabled = true, Status = "available" },
+                    new BridgeFeatureInfo
+                    {
+                        Name = "passkeys",
+                        Enabled = passkeysEnabled,
+                        Status = passkeysEnabled ? "enabled" : "prototype_disabled",
+                        Reason = passkeysEnabled
+                            ? string.Empty
+                            : "Backend prototype exists, but browser-facing WebAuthn is disabled pending protocol and browser review."
+                    }
                 }
             }));
         }

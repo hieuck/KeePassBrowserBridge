@@ -65,6 +65,8 @@ namespace KeePassBrowserBridge.Bridge
     {
         public string Name { get; set; }
         public bool Enabled { get; set; }
+        public string Status { get; set; }
+        public string Reason { get; set; }
     }
 
     public sealed class PairBeginPayload

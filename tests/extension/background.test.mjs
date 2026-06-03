@@ -84,9 +84,14 @@ const sandbox = {
             PluginUpdateUrl: 'https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt',
             SupportedMethods: ['hello', 'logins.query', 'passkeys.cancel'],
             Features: [
-              { Name: 'passwords', Enabled: true },
-              { Name: 'saveUpdate', Enabled: true },
-              { Name: 'passkeys', Enabled: passkeysFeatureEnabled }
+              { Name: 'passwords', Enabled: true, Status: 'available' },
+              { Name: 'saveUpdate', Enabled: true, Status: 'available' },
+              {
+                Name: 'passkeys',
+                Enabled: passkeysFeatureEnabled,
+                Status: passkeysFeatureEnabled ? 'enabled' : 'prototype_disabled',
+                Reason: passkeysFeatureEnabled ? '' : 'Backend prototype only.'
+              }
             ]
           })
         })
@@ -346,7 +351,13 @@ assert.equal(about.pluginUpdateUrl, 'https://raw.githubusercontent.com/hieuck/Ke
 assert.equal(about.bridgeAvailable, true, 'about should report when bridge metadata is reachable');
 assert.deepEqual(Array.from(about.pluginSupportedMethods), ['hello', 'logins.query', 'passkeys.cancel'], 'about should expose bridge-supported method discovery');
 assert.deepEqual(JSON.parse(JSON.stringify(about.pluginFeatures)), { passwords: true, saveUpdate: true, passkeys: false }, 'about should expose bridge feature discovery');
+assert.deepEqual(JSON.parse(JSON.stringify(about.pluginFeatureDetails)), {
+  passwords: { enabled: true, status: 'available', reason: '' },
+  saveUpdate: { enabled: true, status: 'available', reason: '' },
+  passkeys: { enabled: false, status: 'prototype_disabled', reason: 'Backend prototype only.' }
+}, 'about should preserve bridge feature status metadata');
 assert.equal(about.pluginPasskeysEnabled, false, 'about should expose disabled browser-facing passkeys');
+assert.equal(about.pluginPasskeysStatus, 'prototype_disabled', 'about should expose disabled passkey status metadata');
 
 const updateCheck = await sandbox.handleMessage({ type: 'KBB_CHECK_UPDATES' });
 assert.equal(updateCheck.currentVersion, '0.9.0', 'update check should include current version');

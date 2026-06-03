@@ -140,7 +140,9 @@ async function getAbout() {
     pluginUpdateUrl: '',
     pluginSupportedMethods: [],
     pluginFeatures: {},
-    pluginPasskeysEnabled: false
+    pluginFeatureDetails: {},
+    pluginPasskeysEnabled: false,
+    pluginPasskeysStatus: 'unknown'
   };
 
   try {
@@ -150,7 +152,11 @@ async function getAbout() {
     about.pluginUpdateUrl = hello.PluginUpdateUrl || '';
     about.pluginSupportedMethods = normalizeStringArray(hello.SupportedMethods);
     about.pluginFeatures = normalizeFeatureMap(hello.Features);
+    about.pluginFeatureDetails = normalizeFeatureDetails(hello.Features);
     about.pluginPasskeysEnabled = Boolean(about.pluginFeatures.passkeys);
+    about.pluginPasskeysStatus = about.pluginFeatureDetails.passkeys
+      ? about.pluginFeatureDetails.passkeys.status
+      : (about.pluginPasskeysEnabled ? 'enabled' : 'disabled');
   } catch (error) {
     about.bridgeError = error && error.message ? error.message : String(error);
   }
@@ -168,6 +174,22 @@ function normalizeFeatureMap(features) {
   return features.reduce((result, feature) => {
     const name = String(feature && feature.Name || '').trim();
     if (name) result[name] = Boolean(feature.Enabled);
+    return result;
+  }, {});
+}
+
+function normalizeFeatureDetails(features) {
+  if (!Array.isArray(features)) return {};
+  return features.reduce((result, feature) => {
+    const name = String(feature && feature.Name || '').trim();
+    if (!name) return result;
+    const enabled = Boolean(feature.Enabled);
+    const status = String(feature && feature.Status || '').trim() || (enabled ? 'enabled' : 'disabled');
+    result[name] = {
+      enabled,
+      status,
+      reason: String(feature && feature.Reason || '').trim()
+    };
     return result;
   }, {});
 }
