@@ -16,6 +16,7 @@
     <Compile Include="..\src\Bridge\BridgeAuthentication.cs" Link="BridgeAuthentication.cs" />
     <Compile Include="..\src\Bridge\BridgeClock.cs" Link="BridgeClock.cs" />
     <Compile Include="..\src\Bridge\BridgeJsonSerializer.cs" Link="BridgeJsonSerializer.cs" />
+    <Compile Include="..\src\Bridge\BridgeMethodPolicy.cs" Link="BridgeMethodPolicy.cs" />
     <Compile Include="..\src\Bridge\BridgeRequestHandler.cs" Link="BridgeRequestHandler.cs" />
     <Compile Include="..\src\Bridge\BridgeSettings.cs" Link="BridgeSettings.cs" />
     <Compile Include="..\src\Bridge\LoopbackBridgeServer.cs" Link="LoopbackBridgeServer.cs" />
@@ -25,6 +26,7 @@
     <Compile Include="..\src\Bridge\CredentialQueryService.cs" Link="CredentialQueryService.cs" />
     <Compile Include="..\src\Bridge\EntryUrlMatcher.cs" Link="EntryUrlMatcher.cs" />
     <Compile Include="..\src\Bridge\PairingService.cs" Link="PairingService.cs" />
+    <Compile Include="..\src\Bridge\PasskeyService.cs" Link="PasskeyService.cs" />
     <Compile Include="..\src\Bridge\TrustedClientStore.cs" Link="TrustedClientStore.cs" />
     <Compile Include="..\src\Bridge\TotpGenerator.cs" Link="TotpGenerator.cs" />
     <Compile Include="..\src\Bridge\UpdateChecker.cs" Link="UpdateChecker.cs" />

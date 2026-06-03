@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using KeePassBrowserBridge.Bridge;
 using KeePassLib;
@@ -21,6 +24,21 @@ internal static class Program
         BridgeClockConvertsUnixMillisecondsToUtcDateTime();
         TotpGeneratorMatchesRfcVector();
         TotpGeneratorParsesOtpAuthUri();
+        PasskeyRpIdValidationAllowsMatchingOriginAndSubdomain();
+        PasskeyRpIdValidationRejectsMismatchedOrigin();
+        PasskeyRegistrationCreatesCredentialAndAttestation();
+        PasskeyCredentialIdsAreUnique();
+        PasskeyAssertionSignsChallengeAndIncrementsCounter();
+        PasskeyEntryStoreProtectsPrivateKeyMaterial();
+        PasskeyLookupListsMatchingRpIdWithoutPrivateKeyMaterial();
+        PasskeyLookupFiltersAllowedCredentialIds();
+        PasskeyLookupRejectsMismatchedOrigin();
+        PasskeyPendingCreateBindsRequestContext();
+        PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
+        PasskeyPendingGetRejectsCredentialOutsideAllowList();
+        PasskeyPendingCompletionExpiresStaleSession();
+        PasskeyPendingClearForClientRemovesOnlyClientSessions();
+        PasskeyPendingClearAllRemovesEverySession();
         ValidHelloRequestPassesValidation();
         UnknownMethodFailsValidation();
         MissingOriginFailsValidation();
@@ -29,6 +47,9 @@ internal static class Program
         MalformedExtensionOriginFailsValidation();
         StaleTimestampFailsValidation();
         WrongProtocolVersionFailsValidation();
+        PasskeyMethodPassesProtocolValidation();
+        BridgeMethodPolicyCoversEveryBridgeMethod();
+        BridgeMethodPolicyAssignsExpectedPermissions();
         UpdateCheckerReadsCurrentVersionFromAssembly();
         UpdateCheckerDetectsNewerSemanticVersions();
         UpdateCheckerIgnoresSameOrInvalidVersions();
@@ -36,8 +57,13 @@ internal static class Program
         UpdateCheckerBuildsPluginAssetUrl();
         UpdateCheckerAlwaysBuildsPlgxAssetUrl();
         UpdateCheckerSelectsNewestReleaseWithPlgxAsset();
+        UpdateCheckerSkipsReleaseWithoutChecksumAsset();
+        UpdateCheckerExtractsExpectedPluginChecksum();
+        UpdateCheckerVerifiesDownloadedPluginChecksum();
         PairingSessionGeneratesSixDigitCode();
+        PairingSessionStoresExtensionOriginFromBegin();
         WrongPairingCodeIsRejected();
+        PairingCompletionRejectsDifferentOrigin();
         NewPairingSessionCancelsOlderSessionForSameClient();
         PairingSessionLocksAfterRepeatedWrongCodes();
         CancelledPairingSessionCannotComplete();
@@ -45,6 +71,8 @@ internal static class Program
         SuccessfulPairingCreatesTrustedClient();
         RevokedClientIsNoLongerTrusted();
         TrustedClientStorePersistsRoundTrip();
+        TrustedClientDefaultPermissionsDoNotGrantPasskeys();
+        TrustedClientPermissionUpdateAcceptsPasskeyPermissions();
         CredentialQueryReturnsExactHostMatch();
         CredentialQueryMatchesParentDomainWhenStrictMatchingIsDisabled();
         CredentialQueryMatchesWwwEntryToApexPageWhenStrictMatchingIsDisabled();
@@ -54,6 +82,7 @@ internal static class Program
         CredentialQueryIncludesUsageMetadata();
         CredentialQueryIncludesOneTimePassword();
         CredentialQueryRedactsProtectedCustomFieldValues();
+        CredentialQuerySkipsPasskeyOnlyEntries();
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
         CredentialMutationCreatesEntryInDatabase();
@@ -73,6 +102,7 @@ internal static class Program
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
         BridgeHandlerClientStatusIncludesPermissions();
+        BridgeHandlerPairBeginPassesOriginToPairingPrompt();
         BridgeHandlerPairCompleteStoresExtensionOrigin();
         BridgeHandlerRejectsAuthenticatedRequestFromDifferentExtensionOrigin();
         BridgeHandlerRejectsReplayedAuthenticatedRequestId();
@@ -80,12 +110,29 @@ internal static class Program
         BridgeHandlerCancelsPairingSession();
         BridgeHandlerListsTrustedClientsWithoutSecrets();
         BridgeHandlerListsTrustedClientOrigins();
+        BridgeHandlerTracksTrustedClientLastUsed();
+        BridgeHandlerListsTrustedClientLastUsed();
         BridgeHandlerRevokesTrustedClient();
         BridgeHandlerRejectsWriteWhenTrustedClientIsReadOnly();
         BridgeHandlerListsTrustedClientPermissions();
         BridgeHandlerUpdatesTrustedClientPermissions();
         BridgeHandlerDoesNotGrantFullPermissionsForEmptyPermissionUpdate();
         BridgeHandlerKeepsReadPermissionWhenUpdatingElevatedPermissions();
+        BridgeHandlerRejectsPasskeyReadWithoutPasskeyPermission();
+        BridgeHandlerRejectsPasskeyWriteWithOnlyPasskeyRead();
+        BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyMethod();
+        BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyWriteMethod();
+        BridgeHandlerListsPasskeysWhenFeatureGateIsEnabled();
+        BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled();
+        BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
+        BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession();
+        BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
+        BridgeHandlerCompletesPasskeyCreateAndSavesDatabaseWhenFeatureGateIsEnabled();
+        BridgeHandlerCompletesPasskeyGetSignsAssertionAndSavesDatabaseWhenFeatureGateIsEnabled();
+        BridgeHandlerRevokesPasskeyAndSavesDatabaseWhenFeatureGateIsEnabled();
+        BridgeHandlerCancelsPendingPasskeySessionWhenFeatureGateIsEnabled();
+        BridgeHandlerRevokingClientClearsPendingPasskeySessions();
+        BridgeHandlerClearPendingPasskeySessionsRejectsLaterCompletion();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerSavesDatabaseAfterSuccessfulCreate();
@@ -97,6 +144,9 @@ internal static class Program
         LoopbackBridgeServerRejectsWebPreflightOrigin();
         LoopbackBridgeServerAllowsExtensionPreflightOrigin();
         LoopbackBridgeServerRejectsWebPostOriginBeforeHandling();
+        LoopbackBridgeServerRejectsNonJsonPostBeforeHandling();
+        LoopbackBridgeServerRejectsOversizedPostBeforeHandling();
+        LoopbackBridgeServerRejectsMismatchedHeaderAndRequestOriginBeforeHandling();
         LoopbackBridgeServerTryStartReportsPortConflict();
         return 0;
     }
@@ -177,6 +227,360 @@ internal static class Program
 
         AssertTrue(result.Success, "otpauth URI generation should succeed: " + result.Error);
         AssertEqual(8, result.Code.Length, "otpauth digits parameter should control code length");
+    }
+
+    private static void PasskeyRpIdValidationAllowsMatchingOriginAndSubdomain()
+    {
+        AssertTrue(PasskeyRelyingPartyValidator.IsRpIdAllowedForOrigin("example.com", "https://example.com/login"),
+            "passkey RP ID should match the exact HTTPS origin host");
+        AssertTrue(PasskeyRelyingPartyValidator.IsRpIdAllowedForOrigin("example.com", "https://accounts.example.com/login"),
+            "passkey RP ID should match a subdomain origin host");
+    }
+
+    private static void PasskeyRpIdValidationRejectsMismatchedOrigin()
+    {
+        AssertFalse(PasskeyRelyingPartyValidator.IsRpIdAllowedForOrigin("example.com", "https://evil-example.com/login"),
+            "passkey RP ID validation must reject suffix lookalike hosts");
+        AssertFalse(PasskeyRelyingPartyValidator.IsRpIdAllowedForOrigin("example.com", "http://example.com/login"),
+            "passkey RP ID validation must reject non-local HTTP origins");
+        AssertFalse(PasskeyRelyingPartyValidator.IsRpIdAllowedForOrigin("127.0.0.1", "https://127.0.0.1/login"),
+            "passkey RP ID validation must reject IP-address RP IDs");
+    }
+
+    private static void PasskeyRegistrationCreatesCredentialAndAttestation()
+    {
+        PasskeyService service = new PasskeyService();
+
+        PasskeyRegistrationResult result = service.CreateCredential(CreatePasskeyRegistrationRequest());
+
+        AssertTrue(result.Success, "passkey registration prototype should create credential material: " + result.Error);
+        AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.CredentialId), "passkey credential ID should be generated");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.PublicKeyCose), "passkey COSE public key should be generated");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.PrivateKey), "passkey private key material should be generated for protected KeePass storage");
+        AssertEqual("example.com", result.Credential.RpId, "passkey RP ID should be normalized");
+        AssertEqual("preferred", result.Credential.UserVerification, "passkey user verification should be normalized");
+        AssertEqual(2, result.Credential.Transports.Length, "passkey transports should be normalized and de-duplicated");
+        AssertEqual("internal", result.Credential.Transports[0], "first passkey transport mismatch");
+        AssertEqual("usb", result.Credential.Transports[1], "second passkey transport mismatch");
+        AssertEqual((uint)0, result.Credential.SignCount, "new passkey credential should start with sign count 0");
+
+        byte[] clientDataJson;
+        byte[] attestationObject;
+        AssertTrue(Base64Url.TryDecode(result.ClientDataJson, out clientDataJson), "passkey clientDataJSON should be base64url encoded");
+        AssertTrue(Base64Url.TryDecode(result.AttestationObject, out attestationObject), "passkey attestationObject should be base64url encoded");
+        AssertTrue(Encoding.UTF8.GetString(clientDataJson).Contains("webauthn.create"), "registration clientDataJSON should identify a create request");
+        AssertTrue(attestationObject.Length > 100, "registration attestationObject should include authenticator data and public key");
+    }
+
+    private static void PasskeyCredentialIdsAreUnique()
+    {
+        PasskeyService service = new PasskeyService();
+
+        PasskeyRegistrationResult first = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        PasskeyRegistrationResult second = service.CreateCredential(CreatePasskeyRegistrationRequest());
+
+        AssertTrue(first.Success, "first passkey registration should succeed: " + first.Error);
+        AssertTrue(second.Success, "second passkey registration should succeed: " + second.Error);
+        AssertFalse(string.Equals(first.Credential.CredentialId, second.Credential.CredentialId, StringComparison.Ordinal),
+            "passkey credential IDs should be generated uniquely");
+    }
+
+    private static void PasskeyAssertionSignsChallengeAndIncrementsCounter()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before assertion: " + registration.Error);
+
+        PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210"))
+        });
+
+        AssertTrue(assertion.Success, "passkey assertion prototype should sign a challenge: " + assertion.Error);
+        AssertEqual((uint)1, assertion.Assertion.SignCount, "passkey assertion should return incremented sign count");
+        AssertEqual((uint)1, registration.Credential.SignCount, "passkey assertion should persist incremented sign count in material");
+        AssertTrue(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion),
+            "passkey assertion signature should verify against the generated public key");
+
+        byte[] authenticatorData;
+        AssertTrue(Base64Url.TryDecode(assertion.Assertion.AuthenticatorData, out authenticatorData),
+            "passkey assertion authenticatorData should be base64url encoded");
+        AssertEqual(37, authenticatorData.Length, "assertion authenticatorData should contain rpIdHash, flags, and sign count");
+        AssertEqual((byte)0x01, authenticatorData[32], "assertion authenticatorData should set user-present flag");
+        AssertEqual((byte)0x01, authenticatorData[36], "assertion authenticatorData should encode sign count 1");
+    }
+
+    private static void PasskeyEntryStoreProtectsPrivateKeyMaterial()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before storage: " + registration.Error);
+
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+
+        AssertTrue(PasskeyEntryStore.IsPasskeyEntry(entry), "stored passkey entry should be identifiable by KBB passkey fields");
+        AssertTrue(entry.Strings.Get(PasskeyEntryStore.PrivateKeyField).IsProtected,
+            "stored passkey private key material must use a protected KeePass string");
+        AssertEqual(string.Empty, entry.Strings.ReadSafe(PwDefs.PasswordField),
+            "passkey-only storage should not create a normal password field");
+
+        PasskeyCredentialMaterial restored = PasskeyEntryStore.Read(entry);
+        AssertEqual(registration.Credential.CredentialId, restored.CredentialId, "stored passkey credential ID mismatch");
+        AssertEqual(registration.Credential.PrivateKey, restored.PrivateKey, "stored passkey private key mismatch");
+        AssertEqual(registration.Credential.UserVerification, restored.UserVerification, "stored passkey user verification mismatch");
+        AssertEqual(registration.Credential.Transports.Length, restored.Transports.Length, "stored passkey transport count mismatch");
+        AssertEqual(registration.Credential.Transports[0], restored.Transports[0], "stored passkey first transport mismatch");
+        AssertEqual(registration.Credential.Transports[1], restored.Transports[1], "stored passkey second transport mismatch");
+    }
+
+    private static void PasskeyLookupListsMatchingRpIdWithoutPrivateKeyMaterial()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult matching = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        PasskeyRegistrationResult other = service.CreateCredential(CreatePasskeyRegistrationRequest(
+            "other.example.com", "https://other.example.com/login", "bob@example.com", "bob-handle", "Bob Example"));
+        AssertTrue(matching.Success, "matching passkey registration should succeed before lookup: " + matching.Error);
+        AssertTrue(other.Success, "other passkey registration should succeed before lookup: " + other.Error);
+
+        PwEntry matchingEntry = new PwEntry(true, true);
+        matchingEntry.UsageCount = 3;
+        PasskeyEntryStore.Write(matchingEntry, matching.Credential);
+
+        PwEntry otherEntry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(otherEntry, other.Credential);
+
+        PwDatabase database = CreateDatabase(matchingEntry, otherEntry);
+        PasskeyCredentialLookupResult result = new PasskeyCredentialLookupService().List(database, new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://accounts.example.com/login"
+        });
+
+        AssertTrue(result.Success, "passkey lookup should succeed for RP ID subdomain origin: " + result.Error);
+        AssertEqual(1, result.Credentials.Length, "passkey lookup should return only matching RP ID credentials");
+        AssertEqual("example.com", result.Credentials[0].RpId, "passkey lookup RP ID mismatch");
+        AssertEqual(matching.Credential.CredentialId, result.Credentials[0].CredentialId, "passkey lookup credential ID mismatch");
+        AssertEqual(matching.Credential.UserHandle, result.Credentials[0].UserHandle, "passkey lookup user handle mismatch");
+        AssertEqual("preferred", result.Credentials[0].UserVerification, "passkey lookup user verification mismatch");
+        AssertEqual(2, result.Credentials[0].Transports.Length, "passkey lookup transport count mismatch");
+        AssertEqual((ulong)3, result.Credentials[0].UsageCount, "passkey lookup should preserve usage metadata");
+
+        string serialized = BridgeJsonSerializer.Serialize(result.Credentials[0]);
+        AssertFalse(serialized.IndexOf("PrivateKey", StringComparison.OrdinalIgnoreCase) >= 0,
+            "passkey lookup summary must not expose a private key property");
+        AssertFalse(serialized.IndexOf(matching.Credential.PrivateKey, StringComparison.Ordinal) >= 0,
+            "passkey lookup summary must not expose private key material");
+    }
+
+    private static void PasskeyLookupFiltersAllowedCredentialIds()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult first = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        PasskeyRegistrationResult second = service.CreateCredential(CreatePasskeyRegistrationRequest(
+            "example.com", "https://example.com/login", "bob@example.com", "bob-handle", "Bob Example"));
+        AssertTrue(first.Success, "first passkey registration should succeed before allow-list lookup: " + first.Error);
+        AssertTrue(second.Success, "second passkey registration should succeed before allow-list lookup: " + second.Error);
+
+        PwEntry firstEntry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(firstEntry, first.Credential);
+        PwEntry secondEntry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(secondEntry, second.Credential);
+
+        PwDatabase database = CreateDatabase(firstEntry, secondEntry);
+        PasskeyCredentialLookupResult result = new PasskeyCredentialLookupService().List(database, new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            AllowCredentialIds = new string[] { "not@base64url", second.Credential.CredentialId }
+        });
+
+        AssertTrue(result.Success, "passkey allow-list lookup should succeed: " + result.Error);
+        AssertEqual(1, result.Credentials.Length, "passkey allow-list lookup should return only allowed credential IDs");
+        AssertEqual(second.Credential.CredentialId, result.Credentials[0].CredentialId,
+            "passkey allow-list lookup returned the wrong credential");
+    }
+
+    private static void PasskeyLookupRejectsMismatchedOrigin()
+    {
+        PasskeyCredentialLookupResult result = new PasskeyCredentialLookupService().List(CreateDatabase(), new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://evil.example.net/login"
+        });
+
+        AssertFalse(result.Success, "passkey lookup should reject an origin outside the requested RP ID");
+        AssertEqual("invalid_rp_id", result.ErrorCode, "passkey lookup origin mismatch error code mismatch");
+    }
+
+    private static void PasskeyPendingCreateBindsRequestContext()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload payload = CreatePasskeyCreateBeginPayload("webauthn-create-1");
+
+        PasskeyPendingSessionResult result = store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-1", payload, now);
+
+        AssertTrue(result.Success, "passkey create begin should create a pending session: " + result.Error);
+        AssertEqual(1, store.Count, "passkey pending store count mismatch after create begin");
+        AssertEqual(PasskeyPendingOperation.Create, result.Session.Operation, "pending create operation mismatch");
+        AssertEqual("client-1", result.Session.ClientId, "pending create client binding mismatch");
+        AssertEqual("chrome-extension://abcdefghijklmnopabcdefghijklmnop", result.Session.ExtensionOrigin,
+            "pending create extension origin binding mismatch");
+        AssertEqual("bridge-request-1", result.Session.BeginBridgeRequestId, "pending create bridge request binding mismatch");
+        AssertEqual("webauthn-create-1", result.Session.WebAuthnRequestId, "pending create WebAuthn request binding mismatch");
+        AssertEqual("example.com", result.Session.RpId, "pending create RP ID should be normalized");
+        AssertEqual(payload.Challenge, result.Session.Challenge, "pending create challenge binding mismatch");
+        AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, result.Session.ExpiresUtcMs,
+            "pending create expiration mismatch");
+    }
+
+    private static void PasskeyPendingCompletionRequiresMatchingBindingAndConsumes()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload beginPayload = CreatePasskeyCreateBeginPayload("webauthn-create-2");
+        PasskeyPendingSessionResult begin = store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-2", beginPayload, now);
+        AssertTrue(begin.Success, "passkey create begin should succeed before completion binding test: " + begin.Error);
+
+        PasskeyPendingSessionResult mismatch = store.CompleteCreate("client-1",
+            "chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-create-2",
+                RpId = "example.com",
+                Origin = "https://example.com/login"
+            },
+            now + 1000);
+
+        AssertFalse(mismatch.Success, "passkey completion from a different extension origin should fail");
+        AssertEqual("binding_mismatch", mismatch.ErrorCode, "pending create binding mismatch error code mismatch");
+        AssertEqual(1, store.Count, "failed passkey completion should not consume the pending session");
+
+        PasskeyPendingSessionResult complete = store.CompleteCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-create-2",
+                RpId = "Example.com",
+                Origin = "https://example.com/login"
+            },
+            now + 1000);
+
+        AssertTrue(complete.Success, "matching passkey completion should consume the pending session: " + complete.Error);
+        AssertEqual("bridge-request-2", complete.Session.BeginBridgeRequestId,
+            "completed passkey session should retain begin bridge request ID");
+        AssertEqual(0, store.Count, "matching passkey completion should remove the pending session");
+    }
+
+    private static void PasskeyPendingGetRejectsCredentialOutsideAllowList()
+    {
+        long now = 1779960000000;
+        string allowedCredentialId = Base64Url.Encode(Encoding.ASCII.GetBytes("allowed-credential"));
+        string blockedCredentialId = Base64Url.Encode(Encoding.ASCII.GetBytes("blocked-credential"));
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyGetBeginPayload beginPayload = CreatePasskeyGetBeginPayload("webauthn-get-1",
+            new string[] { "not@base64url", allowedCredentialId, allowedCredentialId });
+        PasskeyPendingSessionResult begin = store.BeginGet("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-3", beginPayload, now);
+        AssertTrue(begin.Success, "passkey get begin should succeed before allow-list completion test: " + begin.Error);
+        AssertEqual(1, begin.Session.AllowCredentialIds.Length, "pending get should normalize allowed credential IDs");
+        AssertEqual(allowedCredentialId, begin.Session.AllowCredentialIds[0], "pending get allowed credential ID mismatch");
+
+        PasskeyPendingSessionResult blocked = store.CompleteGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            new PasskeyGetCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-get-1",
+                RpId = "example.com",
+                Origin = "https://example.com/login",
+                CredentialId = blockedCredentialId
+            },
+            now + 1000);
+
+        AssertFalse(blocked.Success, "pending get should reject a credential outside allowCredentialIds");
+        AssertEqual("credential_not_allowed", blocked.ErrorCode, "pending get allow-list error code mismatch");
+        AssertEqual(1, store.Count, "blocked get completion should not consume the pending session");
+
+        PasskeyPendingSessionResult allowed = store.CompleteGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            new PasskeyGetCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-get-1",
+                RpId = "example.com",
+                Origin = "https://example.com/login",
+                CredentialId = allowedCredentialId
+            },
+            now + 1000);
+
+        AssertTrue(allowed.Success, "pending get should accept an allowed credential ID: " + allowed.Error);
+        AssertEqual(0, store.Count, "allowed get completion should consume the pending session");
+    }
+
+    private static void PasskeyPendingCompletionExpiresStaleSession()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyPendingSessionResult begin = store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-expired", CreatePasskeyCreateBeginPayload("webauthn-create-expired"), now);
+        AssertTrue(begin.Success, "passkey pending session should be created before expiry test: " + begin.Error);
+
+        PasskeyPendingSessionResult expired = store.CompleteCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-create-expired",
+                RpId = "example.com",
+                Origin = "https://example.com/login"
+            },
+            now + PasskeyPendingSessionStore.MaxPendingLifetimeMs + 1);
+
+        AssertFalse(expired.Success, "stale passkey completion should fail");
+        AssertEqual("pending_expired", expired.ErrorCode, "stale passkey completion error code mismatch");
+        AssertEqual(0, store.Count, "expired passkey completion should remove the stale pending session");
+    }
+
+    private static void PasskeyPendingClearForClientRemovesOnlyClientSessions()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        AssertTrue(store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-4", CreatePasskeyCreateBeginPayload("webauthn-create-4"), now).Success,
+            "first client pending session should be created");
+        AssertTrue(store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-5", CreatePasskeyCreateBeginPayload("webauthn-create-5"), now).Success,
+            "second client pending session should be created");
+        AssertTrue(store.BeginCreate("client-2", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-6", CreatePasskeyCreateBeginPayload("webauthn-create-6"), now).Success,
+            "other client pending session should be created");
+
+        int removed = store.ClearForClient("client-1");
+
+        AssertEqual(2, removed, "clear-for-client should remove only the selected client's pending sessions");
+        AssertEqual(1, store.Count, "clear-for-client should leave other clients' pending sessions");
+        AssertTrue(store.Cancel("client-2", "webauthn-create-6"), "remaining client session should be cancelable");
+        AssertEqual(0, store.Count, "cancel should remove the remaining pending session");
+    }
+
+    private static void PasskeyPendingClearAllRemovesEverySession()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        AssertTrue(store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-7", CreatePasskeyCreateBeginPayload("webauthn-create-7"), now).Success,
+            "first pending session should be created before clear-all");
+        AssertTrue(store.BeginCreate("client-2", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-8", CreatePasskeyCreateBeginPayload("webauthn-create-8"), now).Success,
+            "second pending session should be created before clear-all");
+
+        int removed = store.ClearAll();
+
+        AssertEqual(2, removed, "clear-all should report every removed pending session");
+        AssertEqual(0, store.Count, "clear-all should remove every pending session");
     }
 
     private static void ValidHelloRequestPassesValidation()
@@ -264,6 +668,85 @@ internal static class Program
         AssertEqual("unsupported_protocol", result.ErrorCode, "protocol version error code mismatch");
     }
 
+    private static void PasskeyMethodPassesProtocolValidation()
+    {
+        BridgeRequest request = CreateValidRequest(BridgeMethods.PasskeysList);
+
+        ProtocolValidationResult result = ProtocolValidator.Validate(request, NowMs());
+
+        AssertTrue(result.IsValid, "reserved passkey protocol methods should pass envelope validation: " + result.Error);
+    }
+
+    private static void BridgeMethodPolicyCoversEveryBridgeMethod()
+    {
+        HashSet<string> constants = new HashSet<string>(StringComparer.Ordinal);
+        foreach (FieldInfo field in typeof(BridgeMethods).GetFields(BindingFlags.Public | BindingFlags.Static))
+        {
+            if (!field.IsLiteral || field.FieldType != typeof(string)) continue;
+            string method = (string)field.GetRawConstantValue();
+            constants.Add(method);
+            AssertTrue(BridgeMethodPolicy.IsKnownMethod(method), "bridge method policy should include " + method);
+        }
+
+        HashSet<string> policyMethods = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string method in BridgeMethodPolicy.AllMethods())
+        {
+            AssertTrue(policyMethods.Add(method), "bridge method policy should not contain duplicate method " + method);
+            AssertTrue(constants.Contains(method), "bridge method policy should not contain stale method " + method);
+
+            string permission = BridgeMethodPolicy.RequiredPermission(method);
+            if (BridgeMethodPolicy.RequiresAuthentication(method))
+            {
+                AssertFalse(string.IsNullOrEmpty(permission), "authenticated bridge method needs an explicit permission: " + method);
+            }
+            else
+            {
+                AssertEqual(string.Empty, permission, "unauthenticated bridge method should not require permission: " + method);
+            }
+        }
+
+        AssertEqual(constants.Count, policyMethods.Count, "bridge method policy count should match BridgeMethods constants");
+    }
+
+    private static void BridgeMethodPolicyAssignsExpectedPermissions()
+    {
+        AssertPolicy(BridgeMethods.Hello, false, string.Empty);
+        AssertPolicy(BridgeMethods.PairBegin, false, string.Empty);
+        AssertPolicy(BridgeMethods.PairComplete, false, string.Empty);
+        AssertPolicy(BridgeMethods.PairCancel, false, string.Empty);
+        AssertPolicy(BridgeMethods.ClientStatus, true, TrustedClientPermissions.Read);
+        AssertPolicy(BridgeMethods.LoginsQuery, true, TrustedClientPermissions.Read);
+        AssertPolicy(BridgeMethods.LoginsCreate, true, TrustedClientPermissions.Write);
+        AssertPolicy(BridgeMethods.LoginsUpdate, true, TrustedClientPermissions.Write);
+        AssertPolicy(BridgeMethods.LoginsFillAck, true, TrustedClientPermissions.Write);
+        AssertPolicy(BridgeMethods.ClientsList, true, TrustedClientPermissions.ManageClients);
+        AssertPolicy(BridgeMethods.ClientsRevoke, true, TrustedClientPermissions.ManageClients);
+        AssertPolicy(BridgeMethods.ClientsUpdatePermissions, true, TrustedClientPermissions.ManageClients);
+        AssertPolicy(BridgeMethods.PasskeysList, true, TrustedClientPermissions.PasskeyRead);
+        AssertPolicy(BridgeMethods.PasskeysGetBegin, true, TrustedClientPermissions.PasskeyRead);
+        AssertPolicy(BridgeMethods.PasskeysGetComplete, true, TrustedClientPermissions.PasskeyRead);
+        AssertPolicy(BridgeMethods.PasskeysCreateBegin, true, TrustedClientPermissions.PasskeyWrite);
+        AssertPolicy(BridgeMethods.PasskeysCreateComplete, true, TrustedClientPermissions.PasskeyWrite);
+        AssertPolicy(BridgeMethods.PasskeysCancel, true, TrustedClientPermissions.Read);
+        AssertPolicy(BridgeMethods.PasskeysRevoke, true, TrustedClientPermissions.PasskeyWrite);
+
+        AssertTrue(BridgeMethodPolicy.IsPasskeyMethod(BridgeMethods.PasskeysList),
+            "passkey list should be classified as passkey method");
+        AssertTrue(BridgeMethodPolicy.IsPasskeyMethod(BridgeMethods.PasskeysCancel),
+            "passkey cancel should be classified as passkey method");
+        AssertFalse(BridgeMethodPolicy.IsPasskeyMethod(BridgeMethods.LoginsQuery),
+            "password query should not be classified as passkey method");
+    }
+
+    private static void AssertPolicy(string method, bool requiresAuthentication, string requiredPermission)
+    {
+        AssertTrue(BridgeMethodPolicy.IsKnownMethod(method), "bridge method should be known: " + method);
+        AssertEqual(requiresAuthentication, BridgeMethodPolicy.RequiresAuthentication(method),
+            "authentication policy mismatch for " + method);
+        AssertEqual(requiredPermission, BridgeMethodPolicy.RequiredPermission(method),
+            "required permission mismatch for " + method);
+    }
+
     private static void UpdateCheckerDetectsNewerSemanticVersions()
     {
         AssertTrue(UpdateChecker.IsNewerVersion("0.9.0", "v0.9.1"), "patch update should be detected");
@@ -302,6 +785,8 @@ internal static class Program
             "release URL mismatch");
         AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/KeePassBrowserBridge.plgx",
             info.AssetUrl, "PLGX asset URL mismatch");
+        AssertEqual("https://github.com/hieuck/KeePassBrowserBridge/releases/download/v1.2.3/SHA256SUMS.txt",
+            info.ChecksumAssetUrl, "checksum asset URL mismatch");
     }
 
     private static void UpdateCheckerAlwaysBuildsPlgxAssetUrl()
@@ -316,8 +801,8 @@ internal static class Program
     {
         string json =
             "[" +
-            "{\"tag_name\":\"v1.0.0\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.dll\",\"browser_download_url\":\"https://example.invalid/v1/KeePassBrowserBridge.dll\"}]}," +
-            "{\"tag_name\":\"v0.9.1\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.plgx\",\"browser_download_url\":\"https://example.invalid/v091/KeePassBrowserBridge.plgx\"}]}" +
+            "{\"tag_name\":\"v1.0.0\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.dll\",\"browser_download_url\":\"https://example.invalid/v1/KeePassBrowserBridge.dll\"},{\"name\":\"SHA256SUMS.txt\",\"browser_download_url\":\"https://example.invalid/v1/SHA256SUMS.txt\"}]}," +
+            "{\"tag_name\":\"v0.9.1\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.plgx\",\"browser_download_url\":\"https://example.invalid/v091/KeePassBrowserBridge.plgx\"},{\"name\":\"SHA256SUMS.txt\",\"browser_download_url\":\"https://example.invalid/v091/SHA256SUMS.txt\"}]}" +
             "]";
 
         UpdateInfo info = UpdateChecker.CreateUpdateInfoFromReleasesJson(json);
@@ -325,6 +810,56 @@ internal static class Program
         AssertEqual("v0.9.1", info.LatestVersion, "update checker should choose newest release with a PLGX asset");
         AssertEqual("https://example.invalid/v091/KeePassBrowserBridge.plgx", info.AssetUrl,
             "update checker should use the PLGX asset download URL from GitHub");
+        AssertEqual("https://example.invalid/v091/SHA256SUMS.txt", info.ChecksumAssetUrl,
+            "update checker should use the checksum asset download URL from GitHub");
+    }
+
+    private static void UpdateCheckerSkipsReleaseWithoutChecksumAsset()
+    {
+        string json =
+            "[" +
+            "{\"tag_name\":\"v9.0.0\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.plgx\",\"browser_download_url\":\"https://example.invalid/v9/KeePassBrowserBridge.plgx\"}]}," +
+            "{\"tag_name\":\"v0.9.1\",\"prerelease\":false,\"draft\":false,\"assets\":[{\"name\":\"KeePassBrowserBridge.plgx\",\"browser_download_url\":\"https://example.invalid/v091/KeePassBrowserBridge.plgx\"},{\"name\":\"SHA256SUMS.txt\",\"browser_download_url\":\"https://example.invalid/v091/SHA256SUMS.txt\"}]}" +
+            "]";
+
+        UpdateInfo info = UpdateChecker.CreateUpdateInfoFromReleasesJson(json);
+
+        AssertEqual("v0.9.1", info.LatestVersion,
+            "update checker should skip PLGX releases that do not publish SHA256SUMS.txt");
+        AssertEqual("https://example.invalid/v091/SHA256SUMS.txt", info.ChecksumAssetUrl,
+            "selected update should include checksum asset URL");
+    }
+
+    private static void UpdateCheckerExtractsExpectedPluginChecksum()
+    {
+        string checksumText =
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  KeePassBrowserBridge.dll\n" +
+            "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB  KeePassBrowserBridge.plgx\n";
+
+        string expected = UpdateChecker.GetExpectedSha256(checksumText, "KeePassBrowserBridge.plgx");
+
+        AssertEqual("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", expected,
+            "update checker should extract and normalize the plugin checksum");
+    }
+
+    private static void UpdateCheckerVerifiesDownloadedPluginChecksum()
+    {
+        string tempFile = Path.Combine(Path.GetTempPath(), "KeePassBrowserBridge-checksum-test.bin");
+        try
+        {
+            File.WriteAllBytes(tempFile, Encoding.ASCII.GetBytes("abc"));
+
+            AssertTrue(UpdateChecker.VerifyFileSha256(tempFile,
+                    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),
+                "known SHA-256 should verify for downloaded plugin bytes");
+            AssertFalse(UpdateChecker.VerifyFileSha256(tempFile,
+                    "0000000000000000000000000000000000000000000000000000000000000000"),
+                "wrong SHA-256 should not verify for downloaded plugin bytes");
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
     }
 
     private static void PairingSessionGeneratesSixDigitCode()
@@ -337,6 +872,16 @@ internal static class Program
         AssertTrue(IsDigitsOnly(session.PairingCode), "pairing code should contain digits only");
     }
 
+    private static void PairingSessionStoresExtensionOriginFromBegin()
+    {
+        PairingService service = new PairingService(new DeterministicSecretGenerator("111111", "secret"));
+
+        PairingSession session = service.BeginPairing("Chrome", "chrome-extension://abcdefghijklmnopabcdefghijklmnop");
+
+        AssertEqual("chrome-extension://abcdefghijklmnopabcdefghijklmnop", session.ExtensionOrigin,
+            "pairing session should remember the extension origin that started pairing");
+    }
+
     private static void WrongPairingCodeIsRejected()
     {
         TrustedClientStore store = new TrustedClientStore();
@@ -347,6 +892,20 @@ internal static class Program
 
         AssertFalse(result.Success, "wrong pairing code should fail");
         AssertEqual(0, store.ListClients().Length, "wrong code should not add a trusted client");
+    }
+
+    private static void PairingCompletionRejectsDifferentOrigin()
+    {
+        TrustedClientStore store = new TrustedClientStore();
+        PairingService service = new PairingService(new DeterministicSecretGenerator("123456", "secret"));
+        PairingSession session = service.BeginPairing("Chrome", "chrome-extension://abcdefghijklmnopabcdefghijklmnop");
+
+        PairingResult result = service.CompletePairing(store, session.PairingSessionId, "123456", "Chrome",
+            "chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+
+        AssertFalse(result.Success, "pairing completion from a different extension origin should fail");
+        AssertEqual("origin_mismatch", result.ErrorCode, "pairing origin mismatch error code mismatch");
+        AssertEqual(0, store.ListClients().Length, "origin mismatch should not add a trusted client");
     }
 
     private static void NewPairingSessionCancelsOlderSessionForSameClient()
@@ -455,7 +1014,8 @@ internal static class Program
             ClientName = "Chrome",
             SharedSecret = "shared-secret",
             ExtensionOrigin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
-            CreatedUtcMs = 1779960000000
+            CreatedUtcMs = 1779960000000,
+            LastUsedUtcMs = 1779961000000
         });
 
         string json = original.ExportJson();
@@ -469,6 +1029,34 @@ internal static class Program
         AssertEqual("chrome-extension://abcdefghijklmnopabcdefghijklmnop", client.ExtensionOrigin,
             "restored client origin mismatch");
         AssertEqual(1779960000000, client.CreatedUtcMs, "restored client timestamp mismatch");
+        AssertEqual(1779961000000, client.LastUsedUtcMs, "restored client last-used timestamp mismatch");
+    }
+
+    private static void TrustedClientDefaultPermissionsDoNotGrantPasskeys()
+    {
+        string[] defaults = TrustedClientPermissions.Default();
+
+        AssertTrue(Array.IndexOf(defaults, TrustedClientPermissions.Read) >= 0,
+            "default trusted browser permissions should keep password read access");
+        AssertTrue(Array.IndexOf(defaults, TrustedClientPermissions.Write) >= 0,
+            "default trusted browser permissions should keep password write access");
+        AssertFalse(Array.IndexOf(defaults, TrustedClientPermissions.PasskeyRead) >= 0,
+            "default trusted browser permissions must not grant passkey read access");
+        AssertFalse(Array.IndexOf(defaults, TrustedClientPermissions.PasskeyWrite) >= 0,
+            "default trusted browser permissions must not grant passkey write access");
+    }
+
+    private static void TrustedClientPermissionUpdateAcceptsPasskeyPermissions()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret", new string[] { TrustedClientPermissions.Read });
+
+        bool updated = store.UpdatePermissions("client-1", new string[] { TrustedClientPermissions.PasskeyWrite });
+        TrustedClient client = store.Get("client-1");
+
+        AssertTrue(updated, "trusted client permission update should accept reserved passkey permission bits");
+        AssertEqual(2, client.Permissions.Length, "passkey permission update should keep read baseline and requested passkey permission");
+        AssertEqual(TrustedClientPermissions.Read, client.Permissions[0], "passkey permission update should keep read baseline first");
+        AssertEqual(TrustedClientPermissions.PasskeyWrite, client.Permissions[1], "passkey permission update should persist requested passkey write permission");
     }
 
     private static void CredentialQueryReturnsExactHostMatch()
@@ -634,6 +1222,25 @@ internal static class Program
         AssertFalse(tenant.IsProtected, "public custom field should not be protected");
         AssertEqual(string.Empty, apiKey.Value, "protected custom field value should be redacted");
         AssertTrue(apiKey.IsProtected, "protected custom field flag mismatch");
+    }
+
+    private static void CredentialQuerySkipsPasskeyOnlyEntries()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before query skip test: " + registration.Error);
+
+        PwEntry passkeyEntry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(passkeyEntry, registration.Credential);
+        PwDatabase database = CreateDatabase(
+            passkeyEntry,
+            CreateEntry("Example Password", "alice", "secret", "https://example.com/login"));
+
+        CredentialQueryResult result = new CredentialQueryService().Query(database, "https://example.com/login");
+
+        AssertTrue(result.Success, "credential query with passkey-only entry should succeed: " + result.Error);
+        AssertEqual(1, result.Entries.Length, "passkey-only entry should not appear as a password login");
+        AssertEqual("Example Password", result.Entries[0].Title, "query should return the normal password entry");
     }
 
     private static void CredentialQueryRejectsUnrelatedDomain()
@@ -952,6 +1559,14 @@ internal static class Program
         AssertEqual(request.RequestId, response.RequestId, "hello response request ID mismatch");
         AssertEqual("0.9.0", payload.PluginVersion, "hello should expose the KeePass plugin version");
         AssertEqual(BridgeSettings.UpdateInfoUrl, payload.PluginUpdateUrl, "hello should expose the KeePass plugin update URL");
+        AssertTrue(Array.IndexOf(payload.SupportedMethods, BridgeMethods.LoginsQuery) >= 0,
+            "hello should advertise password query support");
+        AssertTrue(Array.IndexOf(payload.SupportedMethods, BridgeMethods.PasskeysCancel) >= 0,
+            "hello should advertise reserved passkey cancel support");
+        AssertEqual(true, FindFeature(payload.Features, "saveUpdate").Enabled,
+            "hello should advertise enabled save/update support");
+        AssertEqual(false, FindFeature(payload.Features, "passkeys").Enabled,
+            "hello should advertise that browser-facing passkeys are disabled");
     }
 
     private static void BridgeHandlerRejectsBadHmacForTrustedMethod()
@@ -991,6 +1606,32 @@ internal static class Program
         AssertTrue(response.Success, "client.status should succeed for permission inspection: " + response.Error);
         AssertEqual(1, payload.Permissions.Length, "client.status should include trusted client permissions");
         AssertEqual(TrustedClientPermissions.Read, payload.Permissions[0], "client.status permission mismatch");
+    }
+
+    private static void BridgeHandlerPairBeginPassesOriginToPairingPrompt()
+    {
+        PairingService pairing = new PairingService(new DeterministicSecretGenerator("123456", "shared-secret"));
+        PairingSession promptedSession = null;
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            pairing,
+            new TrustedClientStore(),
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { promptedSession = session; },
+            delegate(PwDatabase database) { });
+        BridgeRequest request = CreateValidRequest(BridgeMethods.PairBegin);
+        request.Payload = BridgeJsonSerializer.Serialize(new PairBeginPayload
+        {
+            ClientName = "Chrome"
+        });
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertTrue(response.Success, "pair.begin should succeed: " + response.Error);
+        AssertTrue(promptedSession != null, "pair.begin should surface a pairing session to KeePass UI");
+        AssertEqual("chrome-extension://abcdefghijklmnopabcdefghijklmnop", promptedSession.ExtensionOrigin,
+            "pair.begin should pass the extension origin into the KeePass pairing prompt");
     }
 
     private static void BridgeHandlerPairCompleteStoresExtensionOrigin()
@@ -1138,6 +1779,41 @@ internal static class Program
             payload.Clients[1].ExtensionOrigin, "clients.list should expose paired extension origin");
     }
 
+    private static void BridgeHandlerTracksTrustedClientLastUsed()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        TrustedClient client = store.Get("client-1");
+        AssertEqual(0, client.LastUsedUtcMs, "new trusted client should start without last-used timestamp");
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientStatus, "client-1", "secret", "{}");
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertTrue(response.Success, "authenticated client.status should succeed before tracking last-used: " + response.Error);
+        AssertTrue(client.LastUsedUtcMs > 0, "authenticated request should update trusted client last-used timestamp");
+    }
+
+    private static void BridgeHandlerListsTrustedClientLastUsed()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        store.AddOrUpdate(new TrustedClient
+        {
+            ClientId = "client-2",
+            ClientName = "Second Browser",
+            SharedSecret = "second-secret",
+            CreatedUtcMs = 1779960000000,
+            LastUsedUtcMs = 1779961234567
+        });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.ClientsList, "client-1", "secret", "{}");
+
+        BridgeResponse response = handler.Handle(request);
+        ClientsListResponsePayload payload = BridgeJsonSerializer.Deserialize<ClientsListResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "clients.list should succeed for last-used inspection: " + response.Error);
+        AssertEqual(1779961234567, payload.Clients[1].LastUsedUtcMs, "clients.list should expose trusted client last-used timestamp");
+    }
+
     private static void BridgeHandlerRevokesTrustedClient()
     {
         TrustedClientStore store = CreateTrustedStore("client-1", "secret");
@@ -1282,6 +1958,436 @@ internal static class Program
         AssertEqual(2, updated.Permissions.Length, "elevated permission update should keep read baseline");
         AssertEqual(TrustedClientPermissions.Read, updated.Permissions[0], "read baseline should be first");
         AssertEqual(TrustedClientPermissions.Write, updated.Permissions[1], "requested write permission should remain");
+    }
+
+    private static void BridgeHandlerRejectsPasskeyReadWithoutPasskeyPermission()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret");
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        string payload = BridgeJsonSerializer.Serialize(new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysList, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "default trusted clients should not reach passkey read methods");
+        AssertEqual("permission_denied", response.ErrorCode, "passkey read permission error code mismatch");
+    }
+
+    private static void BridgeHandlerRejectsPasskeyWriteWithOnlyPasskeyRead()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        string payload = BridgeJsonSerializer.Serialize(new PasskeyCreateBeginPayload
+        {
+            WebAuthnRequestId = "request-1",
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("0123456789abcdef")),
+            UserHandle = Base64Url.Encode(Encoding.ASCII.GetBytes("alice-handle")),
+            UserName = "alice@example.com"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "passkey read permission should not authorize passkey registration");
+        AssertEqual("permission_denied", response.ErrorCode, "passkey write permission error code mismatch");
+    }
+
+    private static void BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyMethod()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        TrustedClient client = store.Get("client-1");
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        string payload = BridgeJsonSerializer.Serialize(new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login"
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysList, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "permitted passkey methods should remain disabled until browser-facing support is ready");
+        AssertEqual("feature_disabled", response.ErrorCode, "disabled passkey method error code mismatch");
+        AssertTrue(client.LastUsedUtcMs > 0, "permitted passkey method should pass authenticated tracking before feature-disabled response");
+    }
+
+    private static void BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyWriteMethod()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        BridgeRequestHandler handler = CreateHandler(null, store);
+        string payload = BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-disabled"));
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "permitted passkey write methods should remain disabled until browser-facing support is ready");
+        AssertEqual("feature_disabled", response.ErrorCode, "disabled passkey write method error code mismatch");
+    }
+
+    private static void BridgeHandlerListsPasskeysWhenFeatureGateIsEnabled()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before bridge list test: " + registration.Error);
+
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store);
+        string payload = BridgeJsonSerializer.Serialize(new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            AllowCredentialIds = new string[] { registration.Credential.CredentialId }
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysList, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        PasskeyCredentialLookupResult result = BridgeJsonSerializer.Deserialize<PasskeyCredentialLookupResult>(response.Payload);
+
+        AssertTrue(response.Success, "enabled passkeys.list should return a bridge success envelope: " + response.Error);
+        AssertTrue(result.Success, "enabled passkeys.list payload should succeed: " + result.Error);
+        AssertEqual(1, result.Credentials.Length, "enabled passkeys.list should return matching passkey summaries");
+        AssertEqual(registration.Credential.CredentialId, result.Credentials[0].CredentialId,
+            "enabled passkeys.list credential ID mismatch");
+    }
+
+    private static void BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending);
+        string payload = BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-bridge"));
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        PasskeyCreateBeginResponsePayload result = BridgeJsonSerializer.Deserialize<PasskeyCreateBeginResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "enabled passkeys.create.begin should return a bridge success envelope: " + response.Error);
+        AssertTrue(result.PendingApproval, "enabled passkeys.create.begin should create a pending approval");
+        AssertEqual("webauthn-create-bridge", result.WebAuthnRequestId, "create begin WebAuthn request ID mismatch");
+        AssertEqual("example.com", result.RpId, "create begin RP ID mismatch");
+        AssertEqual("https://example.com/login", result.Origin, "create begin caller origin mismatch");
+        AssertTrue(result.ExpiresUtcMs > request.TimestampUtcMs, "create begin should return a future expiration");
+        AssertEqual(1, pending.Count, "create begin should leave one pending session for approval");
+    }
+
+    private static void BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before bridge get begin test: " + registration.Error);
+
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending);
+        string payload = BridgeJsonSerializer.Serialize(CreatePasskeyGetBeginPayload("webauthn-get-bridge",
+            new string[] { registration.Credential.CredentialId }));
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+        PasskeyGetBeginResponsePayload result = BridgeJsonSerializer.Deserialize<PasskeyGetBeginResponsePayload>(response.Payload);
+
+        AssertTrue(response.Success, "enabled passkeys.get.begin should return a bridge success envelope: " + response.Error);
+        AssertTrue(result.PendingApproval, "enabled passkeys.get.begin should create a pending approval");
+        AssertEqual("webauthn-get-bridge", result.WebAuthnRequestId, "get begin WebAuthn request ID mismatch");
+        AssertEqual(1, result.Credentials.Length, "get begin should return matching passkey summaries");
+        AssertEqual(registration.Credential.CredentialId, result.Credentials[0].CredentialId,
+            "get begin passkey summary credential ID mismatch");
+        AssertEqual(1, pending.Count, "get begin should leave one pending session for approval");
+    }
+
+    private static void BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                AssertEqual(PasskeyPendingOperation.Create, approval.Operation, "create approval operation mismatch");
+                AssertEqual("example.com", approval.RpId, "create approval RP ID mismatch");
+                AssertEqual("https://example.com/login", approval.Origin, "create approval origin mismatch");
+                AssertEqual("alice@example.com", approval.UserName, "create approval user name mismatch");
+                return PasskeyApprovalResult.Deny("user_denied", "Denied by test.");
+            });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-denied")));
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "denied passkey create approval should fail the begin request");
+        AssertEqual("user_denied", response.ErrorCode, "denied create approval error code mismatch");
+        AssertEqual(0, pending.Count, "denied create approval should cancel the pending session");
+    }
+
+    private static void BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before denied approval test: " + registration.Error);
+
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                AssertEqual(PasskeyPendingOperation.Get, approval.Operation, "get approval operation mismatch");
+                AssertEqual(1, approval.Credentials.Length, "get approval should receive matching passkey summaries");
+                AssertEqual(registration.Credential.CredentialId, approval.Credentials[0].CredentialId,
+                    "get approval credential summary mismatch");
+                return PasskeyApprovalResult.Deny("user_denied", "Denied by test.");
+            });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyGetBeginPayload("webauthn-get-denied",
+                new string[] { registration.Credential.CredentialId })));
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "denied passkey get approval should fail the begin request");
+        AssertEqual("user_denied", response.ErrorCode, "denied get approval error code mismatch");
+        AssertEqual(0, pending.Count, "denied get approval should cancel the pending session");
+    }
+
+    private static void BridgeHandlerCompletesPasskeyCreateAndSavesDatabaseWhenFeatureGateIsEnabled()
+    {
+        int saveCount = 0;
+        PwDatabase database = CreateDatabase();
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { saveCount += 1; });
+
+        BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-complete")));
+        BridgeResponse beginResponse = handler.Handle(beginRequest);
+        AssertTrue(beginResponse.Success, "passkey create begin should succeed before complete: " + beginResponse.Error);
+
+        BridgeRequest completeRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-create-complete",
+                RpId = "example.com",
+                Origin = "https://example.com/login"
+            }));
+
+        BridgeResponse completeResponse = handler.Handle(completeRequest);
+        PasskeyCreateCompleteResponsePayload result =
+            BridgeJsonSerializer.Deserialize<PasskeyCreateCompleteResponsePayload>(completeResponse.Payload);
+
+        AssertTrue(completeResponse.Success, "enabled passkeys.create.complete should succeed: " + completeResponse.Error);
+        AssertEqual(0, pending.Count, "passkeys.create.complete should consume the pending session");
+        AssertEqual(1, (int)database.RootGroup.Entries.UCount, "passkeys.create.complete should create one KeePass entry");
+        AssertEqual(1, saveCount, "passkeys.create.complete should save the database once");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.EntryId), "create complete response should include entry ID");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.CredentialId), "create complete response should include credential ID");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.ClientDataJson), "create complete response should include clientDataJSON");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.AttestationObject), "create complete response should include attestationObject");
+        AssertTrue(PasskeyEntryStore.IsPasskeyEntry(database.RootGroup.Entries.GetAt(0)),
+            "created entry should be a passkey entry");
+    }
+
+    private static void BridgeHandlerCompletesPasskeyGetSignsAssertionAndSavesDatabaseWhenFeatureGateIsEnabled()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before bridge get complete test: " + registration.Error);
+
+        int saveCount = 0;
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { saveCount += 1; });
+
+        BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyGetBeginPayload("webauthn-get-complete",
+                new string[] { registration.Credential.CredentialId })));
+        BridgeResponse beginResponse = handler.Handle(beginRequest);
+        AssertTrue(beginResponse.Success, "passkey get begin should succeed before complete: " + beginResponse.Error);
+
+        BridgeRequest completeRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyGetCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-get-complete",
+                RpId = "example.com",
+                Origin = "https://example.com/login",
+                CredentialId = registration.Credential.CredentialId
+            }));
+
+        BridgeResponse completeResponse = handler.Handle(completeRequest);
+        PasskeyGetCompleteResponsePayload result =
+            BridgeJsonSerializer.Deserialize<PasskeyGetCompleteResponsePayload>(completeResponse.Payload);
+        PasskeyCredentialMaterial restored = PasskeyEntryStore.Read(entry);
+
+        AssertTrue(completeResponse.Success, "enabled passkeys.get.complete should succeed: " + completeResponse.Error);
+        AssertEqual(0, pending.Count, "passkeys.get.complete should consume the pending session");
+        AssertEqual(1, saveCount, "passkeys.get.complete should save the database once");
+        AssertEqual((uint)1, result.SignCount, "get complete response sign count mismatch");
+        AssertEqual((uint)1, restored.SignCount, "get complete should persist incremented sign count");
+        AssertTrue(service.VerifyAssertionSignature(restored, new PasskeyAssertionResponse
+        {
+            CredentialId = result.CredentialId,
+            AuthenticatorData = result.AuthenticatorData,
+            ClientDataJson = result.ClientDataJson,
+            Signature = result.Signature,
+            UserHandle = result.UserHandle,
+            SignCount = result.SignCount
+        }), "get complete response signature should verify against the stored public key");
+    }
+
+    private static void BridgeHandlerRevokesPasskeyAndSavesDatabaseWhenFeatureGateIsEnabled()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before bridge revoke test: " + registration.Error);
+
+        int saveCount = 0;
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { saveCount += 1; });
+
+        BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-revoke-clear")));
+        BridgeResponse beginResponse = handler.Handle(beginRequest);
+        AssertTrue(beginResponse.Success, "passkey create begin should succeed before passkey revoke: " + beginResponse.Error);
+        AssertEqual(1, pending.Count, "pending store should contain a session before passkey revoke");
+
+        BridgeRequest revokeRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysRevoke, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyRevokePayload
+            {
+                RpId = "example.com",
+                Origin = "https://example.com/login",
+                CredentialId = registration.Credential.CredentialId
+            }));
+
+        BridgeResponse revokeResponse = handler.Handle(revokeRequest);
+        PasskeyRevokeResponsePayload result = BridgeJsonSerializer.Deserialize<PasskeyRevokeResponsePayload>(revokeResponse.Payload);
+
+        AssertTrue(revokeResponse.Success, "enabled passkeys.revoke should succeed: " + revokeResponse.Error);
+        AssertTrue(result.Revoked, "passkeys.revoke should report revoked");
+        AssertEqual(registration.Credential.CredentialId, result.CredentialId, "passkeys.revoke credential ID mismatch");
+        AssertEqual(0, (int)database.RootGroup.Entries.UCount, "passkeys.revoke should remove the passkey entry");
+        AssertEqual(0, pending.Count, "passkeys.revoke should clear pending sessions for the client");
+        AssertEqual(1, saveCount, "passkeys.revoke should save the database once");
+    }
+
+    private static void BridgeHandlerCancelsPendingPasskeySessionWhenFeatureGateIsEnabled()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending);
+        BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-cancel")));
+        BridgeResponse beginResponse = handler.Handle(beginRequest);
+        AssertTrue(beginResponse.Success, "passkey create begin should succeed before cancel: " + beginResponse.Error);
+        AssertEqual(1, pending.Count, "pending store should contain a session before passkey cancel");
+
+        BridgeRequest cancelRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCancel, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyCancelPayload
+            {
+                WebAuthnRequestId = "webauthn-create-cancel"
+            }));
+        BridgeResponse cancelResponse = handler.Handle(cancelRequest);
+        PasskeyCancelResponsePayload result = BridgeJsonSerializer.Deserialize<PasskeyCancelResponsePayload>(cancelResponse.Payload);
+
+        BridgeRequest completeRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-create-cancel",
+                RpId = "example.com",
+                Origin = "https://example.com/login"
+            }));
+        BridgeResponse completeResponse = handler.Handle(completeRequest);
+
+        AssertTrue(cancelResponse.Success, "enabled passkeys.cancel should return a bridge success envelope: " + cancelResponse.Error);
+        AssertTrue(result.Cancelled, "passkeys.cancel should report a canceled pending session");
+        AssertEqual("webauthn-create-cancel", result.WebAuthnRequestId, "passkeys.cancel WebAuthn request ID mismatch");
+        AssertEqual(0, pending.Count, "passkeys.cancel should clear the pending session");
+        AssertFalse(completeResponse.Success, "completion after passkeys.cancel should fail");
+        AssertEqual("pending_not_found", completeResponse.ErrorCode, "completion after passkeys.cancel error code mismatch");
+    }
+
+    private static void BridgeHandlerRevokingClientClearsPendingPasskeySessions()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.Write, TrustedClientPermissions.ManageClients, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending);
+        string createPayload = BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-revoke"));
+        BridgeRequest createRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret", createPayload);
+        BridgeResponse createResponse = handler.Handle(createRequest);
+        AssertTrue(createResponse.Success, "passkey create begin should succeed before revoke clear test: " + createResponse.Error);
+        AssertEqual(1, pending.Count, "pending store should contain a session before revoke");
+
+        string revokePayload = BridgeJsonSerializer.Serialize(new ClientRevokePayload { ClientId = "client-1" });
+        BridgeRequest revokeRequest = CreateAuthenticatedRequest(BridgeMethods.ClientsRevoke, "client-1", "secret", revokePayload);
+        BridgeResponse revokeResponse = handler.Handle(revokeRequest);
+
+        AssertTrue(revokeResponse.Success, "self revoke should return a bridge success envelope: " + revokeResponse.Error);
+        AssertEqual(0, pending.Count, "revoking a client should clear its pending passkey sessions");
+        AssertFalse(store.IsTrusted("client-1"), "revoked client should no longer be trusted");
+    }
+
+    private static void BridgeHandlerClearPendingPasskeySessionsRejectsLaterCompletion()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending);
+        BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-db-close")));
+        BridgeResponse beginResponse = handler.Handle(beginRequest);
+        AssertTrue(beginResponse.Success, "passkey create begin should succeed before lifecycle cleanup: " + beginResponse.Error);
+        AssertEqual(1, pending.Count, "pending store should contain a session before lifecycle cleanup");
+
+        int removed = handler.ClearPendingPasskeySessions();
+
+        BridgeRequest completeRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-create-db-close",
+                RpId = "example.com",
+                Origin = "https://example.com/login"
+            }));
+        BridgeResponse completeResponse = handler.Handle(completeRequest);
+
+        AssertEqual(1, removed, "lifecycle cleanup should report the cleared pending passkey session");
+        AssertEqual(0, pending.Count, "lifecycle cleanup should clear pending passkey sessions");
+        AssertFalse(completeResponse.Success, "completion after database lifecycle cleanup should fail");
+        AssertEqual("pending_not_found", completeResponse.ErrorCode, "completion after lifecycle cleanup error code mismatch");
     }
 
     private static void BridgeHandlerReturnsLoginsForAuthenticatedQuery()
@@ -1543,6 +2649,114 @@ internal static class Program
         }
     }
 
+    private static void LoopbackBridgeServerRejectsNonJsonPostBeforeHandling()
+    {
+        int port = FindFreePort();
+        int pairingPromptCount = 0;
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
+            new TrustedClientStore(),
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { pairingPromptCount += 1; },
+            delegate(PwDatabase changedDatabase) { });
+
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            BridgeRequest request = CreateValidRequest(BridgeMethods.PairBegin);
+            request.Payload = BridgeJsonSerializer.Serialize(new PairBeginPayload
+            {
+                ClientName = "Wrong content type"
+            });
+            byte[] bodyBytes = Encoding.UTF8.GetBytes(BridgeJsonSerializer.Serialize(request));
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + bodyBytes.Length + "\r\n" +
+                "Connection: close\r\n\r\n",
+                bodyBytes);
+
+            AssertEqual(415, response.StatusCode, "non-JSON bridge POST should be rejected");
+            AssertEqual(0, pairingPromptCount, "non-JSON bridge POST should not reach pair.begin handler");
+        }
+    }
+
+    private static void LoopbackBridgeServerRejectsOversizedPostBeforeHandling()
+    {
+        int port = FindFreePort();
+        int pairingPromptCount = 0;
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
+            new TrustedClientStore(),
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { pairingPromptCount += 1; },
+            delegate(PwDatabase changedDatabase) { });
+
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Content-Type: application/json; charset=utf-8\r\n" +
+                "Content-Length: " + (LoopbackBridgeServer.MaxRequestBodyBytes + 1) + "\r\n" +
+                "Connection: close\r\n\r\n");
+
+            AssertEqual(413, response.StatusCode, "oversized bridge POST should be rejected");
+            AssertEqual(0, pairingPromptCount, "oversized bridge POST should not reach pair.begin handler");
+        }
+    }
+
+    private static void LoopbackBridgeServerRejectsMismatchedHeaderAndRequestOriginBeforeHandling()
+    {
+        int port = FindFreePort();
+        int pairingPromptCount = 0;
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
+            new TrustedClientStore(),
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { pairingPromptCount += 1; },
+            delegate(PwDatabase changedDatabase) { });
+
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string headerOrigin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            BridgeRequest request = CreateValidRequest(BridgeMethods.PairBegin);
+            request.Origin = "chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+            request.Payload = BridgeJsonSerializer.Serialize(new PairBeginPayload
+            {
+                ClientName = "Mismatched Origin"
+            });
+            byte[] bodyBytes = Encoding.UTF8.GetBytes(BridgeJsonSerializer.Serialize(request));
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + headerOrigin + "\r\n" +
+                "Content-Type: application/json\r\n" +
+                "Content-Length: " + bodyBytes.Length + "\r\n" +
+                "Connection: close\r\n\r\n",
+                bodyBytes);
+
+            AssertEqual(403, response.StatusCode, "mismatched HTTP Origin and request Origin should be rejected");
+            AssertEqual(0, pairingPromptCount, "mismatched Origin POST should not reach pair.begin handler");
+        }
+    }
+
     private static void LoopbackBridgeServerTryStartReportsPortConflict()
     {
         int port = FindFreePort();
@@ -1579,6 +2793,61 @@ internal static class Program
         entry.Strings.Set(PwDefs.PasswordField, new ProtectedString(true, password));
         entry.Strings.Set(PwDefs.UrlField, new ProtectedString(false, url));
         return entry;
+    }
+
+    private static PasskeyRegistrationRequest CreatePasskeyRegistrationRequest()
+    {
+        return CreatePasskeyRegistrationRequest("Example.com", "https://example.com/login",
+            "alice@example.com", "alice-handle", "Alice Example");
+    }
+
+    private static PasskeyRegistrationRequest CreatePasskeyRegistrationRequest(
+        string rpId,
+        string origin,
+        string userName,
+        string userHandle,
+        string userDisplayName)
+    {
+        return new PasskeyRegistrationRequest
+        {
+            RpId = rpId,
+            Origin = origin,
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("0123456789abcdef")),
+            UserHandle = Base64Url.Encode(Encoding.ASCII.GetBytes(userHandle)),
+            UserName = userName,
+            UserDisplayName = userDisplayName,
+            UserVerification = "Preferred",
+            Transports = new string[] { "Internal", "usb", "usb", "invalid value" }
+        };
+    }
+
+    private static PasskeyCreateBeginPayload CreatePasskeyCreateBeginPayload(string webAuthnRequestId)
+    {
+        return new PasskeyCreateBeginPayload
+        {
+            WebAuthnRequestId = webAuthnRequestId,
+            RpId = "Example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("0123456789abcdef")),
+            UserHandle = Base64Url.Encode(Encoding.ASCII.GetBytes("alice-handle")),
+            UserName = "alice@example.com",
+            UserDisplayName = "Alice Example",
+            UserVerification = "preferred",
+            Transports = new string[] { "internal" }
+        };
+    }
+
+    private static PasskeyGetBeginPayload CreatePasskeyGetBeginPayload(string webAuthnRequestId, string[] allowCredentialIds)
+    {
+        return new PasskeyGetBeginPayload
+        {
+            WebAuthnRequestId = webAuthnRequestId,
+            RpId = "Example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("0123456789abcdef")),
+            AllowCredentialIds = allowCredentialIds,
+            UserVerification = "preferred"
+        };
     }
 
     private static PwGroup FindChildGroup(PwGroup parent, string name)
@@ -1638,6 +2907,52 @@ internal static class Program
             delegate { return database; },
             delegate(PairingSession session) { },
             databaseChanged);
+    }
+
+    private static BridgeRequestHandler CreatePasskeyEnabledHandler(PwDatabase database, TrustedClientStore store)
+    {
+        return CreatePasskeyEnabledHandler(database, store, new PasskeyPendingSessionStore());
+    }
+
+    private static BridgeRequestHandler CreatePasskeyEnabledHandler(
+        PwDatabase database,
+        TrustedClientStore store,
+        PasskeyPendingSessionStore pendingSessionStore)
+    {
+        return CreatePasskeyEnabledHandler(database, store, pendingSessionStore,
+            delegate(PwDatabase changedDatabase) { });
+    }
+
+    private static BridgeRequestHandler CreatePasskeyEnabledHandler(
+        PwDatabase database,
+        TrustedClientStore store,
+        PasskeyPendingSessionStore pendingSessionStore,
+        Action<PwDatabase> databaseChanged)
+    {
+        return CreatePasskeyEnabledHandler(database, store, pendingSessionStore, databaseChanged,
+            delegate(PasskeyApprovalRequest request) { return PasskeyApprovalResult.Approve(); });
+    }
+
+    private static BridgeRequestHandler CreatePasskeyEnabledHandler(
+        PwDatabase database,
+        TrustedClientStore store,
+        PasskeyPendingSessionStore pendingSessionStore,
+        Action<PwDatabase> databaseChanged,
+        Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval)
+    {
+        return new BridgeRequestHandler(
+            new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
+            store,
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            new PasskeyService(),
+            new PasskeyCredentialLookupService(),
+            pendingSessionStore,
+            delegate { return database; },
+            delegate { return true; },
+            delegate(PairingSession session) { },
+            databaseChanged,
+            passkeyApproval);
     }
 
     private static TrustedClientStore CreateTrustedStore(string clientId, string secret)
@@ -1751,6 +3066,18 @@ internal static class Program
             if (!char.IsDigit(value[i])) return false;
         }
         return true;
+    }
+
+    private static BridgeFeatureInfo FindFeature(BridgeFeatureInfo[] features, string name)
+    {
+        if (features == null) throw new Exception("hello response did not include feature metadata");
+        for (int i = 0; i < features.Length; ++i)
+        {
+            if (features[i] != null && string.Equals(features[i].Name, name, StringComparison.Ordinal))
+                return features[i];
+        }
+
+        throw new Exception("hello response did not include feature metadata for " + name);
     }
 
     private static void AssertTrue(bool value, string message)

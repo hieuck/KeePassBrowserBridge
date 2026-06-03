@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace KeePassBrowserBridge.Bridge
@@ -11,6 +13,7 @@ namespace KeePassBrowserBridge.Bridge
         public string LatestVersion;
         public string ReleaseUrl;
         public string AssetUrl;
+        public string ChecksumAssetUrl;
         public bool IsUpdateAvailable;
     }
 
@@ -19,6 +22,7 @@ namespace KeePassBrowserBridge.Bridge
         public const string ReleasesApiUrl = "https://api.github.com/repos/hieuck/KeePassBrowserBridge/releases";
         public const string ReleasesUrl = "https://github.com/hieuck/KeePassBrowserBridge/releases";
         private const string PluginAssetName = "KeePassBrowserBridge.plgx";
+        private const string ChecksumAssetName = "SHA256SUMS.txt";
 
         public static string GetCurrentVersion()
         {
@@ -70,6 +74,7 @@ namespace KeePassBrowserBridge.Bridge
         {
             string newestTag = string.Empty;
             string newestAssetUrl = string.Empty;
+            string newestChecksumAssetUrl = string.Empty;
             Version newestVersion = null;
 
             foreach (string releaseJson in ExtractTopLevelObjects(json))
@@ -84,17 +89,23 @@ namespace KeePassBrowserBridge.Bridge
                 string assetUrl = FindAssetDownloadUrl(releaseJson, PluginAssetName);
                 if (string.IsNullOrEmpty(assetUrl)) continue;
 
+                string checksumAssetUrl = FindAssetDownloadUrl(releaseJson, ChecksumAssetName);
+                if (string.IsNullOrEmpty(checksumAssetUrl)) continue;
+
                 if (newestVersion == null || version.CompareTo(newestVersion) > 0)
                 {
                     newestVersion = version;
                     newestTag = tagName;
                     newestAssetUrl = assetUrl;
+                    newestChecksumAssetUrl = checksumAssetUrl;
                 }
             }
 
             UpdateInfo info = CreateUpdateInfo(newestTag);
             if (!string.IsNullOrEmpty(newestAssetUrl))
                 info.AssetUrl = newestAssetUrl;
+            if (!string.IsNullOrEmpty(newestChecksumAssetUrl))
+                info.ChecksumAssetUrl = newestChecksumAssetUrl;
             return info;
         }
 
@@ -108,9 +119,38 @@ namespace KeePassBrowserBridge.Bridge
             UpdateInfo info = new UpdateInfo();
             info.LatestVersion = tagName ?? string.Empty;
             info.ReleaseUrl = BuildReleaseUrl(tagName);
-            info.AssetUrl = BuildPluginAssetUrl(tagName);
+            info.AssetUrl = BuildReleaseAssetUrl(tagName, PluginAssetName);
+            info.ChecksumAssetUrl = BuildReleaseAssetUrl(tagName, ChecksumAssetName);
             info.IsUpdateAvailable = IsNewerVersion(GetCurrentVersion(), tagName);
             return info;
+        }
+
+        public static string GetExpectedSha256(string checksumText, string assetName)
+        {
+            if (string.IsNullOrEmpty(checksumText) || string.IsNullOrEmpty(assetName)) return string.Empty;
+
+            string[] lines = checksumText.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            foreach (string line in lines)
+            {
+                Match match = Regex.Match(line,
+                    "^\\s*(?<hash>[0-9a-fA-F]{64})\\s+(?<name>\\S+)\\s*$");
+                if (!match.Success) continue;
+
+                if (string.Equals(match.Groups["name"].Value, assetName, StringComparison.Ordinal))
+                    return match.Groups["hash"].Value.ToLowerInvariant();
+            }
+
+            return string.Empty;
+        }
+
+        public static bool VerifyFileSha256(string filePath, string expectedSha256)
+        {
+            if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(expectedSha256)) return false;
+            if (!Regex.IsMatch(expectedSha256, "^[0-9a-fA-F]{64}$")) return false;
+            if (!File.Exists(filePath)) return false;
+
+            string actualSha256 = ComputeFileSha256(filePath);
+            return string.Equals(actualSha256, expectedSha256.ToLowerInvariant(), StringComparison.Ordinal);
         }
 
         public static string GetNewestVersionTag(string[] tags)
@@ -157,10 +197,10 @@ namespace KeePassBrowserBridge.Bridge
             return normalized;
         }
 
-        private static string BuildPluginAssetUrl(string tagName)
+        private static string BuildReleaseAssetUrl(string tagName, string assetName)
         {
             if (string.IsNullOrEmpty(tagName)) return ReleasesUrl;
-            return ReleasesUrl + "/download/" + tagName + "/" + PluginAssetName;
+            return ReleasesUrl + "/download/" + tagName + "/" + assetName;
         }
 
         private static string BuildReleaseUrl(string tagName)
@@ -181,6 +221,28 @@ namespace KeePassBrowserBridge.Bridge
             }
 
             return string.Empty;
+        }
+
+        private static string ComputeFileSha256(string filePath)
+        {
+            using (FileStream stream = File.OpenRead(filePath))
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] hash = sha256.ComputeHash(stream);
+                char[] chars = new char[hash.Length * 2];
+                for (int i = 0; i < hash.Length; ++i)
+                {
+                    byte value = hash[i];
+                    chars[i * 2] = ToHexChar(value >> 4);
+                    chars[i * 2 + 1] = ToHexChar(value & 0x0F);
+                }
+                return new string(chars);
+            }
+        }
+
+        private static char ToHexChar(int value)
+        {
+            return (char)(value < 10 ? '0' + value : 'a' + value - 10);
         }
 
         private static string ExtractFirstJsonString(string json, string name)

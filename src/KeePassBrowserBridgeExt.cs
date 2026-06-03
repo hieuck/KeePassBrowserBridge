@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
+using KeePass.Forms;
 using KeePass.Plugins;
 using KeePassBrowserBridge.Bridge;
 
@@ -42,7 +43,9 @@ namespace KeePassBrowserBridge
                 m_credentialMutationService,
                 delegate { return (m_host == null) ? null : m_host.Database; },
                 OnPairingSessionCreated,
-                SaveDatabaseAfterMutation);
+                SaveDatabaseAfterMutation,
+                ShowPasskeyApprovalPrompt);
+            SubscribeKeePassLifecycleEvents();
 
             if (IsEnabled()) StartServer(false);
             StartAutoUpdateCheck();
@@ -223,6 +226,35 @@ namespace KeePassBrowserBridge
             m_server = null;
         }
 
+        private void SubscribeKeePassLifecycleEvents()
+        {
+            if (m_host == null || m_host.MainWindow == null) return;
+            m_host.MainWindow.FileClosingPre += OnKeePassFileClosingPre;
+            m_host.MainWindow.FileClosed += OnKeePassFileClosed;
+        }
+
+        private void UnsubscribeKeePassLifecycleEvents()
+        {
+            if (m_host == null || m_host.MainWindow == null) return;
+            m_host.MainWindow.FileClosingPre -= OnKeePassFileClosingPre;
+            m_host.MainWindow.FileClosed -= OnKeePassFileClosed;
+        }
+
+        private void OnKeePassFileClosingPre(object sender, FileClosingEventArgs e)
+        {
+            ClearPendingPasskeySessions();
+        }
+
+        private void OnKeePassFileClosed(object sender, FileClosedEventArgs e)
+        {
+            ClearPendingPasskeySessions();
+        }
+
+        private void ClearPendingPasskeySessions()
+        {
+            if (m_requestHandler != null) m_requestHandler.ClearPendingPasskeySessions();
+        }
+
         private void SetEnabled(bool enabled)
         {
             if (m_host == null) return;
@@ -275,7 +307,7 @@ namespace KeePassBrowserBridge
             Form dialog = new Form();
             dialog.Text = "Pair Browser";
             dialog.Width = 430;
-            dialog.Height = 250;
+            dialog.Height = 330;
             dialog.MinimizeBox = false;
             dialog.MaximizeBox = false;
             dialog.StartPosition = FormStartPosition.CenterParent;
@@ -284,11 +316,13 @@ namespace KeePassBrowserBridge
             TableLayoutPanel layout = new TableLayoutPanel();
             layout.Dock = DockStyle.Fill;
             layout.ColumnCount = 1;
-            layout.RowCount = 5;
+            layout.RowCount = 7;
             layout.Padding = new Padding(14);
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
 
@@ -306,9 +340,19 @@ namespace KeePassBrowserBridge
             Label timerLabel = new Label();
             timerLabel.Dock = DockStyle.Fill;
 
+            Label client = new Label();
+            client.Dock = DockStyle.Fill;
+            client.Text = "Browser: " + SafeDisplay(session.ClientName);
+
+            Label origin = new Label();
+            origin.Dock = DockStyle.Fill;
+            origin.Text = "Extension origin: " + SafeDisplay(string.IsNullOrWhiteSpace(session.ExtensionOrigin)
+                ? "not available for this manual pairing request"
+                : session.ExtensionOrigin);
+
             Label hint = new Label();
             hint.Dock = DockStyle.Fill;
-            hint.Text = "Closing this dialog cancels the current pairing session.";
+            hint.Text = "Only pair if you just started this request from your browser extension. Closing this dialog cancels the current pairing session.";
 
             FlowLayoutPanel actions = new FlowLayoutPanel();
             actions.Dock = DockStyle.Fill;
@@ -382,8 +426,10 @@ namespace KeePassBrowserBridge
             layout.Controls.Add(caption, 0, 0);
             layout.Controls.Add(code, 0, 1);
             layout.Controls.Add(timerLabel, 0, 2);
-            layout.Controls.Add(hint, 0, 3);
-            layout.Controls.Add(actions, 0, 4);
+            layout.Controls.Add(client, 0, 3);
+            layout.Controls.Add(origin, 0, 4);
+            layout.Controls.Add(hint, 0, 5);
+            layout.Controls.Add(actions, 0, 6);
             dialog.Controls.Add(layout);
 
             dialog.Shown += delegate
@@ -397,11 +443,170 @@ namespace KeePassBrowserBridge
             return dialog;
         }
 
+        private static string SafeDisplay(string value)
+        {
+            string text = string.IsNullOrWhiteSpace(value) ? "unknown" : value.Trim();
+            return text.Length <= 160 ? text : text.Substring(0, 157) + "...";
+        }
+
+        private PasskeyApprovalResult ShowPasskeyApprovalPrompt(PasskeyApprovalRequest request)
+        {
+            if (request == null)
+                return PasskeyApprovalResult.Deny("invalid_payload", "Passkey approval request is missing.");
+            if (m_host == null || m_host.MainWindow == null)
+                return PasskeyApprovalResult.Deny("approval_unavailable", "KeePass approval UI is not available.");
+
+            if (m_host.MainWindow.InvokeRequired)
+            {
+                return (PasskeyApprovalResult)m_host.MainWindow.Invoke(
+                    new Func<PasskeyApprovalRequest, PasskeyApprovalResult>(ShowPasskeyApprovalPrompt),
+                    request);
+            }
+
+            using (Form dialog = CreatePasskeyApprovalDialog(request))
+            {
+                DialogResult result = dialog.ShowDialog(m_host.MainWindow);
+                return result == DialogResult.OK
+                    ? PasskeyApprovalResult.Approve()
+                    : PasskeyApprovalResult.Deny("user_denied", "Passkey request was denied in KeePass.");
+            }
+        }
+
+        private Form CreatePasskeyApprovalDialog(PasskeyApprovalRequest request)
+        {
+            Form dialog = new Form();
+            dialog.Text = "Approve Passkey Request";
+            dialog.Width = 520;
+            dialog.Height = 360;
+            dialog.MinimizeBox = false;
+            dialog.MaximizeBox = false;
+            dialog.StartPosition = FormStartPosition.CenterParent;
+            dialog.ShowInTaskbar = false;
+
+            TableLayoutPanel layout = new TableLayoutPanel();
+            layout.Dock = DockStyle.Fill;
+            layout.ColumnCount = 1;
+            layout.RowCount = 8;
+            layout.Padding = new Padding(14);
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+
+            Label title = new Label();
+            title.Dock = DockStyle.Fill;
+            title.Font = new System.Drawing.Font(title.Font, System.Drawing.FontStyle.Bold);
+            title.Text = request.Operation == PasskeyPendingOperation.Create
+                ? "Create a passkey in this KeePass database?"
+                : "Use a passkey from this KeePass database?";
+
+            Label rp = new Label();
+            rp.Dock = DockStyle.Fill;
+            rp.Text = "RP ID: " + SafeDisplay(request.RpId);
+
+            Label origin = new Label();
+            origin.Dock = DockStyle.Fill;
+            origin.Text = "Site origin: " + SafeDisplay(request.Origin);
+
+            Label browser = new Label();
+            browser.Dock = DockStyle.Fill;
+            browser.Text = "Browser origin: " + SafeDisplay(request.ExtensionOrigin);
+
+            Label account = new Label();
+            account.Dock = DockStyle.Fill;
+            account.Text = PasskeyApprovalAccountLine(request);
+
+            TextBox details = new TextBox();
+            details.Dock = DockStyle.Fill;
+            details.Multiline = true;
+            details.ReadOnly = true;
+            details.ScrollBars = ScrollBars.Vertical;
+            details.Text = PasskeyApprovalDetails(request);
+
+            Label hint = new Label();
+            hint.Dock = DockStyle.Fill;
+            hint.Text = "Approve only if this request matches the site action you just started.";
+
+            FlowLayoutPanel actions = new FlowLayoutPanel();
+            actions.Dock = DockStyle.Fill;
+            actions.FlowDirection = FlowDirection.RightToLeft;
+            actions.WrapContents = false;
+
+            Button approve = new Button();
+            approve.Text = "Approve";
+            approve.Width = 96;
+            approve.DialogResult = DialogResult.OK;
+
+            Button deny = new Button();
+            deny.Text = "Deny";
+            deny.Width = 96;
+            deny.DialogResult = DialogResult.Cancel;
+
+            actions.Controls.Add(approve);
+            actions.Controls.Add(deny);
+
+            layout.Controls.Add(title, 0, 0);
+            layout.Controls.Add(rp, 0, 1);
+            layout.Controls.Add(origin, 0, 2);
+            layout.Controls.Add(browser, 0, 3);
+            layout.Controls.Add(account, 0, 4);
+            layout.Controls.Add(details, 0, 5);
+            layout.Controls.Add(hint, 0, 6);
+            layout.Controls.Add(actions, 0, 7);
+            dialog.Controls.Add(layout);
+            dialog.AcceptButton = approve;
+            dialog.CancelButton = deny;
+
+            return dialog;
+        }
+
+        private static string PasskeyApprovalAccountLine(PasskeyApprovalRequest request)
+        {
+            if (request.Operation == PasskeyPendingOperation.Create)
+            {
+                string label = string.IsNullOrWhiteSpace(request.UserDisplayName)
+                    ? request.UserName
+                    : request.UserDisplayName;
+                return "Account: " + SafeDisplay(label);
+            }
+
+            int count = request.Credentials == null ? 0 : request.Credentials.Length;
+            return "Matching passkeys: " + count.ToString();
+        }
+
+        private static string PasskeyApprovalDetails(PasskeyApprovalRequest request)
+        {
+            if (request.Operation == PasskeyPendingOperation.Create)
+            {
+                return "WebAuthn request ID: " + SafeDisplay(request.WebAuthnRequestId) + Environment.NewLine +
+                    "User name: " + SafeDisplay(request.UserName) + Environment.NewLine +
+                    "Display name: " + SafeDisplay(request.UserDisplayName);
+            }
+
+            StringWriter writer = new StringWriter();
+            writer.WriteLine("WebAuthn request ID: " + SafeDisplay(request.WebAuthnRequestId));
+            PasskeyCredentialSummary[] credentials = request.Credentials ?? new PasskeyCredentialSummary[0];
+            for (int i = 0; i < credentials.Length; ++i)
+            {
+                PasskeyCredentialSummary credential = credentials[i];
+                writer.WriteLine();
+                writer.WriteLine("Passkey " + (i + 1).ToString() + ":");
+                writer.WriteLine("Title: " + SafeDisplay(credential == null ? null : credential.Title));
+                writer.WriteLine("User: " + SafeDisplay(credential == null ? null : credential.UserName));
+                writer.WriteLine("Group: " + SafeDisplay(credential == null ? null : credential.Group));
+            }
+            return writer.ToString();
+        }
+
         private Form CreateTrustedBrowsersDialog()
         {
             Form dialog = new Form();
             dialog.Text = "Trusted Browsers";
-            dialog.Width = 620;
+            dialog.Width = 780;
             dialog.Height = 360;
             dialog.MinimizeBox = false;
             dialog.MaximizeBox = false;
@@ -431,6 +636,7 @@ namespace KeePassBrowserBridge
             list.Columns.Add("Origin", 260);
             list.Columns.Add("Permissions", 150);
             list.Columns.Add("Created", 150);
+            list.Columns.Add("Last Used", 150);
             list.Columns.Add("Client ID", 180);
 
             Button revoke = new Button();
@@ -555,6 +761,7 @@ namespace KeePassBrowserBridge
                 item.SubItems.Add(FormatClientOrigin(client.ExtensionOrigin));
                 item.SubItems.Add(FormatClientPermissions(client.Permissions));
                 item.SubItems.Add(FormatUtcMilliseconds(client.CreatedUtcMs));
+                item.SubItems.Add(FormatUtcMilliseconds(client.LastUsedUtcMs));
                 item.SubItems.Add(ShortenClientId(client.ClientId));
                 item.Tag = client;
                 list.Items.Add(item);
@@ -595,6 +802,8 @@ namespace KeePassBrowserBridge
             if (permission == TrustedClientPermissions.Read) return "Read";
             if (permission == TrustedClientPermissions.Write) return "Write";
             if (permission == TrustedClientPermissions.ManageClients) return "Manage browsers";
+            if (permission == TrustedClientPermissions.PasskeyRead) return "Passkey read (disabled)";
+            if (permission == TrustedClientPermissions.PasskeyWrite) return "Passkey write (disabled)";
             return permission ?? "";
         }
 
@@ -679,11 +888,26 @@ namespace KeePassBrowserBridge
                     ServicePointManager.SecurityProtocol = ServicePointManager.SecurityProtocol | (SecurityProtocolType)3072;
                     string targetPath = GetPluginPackagePath();
                     string tempPath = targetPath + ".download";
+                    string duplicateDllBackupPath = PrepareForPlgxAutoUpdate();
 
                     using (WebClient client = new WebClient())
                     {
                         client.Headers[HttpRequestHeader.UserAgent] = "KeePassBrowserBridge";
+                        if (string.IsNullOrEmpty(info.ChecksumAssetUrl))
+                            throw new InvalidOperationException("The selected release does not publish SHA256SUMS.txt.");
+
+                        string checksumText = client.DownloadString(info.ChecksumAssetUrl);
+                        string expectedSha256 = UpdateChecker.GetExpectedSha256(checksumText, "KeePassBrowserBridge.plgx");
+                        if (string.IsNullOrEmpty(expectedSha256))
+                            throw new InvalidOperationException("The release checksum file does not contain KeePassBrowserBridge.plgx.");
+
                         client.DownloadFile(info.AssetUrl, tempPath);
+                        if (!UpdateChecker.VerifyFileSha256(tempPath, expectedSha256))
+                        {
+                            try { File.Delete(tempPath); }
+                            catch { }
+                            throw new InvalidOperationException("Downloaded KeePassBrowserBridge.plgx does not match SHA256SUMS.txt.");
+                        }
                     }
 
                     try
@@ -693,8 +917,16 @@ namespace KeePassBrowserBridge
 
                         ShowOnUi(delegate
                         {
+                            string message = "KeePass Browser Bridge was updated. Restart KeePass to use the new version.";
+                            if (!string.IsNullOrEmpty(duplicateDllBackupPath))
+                            {
+                                message += Environment.NewLine + Environment.NewLine +
+                                    "A duplicate DLL plugin artifact was backed up and removed:" + Environment.NewLine +
+                                    duplicateDllBackupPath;
+                            }
+
                             MessageBox.Show(GetOwner(),
-                                "KeePass Browser Bridge was updated. Restart KeePass to use the new version.",
+                                message,
                                 BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
                         });
                     }
@@ -728,10 +960,46 @@ namespace KeePassBrowserBridge
 
         private string GetPluginPackagePath()
         {
+            return Path.Combine(GetPluginsDirectory(), "KeePassBrowserBridge.plgx");
+        }
+
+        private string GetPluginDllPath()
+        {
+            return Path.Combine(GetPluginsDirectory(), "KeePassBrowserBridge.dll");
+        }
+
+        private string GetPluginsDirectory()
+        {
             string keepassDir = Path.GetDirectoryName(Application.ExecutablePath);
             string pluginsDir = Path.Combine(keepassDir, "Plugins");
             Directory.CreateDirectory(pluginsDir);
-            return Path.Combine(pluginsDir, "KeePassBrowserBridge.plgx");
+            return pluginsDir;
+        }
+
+        private string PrepareForPlgxAutoUpdate()
+        {
+            string dllPath = GetPluginDllPath();
+            if (!File.Exists(dllPath)) return string.Empty;
+
+            string backupDir = Path.Combine(Path.GetTempPath(), "KeePassBrowserBridge-auto-update-backups");
+            Directory.CreateDirectory(backupDir);
+            string backupPath = Path.Combine(backupDir,
+                "KeePassBrowserBridge-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".dll");
+
+            try
+            {
+                File.Copy(dllPath, backupPath, true);
+                File.Delete(dllPath);
+                return backupPath;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "KeePassBrowserBridge.dll is still present in the KeePass Plugins directory. " +
+                    "Auto-update installs KeePassBrowserBridge.plgx and cannot continue while the DLL artifact remains. " +
+                    "Close KeePass and remove the DLL, or use scripts\\install-plugin.ps1 so KeePass loads exactly one plugin artifact.",
+                    ex);
+            }
         }
 
         private void ShowOnUi(MethodInvoker action)
@@ -757,6 +1025,8 @@ namespace KeePassBrowserBridge
 
         public override void Terminate()
         {
+            UnsubscribeKeePassLifecycleEvents();
+            ClearPendingPasskeySessions();
             StopServer();
             m_host = null;
             m_enableItem = null;

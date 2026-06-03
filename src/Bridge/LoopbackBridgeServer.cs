@@ -7,6 +7,8 @@ namespace KeePassBrowserBridge.Bridge
 {
     internal sealed class LoopbackBridgeServer : IDisposable
     {
+        public const int MaxRequestBodyBytes = 256 * 1024;
+
         private readonly BridgeRequestHandler m_handler;
         private HttpListener m_listener;
         private bool m_running;
@@ -138,18 +140,41 @@ namespace KeePassBrowserBridge.Bridge
                 return;
             }
 
+            if (!HasJsonContentType(context.Request))
+            {
+                context.Response.StatusCode = 415;
+                context.Response.Close();
+                return;
+            }
+
+            if (context.Request.ContentLength64 > MaxRequestBodyBytes)
+            {
+                context.Response.StatusCode = 413;
+                context.Response.Close();
+                return;
+            }
+
             BridgeResponse response;
             try
             {
-                string body;
-                using (StreamReader reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding ?? Encoding.UTF8))
-                {
-                    body = reader.ReadToEnd();
-                }
+                string body = ReadRequestBody(context.Request);
 
                 BridgeRequest request = BridgeJsonSerializer.Deserialize<BridgeRequest>(body);
+                if (!RequestOriginMatchesHeader(context.Request, request))
+                {
+                    context.Response.StatusCode = 403;
+                    context.Response.Close();
+                    return;
+                }
+
                 response = m_handler.Handle(request);
                 context.Response.StatusCode = 200;
+            }
+            catch (RequestBodyTooLargeException)
+            {
+                context.Response.StatusCode = 413;
+                context.Response.Close();
+                return;
             }
             catch (Exception ex)
             {
@@ -171,6 +196,42 @@ namespace KeePassBrowserBridge.Bridge
             context.Response.Close();
         }
 
+        private static bool HasJsonContentType(HttpListenerRequest request)
+        {
+            string contentType = request.ContentType;
+            if (string.IsNullOrWhiteSpace(contentType)) return false;
+
+            int parametersStart = contentType.IndexOf(';');
+            string mediaType = parametersStart >= 0 ? contentType.Substring(0, parametersStart) : contentType;
+            return string.Equals(mediaType.Trim(), "application/json", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ReadRequestBody(HttpListenerRequest request)
+        {
+            using (MemoryStream body = new MemoryStream())
+            {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = request.InputStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    if (body.Length + read > MaxRequestBodyBytes) throw new RequestBodyTooLargeException();
+                    body.Write(buffer, 0, read);
+                }
+
+                Encoding encoding = request.ContentEncoding ?? Encoding.UTF8;
+                return encoding.GetString(body.ToArray());
+            }
+        }
+
+        private static bool RequestOriginMatchesHeader(HttpListenerRequest httpRequest, BridgeRequest bridgeRequest)
+        {
+            string headerOrigin = httpRequest.Headers["Origin"];
+            if (string.IsNullOrWhiteSpace(headerOrigin)) return true;
+            if (bridgeRequest == null || string.IsNullOrWhiteSpace(bridgeRequest.Origin)) return false;
+
+            return string.Equals(headerOrigin.Trim(), bridgeRequest.Origin.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
         private static bool AddCorsHeadersForAllowedOrigin(HttpListenerRequest request, HttpListenerResponse response)
         {
             string origin = request.Headers["Origin"];
@@ -184,6 +245,10 @@ namespace KeePassBrowserBridge.Bridge
             response.Headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
             response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
             return true;
+        }
+
+        private sealed class RequestBodyTooLargeException : Exception
+        {
         }
     }
 

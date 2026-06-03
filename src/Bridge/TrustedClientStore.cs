@@ -55,6 +55,17 @@ namespace KeePassBrowserBridge.Bridge
             return true;
         }
 
+        public bool TouchLastUsed(string clientId, long utcMilliseconds)
+        {
+            TrustedClient client = Get(clientId);
+            if (client == null || utcMilliseconds <= 0) return false;
+            if (utcMilliseconds <= client.LastUsedUtcMs) return false;
+
+            client.LastUsedUtcMs = utcMilliseconds;
+            OnChanged();
+            return true;
+        }
+
         public string ExportJson()
         {
             TrustedClientStoreData data = new TrustedClientStoreData
@@ -108,6 +119,9 @@ namespace KeePassBrowserBridge.Bridge
         public long CreatedUtcMs { get; set; }
 
         [DataMember]
+        public long LastUsedUtcMs { get; set; }
+
+        [DataMember]
         public string[] Permissions { get; set; }
     }
 
@@ -116,6 +130,8 @@ namespace KeePassBrowserBridge.Bridge
         public const string Read = "read";
         public const string Write = "write";
         public const string ManageClients = "manageClients";
+        public const string PasskeyRead = "passkeyRead";
+        public const string PasskeyWrite = "passkeyWrite";
 
         public static string[] Default()
         {
@@ -157,7 +173,11 @@ namespace KeePassBrowserBridge.Bridge
 
         private static bool IsKnown(string permission)
         {
-            return permission == Read || permission == Write || permission == ManageClients;
+            return permission == Read ||
+                permission == Write ||
+                permission == ManageClients ||
+                permission == PasskeyRead ||
+                permission == PasskeyWrite;
         }
 
         private static string[] NormalizeKnown(string[] permissions)

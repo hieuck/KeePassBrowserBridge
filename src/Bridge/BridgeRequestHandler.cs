@@ -11,7 +11,12 @@ namespace KeePassBrowserBridge.Bridge
         private readonly TrustedClientStore m_trustedClients;
         private readonly CredentialQueryService m_credentialQueryService;
         private readonly CredentialMutationService m_credentialMutationService;
+        private readonly PasskeyService m_passkeyService;
+        private readonly PasskeyCredentialLookupService m_passkeyCredentialLookupService;
+        private readonly PasskeyPendingSessionStore m_passkeyPendingSessionStore;
         private readonly Func<PwDatabase> m_databaseProvider;
+        private readonly Func<bool> m_passkeysEnabled;
+        private readonly Func<PasskeyApprovalRequest, PasskeyApprovalResult> m_passkeyApproval;
         private readonly Action<PairingSession> m_pairingSessionCreated;
         private readonly Action<PwDatabase> m_databaseChanged;
         private readonly Dictionary<string, long> m_seenAuthenticatedRequests = new Dictionary<string, long>(StringComparer.Ordinal);
@@ -24,18 +29,47 @@ namespace KeePassBrowserBridge.Bridge
             CredentialMutationService credentialMutationService,
             Func<PwDatabase> databaseProvider,
             Action<PairingSession> pairingSessionCreated,
-            Action<PwDatabase> databaseChanged)
+            Action<PwDatabase> databaseChanged,
+            Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null)
+            : this(pairingService, trustedClients, credentialQueryService, credentialMutationService,
+                new PasskeyService(), new PasskeyCredentialLookupService(), new PasskeyPendingSessionStore(),
+                databaseProvider, delegate { return BridgeSettings.PasskeysEnabled; },
+                pairingSessionCreated, databaseChanged, passkeyApproval)
+        {
+        }
+
+        internal BridgeRequestHandler(
+            PairingService pairingService,
+            TrustedClientStore trustedClients,
+            CredentialQueryService credentialQueryService,
+            CredentialMutationService credentialMutationService,
+            PasskeyService passkeyService,
+            PasskeyCredentialLookupService passkeyCredentialLookupService,
+            PasskeyPendingSessionStore passkeyPendingSessionStore,
+            Func<PwDatabase> databaseProvider,
+            Func<bool> passkeysEnabled,
+            Action<PairingSession> pairingSessionCreated,
+            Action<PwDatabase> databaseChanged,
+            Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null)
         {
             if (pairingService == null) throw new ArgumentNullException("pairingService");
             if (trustedClients == null) throw new ArgumentNullException("trustedClients");
             if (credentialQueryService == null) throw new ArgumentNullException("credentialQueryService");
             if (credentialMutationService == null) throw new ArgumentNullException("credentialMutationService");
+            if (passkeyService == null) throw new ArgumentNullException("passkeyService");
+            if (passkeyCredentialLookupService == null) throw new ArgumentNullException("passkeyCredentialLookupService");
+            if (passkeyPendingSessionStore == null) throw new ArgumentNullException("passkeyPendingSessionStore");
 
             m_pairingService = pairingService;
             m_trustedClients = trustedClients;
             m_credentialQueryService = credentialQueryService;
             m_credentialMutationService = credentialMutationService;
+            m_passkeyService = passkeyService;
+            m_passkeyCredentialLookupService = passkeyCredentialLookupService;
+            m_passkeyPendingSessionStore = passkeyPendingSessionStore;
             m_databaseProvider = databaseProvider ?? delegate { return null; };
+            m_passkeysEnabled = passkeysEnabled ?? delegate { return false; };
+            m_passkeyApproval = passkeyApproval ?? DefaultPasskeyApproval;
             m_pairingSessionCreated = pairingSessionCreated ?? delegate(PairingSession session) { };
             m_databaseChanged = databaseChanged ?? delegate(PwDatabase database) { };
         }
@@ -47,14 +81,17 @@ namespace KeePassBrowserBridge.Bridge
             if (!validation.IsValid)
                 return Error(request, validation.ErrorCode, validation.Error);
 
-            if (RequiresAuthentication(request.Method) && !VerifyAuthentication(request))
+            if (BridgeMethodPolicy.RequiresAuthentication(request.Method) && !VerifyAuthentication(request))
                 return Error(request, "invalid_authentication", "Request authentication is invalid.");
 
-            if (RequiresAuthentication(request.Method) && !TrackAuthenticatedRequest(request, nowUtcMs))
+            if (BridgeMethodPolicy.RequiresAuthentication(request.Method) && !TrackAuthenticatedRequest(request, nowUtcMs))
                 return Error(request, "replayed_request", "Request ID has already been used.");
 
-            if (RequiresAuthentication(request.Method) && !HasPermission(request))
+            if (BridgeMethodPolicy.RequiresAuthentication(request.Method) && !HasPermission(request))
                 return Error(request, "permission_denied", "Trusted browser is not allowed to perform this action.");
+
+            if (BridgeMethodPolicy.RequiresAuthentication(request.Method))
+                m_trustedClients.TouchLastUsed(request.ClientId, nowUtcMs);
 
             try
             {
@@ -70,6 +107,7 @@ namespace KeePassBrowserBridge.Bridge
                 if (request.Method == BridgeMethods.LoginsCreate) return LoginsCreate(request);
                 if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
                 if (request.Method == BridgeMethods.LoginsFillAck) return LoginsFillAck(request);
+                if (BridgeMethodPolicy.IsPasskeyMethod(request.Method)) return Passkeys(request);
             }
             catch (SerializationException)
             {
@@ -79,6 +117,11 @@ namespace KeePassBrowserBridge.Bridge
             return Error(request, "unknown_method", "Unknown method.");
         }
 
+        internal int ClearPendingPasskeySessions()
+        {
+            return m_passkeyPendingSessionStore.ClearAll();
+        }
+
         private BridgeResponse Hello(BridgeRequest request)
         {
             return Success(request, BridgeJsonSerializer.Serialize(new HelloResponsePayload
@@ -86,14 +129,24 @@ namespace KeePassBrowserBridge.Bridge
                 ProductName = BridgeSettings.ProductName,
                 ProtocolVersion = ProtocolValidator.ProtocolVersion,
                 PluginVersion = BridgeSettings.PluginVersion,
-                PluginUpdateUrl = BridgeSettings.UpdateInfoUrl
+                PluginUpdateUrl = BridgeSettings.UpdateInfoUrl,
+                SupportedMethods = BridgeMethodPolicy.AllMethods(),
+                Features = new BridgeFeatureInfo[]
+                {
+                    new BridgeFeatureInfo { Name = "passwords", Enabled = true },
+                    new BridgeFeatureInfo { Name = "totp", Enabled = true },
+                    new BridgeFeatureInfo { Name = "customFields", Enabled = true },
+                    new BridgeFeatureInfo { Name = "saveUpdate", Enabled = true },
+                    new BridgeFeatureInfo { Name = "httpAuth", Enabled = true },
+                    new BridgeFeatureInfo { Name = "passkeys", Enabled = m_passkeysEnabled() }
+                }
             }));
         }
 
         private BridgeResponse PairBegin(BridgeRequest request)
         {
             PairBeginPayload payload = BridgeJsonSerializer.Deserialize<PairBeginPayload>(request.Payload);
-            PairingSession session = m_pairingService.BeginPairing(payload.ClientName);
+            PairingSession session = m_pairingService.BeginPairing(payload.ClientName, request.Origin);
             m_pairingSessionCreated(session);
 
             return Success(request, BridgeJsonSerializer.Serialize(new PairBeginResponsePayload
@@ -154,6 +207,7 @@ namespace KeePassBrowserBridge.Bridge
                     ClientName = client.ClientName,
                     ExtensionOrigin = client.ExtensionOrigin,
                     CreatedUtcMs = client.CreatedUtcMs,
+                    LastUsedUtcMs = client.LastUsedUtcMs,
                     Permissions = TrustedClientPermissions.Normalize(client.Permissions),
                     Trusted = true,
                     Current = string.Equals(client.ClientId, request.ClientId, StringComparison.Ordinal)
@@ -171,6 +225,7 @@ namespace KeePassBrowserBridge.Bridge
             ClientRevokePayload payload = BridgeJsonSerializer.Deserialize<ClientRevokePayload>(request.Payload);
             string clientId = payload == null ? null : payload.ClientId;
             bool revoked = m_trustedClients.Revoke(clientId);
+            if (revoked) m_passkeyPendingSessionStore.ClearForClient(clientId);
             return Success(request, BridgeJsonSerializer.Serialize(new ClientRevokeResponsePayload
             {
                 ClientId = clientId,
@@ -231,6 +286,239 @@ namespace KeePassBrowserBridge.Bridge
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 
+        private BridgeResponse Passkeys(BridgeRequest request)
+        {
+            if (!m_passkeysEnabled())
+                return Error(request, "feature_disabled", "Passkey/WebAuthn bridge methods are not enabled in this build.");
+
+            if (request.Method == BridgeMethods.PasskeysCreateBegin) return PasskeysCreateBegin(request);
+            if (request.Method == BridgeMethods.PasskeysCreateComplete) return PasskeysCreateComplete(request);
+            if (request.Method == BridgeMethods.PasskeysGetBegin) return PasskeysGetBegin(request);
+            if (request.Method == BridgeMethods.PasskeysGetComplete) return PasskeysGetComplete(request);
+            if (request.Method == BridgeMethods.PasskeysList) return PasskeysList(request);
+            if (request.Method == BridgeMethods.PasskeysCancel) return PasskeysCancel(request);
+            if (request.Method == BridgeMethods.PasskeysRevoke) return PasskeysRevoke(request);
+
+            return Error(request, "not_implemented", "Passkey/WebAuthn bridge methods are not implemented.");
+        }
+
+        private BridgeResponse PasskeysCreateBegin(BridgeRequest request)
+        {
+            PasskeyCreateBeginPayload payload = BridgeJsonSerializer.Deserialize<PasskeyCreateBeginPayload>(request.Payload);
+            PasskeyPendingSessionResult result = m_passkeyPendingSessionStore.BeginCreate(request.ClientId, request.Origin,
+                request.RequestId, payload, BridgeClock.UtcNowMilliseconds());
+
+            if (!result.Success) return Error(request, result.ErrorCode, result.Error);
+
+            PasskeyApprovalResult approval = RequestPasskeyApproval(result.Session, null);
+            if (!approval.Approved)
+            {
+                m_passkeyPendingSessionStore.Cancel(request.ClientId, result.Session.WebAuthnRequestId);
+                return Error(request, approval.ErrorCode, approval.Error);
+            }
+
+            return Success(request, BridgeJsonSerializer.Serialize(new PasskeyCreateBeginResponsePayload
+            {
+                WebAuthnRequestId = result.Session.WebAuthnRequestId,
+                RpId = result.Session.RpId,
+                Origin = result.Session.Origin,
+                ExpiresUtcMs = result.Session.ExpiresUtcMs,
+                PendingApproval = true
+            }));
+        }
+
+        private BridgeResponse PasskeysGetBegin(BridgeRequest request)
+        {
+            PasskeyGetBeginPayload payload = BridgeJsonSerializer.Deserialize<PasskeyGetBeginPayload>(request.Payload);
+            long nowUtcMs = BridgeClock.UtcNowMilliseconds();
+            PasskeyPendingSessionResult pending = m_passkeyPendingSessionStore.BeginGet(request.ClientId, request.Origin,
+                request.RequestId, payload, nowUtcMs);
+
+            if (!pending.Success) return Error(request, pending.ErrorCode, pending.Error);
+
+            PasskeyCredentialLookupResult lookup = m_passkeyCredentialLookupService.List(m_databaseProvider(), new PasskeysListPayload
+            {
+                RpId = payload.RpId,
+                Origin = payload.Origin,
+                AllowCredentialIds = payload.AllowCredentialIds
+            });
+            if (!lookup.Success)
+            {
+                m_passkeyPendingSessionStore.Cancel(request.ClientId, payload.WebAuthnRequestId);
+                return Error(request, lookup.ErrorCode, lookup.Error);
+            }
+
+            PasskeyApprovalResult approval = RequestPasskeyApproval(pending.Session, lookup.Credentials);
+            if (!approval.Approved)
+            {
+                m_passkeyPendingSessionStore.Cancel(request.ClientId, pending.Session.WebAuthnRequestId);
+                return Error(request, approval.ErrorCode, approval.Error);
+            }
+
+            return Success(request, BridgeJsonSerializer.Serialize(new PasskeyGetBeginResponsePayload
+            {
+                WebAuthnRequestId = pending.Session.WebAuthnRequestId,
+                RpId = pending.Session.RpId,
+                Origin = pending.Session.Origin,
+                ExpiresUtcMs = pending.Session.ExpiresUtcMs,
+                PendingApproval = true,
+                Credentials = lookup.Credentials
+            }));
+        }
+
+        private BridgeResponse PasskeysCreateComplete(BridgeRequest request)
+        {
+            PwDatabase database = m_databaseProvider();
+            if (database == null || database.RootGroup == null)
+                return Error(request, "database_not_open", "KeePass database is not open.");
+
+            PasskeyCreateCompletePayload payload = BridgeJsonSerializer.Deserialize<PasskeyCreateCompletePayload>(request.Payload);
+            PasskeyPendingSessionResult pending = m_passkeyPendingSessionStore.CompleteCreate(request.ClientId,
+                request.Origin, payload, BridgeClock.UtcNowMilliseconds());
+            if (!pending.Success) return Error(request, pending.ErrorCode, pending.Error);
+
+            PasskeyRegistrationResult registration = m_passkeyService.CreateCredential(new PasskeyRegistrationRequest
+            {
+                RpId = pending.Session.RpId,
+                Origin = pending.Session.Origin,
+                Challenge = pending.Session.Challenge,
+                UserHandle = pending.Session.UserHandle,
+                UserName = pending.Session.UserName,
+                UserDisplayName = pending.Session.UserDisplayName,
+                UserVerification = pending.Session.UserVerification,
+                Transports = pending.Session.Transports
+            });
+            if (!registration.Success) return Error(request, registration.ErrorCode, registration.Error);
+
+            PwEntry entry = new PwEntry(true, true);
+            PasskeyEntryStore.Write(entry, registration.Credential);
+            entry.Touch(true, false);
+            database.RootGroup.AddEntry(entry, true);
+            database.Modified = true;
+            m_databaseChanged(database);
+
+            return Success(request, BridgeJsonSerializer.Serialize(new PasskeyCreateCompleteResponsePayload
+            {
+                WebAuthnRequestId = pending.Session.WebAuthnRequestId,
+                EntryId = entry.Uuid.ToHexString(),
+                CredentialId = registration.Credential.CredentialId,
+                RpId = registration.Credential.RpId,
+                ClientDataJson = registration.ClientDataJson,
+                AttestationObject = registration.AttestationObject,
+                PublicKeyCose = registration.Credential.PublicKeyCose
+            }));
+        }
+
+        private PasskeyApprovalResult RequestPasskeyApproval(PasskeyPendingSession session, PasskeyCredentialSummary[] credentials)
+        {
+            PasskeyApprovalResult result = m_passkeyApproval(new PasskeyApprovalRequest
+            {
+                Operation = session.Operation,
+                ClientId = session.ClientId,
+                ExtensionOrigin = session.ExtensionOrigin,
+                WebAuthnRequestId = session.WebAuthnRequestId,
+                RpId = session.RpId,
+                Origin = session.Origin,
+                UserName = session.UserName,
+                UserDisplayName = session.UserDisplayName,
+                Credentials = credentials ?? new PasskeyCredentialSummary[0]
+            });
+
+            if (result == null)
+                return PasskeyApprovalResult.Deny("approval_denied", "Passkey request was denied.");
+            if (!result.Approved && string.IsNullOrWhiteSpace(result.ErrorCode))
+                return PasskeyApprovalResult.Deny("approval_denied", "Passkey request was denied.");
+            return result;
+        }
+
+        private BridgeResponse PasskeysGetComplete(BridgeRequest request)
+        {
+            PwDatabase database = m_databaseProvider();
+            if (database == null || database.RootGroup == null)
+                return Error(request, "database_not_open", "KeePass database is not open.");
+
+            PasskeyGetCompletePayload payload = BridgeJsonSerializer.Deserialize<PasskeyGetCompletePayload>(request.Payload);
+            PasskeyPendingSessionResult pending = m_passkeyPendingSessionStore.CompleteGet(request.ClientId,
+                request.Origin, payload, BridgeClock.UtcNowMilliseconds());
+            if (!pending.Success) return Error(request, pending.ErrorCode, pending.Error);
+
+            PasskeyCredentialSelectionResult selection = m_passkeyCredentialLookupService.Find(database,
+                pending.Session.RpId, pending.Session.Origin, payload.CredentialId);
+            if (!selection.Success) return Error(request, selection.ErrorCode, selection.Error);
+
+            PasskeyAssertionResult assertion = m_passkeyService.CreateAssertion(selection.Credential, new PasskeyAssertionRequest
+            {
+                RpId = pending.Session.RpId,
+                Origin = pending.Session.Origin,
+                Challenge = pending.Session.Challenge
+            });
+            if (!assertion.Success) return Error(request, assertion.ErrorCode, assertion.Error);
+
+            PasskeyEntryStore.Write(selection.Entry, selection.Credential);
+            selection.Entry.Touch(true, false);
+            database.Modified = true;
+            m_databaseChanged(database);
+
+            return Success(request, BridgeJsonSerializer.Serialize(new PasskeyGetCompleteResponsePayload
+            {
+                WebAuthnRequestId = pending.Session.WebAuthnRequestId,
+                EntryId = selection.Entry.Uuid.ToHexString(),
+                CredentialId = assertion.Assertion.CredentialId,
+                AuthenticatorData = assertion.Assertion.AuthenticatorData,
+                ClientDataJson = assertion.Assertion.ClientDataJson,
+                Signature = assertion.Assertion.Signature,
+                UserHandle = assertion.Assertion.UserHandle,
+                SignCount = assertion.Assertion.SignCount
+            }));
+        }
+
+        private BridgeResponse PasskeysList(BridgeRequest request)
+        {
+            PasskeysListPayload payload = BridgeJsonSerializer.Deserialize<PasskeysListPayload>(request.Payload);
+            PasskeyCredentialLookupResult result = m_passkeyCredentialLookupService.List(m_databaseProvider(), payload);
+            return Success(request, BridgeJsonSerializer.Serialize(result));
+        }
+
+        private BridgeResponse PasskeysCancel(BridgeRequest request)
+        {
+            PasskeyCancelPayload payload = BridgeJsonSerializer.Deserialize<PasskeyCancelPayload>(request.Payload);
+            string webAuthnRequestId = payload == null ? null : payload.WebAuthnRequestId;
+            bool cancelled = m_passkeyPendingSessionStore.Cancel(request.ClientId, webAuthnRequestId);
+
+            return Success(request, BridgeJsonSerializer.Serialize(new PasskeyCancelResponsePayload
+            {
+                WebAuthnRequestId = webAuthnRequestId,
+                Cancelled = cancelled
+            }));
+        }
+
+        private BridgeResponse PasskeysRevoke(BridgeRequest request)
+        {
+            PwDatabase database = m_databaseProvider();
+            if (database == null || database.RootGroup == null)
+                return Error(request, "database_not_open", "KeePass database is not open.");
+
+            PasskeyRevokePayload payload = BridgeJsonSerializer.Deserialize<PasskeyRevokePayload>(request.Payload);
+            PasskeyCredentialSelectionResult selection = m_passkeyCredentialLookupService.Find(database,
+                payload == null ? null : payload.RpId,
+                payload == null ? null : payload.Origin,
+                payload == null ? null : payload.CredentialId);
+            if (!selection.Success) return Error(request, selection.ErrorCode, selection.Error);
+
+            selection.Group.Entries.Remove(selection.Entry);
+            database.Modified = true;
+            m_passkeyPendingSessionStore.ClearForClient(request.ClientId);
+            m_databaseChanged(database);
+
+            return Success(request, BridgeJsonSerializer.Serialize(new PasskeyRevokeResponsePayload
+            {
+                EntryId = selection.Entry.Uuid.ToHexString(),
+                CredentialId = selection.Credential.CredentialId,
+                RpId = selection.Credential.RpId,
+                Revoked = true
+            }));
+        }
+
         private bool VerifyAuthentication(BridgeRequest request)
         {
             TrustedClient client = m_trustedClients.Get(request.ClientId);
@@ -272,36 +560,18 @@ namespace KeePassBrowserBridge.Bridge
             }
         }
 
-        private static bool RequiresAuthentication(string method)
-        {
-            return method != BridgeMethods.Hello &&
-                method != BridgeMethods.PairBegin &&
-                method != BridgeMethods.PairComplete &&
-                method != BridgeMethods.PairCancel;
-        }
-
         private bool HasPermission(BridgeRequest request)
         {
             TrustedClient client = m_trustedClients.Get(request.ClientId);
             if (client == null) return false;
 
-            string required = RequiredPermission(request.Method);
+            string required = BridgeMethodPolicy.RequiredPermission(request.Method);
             return string.IsNullOrEmpty(required) || TrustedClientPermissions.Has(client, required);
         }
 
-        private static string RequiredPermission(string method)
+        private static PasskeyApprovalResult DefaultPasskeyApproval(PasskeyApprovalRequest request)
         {
-            if (method == BridgeMethods.LoginsQuery || method == BridgeMethods.ClientStatus)
-                return TrustedClientPermissions.Read;
-            if (method == BridgeMethods.LoginsCreate ||
-                method == BridgeMethods.LoginsUpdate ||
-                method == BridgeMethods.LoginsFillAck)
-                return TrustedClientPermissions.Write;
-            if (method == BridgeMethods.ClientsList ||
-                method == BridgeMethods.ClientsRevoke ||
-                method == BridgeMethods.ClientsUpdatePermissions)
-                return TrustedClientPermissions.ManageClients;
-            return string.Empty;
+            return PasskeyApprovalResult.Deny("approval_unavailable", "Passkey approval UI is not available.");
         }
 
         private static BridgeResponse Success(BridgeRequest request, string payload)

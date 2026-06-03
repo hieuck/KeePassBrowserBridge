@@ -33,6 +33,11 @@ namespace KeePassBrowserBridge.Bridge
 
         public PairingSession BeginPairing(string clientName)
         {
+            return BeginPairing(clientName, null);
+        }
+
+        public PairingSession BeginPairing(string clientName, string extensionOrigin)
+        {
             string normalizedClientName = NormalizeClientName(clientName);
             CancelExistingSessionsForClient(normalizedClientName);
 
@@ -41,6 +46,7 @@ namespace KeePassBrowserBridge.Bridge
                 PairingSessionId = Guid.NewGuid().ToString("N"),
                 PairingCode = m_secretGenerator.CreatePairingCode(),
                 ClientName = normalizedClientName,
+                ExtensionOrigin = NormalizeExtensionOrigin(extensionOrigin),
                 CreatedUtcMs = m_nowProvider()
             };
 
@@ -79,12 +85,19 @@ namespace KeePassBrowserBridge.Bridge
                 return PairingResult.Fail("invalid_pairing_code", "Pairing code is invalid.");
             }
 
+            string normalizedExtensionOrigin = NormalizeExtensionOrigin(extensionOrigin);
+            if (!string.IsNullOrWhiteSpace(session.ExtensionOrigin) &&
+                !string.Equals(session.ExtensionOrigin, normalizedExtensionOrigin, StringComparison.OrdinalIgnoreCase))
+            {
+                return PairingResult.Fail("origin_mismatch", "Pairing completion origin does not match the browser that started pairing.");
+            }
+
             TrustedClient client = new TrustedClient
             {
                 ClientId = Guid.NewGuid().ToString("N"),
                 ClientName = NormalizeClientName(clientName),
                 SharedSecret = m_secretGenerator.CreateSecret(),
-                ExtensionOrigin = NormalizeExtensionOrigin(extensionOrigin),
+                ExtensionOrigin = normalizedExtensionOrigin,
                 Permissions = TrustedClientPermissions.Default(),
                 CreatedUtcMs = m_nowProvider()
             };
@@ -136,6 +149,7 @@ namespace KeePassBrowserBridge.Bridge
         public string PairingSessionId { get; set; }
         public string PairingCode { get; set; }
         public string ClientName { get; set; }
+        public string ExtensionOrigin { get; set; }
         public long CreatedUtcMs { get; set; }
         public int InvalidAttempts { get; set; }
     }

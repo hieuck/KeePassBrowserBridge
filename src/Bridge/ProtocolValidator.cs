@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace KeePassBrowserBridge.Bridge
 {
@@ -7,22 +6,6 @@ namespace KeePassBrowserBridge.Bridge
     {
         public const int ProtocolVersion = 1;
         public const long MaxClockSkewMs = 5 * 60 * 1000;
-
-        private static readonly HashSet<string> KnownMethods = new HashSet<string>(StringComparer.Ordinal)
-        {
-            BridgeMethods.Hello,
-            BridgeMethods.PairBegin,
-            BridgeMethods.PairComplete,
-            BridgeMethods.PairCancel,
-            BridgeMethods.ClientStatus,
-            BridgeMethods.ClientsList,
-            BridgeMethods.ClientsRevoke,
-            BridgeMethods.ClientsUpdatePermissions,
-            BridgeMethods.LoginsQuery,
-            BridgeMethods.LoginsCreate,
-            BridgeMethods.LoginsUpdate,
-            BridgeMethods.LoginsFillAck
-        };
 
         public static ProtocolValidationResult Validate(BridgeRequest request, long nowUtcMs)
         {
@@ -37,7 +20,7 @@ namespace KeePassBrowserBridge.Bridge
             if (string.IsNullOrWhiteSpace(request.Method))
                 return ProtocolValidationResult.Fail("missing_method", "Method is required.");
 
-            if (!KnownMethods.Contains(request.Method))
+            if (!BridgeMethodPolicy.IsKnownMethod(request.Method))
                 return ProtocolValidationResult.Fail("unknown_method", "Unknown method.");
 
             if (string.IsNullOrWhiteSpace(request.Origin))

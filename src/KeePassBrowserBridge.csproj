@@ -20,6 +20,7 @@
     <Compile Include="Bridge\BridgeAuthentication.cs" />
     <Compile Include="Bridge\BridgeClock.cs" />
     <Compile Include="Bridge\BridgeJsonSerializer.cs" />
+    <Compile Include="Bridge\BridgeMethodPolicy.cs" />
     <Compile Include="Bridge\BridgeRequestHandler.cs" />
     <Compile Include="Bridge\BridgeSettings.cs" />
     <Compile Include="Bridge\CredentialMutationService.cs" />
@@ -27,6 +28,7 @@
     <Compile Include="Bridge\EntryUrlMatcher.cs" />
     <Compile Include="Bridge\LoopbackBridgeServer.cs" />
     <Compile Include="Bridge\PairingService.cs" />
+    <Compile Include="Bridge\PasskeyService.cs" />
     <Compile Include="Bridge\ProtocolModels.cs" />
     <Compile Include="Bridge\ProtocolValidator.cs" />
     <Compile Include="Bridge\TrustedClientStore.cs" />

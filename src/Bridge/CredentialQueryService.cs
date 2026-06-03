@@ -40,6 +40,10 @@ namespace KeePassBrowserBridge.Bridge
                 string entryUrl = entry.Strings.ReadSafe(PwDefs.UrlField);
                 if (!EntryUrlMatcher.IsMatch(entry, pageUrl, options)) continue;
 
+                string password = ReadProtectedString(entry.Strings.Get(PwDefs.PasswordField));
+                if (PasskeyEntryStore.IsPasskeyEntry(entry) && string.IsNullOrWhiteSpace(password))
+                    continue;
+
                 var customFields = ExtractCustomFields(entry);
 
                 matches.Add(new CredentialEntry
@@ -51,7 +55,7 @@ namespace KeePassBrowserBridge.Bridge
                     Group = groupPath,
                     UsageCount = entry.UsageCount,
                     LastUsed = ToUnixTimeMilliseconds(entry.LastAccessTime),
-                    Password = ReadProtectedString(entry.Strings.GetSafe(PwDefs.PasswordField)),
+                    Password = password,
                     OneTimePassword = GenerateOneTimePassword(entry),
                     CustomFields = customFields
                 });
