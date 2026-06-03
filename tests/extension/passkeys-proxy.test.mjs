@@ -502,6 +502,38 @@ assert.deepEqual(plain(invalidRpCalls.find((entry) => entry[0] === 'createComple
 ], 'lifecycle should reject create requests whose RP ID does not match the trusted origin before calling handlers');
 await invalidRpLifecycle.detach();
 
+const invalidGetRpCalls = [];
+const invalidGetRpEvent = makeEvent();
+const invalidGetRpLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => invalidGetRpCalls.push(['attach']),
+      detach: async () => invalidGetRpCalls.push(['detach']),
+      completeCreateRequest: async (details) => invalidGetRpCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => invalidGetRpCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => invalidGetRpCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: makeEvent(),
+      onGetRequest: invalidGetRpEvent,
+      onIsUvpaaRequest: makeEvent(),
+      onRequestCanceled: makeEvent()
+    }
+  },
+  resolveTrustedOrigin: async () => 'https://evil-example.com',
+  onGetRequest: async () => {
+    throw new Error('invalid RP ID request should not reach get handler');
+  }
+});
+await invalidGetRpLifecycle.attach();
+await invalidGetRpEvent.dispatch({
+  requestId: 72,
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl', allowCredentials: [{ id: 'Y3JlZA' }] })
+});
+assert.deepEqual(plain(invalidGetRpCalls.find((entry) => entry[0] === 'getComplete')), [
+  'getComplete',
+  { requestId: 72, error: { name: 'NotAllowedError', message: 'Passkey RP ID is not valid for the trusted caller origin.' } }
+], 'lifecycle should reject get requests whose RP ID does not match the trusted origin before calling handlers');
+await invalidGetRpLifecycle.detach();
+
 const lifecycleCalls = [];
 const lifecycleCreateEvent = makeEvent();
 const lifecycleGetEvent = makeEvent();
