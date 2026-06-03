@@ -129,6 +129,8 @@ internal static class Program
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
         BridgeHandlerCompletesPasskeyCreateAndSavesDatabaseWhenFeatureGateIsEnabled();
         BridgeHandlerCompletesPasskeyGetSignsAssertionAndSavesDatabaseWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsReplayedPasskeyCreateCompletionRequestId();
+        BridgeHandlerRejectsReplayedPasskeyGetCompletionRequestId();
         BridgeHandlerRevokesPasskeyAndSavesDatabaseWhenFeatureGateIsEnabled();
         BridgeHandlerCancelsPendingPasskeySessionWhenFeatureGateIsEnabled();
         BridgeHandlerRevokingClientClearsPendingPasskeySessions();
@@ -2260,6 +2262,87 @@ internal static class Program
             UserHandle = result.UserHandle,
             SignCount = result.SignCount
         }), "get complete response signature should verify against the stored public key");
+    }
+
+    private static void BridgeHandlerRejectsReplayedPasskeyCreateCompletionRequestId()
+    {
+        int saveCount = 0;
+        PwDatabase database = CreateDatabase();
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { saveCount += 1; });
+
+        BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-replay")));
+        BridgeResponse beginResponse = handler.Handle(beginRequest);
+        AssertTrue(beginResponse.Success, "passkey create begin should succeed before replay test: " + beginResponse.Error);
+
+        BridgeRequest completeRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-create-replay",
+                RpId = "example.com",
+                Origin = "https://example.com/login"
+            }));
+
+        BridgeResponse firstResponse = handler.Handle(completeRequest);
+        BridgeResponse replayedResponse = handler.Handle(completeRequest);
+
+        AssertTrue(firstResponse.Success, "first passkeys.create.complete should succeed before replay: " + firstResponse.Error);
+        AssertFalse(replayedResponse.Success, "replayed passkeys.create.complete should fail");
+        AssertEqual("replayed_request", replayedResponse.ErrorCode,
+            "replayed passkeys.create.complete error code mismatch");
+        AssertEqual(0, pending.Count, "replayed passkeys.create.complete should not restore pending state");
+        AssertEqual(1, (int)database.RootGroup.Entries.UCount,
+            "replayed passkeys.create.complete should not create a second KeePass entry");
+        AssertEqual(1, saveCount, "replayed passkeys.create.complete should not save the database again");
+    }
+
+    private static void BridgeHandlerRejectsReplayedPasskeyGetCompletionRequestId()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before get replay test: " + registration.Error);
+
+        int saveCount = 0;
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { saveCount += 1; });
+
+        BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyGetBeginPayload("webauthn-get-replay",
+                new string[] { registration.Credential.CredentialId })));
+        BridgeResponse beginResponse = handler.Handle(beginRequest);
+        AssertTrue(beginResponse.Success, "passkey get begin should succeed before replay test: " + beginResponse.Error);
+
+        BridgeRequest completeRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyGetCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-get-replay",
+                RpId = "example.com",
+                Origin = "https://example.com/login",
+                CredentialId = registration.Credential.CredentialId
+            }));
+
+        BridgeResponse firstResponse = handler.Handle(completeRequest);
+        BridgeResponse replayedResponse = handler.Handle(completeRequest);
+        PasskeyCredentialMaterial restored = PasskeyEntryStore.Read(entry);
+
+        AssertTrue(firstResponse.Success, "first passkeys.get.complete should succeed before replay: " + firstResponse.Error);
+        AssertFalse(replayedResponse.Success, "replayed passkeys.get.complete should fail");
+        AssertEqual("replayed_request", replayedResponse.ErrorCode,
+            "replayed passkeys.get.complete error code mismatch");
+        AssertEqual(0, pending.Count, "replayed passkeys.get.complete should not restore pending state");
+        AssertEqual(1, saveCount, "replayed passkeys.get.complete should not save the database again");
+        AssertEqual((uint)1, restored.SignCount,
+            "replayed passkeys.get.complete should not increment the passkey sign count again");
     }
 
     private static void BridgeHandlerRevokesPasskeyAndSavesDatabaseWhenFeatureGateIsEnabled()

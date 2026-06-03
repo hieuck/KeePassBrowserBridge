@@ -132,7 +132,7 @@ Backend:
 - Feature-gated trusted-browser permission controls for `passkeyRead` and `passkeyWrite` in popup and settings UI. Covered by E2E tests; production `hello` keeps the controls hidden while passkeys are disabled.
 - Assertion signature verification against generated public keys. Covered by backend tests.
 - Signature counter increment and persistence in credential material. Covered by backend tests; database persistence across assertion sessions remains future protocol work.
-- Replay rejection for create and get completion requests.
+- Replay rejection for create and get completion requests. Covered by backend bridge tests that replay the authenticated completion `RequestId` and assert no duplicate entry, save, or sign-count update occurs.
 - Permission denial for clients without `passkeyRead` or `passkeyWrite`. Covered by disabled-gate backend tests.
 - `feature_disabled` response for authenticated clients that have the required passkey permission while browser-facing passkeys remain disabled. Covered by backend tests.
 
