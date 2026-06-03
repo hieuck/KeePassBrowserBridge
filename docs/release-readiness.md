@@ -80,7 +80,7 @@ After restarting KeePass:
 
 ## Manual Smoke Test
 
-Use a throwaway KeePass database and disposable browser profile.
+Use a throwaway KeePass database and disposable browser profile. Record the release-candidate evidence in `docs/manual-smoke-evidence.md`; do not publish credentials, recovery codes, cookies, session tokens, or KeePass master keys.
 
 1. Pair a fresh browser profile with KeePass.
 2. Query and fill a simple login fixture.
@@ -90,8 +90,10 @@ Use a throwaway KeePass database and disposable browser profile.
 6. Fill username-first and same-page reveal flows.
 7. Fill TOTP, including split OTP inputs.
 8. Fill HTTP Basic Auth with a disposable credential.
-9. Review `docs/migration-guide.md` against the release package and remove any stale migration notes.
-10. Revoke the browser in KeePass and confirm the extension stops querying until re-paired.
+9. Confirm protected custom fields are not exposed by popup, fill, settings export, or content-script results.
+10. Confirm passkeys/WebAuthn stay unsupported in the public build and store/release copy.
+11. Review `docs/migration-guide.md` against the release package and remove any stale migration notes.
+12. Revoke the browser in KeePass and confirm the extension stops querying until re-paired.
 
 The detailed fixture matrix is in `docs/real-site-validation.md`.
 

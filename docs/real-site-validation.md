@@ -51,7 +51,8 @@ extension test.
 ## Manual Smoke Checklist
 
 Run this checklist before tagging a release candidate. Keep real credentials in a
-throwaway KeePass database.
+throwaway KeePass database and record release-candidate evidence in
+`docs/manual-smoke-evidence.md`.
 
 1. Pair a fresh browser profile with KeePass.
 2. Verify popup query and fill on a simple local login fixture.

@@ -80,4 +80,4 @@ KBB intentionally stays clean-room and does not copy code from those projects. T
 - `docs/passkeys-webauthn-design.md` documents the unsupported browser-facing passkey gap, the backend prototype status, and the implementation path.
 - `docs/privacy-policy.md` is ready to publish as the browser-store privacy policy source.
 - `docs/release-notes-template.md` and `docs/release-integrity.md` are used for GitHub Release notes.
-- Manual smoke checklist in `docs/real-site-validation.md` passes with a throwaway database.
+- Manual smoke checklist in `docs/real-site-validation.md` passes with a throwaway database, and release-candidate results are recorded with `docs/manual-smoke-evidence.md`.

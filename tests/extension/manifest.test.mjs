@@ -40,6 +40,7 @@ const extensionReadme = fs.readFileSync(new URL('../../extension/README.md', imp
 const realSiteValidation = fs.readFileSync(new URL('../../docs/real-site-validation.md', import.meta.url), 'utf8');
 const architecture = fs.readFileSync(new URL('../../docs/architecture.md', import.meta.url), 'utf8');
 const releaseReadiness = fs.readFileSync(new URL('../../docs/release-readiness.md', import.meta.url), 'utf8');
+const manualSmokeEvidence = fs.readFileSync(new URL('../../docs/manual-smoke-evidence.md', import.meta.url), 'utf8');
 const securityThreatModel = fs.readFileSync(new URL('../../docs/security-threat-model.md', import.meta.url), 'utf8');
 const storeSubmission = fs.readFileSync(new URL('../../docs/store-submission.md', import.meta.url), 'utf8');
 const storeScreenshotsReadme = fs.readFileSync(new URL('../../docs/store-assets/screenshots/README.md', import.meta.url), 'utf8');
@@ -252,6 +253,7 @@ assert.equal(releaseReadiness.includes('-E2EProjects chromium,firefox'), true, '
 assert.equal(releaseReadiness.includes('verify-release-artifacts.ps1'), true, 'release readiness docs should require artifact verification');
 assert.equal(releaseReadiness.includes('capture-store-screenshots.ps1'), true, 'release readiness docs should require store screenshot generation');
 assert.equal(releaseReadiness.includes('docs/store-submission.md'), true, 'release readiness docs should point to store submission docs');
+assert.equal(releaseReadiness.includes('docs/manual-smoke-evidence.md'), true, 'release readiness docs should require manual smoke evidence capture');
 assert.equal(releaseReadiness.includes('docs/migration-guide.md'), true, 'release readiness docs should require migration guidance review');
 assert.equal(releaseReadiness.includes('docs/privacy-policy.md'), true, 'release readiness docs should require privacy policy publication');
 assert.equal(releaseReadiness.includes('docs/release-integrity.md'), true, 'release readiness docs should require checksum verification guidance');
@@ -260,6 +262,8 @@ assert.equal(releaseReadiness.includes('passkeys/WebAuthn are not supported'), t
 assert.equal(releaseReadiness.includes('-RequireCleanSource'), true, 'release readiness docs should require clean-source release builds');
 assert.equal(releaseReadiness.includes('-SignArtifacts'), true, 'release readiness docs should document signed release builds');
 assert.equal(releaseReadiness.includes('-RequireSignatures'), true, 'release readiness docs should document signed release verification');
+assert.equal(releaseReadiness.includes('protected custom fields are not exposed'), true, 'release readiness docs should require protected-field negative smoke coverage');
+assert.equal(releaseReadiness.includes('passkeys/WebAuthn stay unsupported'), true, 'release readiness docs should require passkey unsupported smoke coverage');
 assert.equal(storeSubmission.includes('Chrome Web Store'), true, 'store submission docs should cover Chrome Web Store');
 assert.equal(storeSubmission.includes('Firefox AMO'), true, 'store submission docs should cover Firefox AMO');
 assert.equal(storeSubmission.includes('Edge Add-ons'), true, 'store submission docs should cover Edge Add-ons');
@@ -273,7 +277,18 @@ assert.equal(storeSubmission.includes('webRequestBlocking'), true, 'store submis
 assert.equal(storeSubmission.includes('does not send credentials to any remote server'), true, 'store submission docs should document remote-server privacy statement');
 assert.equal(storeSubmission.includes('docs/store-assets/screenshots/'), true, 'store submission docs should document generated screenshot location');
 assert.equal(storeSubmission.includes('docs/privacy-policy.md'), true, 'store submission docs should point to publishable privacy policy source');
+assert.equal(storeSubmission.includes('docs/manual-smoke-evidence.md'), true, 'store submission docs should require manual smoke evidence before listing');
 assert.equal(storeSubmission.includes('Passkeys/WebAuthn are not supported'), true, 'store submission docs should disclose the current passkey gap');
+assert.equal(manualSmokeEvidence.includes('Pairing and Revocation'), true, 'manual smoke evidence template should cover pairing and revoke behavior');
+assert.equal(manualSmokeEvidence.includes('Popup and Inline Fill'), true, 'manual smoke evidence template should cover popup and inline fill behavior');
+assert.equal(manualSmokeEvidence.includes('Save New Login'), true, 'manual smoke evidence template should cover save-new behavior');
+assert.equal(manualSmokeEvidence.includes('Update Existing Password'), true, 'manual smoke evidence template should cover update-password behavior');
+assert.equal(manualSmokeEvidence.includes('HTTP Basic Auth'), true, 'manual smoke evidence template should cover HTTP auth behavior');
+assert.equal(manualSmokeEvidence.includes('Protected Fields'), true, 'manual smoke evidence template should cover protected custom-field negative checks');
+assert.equal(manualSmokeEvidence.includes('Passkeys/WebAuthn Unsupported'), true, 'manual smoke evidence template should cover unsupported passkey release checks');
+assert.equal(manualSmokeEvidence.includes('Chromium'), true, 'manual smoke evidence template should cover Chromium smoke results');
+assert.equal(manualSmokeEvidence.includes('Firefox'), true, 'manual smoke evidence template should cover Firefox smoke results');
+assert.equal(manualSmokeEvidence.includes('KeePass master keys'), true, 'manual smoke evidence template should warn against recording master keys');
 assert.equal(storeScreenshotsReadme.includes('01-popup-pairing.png'), true, 'store screenshot README should list pairing screenshot output');
 assert.equal(storeScreenshotsReadme.includes('05-settings-trusted-browsers.png'), true, 'store screenshot README should list settings screenshot output');
 assert.equal(securityThreatModel.includes('HMAC-SHA256'), true, 'security threat model should document HMAC authentication');
@@ -392,6 +407,7 @@ assert.equal(releaseNotesTemplate.includes('docs/privacy-policy.md'), true, 'rel
 assert.equal(realSiteValidation.includes('phone-login-page.html'), true, 'real-site validation matrix should track phone username/password login coverage');
 assert.equal(realSiteValidation.includes('phone-username-first.html'), true, 'real-site validation matrix should track phone username-first login coverage');
 assert.equal(realSiteValidation.includes('change-password-page.html'), true, 'real-site validation matrix should track change-password update coverage');
+assert.equal(realSiteValidation.includes('docs/manual-smoke-evidence.md'), true, 'real-site validation docs should require manual smoke evidence capture');
 assert.equal(pluginExt.includes('Last Used'), true, 'KeePass trusted-browser dialog should expose last-used timestamps');
 assert.equal(screenshotScript.includes('LastUsedUtcMs'), true, 'store screenshots should fixture trusted-browser last-used timestamps');
 for (const size of ['16', '48', '128']) {

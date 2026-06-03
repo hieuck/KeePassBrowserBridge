@@ -118,4 +118,4 @@ Edge Add-ons:
 - Run `.\scripts\verify.ps1 -E2EProjects chromium,firefox`.
 - Run `.\scripts\build-release.ps1` and `.\scripts\verify-release-artifacts.ps1`.
 - Run `.\scripts\capture-store-screenshots.ps1` after the final UI build.
-- Complete the manual smoke test in `docs/release-readiness.md` with a throwaway database and disposable browser profile.
+- Complete the manual smoke test in `docs/release-readiness.md` with a throwaway database and disposable browser profile, recording results in `docs/manual-smoke-evidence.md`.
