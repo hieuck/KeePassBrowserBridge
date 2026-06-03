@@ -1,0 +1,650 @@
+/* global chrome */
+(function (globalScope) {
+  'use strict';
+
+  const missingOriginMessage =
+    'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
+
+  function getApi(chromeLike = globalScope.chrome) {
+    return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
+  }
+
+  function isAvailable(chromeLike = globalScope.chrome) {
+    const api = getApi(chromeLike);
+    return Boolean(
+      api &&
+      typeof api.attach === 'function' &&
+      typeof api.detach === 'function' &&
+      typeof api.completeCreateRequest === 'function' &&
+      typeof api.completeGetRequest === 'function' &&
+      typeof api.completeIsUvpaaRequest === 'function' &&
+      api.onCreateRequest &&
+      typeof api.onCreateRequest.addListener === 'function' &&
+      api.onGetRequest &&
+      typeof api.onGetRequest.addListener === 'function' &&
+      api.onIsUvpaaRequest &&
+      typeof api.onIsUvpaaRequest.addListener === 'function' &&
+      api.onRequestCanceled &&
+      typeof api.onRequestCanceled.addListener === 'function'
+    );
+  }
+
+  async function attach(chromeLike = globalScope.chrome) {
+    if (!isAvailable(chromeLike)) {
+      throw new Error('chrome.webAuthenticationProxy is not available.');
+    }
+    return getApi(chromeLike).attach();
+  }
+
+  async function detach(chromeLike = globalScope.chrome) {
+    if (!isAvailable(chromeLike)) return undefined;
+    return getApi(chromeLike).detach();
+  }
+
+  function createLifecycle(options = {}) {
+    const chromeLike = options.chromeLike || globalScope.chrome;
+    const pending = new Map();
+    const state = {
+      attached: false,
+      listeners: null
+    };
+
+    async function attachProxy() {
+      if (!isAvailable(chromeLike)) {
+        throw new Error('chrome.webAuthenticationProxy is not available.');
+      }
+      if (state.attached) {
+        return { alreadyAttached: true, pendingCount: pending.size };
+      }
+
+      registerListeners();
+      try {
+        const result = await getApi(chromeLike).attach();
+        state.attached = true;
+        return result;
+      } catch (error) {
+        unregisterListeners();
+        throw error;
+      }
+    }
+
+    async function detachProxy() {
+      const api = getApi(chromeLike);
+      const wasAttached = state.attached;
+      const pendingRequests = Array.from(pending.entries());
+      state.attached = false;
+      pending.clear();
+      unregisterListeners();
+      for (const [requestId, request] of pendingRequests) {
+        await notifyCanceled(requestId, request, 'detach');
+      }
+      if (wasAttached && api && typeof api.detach === 'function') {
+        return api.detach();
+      }
+      return undefined;
+    }
+
+    function registerListeners() {
+      if (state.listeners) return;
+      const api = getApi(chromeLike);
+      state.listeners = {
+        create: (requestInfo) => handleRequest('create', requestInfo),
+        get: (requestInfo) => handleRequest('get', requestInfo),
+        isUvpaa: (requestInfo) => handleIsUvpaaRequest(requestInfo),
+        canceled: (requestId) => handleCanceled(requestId)
+      };
+      api.onCreateRequest.addListener(state.listeners.create);
+      api.onGetRequest.addListener(state.listeners.get);
+      api.onIsUvpaaRequest.addListener(state.listeners.isUvpaa);
+      api.onRequestCanceled.addListener(state.listeners.canceled);
+    }
+
+    function unregisterListeners() {
+      if (!state.listeners) return;
+      const api = getApi(chromeLike);
+      removeListener(api && api.onCreateRequest, state.listeners.create);
+      removeListener(api && api.onGetRequest, state.listeners.get);
+      removeListener(api && api.onIsUvpaaRequest, state.listeners.isUvpaa);
+      removeListener(api && api.onRequestCanceled, state.listeners.canceled);
+      state.listeners = null;
+    }
+
+    async function handleRequest(kind, requestInfo) {
+      const requestId = String(requestInfo && requestInfo.requestId);
+      pending.set(requestId, { kind, requestInfo });
+      const context = requestContext(kind, requestId);
+
+      try {
+        context.origin = await resolveTrustedOrigin(requestInfo, context);
+        if (!context.origin) {
+          throw {
+            name: 'NotAllowedError',
+            message: missingOriginMessage
+          };
+        }
+
+        const handler = kind === 'create' ? options.onCreateRequest : options.onGetRequest;
+        if (typeof handler !== 'function') {
+          throw new Error(`No WebAuthn ${kind} handler configured.`);
+        }
+
+        const response = await handler(requestInfo, context);
+        if (response !== undefined && context.isPending()) {
+          await context.completeSuccess(response);
+        }
+      } catch (error) {
+        if (context.isPending()) {
+          await context.completeError(error);
+        }
+      }
+    }
+
+    async function resolveTrustedOrigin(requestInfo, context) {
+      if (typeof options.resolveTrustedOrigin !== 'function') return '';
+      return stringValue(await options.resolveTrustedOrigin(requestInfo, {
+        kind: context.kind,
+        requestId: context.requestId
+      })).trim();
+    }
+
+    async function handleIsUvpaaRequest(requestInfo) {
+      const requestId = String(requestInfo && requestInfo.requestId);
+      try {
+        const result = typeof options.onIsUvpaaRequest === 'function'
+          ? await options.onIsUvpaaRequest(requestInfo)
+          : false;
+        await completeIsUvpaa(chromeLike, requestId, result);
+      } catch {
+        await completeIsUvpaa(chromeLike, requestId, false);
+      }
+    }
+
+    async function handleCanceled(requestId) {
+      const key = String(requestId);
+      const request = pending.get(key);
+      pending.delete(key);
+      await notifyCanceled(key, request, 'canceled');
+    }
+
+    async function notifyCanceled(requestId, request, reason) {
+      if (typeof options.onRequestCanceled !== 'function') return;
+      try {
+        await options.onRequestCanceled(String(requestId), request, reason);
+      } catch {
+        // Browser cancellation must not leave the proxy attached or block detach.
+      }
+    }
+
+    function requestContext(kind, requestId) {
+      return {
+        requestId,
+        kind,
+        isPending() {
+          return pending.has(requestId);
+        },
+        async completeSuccess(response) {
+          if (!pending.has(requestId)) return undefined;
+          pending.delete(requestId);
+          if (kind === 'create') {
+            return completeCreateSuccess(chromeLike, requestId, response);
+          }
+          return completeGetSuccess(chromeLike, requestId, response);
+        },
+        async completeError(error) {
+          if (!pending.has(requestId)) return undefined;
+          pending.delete(requestId);
+          if (kind === 'create') {
+            return completeCreateError(chromeLike, requestId, error);
+          }
+          return completeGetError(chromeLike, requestId, error);
+        }
+      };
+    }
+
+    return {
+      attach: attachProxy,
+      detach: detachProxy,
+      pendingCount() {
+        return pending.size;
+      },
+      isAttached() {
+        return state.attached;
+      }
+    };
+  }
+
+  function parseRequestDetails(requestInfo) {
+    if (!requestInfo || typeof requestInfo.requestDetailsJson !== 'string') {
+      throw new Error('WebAuthn proxy request is missing requestDetailsJson.');
+    }
+
+    const details = JSON.parse(requestInfo.requestDetailsJson);
+    return {
+      requestId: String(requestInfo.requestId),
+      details
+    };
+  }
+
+  function normalizeCreateRequest(requestInfo, context = {}) {
+    const parsed = parseRequestDetails(requestInfo);
+    const options = parsed.details || {};
+    const origin = trustedOrigin(context);
+    const user = options.user || {};
+    const authenticatorSelection = options.authenticatorSelection || {};
+
+    return {
+      WebAuthnRequestId: parsed.requestId,
+      RpId: options.rp && options.rp.id ? String(options.rp.id) : '',
+      Origin: origin,
+      Challenge: stringValue(options.challenge),
+      UserHandle: stringValue(user.id),
+      UserName: stringValue(user.name),
+      UserDisplayName: stringValue(user.displayName),
+      UserVerification: stringValue(authenticatorSelection.userVerification),
+      Transports: []
+    };
+  }
+
+  function normalizeGetRequest(requestInfo, context = {}) {
+    const parsed = parseRequestDetails(requestInfo);
+    const options = parsed.details || {};
+    const origin = trustedOrigin(context);
+
+    return {
+      WebAuthnRequestId: parsed.requestId,
+      RpId: stringValue(options.rpId),
+      Origin: origin,
+      Challenge: stringValue(options.challenge),
+      AllowCredentialIds: Array.isArray(options.allowCredentials)
+        ? options.allowCredentials.map((credential) => stringValue(credential && credential.id)).filter(Boolean)
+        : [],
+      UserVerification: stringValue(options.userVerification)
+    };
+  }
+
+  function createBridgeRequestHandlers(options = {}) {
+    const bridgeCall = options.bridgeCall;
+    if (typeof bridgeCall !== 'function') {
+      throw new Error('Passkey bridge experiment requires a bridgeCall function.');
+    }
+
+    return {
+      async onCreateRequest(requestInfo, context) {
+        const payload = normalizeCreateRequest(requestInfo, context);
+        const begin = await bridgeCall('passkeys.create.begin', payload);
+        try {
+          if (typeof options.approveCreate === 'function') {
+            const approved = await options.approveCreate({ payload, begin, context });
+            if (!approved) throw notAllowedError('Passkey registration was denied.');
+          }
+
+          return bridgeCall('passkeys.create.complete', {
+            WebAuthnRequestId: payload.WebAuthnRequestId,
+            RpId: payload.RpId,
+            Origin: payload.Origin
+          });
+        } catch (error) {
+          await cancelBridgeRequestBestEffort(bridgeCall, payload.WebAuthnRequestId);
+          throw error;
+        }
+      },
+
+      async onGetRequest(requestInfo, context) {
+        const payload = normalizeGetRequest(requestInfo, context);
+        const begin = await bridgeCall('passkeys.get.begin', payload);
+        try {
+          const credentials = Array.isArray(begin && begin.Credentials) ? begin.Credentials : [];
+          const selected = typeof options.chooseCredential === 'function'
+            ? await options.chooseCredential({ payload, begin, credentials, context })
+            : credentials[0];
+          const credentialId = firstString(
+            selected && selected.CredentialId,
+            selected && selected.credentialId,
+            selected && selected.id,
+            selected && selected.rawId
+          );
+          if (!credentialId) throw notAllowedError('No matching passkey was selected.');
+
+          return bridgeCall('passkeys.get.complete', {
+            WebAuthnRequestId: payload.WebAuthnRequestId,
+            RpId: payload.RpId,
+            Origin: payload.Origin,
+            CredentialId: credentialId
+          });
+        } catch (error) {
+          await cancelBridgeRequestBestEffort(bridgeCall, payload.WebAuthnRequestId);
+          throw error;
+        }
+      },
+
+      async onRequestCanceled(requestId) {
+        return cancelBridgeRequest(bridgeCall, requestId);
+      }
+    };
+  }
+
+  function createTrustedOriginResolver(options = {}) {
+    const chromeLike = options.chromeLike || globalScope.chrome;
+    return async function resolveTrustedOrigin(requestInfo) {
+      const directOrigin = trustedOriginFromRequestInfo(requestInfo);
+      if (directOrigin) return directOrigin;
+      return resolveFrameOrigin(chromeLike, requestInfo);
+    };
+  }
+
+  function trustedOriginFromRequestInfo(requestInfo) {
+    if (!requestInfo || typeof requestInfo !== 'object') return '';
+
+    for (const field of ['origin', 'callerOrigin', 'sourceOrigin', 'documentOrigin', 'initiator']) {
+      const origin = normalizeTrustedWebOrigin(requestInfo[field]);
+      if (origin) return origin;
+    }
+
+    for (const field of ['url', 'documentUrl', 'frameUrl', 'pageUrl']) {
+      const origin = originFromUrlString(requestInfo[field]);
+      if (origin) return origin;
+    }
+
+    return '';
+  }
+
+  async function resolveFrameOrigin(chromeLike, requestInfo) {
+    const webNavigation = chromeLike && chromeLike.webNavigation;
+    if (!webNavigation || typeof webNavigation.getFrame !== 'function') return '';
+
+    const tabId = integerValue(requestInfo && requestInfo.tabId);
+    if (tabId < 0) return '';
+
+    const frameId = integerValue(requestInfo && requestInfo.frameId);
+    const details = {
+      tabId,
+      frameId: frameId >= 0 ? frameId : 0
+    };
+
+    try {
+      const frame = await callChromeApi(webNavigation.getFrame.bind(webNavigation), details);
+      return originFromUrlString(frame && frame.url);
+    } catch {
+      return '';
+    }
+  }
+
+  function callChromeApi(fn, details) {
+    return new Promise((resolve, reject) => {
+      let callbackResolved = false;
+      try {
+        const result = fn(details, (value) => {
+          callbackResolved = true;
+          resolve(value);
+        });
+        if (result && typeof result.then === 'function') {
+          result.then(resolve, reject);
+        } else if (result !== undefined) {
+          resolve(result);
+        } else if (fn.length < 2 && !callbackResolved) {
+          resolve(undefined);
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  function normalizeTrustedWebOrigin(value) {
+    const text = stringValue(value).trim();
+    if (!text) return '';
+
+    try {
+      const url = new URL(text);
+      return isAllowedWebOrigin(url) ? url.origin : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function originFromUrlString(value) {
+    return normalizeTrustedWebOrigin(value);
+  }
+
+  function isAllowedWebOrigin(url) {
+    if (!url || !url.hostname) return false;
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && isLoopbackHost(url.hostname);
+  }
+
+  function isLoopbackHost(hostname) {
+    const host = stringValue(hostname).toLowerCase();
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
+  }
+
+  function integerValue(value) {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) ? parsed : -1;
+  }
+
+  async function cancelBridgeRequest(bridgeCall, requestId) {
+    const webAuthnRequestId = stringValue(requestId).trim();
+    if (!webAuthnRequestId) {
+      return { WebAuthnRequestId: '', Cancelled: false };
+    }
+
+    return bridgeCall('passkeys.cancel', {
+      WebAuthnRequestId: webAuthnRequestId
+    });
+  }
+
+  async function cancelBridgeRequestBestEffort(bridgeCall, requestId) {
+    try {
+      return await cancelBridgeRequest(bridgeCall, requestId);
+    } catch {
+      return undefined;
+    }
+  }
+
+  async function completeCreateError(chromeLike, requestId, error) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeCreateRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeCreateRequest is not available.');
+    }
+    return api.completeCreateRequest(errorDetails(requestId, error));
+  }
+
+  async function completeGetError(chromeLike, requestId, error) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeGetRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeGetRequest is not available.');
+    }
+    return api.completeGetRequest(errorDetails(requestId, error));
+  }
+
+  async function completeCreateSuccess(chromeLike, requestId, response) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeCreateRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeCreateRequest is not available.');
+    }
+    return api.completeCreateRequest(successDetails(requestId, createResponseJson(response)));
+  }
+
+  async function completeGetSuccess(chromeLike, requestId, response) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeGetRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeGetRequest is not available.');
+    }
+    return api.completeGetRequest(successDetails(requestId, getResponseJson(response)));
+  }
+
+  async function completeIsUvpaa(chromeLike, requestId, result) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeIsUvpaaRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeIsUvpaaRequest is not available.');
+    }
+    return api.completeIsUvpaaRequest({
+      requestId: Number(requestId),
+      isUvpaa: normalizeIsUvpaaResult(result)
+    });
+  }
+
+  function trustedOrigin(context) {
+    const origin = stringValue(context && context.origin);
+    if (!origin) throw new Error(missingOriginMessage);
+    return origin;
+  }
+
+  function errorDetails(requestId, error) {
+    const normalized = normalizeError(error);
+    return {
+      requestId: Number(requestId),
+      error: normalized
+    };
+  }
+
+  function successDetails(requestId, responseJson) {
+    return {
+      requestId: Number(requestId),
+      responseJson
+    };
+  }
+
+  function createResponseJson(response) {
+    if (typeof response === 'string') return response;
+    if (response && typeof response.responseJson === 'string') return response.responseJson;
+
+    const credential = (response && (response.Credential || response.credential)) || {};
+    const credentialId = firstString(
+      response && response.CredentialId,
+      response && response.credentialId,
+      credential.CredentialId,
+      credential.credentialId,
+      response && response.id,
+      response && response.rawId
+    );
+
+    return JSON.stringify(compactObject({
+      id: credentialId,
+      rawId: credentialId,
+      type: 'public-key',
+      authenticatorAttachment: firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment),
+      response: compactObject({
+        clientDataJSON: firstString(response && response.ClientDataJson, response && response.clientDataJSON),
+        attestationObject: firstString(response && response.AttestationObject, response && response.attestationObject),
+        transports: normalizeStringArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
+      }),
+      clientExtensionResults: response && (response.ClientExtensionResults || response.clientExtensionResults) || {}
+    }));
+  }
+
+  function getResponseJson(response) {
+    if (typeof response === 'string') return response;
+    if (response && typeof response.responseJson === 'string') return response.responseJson;
+
+    const assertion = response && (response.Assertion || response.assertion) || response || {};
+    const credentialId = firstString(
+      response && response.CredentialId,
+      response && response.credentialId,
+      assertion.CredentialId,
+      assertion.credentialId,
+      response && response.id,
+      response && response.rawId
+    );
+
+    return JSON.stringify(compactObject({
+      id: credentialId,
+      rawId: credentialId,
+      type: 'public-key',
+      authenticatorAttachment: firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment),
+      response: compactObject({
+        authenticatorData: firstString(assertion.AuthenticatorData, assertion.authenticatorData),
+        clientDataJSON: firstString(assertion.ClientDataJson, assertion.clientDataJSON),
+        signature: firstString(assertion.Signature, assertion.signature),
+        userHandle: firstString(assertion.UserHandle, assertion.userHandle)
+      }),
+      clientExtensionResults: response && (response.ClientExtensionResults || response.clientExtensionResults) || {}
+    }));
+  }
+
+  function normalizeError(error) {
+    if (error && typeof error === 'object') {
+      return {
+        name: stringValue(error.name) || 'NotAllowedError',
+        message: stringValue(error.message) || 'KeePass Browser Bridge could not complete the WebAuthn request.'
+      };
+    }
+
+    return {
+      name: 'NotAllowedError',
+      message: stringValue(error) || 'KeePass Browser Bridge could not complete the WebAuthn request.'
+    };
+  }
+
+  function notAllowedError(message) {
+    return {
+      name: 'NotAllowedError',
+      message
+    };
+  }
+
+  function normalizeIsUvpaaResult(result) {
+    if (result && typeof result === 'object' && 'isUvpaa' in result) {
+      return Boolean(result.isUvpaa);
+    }
+    return Boolean(result);
+  }
+
+  function stringValue(value) {
+    return value === undefined || value === null ? '' : String(value);
+  }
+
+  function firstString(...values) {
+    for (const value of values) {
+      const normalized = stringValue(value);
+      if (normalized) return normalized;
+    }
+    return '';
+  }
+
+  function normalizeStringArray(value) {
+    if (!Array.isArray(value)) return undefined;
+    const normalized = value.map((item) => stringValue(item)).filter(Boolean);
+    return normalized.length ? normalized : undefined;
+  }
+
+  function compactObject(value) {
+    const compacted = {};
+    for (const [key, entry] of Object.entries(value || {})) {
+      if (entry === undefined || entry === null || entry === '') continue;
+      if (Array.isArray(entry) && entry.length === 0) continue;
+      compacted[key] = entry;
+    }
+    return compacted;
+  }
+
+  function removeListener(event, listener) {
+    if (event && typeof event.removeListener === 'function') {
+      event.removeListener(listener);
+    }
+  }
+
+  const api = {
+    attach,
+    detach,
+    createLifecycle,
+    isAvailable,
+    normalizeCreateRequest,
+    normalizeGetRequest,
+    createBridgeRequestHandlers,
+    createTrustedOriginResolver,
+    completeCreateSuccess,
+    completeGetSuccess,
+    completeIsUvpaa,
+    completeCreateError,
+    completeGetError,
+    createResponseJson,
+    getResponseJson,
+    missingOriginMessage
+  };
+
+  globalScope.KeePassBrowserBridgePasskeysProxyExperiment = api;
+  if (typeof module !== 'undefined') {
+    module.exports = api;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this);

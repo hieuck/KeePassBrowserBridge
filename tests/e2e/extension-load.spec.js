@@ -15,6 +15,15 @@ test.describe('KeePassBrowserBridge Extension', () => {
       window.__kbbPopupMessages = [];
       window.__kbbPopupState = state;
       window.__kbbPopupStorage = {};
+      window.__kbbPopupAbout = {
+        name: 'KeePass Browser Bridge',
+        version: '0.9.0',
+        pluginVersion: '0.9.0',
+        browserId: 'abcdefghijklmnopabcdefghijklmnop',
+        repositoryUrl: 'https://github.com/hieuck/KeePassBrowserBridge',
+        releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases',
+        pluginPasskeysEnabled: false
+      };
       window.__kbbPopupTrustedClients = [
         {
           ClientId: 'client-current',
@@ -22,7 +31,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
           ExtensionOrigin: 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           Current: true,
           Permissions: ['read', 'write', 'manageClients'],
-          CreatedUtcMs: 1779990000000
+          CreatedUtcMs: 1779990000000,
+          LastUsedUtcMs: 1779991000000
         },
         {
           ClientId: 'client-old',
@@ -30,7 +40,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
           ExtensionOrigin: 'chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           Current: false,
           Permissions: ['read'],
-          CreatedUtcMs: 1779900000000
+          CreatedUtcMs: 1779900000000,
+          LastUsedUtcMs: 1779901000000
         }
       ];
       Object.defineProperty(navigator, 'clipboard', {
@@ -63,6 +74,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
             }
             if (message && message.type === 'KBB_HELLO') {
               return { ok: true, response: { Success: true } };
+            }
+            if (message && message.type === 'KBB_GET_ABOUT') {
+              return { ok: true, response: { ...window.__kbbPopupAbout } };
             }
             if (message && message.type === 'KBB_STATUS') {
               return {
@@ -947,6 +961,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('.client', { hasText: 'This Chrome' })).toContainText('Read, Write, Manage browsers');
     await expect(page.locator('.client', { hasText: 'Old Browser' })).toContainText('Read');
     await expect(page.locator('.client', { hasText: 'Old Browser' })).toContainText('chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+    await expect(page.locator('.client', { hasText: 'Old Browser' })).toContainText('Last used:');
     await expect(page.locator('#message')).toHaveText('2 trusted browser(s).');
 
     const oldBrowserRevoke = page.locator('.client', { hasText: 'Old Browser' }).locator('button', { hasText: 'Revoke' });
@@ -997,6 +1012,35 @@ test.describe('KeePassBrowserBridge Extension', () => {
       type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
       clientId: 'client-old',
       permissions: ['read', 'write']
+    });
+  });
+
+  test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
+    await page.locator('#listClients').click();
+    await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
+    await expect(page.locator('[data-permission="passkeyWrite"]')).toHaveCount(0);
+
+    await page.evaluate(() => {
+      window.__kbbPopupAbout.pluginPasskeysEnabled = true;
+    });
+    await page.locator('#listClients').click();
+
+    const oldBrowser = page.locator('.client', { hasText: 'Old Browser' });
+    await expect(oldBrowser.locator('[data-permission="passkeyRead"]')).toBeVisible();
+    await expect(oldBrowser.locator('[data-permission="passkeyWrite"]')).toBeVisible();
+    await expect(oldBrowser.locator('[data-permission="passkeyRead"]')).not.toBeChecked();
+
+    await oldBrowser.locator('[data-permission="passkeyRead"]').check();
+
+    await expect(page.locator('#message')).toHaveText('Browser permissions updated.');
+    await expect(oldBrowser).toContainText('Read, Passkey read');
+    const updateMessage = await page.evaluate(() => window.__kbbPopupMessages.find(
+      (message) => message.type === 'KBB_UPDATE_CLIENT_PERMISSIONS' && message.clientId === 'client-old'
+    ));
+    expect(updateMessage).toMatchObject({
+      type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+      clientId: 'client-old',
+      permissions: ['read', 'passkeyRead']
     });
   });
 });

@@ -137,7 +137,10 @@ async function getAbout() {
     releasesUrl: RELEASES_URL,
     bridgeAvailable: false,
     pluginVersion: '',
-    pluginUpdateUrl: ''
+    pluginUpdateUrl: '',
+    pluginSupportedMethods: [],
+    pluginFeatures: {},
+    pluginPasskeysEnabled: false
   };
 
   try {
@@ -145,11 +148,28 @@ async function getAbout() {
     about.bridgeAvailable = true;
     about.pluginVersion = hello.PluginVersion || '';
     about.pluginUpdateUrl = hello.PluginUpdateUrl || '';
+    about.pluginSupportedMethods = normalizeStringArray(hello.SupportedMethods);
+    about.pluginFeatures = normalizeFeatureMap(hello.Features);
+    about.pluginPasskeysEnabled = Boolean(about.pluginFeatures.passkeys);
   } catch (error) {
     about.bridgeError = error && error.message ? error.message : String(error);
   }
 
   return about;
+}
+
+function normalizeStringArray(values) {
+  if (!Array.isArray(values)) return [];
+  return values.map((value) => String(value || '').trim()).filter(Boolean);
+}
+
+function normalizeFeatureMap(features) {
+  if (!Array.isArray(features)) return {};
+  return features.reduce((result, feature) => {
+    const name = String(feature && feature.Name || '').trim();
+    if (name) result[name] = Boolean(feature.Enabled);
+    return result;
+  }, {});
 }
 
 async function checkUpdates() {
@@ -313,15 +333,16 @@ async function updateClientPermissions(clientId, permissions) {
     throw new Error('Select a browser to update.');
   }
 
+  const about = await getAbout();
   const response = await bridgeCall('clients.updatePermissions', {
     ClientId: targetClientId,
-    Permissions: normalizeClientPermissions(permissions)
+    Permissions: normalizeClientPermissions(permissions, about.pluginPasskeysEnabled)
   }, true);
   return parsePayload(response);
 }
 
-function normalizeClientPermissions(permissions) {
-  const allowed = ['read', 'write', 'manageClients'];
+function normalizeClientPermissions(permissions, passkeysEnabled = false) {
+  const allowed = clientPermissionAllowList(passkeysEnabled);
   const normalized = ['read'];
   for (const permission of Array.isArray(permissions) ? permissions : []) {
     if (allowed.includes(permission) && !normalized.includes(permission)) {
@@ -330,6 +351,14 @@ function normalizeClientPermissions(permissions) {
   }
 
   return normalized;
+}
+
+function clientPermissionAllowList(passkeysEnabled = false) {
+  const allowed = ['read', 'write', 'manageClients'];
+  if (passkeysEnabled) {
+    allowed.push('passkeyRead', 'passkeyWrite');
+  }
+  return allowed;
 }
 
 async function pairBegin() {

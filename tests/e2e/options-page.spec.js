@@ -4,7 +4,9 @@ async function installOptionsStorage(page, initial = {}) {
   await page.addInitScript((initialSettings) => {
     const store = { ...initialSettings };
     const bridgeHelloFails = Boolean(store.__bridgeHelloFails);
+    const passkeysEnabled = Boolean(store.__passkeysEnabled);
     delete store.__bridgeHelloFails;
+    delete store.__passkeysEnabled;
     const messages = [];
     const trustedClients = [
       {
@@ -13,7 +15,8 @@ async function installOptionsStorage(page, initial = {}) {
         ExtensionOrigin: 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         Current: true,
         Permissions: ['read', 'write', 'manageClients'],
-        CreatedUtcMs: 1779989000000
+        CreatedUtcMs: 1779989000000,
+        LastUsedUtcMs: 1779991000000
       },
       {
         ClientId: 'client-old',
@@ -21,12 +24,14 @@ async function installOptionsStorage(page, initial = {}) {
         ExtensionOrigin: 'chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         Current: false,
         Permissions: ['read'],
-        CreatedUtcMs: 1779900000000
+        CreatedUtcMs: 1779900000000,
+        LastUsedUtcMs: 1779901000000
       }
     ];
     window.__kbbOptionsStore = store;
     window.__kbbOptionsMessages = messages;
     window.__kbbOptionsTrustedClients = trustedClients;
+    window.__kbbOptionsPasskeysEnabled = passkeysEnabled;
     window.chrome = {
       runtime: {
         sendMessage(message) {
@@ -90,7 +95,8 @@ async function installOptionsStorage(page, initial = {}) {
                 pluginVersion: '0.9.0',
                 browserId: 'abcdefghijklmnopabcdefghijklmnop',
                 repositoryUrl: 'https://github.com/hieuck/KeePassBrowserBridge',
-                releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases'
+                releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases',
+                pluginPasskeysEnabled: window.__kbbOptionsPasskeysEnabled === true
               }
             });
           }
@@ -358,6 +364,7 @@ test.describe('options page settings', () => {
     await expect(page.locator('#trustedBrowserList')).toContainText('Old Browser');
     await expect(page.locator('.trusted-browser-row', { hasText: 'Old Browser' })).toContainText('Read');
     await expect(page.locator('.trusted-browser-row', { hasText: 'Old Browser' })).toContainText('chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+    await expect(page.locator('.trusted-browser-row', { hasText: 'Old Browser' })).toContainText('Last used:');
     await expect(page.locator('#message')).toHaveText('2 trusted browser(s).');
 
     const revokeOldBrowser = page.locator('[data-client-id="client-old"] [data-action="revoke-client"]');
@@ -412,6 +419,40 @@ test.describe('options page settings', () => {
           type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
           clientId: 'client-old',
           permissions: ['read', 'write']
+        })
+      ])
+    );
+  });
+
+  test('gates passkey permission controls in settings on bridge feature discovery', async ({ page }) => {
+    await installOptionsStorage(page);
+
+    await page.goto('/extension/options.html');
+    await page.locator('#refreshTrustedBrowsers').click();
+    await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
+    await expect(page.locator('[data-permission="passkeyWrite"]')).toHaveCount(0);
+
+    await page.evaluate(() => {
+      window.__kbbOptionsPasskeysEnabled = true;
+    });
+    await page.locator('#refreshTrustedBrowsers').click();
+
+    const oldBrowser = page.locator('.trusted-browser-row', { hasText: 'Old Browser' });
+    await expect(oldBrowser.locator('[data-permission="passkeyRead"]')).toBeVisible();
+    await expect(oldBrowser.locator('[data-permission="passkeyWrite"]')).toBeVisible();
+    await expect(oldBrowser.locator('[data-permission="passkeyRead"]')).not.toBeChecked();
+
+    await oldBrowser.locator('[data-permission="passkeyWrite"]').check();
+
+    await expect(page.locator('#message')).toHaveText('Browser permissions updated.');
+    await expect(oldBrowser).toContainText('Read, Passkey write');
+    const messages = await page.evaluate(() => window.__kbbOptionsMessages);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+          clientId: 'client-old',
+          permissions: ['read', 'passkeyWrite']
         })
       ])
     );

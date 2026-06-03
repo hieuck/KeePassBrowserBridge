@@ -95,6 +95,13 @@ function installRootEventListeners(root) {
     true,
   );
   root.addEventListener(
+    "keydown",
+    (event) => {
+      captureCredentialEnterKey(event);
+    },
+    true,
+  );
+  root.addEventListener(
     "submit",
     (event) => {
       captureLoginSubmit(event.target);
@@ -114,13 +121,17 @@ function installRootEventListeners(root) {
         ) {
           return;
         }
-        const submit = target.closest('button, input[type="submit"]');
-        if (submit && !isSubmitControl(submit)) {
+        const submit = target.closest('button, input[type="submit"], input[type="button"]');
+        const isNativeSubmit = isSubmitControl(submit);
+        const actionRoot = submit ? credentialActionRoot(submit) : null;
+        if (submit && !isNativeSubmit && !isCredentialActionControl(submit, actionRoot)) {
           return;
         }
         if (submit) {
-          captureLoginSubmit(submit.form || submit.closest("form"));
-          waitForPendingCredentialMessages(event);
+          captureLoginSubmit(actionRoot);
+          if (isNativeSubmit) {
+            waitForPendingCredentialMessages(event);
+          }
         }
       }
     },
@@ -134,6 +145,70 @@ function isSubmitControl(element) {
   if (tagName === "input") return type === "submit";
   if (tagName === "button") return type === "" || type === "submit";
   return false;
+}
+function isCredentialActionControl(element, root) {
+  if (!element || !element.tagName) return false;
+  const tagName = element.tagName.toLowerCase();
+  const type = (element.getAttribute("type") || "").toLowerCase();
+  if (tagName !== "button" && !(tagName === "input" && type === "button")) {
+    return false;
+  }
+
+  if (!findSubmittedPasswordInput(root || credentialActionRoot(element))) return false;
+
+  const text = credentialActionControlText(element);
+  if (!text) return false;
+  if (isAccountRecoveryContext(text) || isNonLoginCommunicationContext(text)) return false;
+  if (isProfileOrPaymentFieldText(text) && !/\b(password|passcode|secret)\b/.test(text)) return false;
+
+  return /\bsign\s*in\b|\blog\s*in\b|\blogin\b|\bunlock\b|\bcontinue\b|\bnext\b|\bsubmit\b|\bupdate\s+password\b|\bchange\s+password\b|\bsave\s+password\b/.test(text);
+}
+function credentialActionControlText(element) {
+  const parts = [
+    element.textContent || "",
+    element.getAttribute("value") || "",
+    element.getAttribute("aria-label") || "",
+    element.getAttribute("title") || "",
+    element.getAttribute("name") || "",
+    element.id || "",
+  ];
+  return parts.join(" ").toLowerCase();
+}
+function credentialActionRoot(control) {
+  if (!control) return document;
+  const form = control.form || (control.closest ? control.closest("form") : null);
+  if (form) return form;
+
+  const focusedScope = credentialScopeForInput(getFocusedEditableInput());
+  if (focusedScope && hasSubmittedCredentialTarget(focusedScope)) return focusedScope;
+
+  const region = control.closest
+    ? control.closest('[role="form"], dialog, section, article, main')
+    : null;
+  return region || document;
+}
+function hasSubmittedCredentialTarget(root) {
+  return Boolean(findSubmittedPasswordInput(root) || findUsernameInput(null, root));
+}
+function captureCredentialEnterKey(event) {
+  if (!event || event.key !== "Enter" || event.isComposing) return;
+  const target = event.target;
+  if (!target || !target.closest) return;
+  if (
+    target.closest(
+      ".kbb-save-prompt, .kbb-update-prompt, .kbb-inline-picker, .kbb-inline-button",
+    )
+  ) {
+    return;
+  }
+
+  const input = editableInputFromElement(target);
+  if (!input || (input.getAttribute("type") || "").toLowerCase() !== "password") return;
+
+  const scope = credentialScopeForInput(input) || document;
+  if (!findSubmittedPasswordInput(scope)) return;
+
+  captureLoginSubmit(scope);
 }
 function autoSubmitLoginForm(root) {
   const passwordInput = findPasswordInput(root);
@@ -1032,6 +1107,7 @@ function showInlinePicker(button, entries) {
     detail.style.whiteSpace = "nowrap";
     const actions = document.createElement("div");
     actions.style.display = "flex";
+    actions.style.flexWrap = "wrap";
     actions.style.gap = "6px";
     actions.style.marginTop = "7px";
     actions.appendChild(createPickerActionButton("Fill", "form", button, entry));
@@ -1851,7 +1927,8 @@ function applyPickerActionStyle(actionButton) {
   actionButton.style.display = "inline-flex";
   actionButton.style.alignItems = "center";
   actionButton.style.justifyContent = "center";
-  actionButton.style.minWidth = "40px";
+  actionButton.style.flex = "1 1 70px";
+  actionButton.style.minWidth = "58px";
   actionButton.style.height = "24px";
   actionButton.style.padding = "0 7px";
   actionButton.style.border = "1px solid #d7dde5";

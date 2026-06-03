@@ -53,6 +53,7 @@
     "storage",
     "tabs",
     "clipboardWrite",
+    "contextMenus",
     "notifications",
     "webRequest",
     "webRequestBlocking"

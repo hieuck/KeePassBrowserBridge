@@ -1,0 +1,506 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+
+const source = fs.readFileSync(new URL('../../extension/passkeysProxyExperiment.js', import.meta.url), 'utf8');
+
+function loadSandbox(chrome) {
+  const sandbox = {
+    chrome,
+    URL,
+    module: { exports: {} }
+  };
+  sandbox.globalThis = sandbox;
+  vm.runInNewContext(source, sandbox, { filename: 'passkeysProxyExperiment.js' });
+  return sandbox.module.exports;
+}
+
+const unavailable = loadSandbox({});
+assert.equal(unavailable.isAvailable({}), false, 'passkey proxy experiment should detect missing Chrome API');
+
+const calls = [];
+const createEvent = makeEvent();
+const getEvent = makeEvent();
+const isUvpaaEvent = makeEvent();
+const cancelEvent = makeEvent();
+const chromeApi = {
+  webAuthenticationProxy: {
+    attach: async () => 'attached',
+    detach: async () => 'detached',
+    completeCreateRequest: async (details) => calls.push(['create', details]),
+    completeGetRequest: async (details) => calls.push(['get', details]),
+    completeIsUvpaaRequest: async (details) => calls.push(['isUvpaa', details]),
+    onCreateRequest: createEvent,
+    onGetRequest: getEvent,
+    onIsUvpaaRequest: isUvpaaEvent,
+    onRequestCanceled: cancelEvent
+  }
+};
+const api = loadSandbox(chromeApi);
+
+assert.equal(api.isAvailable(), true, 'passkey proxy experiment should detect the Chrome API surface');
+assert.equal(await api.attach(), 'attached', 'attach should delegate to chrome.webAuthenticationProxy.attach');
+assert.equal(await api.detach(), 'detached', 'detach should delegate to chrome.webAuthenticationProxy.detach');
+
+const createPayload = api.normalizeCreateRequest({
+  requestId: 42,
+  requestDetailsJson: JSON.stringify({
+    rp: { id: 'example.com', name: 'Example' },
+    user: {
+      id: 'YWxpY2U',
+      name: 'alice@example.com',
+      displayName: 'Alice'
+    },
+    challenge: 'Y2hhbGxlbmdl',
+    authenticatorSelection: {
+      userVerification: 'preferred'
+    }
+  })
+}, {
+  origin: 'https://example.com'
+});
+
+assert.deepEqual(plain(createPayload), {
+  WebAuthnRequestId: '42',
+  RpId: 'example.com',
+  Origin: 'https://example.com',
+  Challenge: 'Y2hhbGxlbmdl',
+  UserHandle: 'YWxpY2U',
+  UserName: 'alice@example.com',
+  UserDisplayName: 'Alice',
+  UserVerification: 'preferred',
+  Transports: []
+}, 'create request should map Chrome JSON options to bridge payload fields');
+
+const createWithUntrustedOptionOrigin = api.normalizeCreateRequest({
+  requestId: 42,
+  requestDetailsJson: JSON.stringify({
+    rp: { id: 'example.com', name: 'Example' },
+    user: {
+      id: 'YWxpY2U',
+      name: 'alice@example.com',
+      displayName: 'Alice'
+    },
+    challenge: 'Y2hhbGxlbmdl',
+    origin: 'https://spoofed.example'
+  })
+}, {
+  origin: 'https://example.com'
+});
+assert.equal(createWithUntrustedOptionOrigin.Origin, 'https://example.com',
+  'trusted context origin should override any origin value inside requestDetailsJson');
+
+const getPayload = api.normalizeGetRequest({
+  requestId: 43,
+  requestDetailsJson: JSON.stringify({
+    rpId: 'example.com',
+    challenge: 'Z2V0LWNoYWxsZW5nZQ',
+    userVerification: 'required',
+    allowCredentials: [
+      { id: 'Y3JlZC0x', type: 'public-key' },
+      { id: '', type: 'public-key' },
+      { id: 'Y3JlZC0y', type: 'public-key' }
+    ]
+  })
+}, {
+  origin: 'https://example.com'
+});
+
+assert.deepEqual(plain(getPayload), {
+  WebAuthnRequestId: '43',
+  RpId: 'example.com',
+  Origin: 'https://example.com',
+  Challenge: 'Z2V0LWNoYWxsZW5nZQ',
+  AllowCredentialIds: ['Y3JlZC0x', 'Y3JlZC0y'],
+  UserVerification: 'required'
+}, 'get request should map Chrome JSON options to bridge payload fields');
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 44,
+    requestDetailsJson: JSON.stringify({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl'
+    })
+  }),
+  /does not expose caller origin/,
+  'proxy experiment must refuse to forward WebAuthn requests without a trusted caller origin'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 45,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'Z2V0LWNoYWxsZW5nZQ',
+      origin: 'https://spoofed.example'
+    })
+  }),
+  /does not expose caller origin/,
+  'proxy experiment must not trust origin values embedded in requestDetailsJson'
+);
+
+const trustedOriginResolver = api.createTrustedOriginResolver({
+  chromeLike: {
+    webNavigation: {
+      getFrame: async ({ tabId, frameId }) => {
+        if (tabId === 9 && frameId === 4) {
+          return { url: 'https://frame.example.test/login?step=passkey' };
+        }
+        if (tabId === 10 && frameId === 0) {
+          return { url: 'http://localhost:8080/webauthn-demo' };
+        }
+        return { url: 'http://remote.example.test/insecure' };
+      }
+    }
+  }
+});
+assert.equal(await trustedOriginResolver({
+  requestId: 46,
+  origin: 'https://direct.example.test/account',
+  requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
+}), 'https://direct.example.test', 'trusted-origin resolver should use browser-supplied top-level origin fields');
+assert.equal(await trustedOriginResolver({
+  requestId: 47,
+  url: 'https://url.example.test/login/path',
+  requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
+}), 'https://url.example.test', 'trusted-origin resolver should derive origin from browser-supplied top-level URL fields');
+assert.equal(await trustedOriginResolver({
+  requestId: 48,
+  tabId: 9,
+  frameId: 4,
+  requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
+}), 'https://frame.example.test', 'trusted-origin resolver should fall back to webNavigation frame URLs when requestInfo includes frame context');
+assert.equal(await trustedOriginResolver({
+  requestId: 49,
+  tabId: 10,
+  requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
+}), 'http://localhost:8080', 'trusted-origin resolver should allow loopback HTTP for local WebAuthn development');
+assert.equal(await trustedOriginResolver({
+  requestId: 50,
+  requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
+}), '', 'trusted-origin resolver must not use origin values embedded in requestDetailsJson');
+assert.equal(await trustedOriginResolver({
+  requestId: 51,
+  origin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+  tabId: 11,
+  frameId: 0
+}), '', 'trusted-origin resolver should reject extension and insecure remote origins');
+
+const bridgeCalls = [];
+const handlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    bridgeCalls.push([method, payload]);
+    if (method === 'passkeys.create.begin') {
+      return { PendingApproval: true, WebAuthnRequestId: payload.WebAuthnRequestId };
+    }
+    if (method === 'passkeys.create.complete') {
+      return {
+        CredentialId: 'Y3JlZC1jcmVhdGU',
+        ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+        AttestationObject: 'YXR0ZXN0'
+      };
+    }
+    if (method === 'passkeys.get.begin') {
+      return {
+        PendingApproval: true,
+        Credentials: [
+          { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' },
+          { CredentialId: 'Y3JlZC0y', UserName: 'bob@example.com' }
+        ]
+      };
+    }
+    if (method === 'passkeys.get.complete') {
+      return {
+        CredentialId: payload.CredentialId,
+        AuthenticatorData: 'YXV0aC1kYXRh',
+        ClientDataJson: 'Y2xpZW50LWdldA',
+        Signature: 'c2lnbmF0dXJl',
+        UserHandle: 'dXNlcg'
+      };
+    }
+    if (method === 'passkeys.cancel') {
+      return { WebAuthnRequestId: payload.WebAuthnRequestId, Cancelled: true };
+    }
+    throw new Error(`unexpected method ${method}`);
+  },
+  approveCreate: async ({ payload, begin }) => {
+    assert.equal(payload.WebAuthnRequestId, '80', 'create approval should receive normalized payload');
+    assert.equal(begin.PendingApproval, true, 'create approval should receive begin response');
+    return true;
+  },
+  chooseCredential: async ({ credentials }) => credentials[1]
+});
+
+const bridgeCreateResponse = await handlers.onCreateRequest({
+  requestId: 80,
+  requestDetailsJson: JSON.stringify({
+    rp: { id: 'example.com' },
+    user: { id: 'dXNlcg', name: 'alice@example.com' },
+    challenge: 'Y2hhbGxlbmdl'
+  })
+}, {
+  origin: 'https://example.com'
+});
+assert.equal(bridgeCreateResponse.CredentialId, 'Y3JlZC1jcmVhdGU',
+  'create bridge helper should return the complete response');
+assert.deepEqual(plain(bridgeCalls.slice(0, 2).map(([method, payload]) => [method, payload.WebAuthnRequestId, payload.RpId, payload.Origin])), [
+  ['passkeys.create.begin', '80', 'example.com', 'https://example.com'],
+  ['passkeys.create.complete', '80', 'example.com', 'https://example.com']
+], 'create bridge helper should call begin then complete with the trusted-origin payload');
+
+const bridgeGetResponse = await handlers.onGetRequest({
+  requestId: 81,
+  requestDetailsJson: JSON.stringify({
+    rpId: 'example.com',
+    challenge: 'Y2hhbGxlbmdl',
+    allowCredentials: [{ id: 'Y3JlZC0y' }]
+  })
+}, {
+  origin: 'https://example.com'
+});
+assert.equal(bridgeGetResponse.CredentialId, 'Y3JlZC0y',
+  'get bridge helper should return the selected credential assertion response');
+assert.deepEqual(plain(bridgeCalls.slice(2, 4).map(([method, payload]) => [method, payload.WebAuthnRequestId, payload.RpId, payload.Origin, payload.CredentialId || ''])), [
+  ['passkeys.get.begin', '81', 'example.com', 'https://example.com', ''],
+  ['passkeys.get.complete', '81', 'example.com', 'https://example.com', 'Y3JlZC0y']
+], 'get bridge helper should call begin then complete with the selected credential');
+
+const bridgeCancelResponse = await handlers.onRequestCanceled('81', { kind: 'get' }, 'canceled');
+assert.equal(bridgeCancelResponse.Cancelled, true, 'cancel bridge helper should return cancel response');
+assert.deepEqual(plain(bridgeCalls[4]), [
+  'passkeys.cancel',
+  { WebAuthnRequestId: '81' }
+], 'cancel bridge helper should call backend cancel method with the WebAuthn request ID');
+
+const deniedCalls = [];
+const deniedHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    deniedCalls.push([method, payload]);
+    return method === 'passkeys.cancel'
+      ? { WebAuthnRequestId: payload.WebAuthnRequestId, Cancelled: true }
+      : { PendingApproval: true };
+  },
+  approveCreate: async () => false
+});
+await assert.rejects(
+  () => deniedHandlers.onCreateRequest({
+    requestId: 82,
+    requestDetailsJson: JSON.stringify({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl'
+    })
+  }, { origin: 'https://example.com' }),
+  (error) => error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey registration was denied.',
+  'create bridge helper should surface denied approval as a WebAuthn error'
+);
+assert.deepEqual(plain(deniedCalls.map(([method, payload]) => [method, payload.WebAuthnRequestId])), [
+  ['passkeys.create.begin', '82'],
+  ['passkeys.cancel', '82']
+], 'denied create approval should cancel the backend pending passkey session');
+
+await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
+await api.completeGetError(chromeApi, 43, 'Bridge unavailable');
+await api.completeCreateSuccess(chromeApi, 45, {
+  Credential: { CredentialId: 'Y3JlZC00NQ' },
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24',
+  Transports: ['internal', 'usb']
+});
+await api.completeGetSuccess(chromeApi, 46, {
+  Assertion: {
+    CredentialId: 'Y3JlZC00Ng',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl',
+    UserHandle: 'dXNlcg'
+  }
+});
+await api.completeIsUvpaa(chromeApi, 47, { isUvpaa: false });
+
+const createSuccessJson = JSON.parse(calls[2][1].responseJson);
+const getSuccessJson = JSON.parse(calls[3][1].responseJson);
+assert.deepEqual(createSuccessJson, {
+  id: 'Y3JlZC00NQ',
+  rawId: 'Y3JlZC00NQ',
+  type: 'public-key',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24',
+    transports: ['internal', 'usb']
+  },
+  clientExtensionResults: {}
+}, 'create success should serialize a PublicKeyCredential.toJSON-like response');
+assert.deepEqual(getSuccessJson, {
+  id: 'Y3JlZC00Ng',
+  rawId: 'Y3JlZC00Ng',
+  type: 'public-key',
+  response: {
+    authenticatorData: 'YXV0aC1kYXRh',
+    clientDataJSON: 'Y2xpZW50LWdldA',
+    signature: 'c2lnbmF0dXJl',
+    userHandle: 'dXNlcg'
+  },
+  clientExtensionResults: {}
+}, 'get success should serialize a PublicKeyCredential.toJSON-like response');
+
+assert.deepEqual(plain(calls.slice(0, 2)), [
+  ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
+  ['get', { requestId: 43, error: { name: 'NotAllowedError', message: 'Bridge unavailable' } }]
+], 'error completion should call the matching Chrome completion APIs');
+assert.deepEqual(plain(calls[4]), ['isUvpaa', { requestId: 47, isUvpaa: false }],
+  'UVPAA completion should call the Chrome completion API with an explicit boolean');
+
+const noOriginCalls = [];
+const noOriginCreateEvent = makeEvent();
+const noOriginGetEvent = makeEvent();
+const noOriginIsUvpaaEvent = makeEvent();
+const noOriginCancelEvent = makeEvent();
+let noOriginHandlerCalled = false;
+const noOriginLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => noOriginCalls.push(['attach']),
+      detach: async () => noOriginCalls.push(['detach']),
+      completeCreateRequest: async (details) => noOriginCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => noOriginCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => noOriginCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: noOriginCreateEvent,
+      onGetRequest: noOriginGetEvent,
+      onIsUvpaaRequest: noOriginIsUvpaaEvent,
+      onRequestCanceled: noOriginCancelEvent
+    }
+  },
+  onCreateRequest: async () => {
+    noOriginHandlerCalled = true;
+  }
+});
+await noOriginLifecycle.attach();
+await noOriginCreateEvent.dispatch({
+  requestId: 70,
+  requestDetailsJson: JSON.stringify({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' })
+});
+assert.equal(noOriginHandlerCalled, false, 'lifecycle should not call create handler without trusted origin resolver');
+assert.deepEqual(plain(noOriginCalls.find((entry) => entry[0] === 'createComplete')), [
+  'createComplete',
+  { requestId: 70, error: { name: 'NotAllowedError', message: api.missingOriginMessage } }
+], 'lifecycle should complete missing-origin create requests with a WebAuthn error');
+await noOriginLifecycle.detach();
+
+const lifecycleCalls = [];
+const lifecycleCreateEvent = makeEvent();
+const lifecycleGetEvent = makeEvent();
+const lifecycleIsUvpaaEvent = makeEvent();
+const lifecycleCancelEvent = makeEvent();
+const lifecycleChrome = {
+  webAuthenticationProxy: {
+    attach: async () => lifecycleCalls.push(['attach']),
+    detach: async () => lifecycleCalls.push(['detach']),
+    completeCreateRequest: async (details) => lifecycleCalls.push(['createComplete', details]),
+    completeGetRequest: async (details) => lifecycleCalls.push(['getComplete', details]),
+    completeIsUvpaaRequest: async (details) => lifecycleCalls.push(['isUvpaaComplete', details]),
+    onCreateRequest: lifecycleCreateEvent,
+    onGetRequest: lifecycleGetEvent,
+    onIsUvpaaRequest: lifecycleIsUvpaaEvent,
+    onRequestCanceled: lifecycleCancelEvent
+  }
+};
+let releaseGetHandler;
+const canceled = [];
+const lifecycle = api.createLifecycle({
+  chromeLike: lifecycleChrome,
+  resolveTrustedOrigin: async (requestInfo, context) => {
+    assert.equal(typeof requestInfo.requestId, 'number', 'resolver should receive Chrome request info');
+    assert.equal(['create', 'get'].includes(context.kind), true, 'resolver should receive request kind');
+    return 'https://example.com';
+  },
+  onCreateRequest: async (requestInfo, context) => {
+    assert.equal(context.origin, 'https://example.com', 'create handler should receive trusted origin context');
+    assert.equal(api.normalizeCreateRequest(requestInfo, context).Origin, 'https://example.com',
+      'create handler should be able to normalize with resolved origin context');
+    return {
+      Credential: { CredentialId: 'Y3JlZC03Nw' },
+      ClientDataJson: 'Y2xpZW50',
+      AttestationObject: 'YXR0ZXN0'
+    };
+  },
+  onGetRequest: async (requestInfo, context) => {
+    assert.equal(context.origin, 'https://example.com', 'get handler should receive trusted origin context');
+    assert.equal(api.normalizeGetRequest(requestInfo, context).Origin, 'https://example.com',
+      'get handler should be able to normalize with resolved origin context');
+    return new Promise((resolve) => {
+      releaseGetHandler = resolve;
+    });
+  },
+  onIsUvpaaRequest: async () => true,
+  onRequestCanceled: (requestId, request) => canceled.push([requestId, request && request.kind])
+});
+
+await lifecycle.attach();
+assert.equal(lifecycle.isAttached(), true, 'lifecycle attach should mark proxy attached');
+assert.equal(lifecycleCreateEvent.listenerCount(), 1, 'lifecycle attach should register create listener');
+assert.equal(lifecycleIsUvpaaEvent.listenerCount(), 1, 'lifecycle attach should register UVPAA listener');
+await lifecycleIsUvpaaEvent.dispatch({ requestId: 76 });
+assert.deepEqual(plain(lifecycleCalls.find((entry) => entry[0] === 'isUvpaaComplete')),
+  ['isUvpaaComplete', { requestId: 76, isUvpaa: true }],
+  'lifecycle should complete UVPAA requests through the configured handler');
+await lifecycleCreateEvent.dispatch({
+  requestId: 77,
+  requestDetailsJson: JSON.stringify({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' })
+});
+assert.equal(lifecycle.pendingCount(), 0, 'create request should be completed and removed from pending state');
+
+const getDispatch = lifecycleGetEvent.dispatch({
+  requestId: 78,
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+});
+await flushPromises();
+assert.equal(lifecycle.pendingCount(), 1, 'in-flight get request should be tracked');
+await lifecycleCancelEvent.dispatch(78);
+assert.deepEqual(canceled, [['78', 'get']], 'cancellation should report the canceled request kind');
+releaseGetHandler({
+  Assertion: {
+    CredentialId: 'Y3JlZC03OA',
+    AuthenticatorData: 'YXV0aA',
+    ClientDataJson: 'Y2xpZW50',
+    Signature: 'c2ln'
+  }
+});
+await getDispatch;
+assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false, 'canceled get request must not be completed');
+await lifecycle.detach();
+assert.equal(lifecycle.isAttached(), false, 'lifecycle detach should mark proxy detached');
+assert.equal(lifecycleCreateEvent.listenerCount(), 0, 'lifecycle detach should remove create listener');
+
+console.log('Passkey proxy experiment tests passed.');
+
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function makeEvent() {
+  const listeners = [];
+  return {
+    addListener(listener) {
+      listeners.push(listener);
+    },
+    removeListener(listener) {
+      const index = listeners.indexOf(listener);
+      if (index >= 0) listeners.splice(index, 1);
+    },
+    listenerCount() {
+      return listeners.length;
+    },
+    async dispatch(...args) {
+      await Promise.all([...listeners].map((listener) => listener(...args)));
+    }
+  };
+}

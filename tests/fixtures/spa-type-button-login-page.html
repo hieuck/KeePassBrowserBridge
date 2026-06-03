@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPA type-button login fixture</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f4f6f8;
+      color: #1f2933;
+      font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(420px, calc(100vw - 32px));
+      margin: 48px auto;
+      padding: 20px;
+      background: #ffffff;
+      border: 1px solid #d7dde5;
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: #667085;
+      font-weight: 600;
+    }
+
+    input,
+    button {
+      width: 100%;
+      min-height: 36px;
+      box-sizing: border-box;
+      font: inherit;
+    }
+
+    input {
+      border: 1px solid #cfd6df;
+      border-radius: 6px;
+      padding: 0 10px;
+    }
+
+    button {
+      margin-top: 16px;
+      border: 0;
+      border-radius: 6px;
+      background: #176b87;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section role="form" aria-label="Sign in">
+      <h1>Sign in</h1>
+      <label for="spa-email">Email</label>
+      <input id="spa-email" name="email" type="email" autocomplete="username">
+
+      <label for="spa-password">Password</label>
+      <input id="spa-password" name="password" type="password" autocomplete="current-password">
+
+      <button id="spa-show-password" type="button" aria-label="Show password">Show password</button>
+      <button id="spa-sign-in" type="button">Sign in</button>
+    </section>
+  </main>
+</body>
+</html>

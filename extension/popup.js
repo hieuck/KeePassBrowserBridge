@@ -39,6 +39,7 @@ let currentEntries = [];
 let visibleEntries = [];
 let currentState = { locked: false };
 let trustedBrowserClients = [];
+let bridgePasskeysEnabled = false;
 let pairingExpiryTimer = null;
 let pairingCountdownTimer = null;
 
@@ -261,6 +262,7 @@ async function toggleLocked() {
 }
 
 async function listClients() {
+  await refreshAboutMetadata();
   const result = await send({ type: 'KBB_LIST_CLIENTS' });
   trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
   renderClients(trustedBrowserClients);
@@ -683,12 +685,26 @@ async function hydrateStatePermissions(state) {
 }
 
 async function renderAbout() {
+  await refreshAboutMetadata();
+}
+
+async function refreshAboutMetadata() {
   const about = await send({ type: 'KBB_GET_ABOUT' });
+  const passkeysEnabled = about.pluginPasskeysEnabled === true;
   elements.aboutVersion.textContent = about.version || 'Unknown';
   elements.aboutPluginVersion.textContent = about.pluginVersion || 'Unavailable';
   elements.aboutBrowserId.textContent = about.browserId || 'Unknown';
   elements.repositoryLink.href = about.repositoryUrl || '#';
   elements.releasesLink.href = about.releasesUrl || '#';
+  if (bridgePasskeysEnabled !== passkeysEnabled) {
+    bridgePasskeysEnabled = passkeysEnabled;
+    if (trustedBrowserClients.length && !elements.clientsPanel.classList.contains('hidden')) {
+      renderClients(trustedBrowserClients);
+    }
+  } else {
+    bridgePasskeysEnabled = passkeysEnabled;
+  }
+  return about;
 }
 
 async function checkUpdates() {
@@ -1042,7 +1058,8 @@ function renderClients(clients) {
     meta.textContent = [
       client.Current ? 'This browser' : '',
       client.ExtensionOrigin || '',
-      formatDate(client.CreatedUtcMs),
+      `Created: ${formatDate(client.CreatedUtcMs)}`,
+      `Last used: ${formatDate(client.LastUsedUtcMs)}`,
       formatClientPermissions(client.Permissions)
     ].filter(Boolean).join(' - ');
 
@@ -1115,11 +1132,18 @@ function normalizeClientPermissions(permissions) {
 }
 
 function getPermissionDefinitions() {
-  return [
+  const definitions = [
     { value: 'read', label: 'Read' },
     { value: 'write', label: 'Write' },
     { value: 'manageClients', label: 'Manage browsers' }
   ];
+  if (bridgePasskeysEnabled) {
+    definitions.push(
+      { value: 'passkeyRead', label: 'Passkey read' },
+      { value: 'passkeyWrite', label: 'Passkey write' }
+    );
+  }
+  return definitions;
 }
 
 function formatDate(ms) {

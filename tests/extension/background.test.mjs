@@ -16,8 +16,10 @@ const badgeCalls = [];
 const scriptCalls = [];
 const clipboardWrites = [];
 const timerCalls = [];
+const contextMenuItems = [];
 let now = 10000;
 let loginEntries = [];
+let passkeysFeatureEnabled = false;
 
 const sandbox = {
   console,
@@ -75,7 +77,18 @@ const sandbox = {
           ProtocolVersion: 1,
           RequestId: request.RequestId,
           Success: true,
-          Payload: '{"ProductName":"KeePass Browser Bridge","ProtocolVersion":1,"PluginVersion":"0.9.0","PluginUpdateUrl":"https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt"}'
+          Payload: JSON.stringify({
+            ProductName: 'KeePass Browser Bridge',
+            ProtocolVersion: 1,
+            PluginVersion: '0.9.0',
+            PluginUpdateUrl: 'https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt',
+            SupportedMethods: ['hello', 'logins.query', 'passkeys.cancel'],
+            Features: [
+              { Name: 'passwords', Enabled: true },
+              { Name: 'saveUpdate', Enabled: true },
+              { Name: 'passkeys', Enabled: passkeysFeatureEnabled }
+            ]
+          })
         })
       };
     }
@@ -216,7 +229,7 @@ const sandbox = {
         version: '0.9.0'
       }),
       onMessage: { addListener(fn) { sandbox.runtimeMessageHandler = fn; } },
-      onInstalled: { addListener() {} }
+      onInstalled: { addListener(fn) { sandbox.runtimeInstalledHandler = fn; } }
     },
     action: {
       setBadgeText: async (details) => {
@@ -272,7 +285,7 @@ const sandbox = {
       }
     },
     contextMenus: {
-      create: () => {},
+      create: (details) => { contextMenuItems.push(details); },
       onClicked: { addListener(fn) { sandbox.contextMenuHandler = fn; } }
     },
     webRequest: {
@@ -298,6 +311,20 @@ const source = fs.readFileSync(new URL('../../extension/background.js', import.m
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'background.js' });
 
+assert.ok(sandbox.runtimeInstalledHandler, 'background should register an install listener for context menu setup');
+sandbox.runtimeInstalledHandler();
+assert.deepEqual(
+  contextMenuItems.map((item) => item.id),
+  ['kbb_fill_username', 'kbb_fill_password', 'kbb_fill_totp', 'kbb_generate_password'],
+  'background should create context menu entries for username, password, TOTP, and generated password actions'
+);
+assert.equal(
+  contextMenuItems.every((item) => Array.isArray(item.contexts) && item.contexts.includes('editable')),
+  true,
+  'context menu entries should target editable fields'
+);
+assert.ok(sandbox.contextMenuHandler, 'background should register a context menu click handler');
+
 const externalMessageResponse = await new Promise((resolve) => {
   sandbox.runtimeMessageHandler(
     { type: 'KBB_GET_STATE' },
@@ -317,6 +344,9 @@ assert.equal(about.browserId, 'abcdefghijklmnopabcdefghijklmnop', 'about should 
 assert.equal(about.pluginVersion, '0.9.0', 'about should include bridge plugin version when KeePass is reachable');
 assert.equal(about.pluginUpdateUrl, 'https://raw.githubusercontent.com/hieuck/KeePassBrowserBridge/main/update/versioninfo.txt', 'about should include bridge plugin update URL');
 assert.equal(about.bridgeAvailable, true, 'about should report when bridge metadata is reachable');
+assert.deepEqual(Array.from(about.pluginSupportedMethods), ['hello', 'logins.query', 'passkeys.cancel'], 'about should expose bridge-supported method discovery');
+assert.deepEqual(JSON.parse(JSON.stringify(about.pluginFeatures)), { passwords: true, saveUpdate: true, passkeys: false }, 'about should expose bridge feature discovery');
+assert.equal(about.pluginPasskeysEnabled, false, 'about should expose disabled browser-facing passkeys');
 
 const updateCheck = await sandbox.handleMessage({ type: 'KBB_CHECK_UPDATES' });
 assert.equal(updateCheck.currentVersion, '0.9.0', 'update check should include current version');
@@ -440,7 +470,7 @@ requests.length = 0;
 const permissionsResult = await sandbox.handleMessage({
   type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
   clientId: 'client-2',
-  permissions: ['read', 'write', 'write', 'unknown']
+  permissions: ['read', 'write', 'write', 'passkeyRead', 'unknown']
 });
 assert.equal(permissionsResult.Updated, true, 'permission update should report success for known clients');
 const permissionsRequest = requests.find((request) => request.Method === 'clients.updatePermissions');
@@ -448,8 +478,23 @@ assert.ok(permissionsRequest, 'permission update should call the bridge');
 assert.deepEqual(
   JSON.parse(permissionsRequest.Payload).Permissions,
   ['read', 'write'],
-  'permission update should send normalized permissions'
+  'permission update should send normalized permissions and strip disabled passkey permissions'
 );
+
+passkeysFeatureEnabled = true;
+requests.length = 0;
+await sandbox.handleMessage({
+  type: 'KBB_UPDATE_CLIENT_PERMISSIONS',
+  clientId: 'client-2',
+  permissions: ['write', 'passkeyRead', 'passkeyWrite', 'unknown']
+});
+const passkeyPermissionsRequest = requests.find((request) => request.Method === 'clients.updatePermissions');
+assert.deepEqual(
+  JSON.parse(passkeyPermissionsRequest.Payload).Permissions,
+  ['read', 'write', 'passkeyRead', 'passkeyWrite'],
+  'permission update should keep passkey permissions when bridge feature discovery enables them'
+);
+passkeysFeatureEnabled = false;
 
 requests.length = 0;
 await sandbox.handleMessage({
@@ -1023,6 +1068,14 @@ assert.ok(notifications.some((notification) => notification.options.title === 'U
   'successful update should show a desktop notification');
 
 // Context menu tests
+loginEntries = [{
+  EntryId: 'entry-1',
+  Title: 'Example',
+  UserName: 'alice',
+  Password: 'secret',
+  OneTimePassword: '123456',
+  Url: 'https://example.com/login'
+}];
 storage.locked = true;
 requests.length = 0;
 sentMessage = null;
@@ -1053,6 +1106,22 @@ assert.equal(sentMessage.credential.Password, 'secret', 'context menu password f
 assert.equal(sentMessage.fieldRole, 'password', 'context menu fill should tell the content script to fill the focused editable field');
 const contextMenuFillAckRequest = requests.find((request) => request.Method === 'logins.fillAck' && JSON.parse(request.Payload).EntryId === 'entry-1');
 assert.ok(contextMenuFillAckRequest, 'successful context menu fill should acknowledge usage');
+
+requests.length = 0;
+sentMessage = null;
+sandbox.contextMenuHandler({ menuItemId: 'kbb_fill_username' }, { id: 1, url: 'https://example.com/login' });
+await new Promise(r => setTimeout(r, 100)); // wait for async handler
+assert.equal(sentMessage.credential.UserName, 'alice', 'context menu username fill should use the matching entry username');
+assert.equal(sentMessage.credential.Password, undefined, 'context menu username fill should not expose the matching entry password');
+assert.equal(sentMessage.fieldRole, 'username', 'context menu username fill should target the focused username field');
+
+requests.length = 0;
+sentMessage = null;
+sandbox.contextMenuHandler({ menuItemId: 'kbb_fill_totp' }, { id: 1, url: 'https://example.com/login' });
+await new Promise(r => setTimeout(r, 100)); // wait for async handler
+assert.equal(sentMessage.credential.OneTimePassword, '123456', 'context menu TOTP fill should use the matching entry OTP');
+assert.equal(sentMessage.credential.Password, undefined, 'context menu TOTP fill should not expose the matching entry password');
+assert.equal(sentMessage.fieldRole, 'otp', 'context menu TOTP fill should target the focused OTP field');
 
 requests.length = 0;
 sandbox.chrome.tabs.sendMessage = async (tabId, msg) => {

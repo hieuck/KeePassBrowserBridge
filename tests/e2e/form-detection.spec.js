@@ -73,6 +73,170 @@ test.describe('content script form detection', () => {
     expect(createMessage.login.url).toContain('/tests/fixtures/login-page.html');
   });
 
+  test('prompts to save a new SPA login after clicking a credential action type button', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
+              sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
+                origin: message.origin,
+                credential: message.credential
+              }));
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_CONSUME_SUBMITTED_CREDENTIAL') {
+              const pending = JSON.parse(sessionStorage.getItem('__testKbbPendingSubmittedCredential') || 'null');
+              if (!pending || pending.origin !== message.origin) {
+                return { ok: true, response: { credential: null } };
+              }
+              sessionStorage.removeItem('__testKbbPendingSubmittedCredential');
+              return { ok: true, response: { credential: pending.credential } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            if (message.type === 'KBB_CREATE_LOGIN') {
+              return { ok: true, response: { Success: true } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/spa-type-button-login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#spa-email').fill('spa@example.com');
+    await page.locator('#spa-password').fill('spa-secret');
+    await page.locator('#spa-sign-in').click();
+
+    await expect(page.locator('.kbb-save-prompt')).toBeVisible();
+    await page.locator('.kbb-save-prompt button', { hasText: 'Save' }).click();
+
+    const createMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_CREATE_LOGIN'));
+    expect(createMessage).toMatchObject({
+      type: 'KBB_CREATE_LOGIN',
+      login: {
+        userName: 'spa@example.com',
+        password: 'spa-secret'
+      }
+    });
+    expect(createMessage.login.url).toContain('/tests/fixtures/spa-type-button-login-page.html');
+  });
+
+  test('does not prompt after clicking a neutral type button in a SPA login panel', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/spa-type-button-login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#spa-email').fill('spa@example.com');
+    await page.locator('#spa-password').fill('spa-secret');
+    await page.locator('#spa-show-password').click();
+
+    await expect(page.locator('.kbb-save-prompt')).toBeHidden({ timeout: 600 });
+    const queryMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_QUERY_FOR_URL'));
+    expect(queryMessage).toBeUndefined();
+  });
+
+  test('prompts to save a new SPA login after pressing Enter in a password field', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
+              sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
+                origin: message.origin,
+                credential: message.credential
+              }));
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_CONSUME_SUBMITTED_CREDENTIAL') {
+              const pending = JSON.parse(sessionStorage.getItem('__testKbbPendingSubmittedCredential') || 'null');
+              if (!pending || pending.origin !== message.origin) {
+                return { ok: true, response: { credential: null } };
+              }
+              sessionStorage.removeItem('__testKbbPendingSubmittedCredential');
+              return { ok: true, response: { credential: pending.credential } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            if (message.type === 'KBB_CREATE_LOGIN') {
+              return { ok: true, response: { Success: true } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/spa-type-button-login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#spa-email').fill('enter@example.com');
+    await page.locator('#spa-password').fill('enter-secret');
+    await page.locator('#spa-password').press('Enter');
+
+    await expect(page.locator('.kbb-save-prompt')).toBeVisible();
+    await page.locator('.kbb-save-prompt button', { hasText: 'Save' }).click();
+
+    const createMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_CREATE_LOGIN'));
+    expect(createMessage).toMatchObject({
+      type: 'KBB_CREATE_LOGIN',
+      login: {
+        userName: 'enter@example.com',
+        password: 'enter-secret'
+      }
+    });
+  });
+
+  test('does not prompt after pressing Enter before a SPA password is typed', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/spa-type-button-login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#spa-email').fill('enter@example.com');
+    await page.locator('#spa-password').press('Enter');
+
+    await expect(page.locator('.kbb-save-prompt')).toBeHidden({ timeout: 600 });
+    const queryMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_QUERY_FOR_URL'));
+    expect(queryMessage).toBeUndefined();
+  });
+
   test('save prompt allows editing title and username before creating login', async ({ page }) => {
     await page.addInitScript(() => {
       window.__kbbMessages = [];
