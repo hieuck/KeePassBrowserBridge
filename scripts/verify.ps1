@@ -57,6 +57,7 @@ try {
     Invoke-NativeChecked "node" @("tests\extension\passkeys-proxy.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\popup.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\generator.test.mjs")
+    Invoke-NativeChecked "node" @("scripts\verify-security-threat-model.mjs")
     Invoke-NativeChecked "node" @("scripts\verify-real-site-matrix.mjs")
     Invoke-NativeChecked "node" @("scripts\verify-store-screenshots.mjs")
 

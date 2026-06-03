@@ -29,6 +29,7 @@ const verifierScript = fs.readFileSync(new URL('../../scripts/verify.ps1', impor
 const signedReleaseSmokeScript = fs.readFileSync(new URL('../../scripts/verify-signed-release-smoke.ps1', import.meta.url), 'utf8');
 const cleanSourceSmokeScript = fs.readFileSync(new URL('../../scripts/verify-clean-source-smoke.ps1', import.meta.url), 'utf8');
 const realSiteMatrixScript = fs.readFileSync(new URL('../../scripts/verify-real-site-matrix.mjs', import.meta.url), 'utf8');
+const securityThreatModelScript = fs.readFileSync(new URL('../../scripts/verify-security-threat-model.mjs', import.meta.url), 'utf8');
 const storeScreenshotsVerifyScript = fs.readFileSync(new URL('../../scripts/verify-store-screenshots.mjs', import.meta.url), 'utf8');
 const screenshotScript = fs.readFileSync(new URL('../../scripts/capture-store-screenshots.mjs', import.meta.url), 'utf8');
 const screenshotWrapper = fs.readFileSync(new URL('../../scripts/capture-store-screenshots.ps1', import.meta.url), 'utf8');
@@ -172,6 +173,14 @@ assert.equal(artifactVerifyScript.includes('Assert-GpgSignature'), true, 'artifa
 assert.equal(artifactVerifyScript.includes('ExpectedSignerFingerprint'), true, 'artifact verifier should optionally require a specific signing fingerprint');
 assert.equal(artifactVerifyScript.includes('VALIDSIG'), true, 'artifact verifier should parse GPG VALIDSIG status output for signer fingerprint checks');
 assert.equal(verifierScript.includes('verify-real-site-matrix.mjs'), true, 'main verifier should check the real-site validation matrix');
+assert.equal(verifierScript.includes('verify-security-threat-model.mjs'), true, 'main verifier should check security threat-model evidence');
+assert.equal(securityThreatModelScript.includes('BridgeMethodPolicyCoversEveryBridgeMethod'), true, 'security verifier should check bridge method policy test coverage');
+assert.equal(securityThreatModelScript.includes('LoopbackBridgeServerRejectsWebPostOriginBeforeHandling'), true, 'security verifier should check web-origin bridge rejection coverage');
+assert.equal(securityThreatModelScript.includes('CredentialQueryRedactsProtectedCustomFieldValues'), true, 'security verifier should check protected custom field coverage');
+assert.equal(securityThreatModelScript.includes('does not prompt to save sign-up forms'), true, 'security verifier should check false-positive save prompt coverage');
+assert.equal(securityThreatModelScript.includes('Assert-ReleaseManifest'), true, 'security verifier should check release artifact verification coverage');
+assert.equal(securityThreatModelScript.includes('docs/release-integrity.md'), true, 'security verifier should check release notes integrity guidance');
+assert.equal(securityThreatModelScript.includes('webAuthenticationProxy'), true, 'security verifier should check WebAuthn permission gating');
 assert.equal(realSiteMatrixScript.includes('docs'), true, 'real-site matrix verifier should read the validation matrix');
 assert.equal(realSiteMatrixScript.includes("path.join(repoRoot, 'tests', 'fixtures')"), true, 'real-site matrix verifier should check referenced fixtures');
 assert.equal(realSiteMatrixScript.includes('missing automated coverage labels'), true, 'real-site matrix verifier should check documented coverage labels');

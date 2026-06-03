@@ -96,13 +96,14 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 
 Before public replacement release:
 
-1. Review bridge methods and confirm every method has the minimum required permission; keep `BridgeMethodPolicyCoversEveryBridgeMethod` and `BridgeMethodPolicyAssignsExpectedPermissions` passing.
-2. Confirm web-origin preflight and POST requests never reach pairing or credential handlers.
-3. Confirm non-JSON, oversized, and mismatched-origin bridge POSTs are rejected before request handlers run.
-4. Confirm request replay tests cover authenticated methods.
-5. Confirm protected custom fields cannot appear in popup search, copy actions, focused-field fill, settings export, or logs.
-6. Confirm save/update prompts never capture sign-up, reset, profile, payment, search, or API-token forms.
-7. Confirm release artifacts have reproducible version metadata and no stale files in the artifact directory.
-8. Confirm release notes document residual risks, migration guidance, unsupported passkeys, and checksum verification from `docs/release-integrity.md`.
-9. Confirm `docs/privacy-policy.md` matches the browser-store privacy answers.
-10. Confirm any future WebAuthn permission follows `docs/passkeys-webauthn-design.md`.
+1. Run `scripts/verify-security-threat-model.mjs` through `.\scripts\verify.ps1` so implemented security claims stay tied to test, source, and release-script evidence.
+2. Review bridge methods and confirm every method has the minimum required permission; keep `BridgeMethodPolicyCoversEveryBridgeMethod` and `BridgeMethodPolicyAssignsExpectedPermissions` passing.
+3. Confirm web-origin preflight and POST requests never reach pairing or credential handlers.
+4. Confirm non-JSON, oversized, and mismatched-origin bridge POSTs are rejected before request handlers run.
+5. Confirm request replay tests cover authenticated methods.
+6. Confirm protected custom fields cannot appear in popup search, copy actions, focused-field fill, settings export, or logs.
+7. Confirm save/update prompts never capture sign-up, reset, profile, payment, search, or API-token forms.
+8. Confirm release artifacts have reproducible version metadata and no stale files in the artifact directory.
+9. Confirm release notes document residual risks, migration guidance, unsupported passkeys, and checksum verification from `docs/release-integrity.md`.
+10. Confirm `docs/privacy-policy.md` matches the browser-store privacy answers.
+11. Confirm any future WebAuthn permission follows `docs/passkeys-webauthn-design.md`.
