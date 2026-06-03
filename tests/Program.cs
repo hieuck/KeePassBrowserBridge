@@ -129,6 +129,7 @@ internal static class Program
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
         BridgeHandlerCompletesPasskeyCreateAndSavesDatabaseWhenFeatureGateIsEnabled();
         BridgeHandlerCompletesPasskeyGetSignsAssertionAndSavesDatabaseWhenFeatureGateIsEnabled();
+        BridgeHandlerPersistsPasskeySignCountAcrossGetSessions();
         BridgeHandlerRejectsReplayedPasskeyCreateCompletionRequestId();
         BridgeHandlerRejectsReplayedPasskeyGetCompletionRequestId();
         BridgeHandlerRevokesPasskeyAndSavesDatabaseWhenFeatureGateIsEnabled();
@@ -2266,6 +2267,86 @@ internal static class Program
             UserHandle = result.UserHandle,
             SignCount = result.SignCount
         }), "get complete response signature should verify against the stored public key");
+    }
+
+    private static void BridgeHandlerPersistsPasskeySignCountAcrossGetSessions()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before repeated get complete test: " + registration.Error);
+
+        int saveCount = 0;
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { saveCount += 1; });
+
+        BridgeRequest firstBeginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyGetBeginPayload("webauthn-get-count-1",
+                new string[] { registration.Credential.CredentialId })));
+        BridgeResponse firstBeginResponse = handler.Handle(firstBeginRequest);
+        AssertTrue(firstBeginResponse.Success, "first passkey get begin should succeed: " + firstBeginResponse.Error);
+
+        BridgeRequest firstCompleteRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyGetCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-get-count-1",
+                RpId = "example.com",
+                Origin = "https://example.com/login",
+                CredentialId = registration.Credential.CredentialId
+            }));
+        BridgeResponse firstCompleteResponse = handler.Handle(firstCompleteRequest);
+        PasskeyGetCompleteResponsePayload firstResult =
+            BridgeJsonSerializer.Deserialize<PasskeyGetCompleteResponsePayload>(firstCompleteResponse.Payload);
+        PasskeyCredentialMaterial afterFirst = PasskeyEntryStore.Read(entry);
+
+        AssertTrue(firstCompleteResponse.Success, "first passkey get complete should succeed: " + firstCompleteResponse.Error);
+        AssertEqual((uint)1, firstResult.SignCount, "first assertion sign count mismatch");
+        AssertEqual((uint)1, afterFirst.SignCount, "first assertion should persist sign count in entry storage");
+
+        BridgeRequest secondBeginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(CreatePasskeyGetBeginPayload("webauthn-get-count-2",
+                new string[] { registration.Credential.CredentialId })));
+        BridgeResponse secondBeginResponse = handler.Handle(secondBeginRequest);
+        AssertTrue(secondBeginResponse.Success, "second passkey get begin should succeed: " + secondBeginResponse.Error);
+
+        BridgeRequest secondCompleteRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysGetComplete, "client-1", "secret",
+            BridgeJsonSerializer.Serialize(new PasskeyGetCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-get-count-2",
+                RpId = "example.com",
+                Origin = "https://example.com/login",
+                CredentialId = registration.Credential.CredentialId
+            }));
+        BridgeResponse secondCompleteResponse = handler.Handle(secondCompleteRequest);
+        PasskeyGetCompleteResponsePayload secondResult =
+            BridgeJsonSerializer.Deserialize<PasskeyGetCompleteResponsePayload>(secondCompleteResponse.Payload);
+        PasskeyCredentialMaterial afterSecond = PasskeyEntryStore.Read(entry);
+
+        AssertTrue(secondCompleteResponse.Success, "second passkey get complete should succeed: " + secondCompleteResponse.Error);
+        AssertEqual((uint)2, secondResult.SignCount, "second assertion should use the persisted sign count from the first session");
+        AssertEqual((uint)2, afterSecond.SignCount, "second assertion should persist the incremented sign count in entry storage");
+        AssertEqual(0, pending.Count, "repeated passkey get completes should consume every pending session");
+        AssertEqual(2, saveCount, "each successful passkey assertion should save the database once");
+
+        string listPayload = BridgeJsonSerializer.Serialize(new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            AllowCredentialIds = new string[] { registration.Credential.CredentialId }
+        });
+        BridgeRequest listRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysList, "client-1", "secret", listPayload);
+        BridgeResponse listResponse = handler.Handle(listRequest);
+        PasskeyCredentialLookupResult lookup = BridgeJsonSerializer.Deserialize<PasskeyCredentialLookupResult>(listResponse.Payload);
+
+        AssertTrue(listResponse.Success, "passkeys.list should succeed after repeated assertions: " + listResponse.Error);
+        AssertTrue(lookup.Success, "passkeys.list payload should succeed after repeated assertions: " + lookup.Error);
+        AssertEqual(1, lookup.Credentials.Length, "passkeys.list should return the persisted credential after repeated assertions");
+        AssertEqual((uint)2, lookup.Credentials[0].SignCount, "passkeys.list should expose the persisted sign count summary");
     }
 
     private static void BridgeHandlerRejectsReplayedPasskeyCreateCompletionRequestId()
