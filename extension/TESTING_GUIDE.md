@@ -53,7 +53,9 @@
 
 ### 5. Test Find Logins
 
-1. Open a website with login form (e.g., Google, GitHub)
+Use a local fixture or disposable test account. Do not use personal production credentials for release smoke testing.
+
+1. Open a website or fixture with a login form, such as `tests/fixtures/login-page.html`
 2. Click extension icon → "Find Logins" button
 3. Verify:
    - [ ] Current URL displayed
@@ -182,6 +184,7 @@ test('should fill login credentials', async ({ page }) => {
 | Update changed passwords | ✅ | ✅ | ✅ | Page prompt and popup edit |
 | Site overrides | ✅ | ✅ | ✅ | Auto-fill and auto-submit overrides |
 | Trusted browser management | ✅ | ✅ | ✅ | List and revoke |
+| Passkeys/WebAuthn | ❌ | ✅ | ❌ | Unsupported in 0.9.0; backend prototype and non-packaged proxy experiment remain gated by `docs/passkeys-webauthn-design.md` |
 
 ---
 
@@ -198,7 +201,7 @@ automated tests.
 
 ## Next Steps
 
-1. **Manual Testing**: Follow Quick Test guide above
-2. **Automated Testing**: Expand Playwright tests
-3. **Cross-browser Testing**: Test on Firefox, Edge
-4. **Real Website Testing**: Convert every new real-site issue into a local fixture and E2E test
+1. **Release Candidate Verification**: Run `.\scripts\verify.ps1 -E2EProjects chromium,firefox` before tagging a release candidate.
+2. **Manual Smoke Evidence**: Follow `docs/release-readiness.md` and record results in `docs/manual-smoke-evidence.md` with a throwaway KeePass database and disposable browser profile.
+3. **Browser-Store Preparation**: Follow `docs/store-submission.md` before public Chrome Web Store, Firefox AMO, or Edge Add-ons submission.
+4. **Real Website Testing**: Convert every new real-site issue into a local fixture and E2E test before merging the fix.

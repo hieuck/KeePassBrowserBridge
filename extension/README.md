@@ -33,6 +33,10 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 - Protected custom field values are not exposed for copy, focused-field fill, or popup search.
 - Settings export intentionally excludes pairing secrets.
 
+## Known Gap
+
+Passkeys/WebAuthn are not supported in extension release 0.9.0. Public builds do not request WebAuthn proxy permissions or expose passkey workflows. Backend and proxy experiment work is tracked in `docs/passkeys-webauthn-design.md`.
+
 ## Development Checks
 
 From the repository root:

@@ -37,6 +37,7 @@ const releaseWorkflow = fs.readFileSync(new URL('../../.github/workflows/release
 const ciWorkflow = fs.readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const rootReadme = fs.readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
 const extensionReadme = fs.readFileSync(new URL('../../extension/README.md', import.meta.url), 'utf8');
+const extensionTestingGuide = fs.readFileSync(new URL('../../extension/TESTING_GUIDE.md', import.meta.url), 'utf8');
 const realSiteValidation = fs.readFileSync(new URL('../../docs/real-site-validation.md', import.meta.url), 'utf8');
 const architecture = fs.readFileSync(new URL('../../docs/architecture.md', import.meta.url), 'utf8');
 const releaseReadiness = fs.readFileSync(new URL('../../docs/release-readiness.md', import.meta.url), 'utf8');
@@ -238,6 +239,14 @@ assert.equal(extensionReadme.includes('0.2.0'), false, 'extension README should 
 assert.equal(extensionReadme.includes('contentScript.js - Main filling logic (unchanged)'), false, 'extension README should not claim current filling logic is unchanged from an older phase');
 assert.equal(extensionReadme.includes('docs/release-readiness.md'), true, 'extension README should point maintainers to release readiness docs');
 assert.equal(extensionReadme.includes('docs/store-submission.md'), true, 'extension README should point maintainers to store submission docs');
+assert.equal(extensionReadme.includes('Passkeys/WebAuthn are not supported'), true, 'extension README should disclose the current passkey gap');
+assert.equal(extensionReadme.includes('docs/passkeys-webauthn-design.md'), true, 'extension README should route passkey work to the design doc');
+assert.equal(extensionTestingGuide.includes('Passkeys/WebAuthn'), true, 'extension testing guide should compare passkey support explicitly');
+assert.equal(extensionTestingGuide.includes('Unsupported in 0.9.0'), true, 'extension testing guide should not imply passkey parity with KeePassXC-Browser');
+assert.equal(extensionTestingGuide.includes('docs/manual-smoke-evidence.md'), true, 'extension testing guide should route manual smoke results to the evidence template');
+assert.equal(extensionTestingGuide.includes('-E2EProjects chromium,firefox'), true, 'extension testing guide should require cross-browser release-candidate E2E verification');
+assert.equal(extensionTestingGuide.includes('docs/store-submission.md'), true, 'extension testing guide should point to store submission checks');
+assert.equal(extensionTestingGuide.includes('tests/fixtures/login-page.html'), true, 'extension testing guide should prefer local fixture testing over personal production credentials');
 assert.equal(architecture.includes('Chrome-family browsers and Firefox'), true, 'architecture docs should describe current browser targets');
 assert.equal(architecture.includes('logins.create or logins.update'), true, 'architecture docs should cover credential mutation flow');
 assert.equal(architecture.includes('docs/passkeys-webauthn-design.md'), true, 'architecture docs should point passkey protocol work to the design doc');
