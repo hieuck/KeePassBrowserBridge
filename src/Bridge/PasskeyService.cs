@@ -616,6 +616,15 @@ namespace KeePassBrowserBridge.Bridge
             if (challenge.Length == 0)
                 return PasskeyPendingSessionResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
 
+            string sessionKey = SessionKey(normalizedClientId, normalizedWebAuthnRequestId);
+            PasskeyPendingSession existingSession;
+            if (m_sessions.TryGetValue(sessionKey, out existingSession))
+            {
+                if (nowUtcMs <= existingSession.ExpiresUtcMs)
+                    return PasskeyPendingSessionResult.Fail("pending_exists", "A pending passkey request already exists for this WebAuthn request.");
+                m_sessions.Remove(sessionKey);
+            }
+
             PasskeyPendingSession session = new PasskeyPendingSession
             {
                 Operation = operation,
@@ -649,7 +658,7 @@ namespace KeePassBrowserBridge.Bridge
                 session.AllowCredentialIds = new string[0];
             }
 
-            m_sessions[SessionKey(normalizedClientId, normalizedWebAuthnRequestId)] = session;
+            m_sessions[sessionKey] = session;
             return PasskeyPendingSessionResult.Ok(session);
         }
 

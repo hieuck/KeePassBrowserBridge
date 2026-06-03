@@ -36,6 +36,7 @@ internal static class Program
         PasskeyPendingCreateBindsRequestContext();
         PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
+        PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId();
         PasskeyPendingCompletionExpiresStaleSession();
         PasskeyPendingClearForClientRemovesOnlyClientSessions();
         PasskeyPendingClearAllRemovesEverySession();
@@ -522,6 +523,58 @@ internal static class Program
 
         AssertTrue(allowed.Success, "pending get should accept an allowed credential ID: " + allowed.Error);
         AssertEqual(0, store.Count, "allowed get completion should consume the pending session");
+    }
+
+    private static void PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+
+        PasskeyPendingSessionResult first = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-duplicate-1",
+            CreatePasskeyCreateBeginPayload("webauthn-duplicate"),
+            now);
+        AssertTrue(first.Success, "first pending passkey request should be created: " + first.Error);
+
+        PasskeyPendingSessionResult duplicate = store.BeginGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-duplicate-2",
+            CreatePasskeyGetBeginPayload("webauthn-duplicate", new string[0]),
+            now + 1000);
+        AssertFalse(duplicate.Success, "duplicate live WebAuthn request ID should not replace the existing pending session");
+        AssertEqual("pending_exists", duplicate.ErrorCode, "duplicate pending session error code mismatch");
+        AssertEqual(1, store.Count, "duplicate pending begin should not add another session");
+
+        PasskeyPendingSessionResult completeOriginal = store.CompleteCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            new PasskeyCreateCompletePayload
+            {
+                WebAuthnRequestId = "webauthn-duplicate",
+                RpId = "example.com",
+                Origin = "https://example.com/login"
+            },
+            now + 2000);
+        AssertTrue(completeOriginal.Success, "duplicate pending begin should not corrupt the original create session: " + completeOriginal.Error);
+
+        PasskeyPendingSessionResult expiring = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-expiring-duplicate",
+            CreatePasskeyCreateBeginPayload("webauthn-expiring-duplicate"),
+            now);
+        AssertTrue(expiring.Success, "expiring pending request should be created: " + expiring.Error);
+
+        PasskeyPendingSessionResult afterExpiry = store.BeginGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-after-expiry",
+            CreatePasskeyGetBeginPayload("webauthn-expiring-duplicate", new string[0]),
+            now + PasskeyPendingSessionStore.MaxPendingLifetimeMs + 1);
+        AssertTrue(afterExpiry.Success, "expired pending request ID should be reusable for a new browser request: " + afterExpiry.Error);
+        AssertEqual(PasskeyPendingOperation.Get, afterExpiry.Session.Operation,
+            "expired duplicate replacement should use the new pending operation");
+        AssertEqual("bridge-request-after-expiry", afterExpiry.Session.BeginBridgeRequestId,
+            "expired duplicate replacement should keep the new bridge request ID");
+        AssertEqual(1, store.Count, "expired duplicate replacement should leave one active pending session");
     }
 
     private static void PasskeyPendingCompletionExpiresStaleSession()
