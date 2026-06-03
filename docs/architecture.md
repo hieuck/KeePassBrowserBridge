@@ -1,47 +1,101 @@
 # Architecture
 
-KeePassBrowserBridge is split into two deliverables:
+KeePass Browser Bridge is split into two release deliverables:
 
-- A KeePass 2.x plugin that exposes a local loopback JSON bridge.
-- A Chrome MV3 extension that pairs with the plugin and fills selected credentials into the active tab.
+- A KeePass 2.x plugin that owns all database reads/writes and exposes a loopback-only JSON bridge.
+- Browser extension packages for Chrome-family browsers and Firefox.
 
-## Runtime flow
+The browser extension never reads `.kdbx` files directly and never stores the KeePass master key.
+
+## Runtime Flow
 
 ```mermaid
 sequenceDiagram
-    participant Chrome as Chrome extension
+    participant Browser as Browser extension
+    participant Page as Web page
     participant Bridge as 127.0.0.1 bridge
     participant KeePass as KeePass plugin
     participant Db as Active KeePass database
 
-    Chrome->>Bridge: hello
-    Chrome->>Bridge: pair.begin
+    Browser->>Bridge: hello
+    Browser->>Bridge: pair.begin
     Bridge->>KeePass: show pairing code
-    Chrome->>Bridge: pair.complete(code)
-    Bridge-->>Chrome: clientId + sharedSecret
-    Chrome->>Bridge: logins.query(url) + HMAC
+    Browser->>Bridge: pair.complete(code)
+    Bridge-->>Browser: clientId + sharedSecret
+    Page->>Browser: user opens popup or inline fill action
+    Browser->>Bridge: logins.query(url) + HMAC
     Bridge->>Db: search matching entries
-    Bridge-->>Chrome: matching entries
-    Chrome->>Chrome: fill selected login in active tab
+    Bridge-->>Browser: matching entries
+    Browser->>Page: fill selected login / OTP / custom field
+    Browser->>Bridge: logins.fillAck(entryId) + HMAC
+    Bridge->>Db: update usage metadata
 ```
 
-## Trust boundary
+Save and update flows use the same authenticated bridge after the content script detects a submitted login or changed password:
 
-The bridge listens only on `127.0.0.1`. Browser clients must pair before privileged methods are accepted. After pairing, requests include an HMAC signature over the protocol version, method, request id, timestamp, origin, client id, and payload.
+```mermaid
+sequenceDiagram
+    participant Page as Web page
+    participant Browser as Browser extension
+    participant Bridge as 127.0.0.1 bridge
+    participant KeePass as KeePass plugin
+    participant Db as Active KeePass database
 
-The Chrome extension stores the generated client id and shared secret in `chrome.storage.local`.
+    Page->>Browser: submitted username/password
+    Browser->>Bridge: logins.query(pageUrl) + HMAC
+    Bridge-->>Browser: existing matches
+    Browser->>Page: save or update prompt
+    Browser->>Bridge: logins.create or logins.update + HMAC
+    Bridge->>Db: create/update KeePass entry
+    Bridge-->>Browser: saved entry metadata
+```
 
-## MVP scope
+## Trust Boundary
 
-The MVP supports:
+The bridge listens only on `127.0.0.1`. Web origins are rejected before request handling. Extension origins must match `chrome-extension://<id>` or `moz-extension://<guid>`. Bridge calls use JSON `POST /bridge` requests, are capped at 256 KiB, and any HTTP `Origin` header must match the protocol request origin.
 
-- Local pairing from Chrome to KeePass.
-- Querying credentials from the active KeePass database by URL host, additional `URL (n)` fields, and simple wildcard URL patterns.
-- Filling the selected username and password into the current Chrome tab.
-- Local verification scripts and GitHub workflows for repeatable checks.
-- Persisting trusted browser clients in KeePass custom configuration.
+After pairing, privileged requests include an HMAC-SHA256 signature over protocol version, method, request ID, timestamp, origin, client ID, and payload. The bridge rejects stale timestamps, replayed request IDs, revoked clients, wrong origins, and clients without the required permission.
 
-Known limitations before a broader release:
+## Protocol Areas
 
-- Manual smoke testing is still required on real login pages because form structures vary by site.
-- The Chrome extension is packaged as an unpacked/developer extension ZIP until Chrome Web Store packaging is introduced.
+| Area | Methods |
+| --- | --- |
+| Availability | `hello` |
+| Pairing | `pair.begin`, `pair.complete`, `pair.cancel` |
+| Trusted browsers | `client.status`, `clients.list`, `clients.revoke`, `clients.updatePermissions` |
+| Credentials | `logins.query`, `logins.create`, `logins.update`, `logins.fillAck` |
+
+The current protocol covers passwords, TOTP codes, selected non-protected custom fields, trusted-browser permissions, trusted-browser last-used timestamps, and usage acknowledgements. `hello` now advertises the centralized supported-method list plus feature flags so the extension can detect disabled capabilities without guessing from failures. Passkeys/WebAuthn are still disabled for browsers: reserved passkey method names and `passkeyRead`/`passkeyWrite` permission bits are present so the security gate can be tested, feature-gated trusted-browser passkey permission controls stay hidden while `hello` reports `passkeys=false`, and the production handler returns `feature_disabled` until `docs/passkeys-webauthn-design.md` is completed. The backend prototype now includes passkey credential storage, lookup summaries, bridge-level list/create/get/cancel/revoke routing behind a test-enabled gate, KeePass approval grant/deny handling with a compiled approval dialog prototype, assertion signing, pending create/get session binding, sign-count persistence, passkey deletion, and pending-session cleanup on browser cancellation, trusted-client revoke, plus KeePass database close events. A non-packaged Chrome proxy experiment covers request serialization, response completion serialization, injected bridge begin/complete/cancel handlers with `approveCreate` and `chooseCredential` hooks, attach/detach lifecycle, UVPAA completion, cancellation handling, and fail-closed trusted-origin resolution from browser-supplied requestInfo or frame context, but it refuses to forward WebAuthn requests without trusted origin context.
+
+## Data Model
+
+KeePass Browser Bridge uses standard KeePass fields where possible:
+
+- `Title`, `UserName`, `Password`, and `URL`.
+- Additional URL fields named `URL (n)` for matching.
+- TOTP fields named `otp`, `TOTP Seed`, `TOTP Secret`, `TOTP`, or `TimeOtp-Secret-Base32`.
+- Non-reserved custom string fields.
+
+Protected custom fields are redacted before they reach popup search, copy actions, focused-field fill, or settings export.
+
+## Browser Surfaces
+
+- Popup: pairing, status, query, search, fill, create, edit, trusted browsers, lock/unlock, site overrides, and About/update status.
+- Content script: form detection, inline picker, save-new prompt, update-password prompt, username-first flow tracking, OTP fill, and focused-form targeting.
+- Options page: global settings, site overrides, trusted browser management, settings import/export, bridge status, and About/update status.
+- Background script: bridge transport, HMAC signing, pending credential storage, auto-lock, context menus, notifications, HTTP Basic Auth, and content-script mediation.
+
+## Release Artifacts
+
+Release builds produce:
+
+- `KeePassBrowserBridge.dll`
+- `KeePassBrowserBridge.plgx`
+- `KeePassBrowserBridge-chrome-extension-<version>.zip`
+- `KeePassBrowserBridge-firefox-extension-<version>.zip`
+- `versioninfo.txt`
+- `release-manifest.json`
+- `SHA256SUMS.txt`
+- Optional `*.asc` GPG detached signatures when maintainers build with `-SignArtifacts`.
+
+`scripts/verify-release-artifacts.ps1` checks artifact versions, packaged file lists, browser manifests, release-manifest metadata, SHA-256 checksums, and GPG signatures when `-RequireSignatures` is used before publication.

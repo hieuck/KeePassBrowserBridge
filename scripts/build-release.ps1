@@ -1,7 +1,11 @@
 param(
     [string] $KeePassExe = "",
     [string] $Configuration = "Release",
-    [string] $ArtifactsDir = ""
+    [string] $ArtifactsDir = "",
+    [switch] $RequireCleanSource,
+    [switch] $SignArtifacts,
+    [string] $GpgKeyId = "",
+    [string] $GpgExe = "gpg"
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +34,21 @@ $artifactsUnderRepo = $ArtifactsDir.StartsWith($repoRoot, [System.StringComparis
 if ($repoUnderKeePassPlugins -and $artifactsUnderRepo) {
     throw "Refusing to write release artifacts under this repository because it is inside KeePass' Plugins directory. KeePass scans subdirectories and can load duplicate plugin DLLs. Use the default temp output or pass -ArtifactsDir outside the KeePass Plugins tree."
 }
+
+Get-ChildItem -LiteralPath $ArtifactsDir -Force -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.Name -like "KeePassBrowserBridge*" -or
+        $_.Name -eq "versioninfo.txt" -or
+        $_.Name -eq "versioninfo.txt.asc" -or
+        $_.Name -eq "release-manifest.json" -or
+        $_.Name -eq "release-manifest.json.asc" -or
+        $_.Name -eq "SHA256SUMS.txt" -or
+        $_.Name -eq "SHA256SUMS.txt.asc" -or
+        $_.Name -in @("_chrome-extension", "_firefox-extension", "backup", "installed-backups")
+    } |
+    ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Recurse -Force
+    }
 
 $version = "0.1.0"
 $manifestPath = Join-Path $extensionDir "manifest.json"
@@ -71,6 +90,31 @@ function Move-ItemWithRetry {
     }
 }
 
+function Invoke-GpgDetachedSignature {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $LiteralPath
+    )
+
+    $signaturePath = "$LiteralPath.asc"
+    if (Test-Path -LiteralPath $signaturePath) {
+        Remove-Item -LiteralPath $signaturePath -Force
+    }
+
+    $arguments = @("--batch", "--yes", "--armor", "--detach-sign", "--output", $signaturePath)
+    if (-not [string]::IsNullOrWhiteSpace($GpgKeyId)) {
+        $arguments += @("--local-user", $GpgKeyId)
+    }
+    $arguments += $LiteralPath
+
+    & $GpgExe @arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "GPG detached signature failed for $LiteralPath with exit code $LASTEXITCODE."
+    }
+
+    return $signaturePath
+}
+
 function New-ExtensionPackage {
     param(
         [Parameter(Mandatory = $true)]
@@ -78,6 +122,9 @@ function New-ExtensionPackage {
 
         [Parameter(Mandatory = $true)]
         [string] $DestinationPath,
+
+        [Parameter(Mandatory = $true)]
+        [string[]] $PackageFiles,
 
         [string] $ManifestOverride = ""
     )
@@ -88,12 +135,19 @@ function New-ExtensionPackage {
 
     New-Item -ItemType Directory -Force -Path $StagingDir | Out-Null
 
-    $excludedItems = @(".git", "node_modules", "manifest.firefox.json")
-    $extensionItems = Get-ChildItem -LiteralPath $extensionDir -Force |
-        Where-Object { $_.Name -notin $excludedItems }
+    foreach ($relativePath in $PackageFiles) {
+        $sourcePath = Join-Path $extensionDir $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath)) {
+            throw "Cannot find extension package file: $sourcePath"
+        }
 
-    foreach ($item in $extensionItems) {
-        Copy-Item -LiteralPath $item.FullName -Destination $StagingDir -Recurse -Force
+        $destinationPathForFile = Join-Path $StagingDir $relativePath
+        $destinationDir = Split-Path -Parent $destinationPathForFile
+        if (-not [string]::IsNullOrWhiteSpace($destinationDir)) {
+            New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
+        }
+
+        Copy-Item -LiteralPath $sourcePath -Destination $destinationPathForFile -Force
     }
 
     if (-not [string]::IsNullOrWhiteSpace($ManifestOverride)) {
@@ -110,6 +164,105 @@ function New-ExtensionPackage {
 
     $packageItems = Get-ChildItem -LiteralPath $StagingDir -Force
     Compress-Archive -Path $packageItems.FullName -DestinationPath $DestinationPath -Force
+}
+
+function Invoke-GitText {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments
+    )
+
+    try {
+        $output = & git @Arguments 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            return ""
+        }
+
+        return (($output -join "`n").Trim())
+    } catch {
+        return ""
+    }
+}
+
+function Get-RepoRelativePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $LiteralPath
+    )
+
+    $fullPath = (Resolve-Path $LiteralPath).Path
+    $repoPrefix = $repoRoot
+    if (-not $repoPrefix.EndsWith("\", [System.StringComparison]::Ordinal)) {
+        $repoPrefix += "\"
+    }
+
+    if (-not $fullPath.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return ""
+    }
+
+    return $fullPath.Substring($repoPrefix.Length).Replace("\", "/")
+}
+
+function Get-GitStatusIgnoringArtifactOutput {
+    $status = Invoke-GitText @("-C", $repoRoot, "status", "--porcelain")
+    if ([string]::IsNullOrWhiteSpace($status)) {
+        return ""
+    }
+
+    $artifactRelative = Get-RepoRelativePath -LiteralPath $ArtifactsDir
+    if ([string]::IsNullOrWhiteSpace($artifactRelative)) {
+        return $status
+    }
+
+    $artifactPrefix = $artifactRelative.TrimEnd("/") + "/"
+    $filteredLines = @()
+    foreach ($line in ($status -split "`n")) {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+
+        $pathPart = ""
+        if ($line.Length -gt 3) {
+            $pathPart = $line.Substring(3).Trim().Trim('"').Replace("\", "/")
+        }
+
+        $renamedPath = ""
+        $renameSeparator = $pathPart.IndexOf(" -> ", [System.StringComparison]::Ordinal)
+        if ($renameSeparator -ge 0) {
+            $renamedPath = $pathPart.Substring($renameSeparator + 4).Trim().Trim('"').Replace("\", "/")
+        }
+
+        if ([string]::Equals($pathPart.TrimEnd("/"), $artifactRelative.TrimEnd("/"), [System.StringComparison]::OrdinalIgnoreCase) -or
+            $pathPart.StartsWith($artifactPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+            [string]::Equals($renamedPath.TrimEnd("/"), $artifactRelative.TrimEnd("/"), [System.StringComparison]::OrdinalIgnoreCase) -or
+            $renamedPath.StartsWith($artifactPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
+
+        $filteredLines += $line
+    }
+
+    return (($filteredLines -join "`n").Trim())
+}
+
+function Get-ArtifactMetadata {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $LiteralPath
+    )
+
+    $item = Get-Item -LiteralPath $LiteralPath
+    $hash = Get-FileHash -LiteralPath $LiteralPath -Algorithm SHA256
+    [pscustomobject] @{
+        Name = $item.Name
+        Sha256 = $hash.Hash.ToLowerInvariant()
+        SizeBytes = $item.Length
+    }
+}
+
+$gitStatus = Get-GitStatusIgnoringArtifactOutput
+if ($RequireCleanSource -and -not [string]::IsNullOrWhiteSpace($gitStatus)) {
+    throw "Release build requires a clean source tree. Commit, stash, or remove source changes before publishing.`nDirty status:`n$gitStatus"
 }
 
 $frameworkDir = Join-Path $env:WINDIR "Microsoft.NET\Framework64\v4.0.30319"
@@ -138,6 +291,7 @@ $sources = @(
     (Join-Path $srcDir "Bridge\BridgeAuthentication.cs"),
     (Join-Path $srcDir "Bridge\BridgeClock.cs"),
     (Join-Path $srcDir "Bridge\BridgeJsonSerializer.cs"),
+    (Join-Path $srcDir "Bridge\BridgeMethodPolicy.cs"),
     (Join-Path $srcDir "Bridge\BridgeRequestHandler.cs"),
     (Join-Path $srcDir "Bridge\BridgeSettings.cs"),
     (Join-Path $srcDir "Bridge\CredentialMutationService.cs"),
@@ -145,6 +299,7 @@ $sources = @(
     (Join-Path $srcDir "Bridge\EntryUrlMatcher.cs"),
     (Join-Path $srcDir "Bridge\LoopbackBridgeServer.cs"),
     (Join-Path $srcDir "Bridge\PairingService.cs"),
+    (Join-Path $srcDir "Bridge\PasskeyService.cs"),
     (Join-Path $srcDir "Bridge\ProtocolModels.cs"),
     (Join-Path $srcDir "Bridge\ProtocolValidator.cs"),
     (Join-Path $srcDir "Bridge\TrustedClientStore.cs"),
@@ -217,12 +372,83 @@ $firefoxExtensionTarget = Join-Path $ArtifactsDir "KeePassBrowserBridge-firefox-
 $chromeStagingDir = Join-Path $ArtifactsDir "_chrome-extension"
 $firefoxStagingDir = Join-Path $ArtifactsDir "_firefox-extension"
 $firefoxManifestPath = Join-Path $extensionDir "manifest.firefox.json"
+$commonExtensionFiles = @(
+    "background.js",
+    "contentScript.js",
+    "customFields.js",
+    "httpAuth.js",
+    "icons\icon-16.png",
+    "icons\icon-48.png",
+    "icons\icon-128.png",
+    "options.css",
+    "options.html",
+    "options.js",
+    "popup.css",
+    "popup.html",
+    "popup.js"
+)
+$chromeExtensionFiles = $commonExtensionFiles + @(
+    "compat.js",
+    "manifest.json"
+)
+$firefoxExtensionFiles = $commonExtensionFiles + @(
+    "passwordQuality.js"
+)
 
-New-ExtensionPackage -StagingDir $chromeStagingDir -DestinationPath $chromeExtensionTarget
-New-ExtensionPackage -StagingDir $firefoxStagingDir -DestinationPath $firefoxExtensionTarget -ManifestOverride $firefoxManifestPath
+New-ExtensionPackage -StagingDir $chromeStagingDir -DestinationPath $chromeExtensionTarget -PackageFiles $chromeExtensionFiles
+New-ExtensionPackage -StagingDir $firefoxStagingDir -DestinationPath $firefoxExtensionTarget -PackageFiles $firefoxExtensionFiles -ManifestOverride $firefoxManifestPath
 
 Remove-Item -LiteralPath $chromeStagingDir -Recurse -Force
 Remove-Item -LiteralPath $firefoxStagingDir -Recurse -Force
+
+$releaseArtifactPaths = @(
+    $pluginDllTarget,
+    $plgxTarget,
+    $chromeExtensionTarget,
+    $firefoxExtensionTarget,
+    $updateInfoTarget
+)
+
+$sourceRevision = Invoke-GitText @("-C", $repoRoot, "rev-parse", "HEAD")
+$sourceDescribe = Invoke-GitText @("-C", $repoRoot, "describe", "--tags", "--always")
+if (-not [string]::IsNullOrWhiteSpace($sourceDescribe) -and -not [string]::IsNullOrWhiteSpace($gitStatus)) {
+    $sourceDescribe += "-dirty"
+}
+$manifestTarget = Join-Path $ArtifactsDir "release-manifest.json"
+$releaseManifest = [pscustomobject] @{
+    Product = "KeePass Browser Bridge"
+    Version = $version
+    BuiltUtc = (Get-Date).ToUniversalTime().ToString("o")
+    SourceRevision = $sourceRevision
+    SourceDescribe = $sourceDescribe
+    SourceDirty = -not [string]::IsNullOrWhiteSpace($gitStatus)
+    Build = [pscustomobject] @{
+        KeePassFileVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($KeePassExe).FileVersion
+        MinimumKeePassVersion = "2.50"
+        MinimumDotNetVersion = "4.0"
+    }
+    Artifacts = @($releaseArtifactPaths | ForEach-Object { Get-ArtifactMetadata -LiteralPath $_ })
+    ChecksumFile = "SHA256SUMS.txt"
+}
+$manifestJson = $releaseManifest | ConvertTo-Json -Depth 6
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($manifestTarget, ($manifestJson + "`n"), $utf8NoBom)
+
+$releaseArtifactPaths += $manifestTarget
+$checksumsTarget = Join-Path $ArtifactsDir "SHA256SUMS.txt"
+$checksumLines = foreach ($artifactPath in $releaseArtifactPaths) {
+    $hash = Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256
+    "$($hash.Hash.ToLowerInvariant())  $(Split-Path -Leaf $artifactPath)"
+}
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($checksumsTarget, (($checksumLines -join "`n") + "`n"), $utf8NoBom)
+
+$signaturePaths = @()
+if ($SignArtifacts) {
+    foreach ($artifactPath in ($releaseArtifactPaths + $checksumsTarget)) {
+        $signaturePaths += Invoke-GpgDetachedSignature -LiteralPath $artifactPath
+    }
+}
 
 Write-Host ""
 Write-Host "Release artifacts:"
@@ -231,3 +457,8 @@ Write-Host " - $plgxTarget"
 Write-Host " - $chromeExtensionTarget"
 Write-Host " - $firefoxExtensionTarget"
 Write-Host " - $updateInfoTarget"
+Write-Host " - $manifestTarget"
+Write-Host " - $checksumsTarget"
+foreach ($signaturePath in $signaturePaths) {
+    Write-Host " - $signaturePath"
+}

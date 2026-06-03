@@ -29,7 +29,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 
 - The extension never stores the KeePass master key.
 - Credential access requires pairing and authenticated bridge requests.
-- Bridge endpoints are restricted to `http://127.0.0.1`.
+- Bridge endpoints are restricted to `http://127.0.0.1`; bridge calls are JSON `POST /bridge` requests.
 - Protected custom field values are not exposed for copy, focused-field fill, or popup search.
 - Settings export intentionally excludes pairing secrets.
 
@@ -48,3 +48,5 @@ To build release artifacts:
 ```
 
 Release packaging emits Chrome and Firefox extension ZIP files alongside the KeePass plugin artifacts.
+
+Release and store-submission checks are tracked in `docs/release-readiness.md` and `docs/store-submission.md`. Regenerate store screenshots from fixture data with `scripts/capture-store-screenshots.ps1` after UI changes.

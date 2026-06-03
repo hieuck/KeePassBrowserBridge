@@ -43,8 +43,9 @@ extension test.
 | Open Shadow DOM login form | `shadow-login-page.html` | `fills username and password inside open Shadow DOM login forms` |
 | Delayed Shadow DOM login form | `delayed-shadow-login-page.html` | `adds inline buttons when an open Shadow DOM login form renders later` |
 | Embedded login widgets in child frames | extension manifest | `content scripts should run in iframes for embedded login widgets` |
-| Save new login after submit | `login-page.html`, `login-submit-redirect.html` | save-prompt and restored-save-prompt tests |
-| Update changed password after submit | `login-page.html`, `multi-step-password.html` | update-prompt tests |
+| Save new login after submit | `login-page.html`, `login-submit-redirect.html` | `prompts to save a new login after form submit`, `restores save prompt after form submit navigates to another page` |
+| SPA login without native form submit | `spa-type-button-login-page.html` | `prompts to save a new SPA login after clicking a credential action type button`, `does not prompt after clicking a neutral type button in a SPA login panel`, `prompts to save a new SPA login after pressing Enter in a password field`, `does not prompt after pressing Enter before a SPA password is typed` |
+| Update changed password after submit | `login-page.html`, `multi-step-password.html` | `prompts to update an existing login when submitted password changes` |
 | Change-password form with current password plus new/confirm password | `change-password-page.html` | `prompts to update an existing login with the new password from a change-password form` |
 
 ## Manual Smoke Checklist
@@ -67,5 +68,6 @@ throwaway KeePass database.
 2. Add a fixture under `tests/fixtures/` with no third-party scripts or external assets.
 3. Add one failing E2E or unit test named after the behavior, not the implementation.
 4. Fix the detector/fill behavior.
-5. Run `npx playwright test tests/e2e/form-detection.spec.js --project=chromium`.
-6. Run `.\scripts\verify.ps1` and `.\scripts\build-release.ps1` before committing.
+5. Run `node .\scripts\verify-real-site-matrix.mjs`.
+6. Run `npx playwright test tests/e2e/form-detection.spec.js --project=chromium`.
+7. Run `.\scripts\verify.ps1` and `.\scripts\build-release.ps1` before committing.

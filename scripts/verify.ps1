@@ -1,6 +1,7 @@
 param(
     [string] $KeePassExe = "",
-    [switch] $SkipE2E
+    [switch] $SkipE2E,
+    [string[]] $E2EProjects = @("chromium")
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,6 +46,7 @@ try {
     Invoke-NativeChecked "node" @("--check", "extension\background.js")
     Invoke-NativeChecked "node" @("--check", "extension\contentScript.js")
     Invoke-NativeChecked "node" @("--check", "extension\options.js")
+    Invoke-NativeChecked "node" @("--check", "extension\passkeysProxyExperiment.js")
     Invoke-NativeChecked "node" @("--check", "extension\popup.js")
     Invoke-NativeChecked "node" @("tests\extension\manifest.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\background.test.mjs")
@@ -52,8 +54,11 @@ try {
     Invoke-NativeChecked "node" @("tests\extension\http-auth.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\custom-fields.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\content-script.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\passkeys-proxy.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\popup.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\generator.test.mjs")
+    Invoke-NativeChecked "node" @("scripts\verify-real-site-matrix.mjs")
+    Invoke-NativeChecked "node" @("scripts\verify-store-screenshots.mjs")
 
     Write-Host ""
     Write-Host "Running extension module tests..."
@@ -66,9 +71,19 @@ try {
         "tests/extension/enhanced-security.test.mjs")
 
     if (-not $SkipE2E) {
-        Write-Host ""
-        Write-Host "Running Chromium end-to-end tests..."
-        Invoke-NativeChecked "npx" @("playwright", "test", "--project=chromium")
+        if ($E2EProjects.Count -eq 0) {
+            throw "At least one Playwright project is required unless -SkipE2E is used."
+        }
+
+        foreach ($project in $E2EProjects) {
+            if ([string]::IsNullOrWhiteSpace($project)) {
+                throw "Playwright project names cannot be blank."
+            }
+
+            Write-Host ""
+            Write-Host "Running $project end-to-end tests..."
+            Invoke-NativeChecked "npx" @("playwright", "test", "--project=$project")
+        }
     }
 
     Write-Host ""
@@ -90,6 +105,7 @@ try {
         ".\src\Bridge\BridgeAuthentication.cs",
         ".\src\Bridge\BridgeClock.cs",
         ".\src\Bridge\BridgeJsonSerializer.cs",
+        ".\src\Bridge\BridgeMethodPolicy.cs",
         ".\src\Bridge\BridgeRequestHandler.cs",
         ".\src\Bridge\BridgeSettings.cs",
         ".\src\Bridge\CredentialMutationService.cs",
@@ -97,6 +113,7 @@ try {
         ".\src\Bridge\EntryUrlMatcher.cs",
         ".\src\Bridge\LoopbackBridgeServer.cs",
         ".\src\Bridge\PairingService.cs",
+        ".\src\Bridge\PasskeyService.cs",
         ".\src\Bridge\ProtocolModels.cs",
         ".\src\Bridge\ProtocolValidator.cs",
         ".\src\Bridge\TrustedClientStore.cs",
@@ -123,6 +140,15 @@ try {
     Invoke-NativeChecked $csc $cscArgs
 
     $compiled = Get-Item -LiteralPath $verifyDll
+
+    Write-Host ""
+    Write-Host "Running clean-source release smoke test..."
+    & (Join-Path $scriptDir "verify-clean-source-smoke.ps1") -KeePassExe $KeePassExe
+
+    Write-Host ""
+    Write-Host "Running signed release smoke test..."
+    & (Join-Path $scriptDir "verify-signed-release-smoke.ps1") -KeePassExe $KeePassExe
+
     Write-Host ""
     Write-Host "Verification passed."
     Write-Host "Compiled: $($compiled.FullName) ($($compiled.Length) bytes)"

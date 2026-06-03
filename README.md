@@ -33,11 +33,15 @@ KeePass Browser Bridge has two release artifacts:
 - KeePass plugin auto-update check that downloads and installs the latest GitHub Release `.plgx`.
 - Chrome and Firefox extension packaging.
 
+## Known Gap
+
+Passkeys/WebAuthn are not supported in version 0.9.0. A backend-only C# prototype now covers RP ID validation, ES256 credential material, assertion signing, sign-count updates, protected KeePass storage fields, disabled feature discovery, KeePass approval grant/deny handling, and reserved list/create/get/cancel/revoke bridge routes behind a disabled feature gate. Reserved `passkeyRead`/`passkeyWrite` permission bits exist for policy tests, the plugin build includes a KeePass approval dialog prototype for future feature-gated passkey requests, and the extension has test-backed trusted-browser passkey permission controls that stay hidden unless bridge feature discovery reports `passkeys=true`. The non-packaged Chrome proxy experiment now includes a fail-closed trusted-origin resolver helper for browser-supplied requestInfo or frame context. Released builds still do not request a browser WebAuthn proxy permission or enable any user-facing passkey flow. The implementation design is tracked in `docs/passkeys-webauthn-design.md` so future work can add the browser integration and release review deliberately.
+
 ## Security Model
 
 - The browser extension never stores the KeePass master key.
 - KeePass remains the only process with direct database access.
-- The bridge listens only on `127.0.0.1`.
+- The bridge listens only on `127.0.0.1` and accepts JSON bridge requests only.
 - Browser clients must pair before privileged methods are accepted.
 - Authenticated requests use a per-client shared secret and HMAC.
 - Protected custom field values are not exposed for copy, focused-field fill, or popup search.
@@ -52,9 +56,17 @@ KeePass Browser Bridge has two release artifacts:
 5. Download the Chrome or Firefox extension ZIP from the same release.
 6. Load the extension manually in the browser, then pair it with KeePass from the extension popup.
 
+For a local release artifact, close KeePass and install exactly one plugin artifact with:
+
+```powershell
+.\scripts\install-plugin.ps1 -ArtifactType dll
+```
+
 Chrome does not allow one-click extension installation directly from GitHub. One-click install requires publishing to the Chrome Web Store.
 
-After the first plugin install, KeePass Browser Bridge checks GitHub Releases on startup and prompts when a newer `.plgx` is available. You can also run this manually from `Tools -> KeePass Browser Bridge -> Check for Updates...`; the plugin downloads the release asset into the KeePass `Plugins` directory and asks you to restart KeePass.
+After the first plugin install, KeePass Browser Bridge checks GitHub Releases on startup and prompts when a newer `.plgx` is available. You can also run this manually from `Tools -> KeePass Browser Bridge -> Check for Updates...`; the plugin downloads `SHA256SUMS.txt`, verifies the downloaded PLGX hash, removes or refuses a duplicate DLL artifact, installs the release asset into the KeePass `Plugins` directory, and asks you to restart KeePass.
+
+Migrating from Kee/KeePassRPC or KeePassXC-Browser is covered in `docs/migration-guide.md`.
 
 ## Local Verification
 
@@ -64,7 +76,13 @@ From this repository:
 .\scripts\verify.ps1
 ```
 
-The verifier runs extension syntax checks, unit tests, Chromium E2E tests, bridge tests, and plugin compilation.
+The verifier runs extension syntax checks, unit tests, Chromium E2E tests, bridge tests, plugin compilation, a clean-source release-gate smoke test, and a signed-release smoke test with a fake GPG command.
+
+Release-candidate verification should include Firefox as well:
+
+```powershell
+.\scripts\verify.ps1 -E2EProjects chromium,firefox
+```
 
 Real-site-inspired autofill coverage is tracked in `docs/real-site-validation.md`.
 
@@ -72,19 +90,41 @@ Real-site-inspired autofill coverage is tracked in `docs/real-site-validation.md
 
 ```powershell
 .\scripts\build-release.ps1
+.\scripts\verify-release-artifacts.ps1
+```
+
+For public release candidates, build from a clean worktree so release provenance cannot silently publish dirty source:
+
+```powershell
+.\scripts\build-release.ps1 -RequireCleanSource
+.\scripts\verify-release-artifacts.ps1
 ```
 
 This creates release artifacts under `%TEMP%\KeePassBrowserBridge-artifacts\` by default:
 
 - `KeePassBrowserBridge.dll`
 - `KeePassBrowserBridge.plgx`
-- `KeePassBrowserBridge-chrome-extension-0.9.0.zip`
-- `KeePassBrowserBridge-firefox-extension-0.9.0.zip`
+- `KeePassBrowserBridge-chrome-extension-<version>.zip`
+- `KeePassBrowserBridge-firefox-extension-<version>.zip`
 - `versioninfo.txt`
+- `release-manifest.json`
+- `SHA256SUMS.txt`
 
 Keeping generated DLL/PLGX outputs outside this repository matters when the repository itself is inside KeePass' `Plugins` directory, because KeePass scans plugin subdirectories on startup.
 
 `versioninfo.txt` is still emitted for compatibility with KeePass update metadata, while the plugin's own update checker installs `KeePassBrowserBridge.plgx` directly from GitHub Releases.
+
+Browser-store screenshots can be regenerated from the actual extension UI with safe fixture data:
+
+```powershell
+.\scripts\capture-store-screenshots.ps1
+```
+
+Store listing metadata, permission justifications, privacy statements, reviewer notes, and screenshot expectations are tracked in `docs/store-submission.md`.
+
+Signed release candidates can be built with `.\scripts\build-release.ps1 -RequireCleanSource -SignArtifacts -GpgKeyId "<release-key-id>"` and verified with `.\scripts\verify-release-artifacts.ps1 -RequireSignatures -ExpectedSignerFingerprint "<full-fingerprint>"`.
+
+The publishable privacy-policy source is `docs/privacy-policy.md`. Release-note, checksum, and signature-verification guidance is tracked in `docs/release-notes-template.md` and `docs/release-integrity.md`.
 
 ## Repository Layout
 
@@ -93,3 +133,12 @@ Keeping generated DLL/PLGX outputs outside this repository matters when the repo
 - `tests/` - bridge, extension, and E2E tests.
 - `scripts/` - local verification and release packaging scripts.
 - `docs/` - architecture and planning notes.
+- `docs/replacement-roadmap.md` - replacement criteria and roadmap for Kee/KeePassXC-Browser parity.
+- `docs/release-readiness.md` - release checklist, local install check, and browser-store package notes.
+- `docs/security-threat-model.md` - bridge security model, implemented controls, and residual risks.
+- `docs/store-submission.md` - Chrome Web Store, Firefox AMO, and Edge Add-ons listing and review notes.
+- `docs/migration-guide.md` - migration and rollback guide for users moving from Kee/KeePassRPC or KeePassXC-Browser.
+- `docs/passkeys-webauthn-design.md` - passkey/WebAuthn design and test plan before implementation.
+- `docs/privacy-policy.md` - publishable browser-store privacy policy source.
+- `docs/release-integrity.md` - release artifact checksum verification and signing limitations.
+- `docs/release-notes-template.md` - GitHub Release and browser-store update notes template.

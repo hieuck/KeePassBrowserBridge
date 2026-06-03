@@ -12,11 +12,13 @@
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
+    "verify": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1",
     "lint": "eslint extension/ src/ tests/ --ext .js,.ts,.mjs",
     "dev": "node tests/e2e/server.mjs",
-    "build": "npm run build:extension && npm run build:plugin",
-    "build:extension": "zip -r dist/kbb-extension.zip extension/",
-    "build:plugin": "dotnet build src/KeePassBrowserBridge.csproj -c Release",
+    "build": "npm run build:release",
+    "build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1",
+    "build:extension": "npm run build:release",
+    "build:plugin": "npm run build:release",
     "ci": "npm run lint && npm run test && npm run test:coverage && npm run test:e2e:chromium"
   },
   "devDependencies": {

@@ -1,220 +1,80 @@
 # KeePassBrowserBridge - Testing Report
 
-**Date:** 2026-05-29  
-**Version:** 0.9.0  
-**Status:** Testing Complete
+**Date:** 2026-06-03
+**Version:** 0.9.0
+**Status:** Verification passed
 
----
+This report reflects the current repository state after running release-candidate verification:
 
-## ✅ Testing Summary
-
-### 1. C# Unit Tests (Backend Plugin)
-
-**Status:** ✅ PASS  
-**Tests Run:** 45 tests  
-**Coverage:** Backend logic (URL matching, pairing, authentication, credential query/update)
-
-**Test Results:**
-- URL Matcher Tests: ✅ PASS
-- TOTP Generator Tests: ✅ PASS
-- Protocol Validation Tests: ✅ PASS
-- Pairing Service Tests: ✅ PASS
-- Trusted Client Store Tests: ✅ PASS
-- Credential Query Service Tests: ✅ PASS
-- Credential Mutation Service Tests: ✅ PASS
-- Bridge Request Handler Tests: ✅ PASS
-- Loopback Bridge Server Tests: ✅ PASS
-
-**Key Tests Verified:**
-- Exact host matching with different path/case
-- Wildcard subdomain matching (*.example.com)
-- Regex pattern matching (regex: prefix)
-- TOTP generation (RFC vector)
-- Pairing code generation (6 digits)
-- HMAC authentication
-- Client status verification
-- Logins query with URL matching
-- Credential creation and update
-
----
-
-### 2. JavaScript Protocol Tests (Extension)
-
-**Status:** ✅ PASS  
-**Tests Run:** 2 test files  
-**Coverage:** Protocol validation, HMAC authentication
-
-**Test Files:**
-- `tests/extension/protocol.test.mjs` - Protocol canonicalization and HMAC
-- `tests/extension/background.test.mjs` - Extension state management
-
-**Key Tests Verified:**
-- Canonical request format
-- HMAC-SHA256 authentication
-- Extension state (paired/unpaired)
-- Pairing session management
-- Logins query with authentication
-
----
-
-### 3. Extension Tests
-
-**Status:** ⚠️ PARTIAL  
-**Tests Run:** 10 test files  
-**Coverage:** Extension modules
-
-**Test Files:**
-- `tests/extension/background.test.mjs`
-- `tests/extension/protocol.test.mjs`
-- `tests/extension/content-script.test.mjs`
-- `tests/extension/enhanced-security.test.mjs`
-- `tests/extension/generator.test.mjs`
-- `tests/extension/group-organization.test.mjs`
-- `tests/extension/multi-database.test.mjs`
-- `tests/extension/multi-page-login.test.mjs`
-- `tests/extension/popup.test.mjs`
-- `tests/extension/url-matcher.test.mjs`
-
-**Note:** Nhiều test là placeholder cần expand.
-
----
-
-### 4. E2E Tests
-
-**Status:** ⚠️ PARTIAL  
-**Tests Run:** 1 test  
-**Coverage:** Extension popup UI
-
-**Test Files:**
-- `tests/e2e/extension-load.spec.js` - Basic popup loading
-
-**Note:** Cần thêm E2E tests cho:
-- Google login flow
-- GitHub login flow
-- Facebook login flow
-- Multi-step forms
-
----
-
-### 5. Plugin Runtime Test
-
-**Status:** ✅ PASS  
-**Test Method:** Direct HTTP API call
-
-**Test Results:**
-```
-1. Testing hello...
-Response: {"ProductName":"KeePass Browser Bridge","ProtocolVersion":1,"Success":true}
-
-2. Testing client.status...
-Response: {"Error":"Request authentication is invalid.","Success":false}
-
-3. Testing clients.list...
-Response: {"Error":"Request authentication is invalid.","Success":false}
-
-4. Testing logins.query...
-Response: {"Error":"Request authentication is invalid.","Success":false}
+```powershell
+.\scripts\verify.ps1 -E2EProjects chromium,firefox
 ```
 
-**Notes:**
-- Plugin start thành công trên port 19455
-- Hello API hoạt động không cần authentication
-- Các API khác yêu cầu authentication đúng (HMAC thất bại do test script issue, không phải plugin issue)
+## Verification Summary
 
----
+| Area | Result | Notes |
+| --- | --- | --- |
+| Extension JavaScript syntax | Pass | `node --check` on background, content script, options, and popup |
+| Direct extension module tests | Pass | manifest, background, protocol, HTTP auth, custom fields, content script, popup, generator |
+| Real-site validation matrix | Pass | `scripts/verify-real-site-matrix.mjs` checks documented local fixtures exist and documented coverage labels still appear in automated test sources |
+| Vitest extension modules | Pass | 67 tests across group organization, multi-page login, multi-database, enhanced security |
+| Chromium E2E tests | Pass | 114 tests across popup, options, and form-detection flows |
+| Firefox E2E tests | Pass | 114 tests across popup, options, and form-detection flows |
+| C# bridge harness | Pass | 90+ checks covering URL matching, protocol, centralized bridge method permission policy, pairing, query, mutation, server behavior, and update integrity |
+| Plugin compilation | Pass | Compiled verification DLL at `%TEMP%\KeePassBrowserBridge.verify.dll` |
+| Clean-source release smoke | Pass | `scripts/verify-clean-source-smoke.ps1` creates a temporary dirty marker and confirms `build-release.ps1 -RequireCleanSource` refuses dirty release provenance |
+| Signed release smoke | Pass | `scripts/verify-signed-release-smoke.ps1` builds signed artifacts with fake GPG, verifies required `.asc` files, and exercises fingerprint-pinned signature verification flow without requiring a real key |
+| Release artifact verification | Pass | DLL/PLGX/versioninfo/release-manifest/checksums present, DLL version matches, extension ZIP manifests and file lists are production-only, SHA-256 hashes verify; CI and release workflow both use the same packaging/verifier scripts; artifact output is ignored for source dirty-state; release workflow requires clean source before publishing; signed builds can require GPG `.asc` verification and an expected signer fingerprint |
+| Store screenshot workflow | Pass | `scripts/capture-store-screenshots.ps1` generates 1280x800 PNGs from popup, inline picker, save prompt, and settings UI with safe fixture data; `scripts/verify-store-screenshots.mjs` verifies the expected PNG assets exist and keep the required dimensions |
 
-## 📊 Feature Comparison: KBB vs Kee vs KeePassXC-Browser
+## Covered Behavior
 
-| Feature | Kee | KeePassXC-Browser | KBB (v0.9.0) | Status |
-|---------|-----|-------------------|--------------|--------|
-| **Core Features** | | | | |
-| Pairing 6-digit code | ✅ | ✅ | ✅ | ✅ Complete |
-| Localhost bridge | ✅ | ✅ | ✅ | ✅ Complete |
-| HMAC authentication | ✅ | ✅ | ✅ | ✅ Complete |
-| TOTP/2FA support | ✅ | ✅ | ✅ | ✅ Complete |
-| Custom fields | ✅ | ✅ | ✅ | ✅ Complete |
-| Multiple databases | ✅ | ❌ | ✅ | ✅ Complete |
-| **UI/UX** | | | | |
-| Dark/Light mode | ✅ | ✅ | ✅ | ✅ Complete |
-| Context menu integration | ✅ | ✅ | ✅ | ✅ Complete |
-| Keyboard shortcuts | ✅ | ✅ | ✅ | ✅ Complete |
-| Settings page | ✅ | ✅ | ✅ | ✅ Complete |
-| **Advanced Features** | | | | |
-| HTTP Basic Auth | ✅ | ✅ | ✅ | ✅ Complete |
-| Password quality indicator | ✅ | ✅ | ✅ | ✅ Complete |
-| Multi-page login flow | ✅ | ✅ | ✅ | ✅ Complete |
-| Group organization | ✅ | ✅ | ✅ | ✅ Complete |
-| **Missing/Incomplete** | | | | |
-| Inline fill buttons | ✅ | ✅ | ⚠️ Basic | ⚠️ Needs polish |
-| Auto-save prompts | ✅ | ✅ | ❌ | ❌ Not implemented |
-| Desktop notifications | ✅ | ✅ | ❌ | ❌ Not implemented |
-| Passkeys support | ✅ | ✅ | ❌ | ❌ Not implemented |
-| **Testing** | | | | |
-| Unit tests | ✅ | ✅ | ⚠️ 45 tests | ⚠️ Needs expand |
-| Integration tests | ✅ | ✅ | ⚠️ 10 tests | ⚠️ Needs expand |
-| E2E tests | ✅ | ✅ | ⚠️ 1 test | ⚠️ Needs expand |
+### Backend Plugin
 
----
+- Loopback bridge bound to `127.0.0.1`.
+- `hello`, pairing, client status, trusted-client list/revoke/update, login query/create/update, and fill acknowledgement.
+- HMAC authentication, timestamp validation, replayed request rejection, and origin-bound trusted clients.
+- Centralized bridge method policy coverage verifies every protocol method has explicit authentication and permission classification.
+- URL matching with strict host matching, optional parent-domain matching, wildcard matching, regex opt-in, and additional `URL (n)` fields.
+- KeePass group path support, usage ranking metadata, generated TOTP, custom field redaction, and save-on-success for create/update/fill acknowledgement.
+- Structured errors for invalid payloads, missing database, permission denial, bad HMAC, CORS/preflight rejection, and port conflicts.
+- Plugin auto-update release selection requires both `KeePassBrowserBridge.plgx` and `SHA256SUMS.txt`; downloaded plugin bytes are verified against the published SHA-256 before install, and duplicate DLL artifacts are backed up/removed or block PLGX auto-update.
 
-## 🎯 Testing Coverage
+### Browser Extension
 
-| Component | Unit Tests | Integration Tests | E2E Tests | Status |
-|-----------|------------|-------------------|-----------|--------|
-| URL Matcher | ✅ | ✅ | ⚠️ | ⚠️ Needs E2E |
-| Password Generator | ⚠️ | ⚠️ | ⚠️ | ⚠️ Needs all |
-| Custom Fields | ⚠️ | ⚠️ | ⚠️ | ⚠️ Needs all |
-| Multi-page Login | ⚠️ | ⚠️ | ⚠️ | ⚠️ Needs all |
-| Group Organization | ⚠️ | ⚠️ | ⚠️ | ⚠️ Needs all |
-| Security Features | ⚠️ | ⚠️ | ⚠️ | ⚠️ Needs all |
-| Extension ↔ Plugin | ⚠️ | ⚠️ | ⚠️ | ⚠️ Needs all |
-| Form Filling | ⚠️ | ⚠️ | ⚠️ | ⚠️ Needs all |
+- Pairing, active pairing countdown, lock/unlock, read-only permission state, and trusted browser management.
+- Popup query, search, ranking, fill, OTP fill, copy username/password/OTP, create login, edit login, and custom field validation.
+- Settings import/export without pairing secrets, bridge connectivity checks, loopback endpoint validation, timeout validation, site-specific auto-fill and auto-submit overrides.
+- Desktop notifications for fill/save/update, controlled by settings.
+- Save-new and update-password prompts, including restore after navigation and username-first password-only update.
+- Inline picker with search, keyboard selection, hidden-entry expansion, full-entry fill, focused-field fill, copy actions, custom field actions, and protected field suppression.
+- Form detection coverage for standard, phone, username-first, same-page reveal, split OTP, ARIA OTP, Shadow DOM, embedded-frame manifest support, multi-form, mixed checkout/login, and non-login false positives. The real-site validation matrix is checked against fixture files and automated coverage labels in the verifier.
 
----
+## Replacement Baseline
 
-## 📋 Next Steps
+External baseline checked on 2026-06-03:
 
-### Phase 1: Testing Infrastructure (2-3 weeks)
-- [ ] Expand unit tests to 100+ tests
-- [ ] Write integration tests (50+ tests)
-- [ ] Write E2E tests (20+ tests)
-- [ ] Setup CI/CD pipeline
-- [ ] Code coverage reporting
+- KeePassXC-Browser latest GitHub release visible as `1.10.3` on 2026-06-01: https://github.com/keepassxreboot/keepassxc-browser
+- KeePassRPC latest GitHub release visible as `2.0.2` on 2024-06-12: https://github.com/kee-org/keepassrpc
+- Kee browser-addon latest GitHub release visible as `4.0.7` on 2024-10-10.
 
-### Phase 2: UI/UX Polish (2-3 weeks)
-- [ ] Inline fill buttons (better UI)
-- [ ] Auto-save prompts
-- [ ] Desktop notifications
-- [ ] Loading states & spinners
-- [ ] Better error messages
+KeePassBrowserBridge already covers the core replacement path: browser extension pairing, local bridge, authenticated credential query, popup fill, inline fill, TOTP, custom fields, save/update prompts, trusted-browser management, HTTP auth support, site overrides, notifications, and release packaging.
 
-### Phase 3: Advanced Features (3-4 weeks)
-- [ ] Passkeys support
-- [ ] Better URL matching (fuzzy)
-- [ ] Advanced conflict resolution
-- [ ] Desktop notifications
+Migration guidance for users moving from Kee/KeePassRPC or KeePassXC-Browser is tracked in `docs/migration-guide.md`. Passkeys/WebAuthn are explicitly unsupported as a browser-facing feature in 0.9.0 and scoped in `docs/passkeys-webauthn-design.md`; backend-only C# tests now cover the crypto/storage prototype, user-verification and transport metadata round-trip, RP ID/allow-credential lookup summaries, bridge feature discovery, KeePass approval grant/deny handling, bridge-level list/create/get/cancel/revoke routing behind a test-enabled gate, pending create/get session binding, plus disabled protocol/permission gates. JS and E2E tests cover feature-gated trusted-browser passkey permission controls, while JS tests also cover the non-packaged Chrome proxy experiment, including trusted-origin resolver fail-closed behavior and injected bridge begin/complete/cancel helpers with create approval and get credential-selection hooks.
 
-### Phase 4: Documentation & Release (1-2 weeks)
-- [ ] User guide
-- [ ] Video tutorials
-- [ ] Chrome Web Store submission
-- [ ] Firefox Add-ons submission
-- [ ] Edge Add-ons submission
+## Current Risks
 
----
+| Risk | Status | Required action |
+| --- | --- | --- |
+| Installed DLL mismatch | Resolved | Source, release artifact, and installed `Plugins\KeePassBrowserBridge.dll` report `0.9.0`. |
+| Browser-store readiness | Improved | `docs/store-submission.md` covers metadata, permission justifications, reviewer notes, and generated screenshots. `docs/privacy-policy.md` is ready as the publishable privacy-policy source; public account and URL submission work remains. |
+| Cross-browser E2E | Improved | Default verifier still runs Chromium for speed; release-candidate verifier supports `-E2EProjects chromium,firefox`, and both projects currently pass. |
+| Real production sites | Partial | Local fixtures cover real-site patterns, but release candidates still need manual smoke tests on throwaway accounts. |
+| Passkeys | Backend prototype, disabled protocol gate, feature-gated permission UI, non-packaged proxy experiment | KeePassXC-Browser supports passkey workflows; KBB does not yet expose browser WebAuthn proxy support, protocol v2 passkey methods, browser-guaranteed origin context, or store-ready passkey flows. Backend tests now cover RP ID validation, ES256 credential generation, protected KeePass storage, user-verification and transport metadata storage round-trip, RP ID/allow-credential lookup summaries without private key material, bridge feature discovery with disabled passkey flag, KeePass approval grant/deny handling, bridge-level list/create/get/cancel/revoke routing behind a test-enabled gate, pending create/get session binding and timeout/client/cancel/revoke/database-lifecycle clearing, assertion signing, sign-count persistence, passkey deletion, database save callbacks, reserved passkey permissions, and `feature_disabled` responses for permitted passkey method calls. The plugin build includes a KeePass approval dialog prototype for feature-gated passkey requests, and the extension now hides or exposes `passkeyRead`/`passkeyWrite` trusted-browser controls based on bridge feature discovery. JS tests cover the Chrome proxy experiment's request mapping, trusted-origin resolver from top-level requestInfo or webNavigation frame context, injected bridge begin/complete/cancel handlers, success/error completion serialization, attach/detach lifecycle, UVPAA completion, backend cancellation for denied/canceled requests, spoofed-origin rejection, and fail-closed refusal to call create/get handlers without trusted origin context. |
+| Security review | In progress | `docs/security-threat-model.md` captures implemented controls and residual risks, and `docs/release-integrity.md` documents checksum verification plus optional fingerprint-pinned GPG detached signatures and remaining signing limitations; the bridge still needs a final pre-release review. |
 
-## ✅ Conclusion
+## Next Steps
 
-**KeePassBrowserBridge đã được kiểm thử và hoạt động tốt:**
-
-1. ✅ Backend plugin (C#) - 45 tests pass
-2. ✅ Extension protocol (JS) - Tests pass
-3. ✅ Plugin runtime - HTTP API hoạt động
-4. ✅ Feature parity với Kee/KeePassXC-Browser - 80%+ complete
-
-**Còn thiếu:**
-- Testing infrastructure đầy đủ (unit/integration/E2E)
-- UI/UX polish (inline fill, auto-save, notifications)
-- Advanced features (passkeys)
-- Documentation & store submission
-
-**Status:** Ready for alpha testing, needs production polish
+1. Keep `.\scripts\verify.ps1` green after every change, including the clean-source release-gate and fake-GPG signed release smokes.
+2. Publish `docs/privacy-policy.md` and complete public store account details from `docs/store-submission.md`.
+3. Continue passkey work with protocol v2 models, trusted-origin research, browser proxy experiments, approval UX, and review notes before enabling any WebAuthn permission or public listing claim.

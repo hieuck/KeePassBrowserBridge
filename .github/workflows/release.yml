@@ -12,6 +12,21 @@ on:
         required: true
         default: 2.61.1
         type: string
+      sign_release:
+        description: Create GPG detached signatures for release assets
+        required: false
+        default: false
+        type: boolean
+      gpg_key_id:
+        description: Optional GPG key ID to use when signing
+        required: false
+        default: ""
+        type: string
+      expected_gpg_fingerprint:
+        description: Optional full maintainer GPG fingerprint required for signature verification
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -41,9 +56,9 @@ jobs:
         shell: pwsh
         run: npm ci
 
-      - name: Install Playwright Chromium
+      - name: Install Playwright browsers
         shell: pwsh
-        run: npx playwright install chromium
+        run: npx playwright install chromium firefox
 
       - name: Download KeePass
         shell: pwsh
@@ -64,31 +79,54 @@ jobs:
 
       - name: Verify
         shell: pwsh
-        run: .\scripts\verify.ps1 -KeePassExe "${{ github.workspace }}\tools\KeePass\KeePass.exe"
+        run: .\scripts\verify.ps1 -KeePassExe "${{ github.workspace }}\tools\KeePass\KeePass.exe" -E2EProjects chromium,firefox
+
+      - name: Import GPG signing key
+        if: ${{ inputs.sign_release }}
+        shell: pwsh
+        env:
+          KBB_GPG_PRIVATE_KEY: ${{ secrets.KBB_GPG_PRIVATE_KEY }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:KBB_GPG_PRIVATE_KEY)) {
+            throw "sign_release was requested, but KBB_GPG_PRIVATE_KEY is not configured."
+          }
+          $keyPath = Join-Path $env:RUNNER_TEMP "kbb-release-key.asc"
+          [System.IO.File]::WriteAllText($keyPath, $env:KBB_GPG_PRIVATE_KEY)
+          gpg --batch --import $keyPath
 
       - name: Build release artifacts
         shell: pwsh
         run: |
-          .\scripts\build-release.ps1 `
-            -KeePassExe "${{ github.workspace }}\tools\KeePass\KeePass.exe" `
-            -ArtifactsDir "${{ github.workspace }}\artifacts"
+          $buildArgs = @(
+            "-KeePassExe", "${{ github.workspace }}\tools\KeePass\KeePass.exe",
+            "-ArtifactsDir", "${{ github.workspace }}\artifacts",
+            "-RequireCleanSource"
+          )
+          if ("${{ inputs.sign_release }}" -eq "true") {
+            $buildArgs += "-SignArtifacts"
+            $gpgKeyId = "${{ inputs.gpg_key_id }}"
+            if (-not [string]::IsNullOrWhiteSpace($gpgKeyId)) {
+              $buildArgs += @("-GpgKeyId", $gpgKeyId)
+            }
+          }
+          .\scripts\build-release.ps1 @buildArgs
 
-      - name: Verify requested version
+      - name: Verify release artifacts
         shell: pwsh
         run: |
-          $expected = "${{ inputs.version }}"
-          $chromeExtension = "artifacts\KeePassBrowserBridge-chrome-extension-$expected.zip"
-          $firefoxExtension = "artifacts\KeePassBrowserBridge-firefox-extension-$expected.zip"
-          foreach ($extension in @($chromeExtension, $firefoxExtension)) {
-            if (-not (Test-Path -LiteralPath $extension)) {
-              throw "Expected extension artifact was not created: $extension"
+          $verifyArgs = @(
+            "-ArtifactsDir", "${{ github.workspace }}\artifacts",
+            "-Version", "${{ inputs.version }}"
+          )
+          if ("${{ inputs.sign_release }}" -eq "true") {
+            $verifyArgs += "-RequireSignatures"
+            $fingerprint = "${{ inputs.expected_gpg_fingerprint }}"
+            if (-not [string]::IsNullOrWhiteSpace($fingerprint)) {
+              $verifyArgs += @("-ExpectedSignerFingerprint", $fingerprint)
             }
           }
-          foreach ($path in @("artifacts\KeePassBrowserBridge.dll", "artifacts\KeePassBrowserBridge.plgx", $chromeExtension, $firefoxExtension)) {
-            if (-not (Test-Path -LiteralPath $path)) {
-              throw "Missing release artifact: $path"
-            }
-          }
+          .\scripts\verify-release-artifacts.ps1 @verifyArgs
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -103,6 +141,9 @@ jobs:
             artifacts/KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip
             artifacts/KeePassBrowserBridge-firefox-extension-${{ inputs.version }}.zip
             artifacts/versioninfo.txt
+            artifacts/release-manifest.json
+            artifacts/SHA256SUMS.txt
+            artifacts/*.asc
 
       - name: Upload plugin DLL
         uses: actions/upload-artifact@v4
