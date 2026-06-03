@@ -470,6 +470,38 @@ assert.deepEqual(plain(noOriginCalls.find((entry) => entry[0] === 'createComplet
 ], 'lifecycle should complete missing-origin create requests with a WebAuthn error');
 await noOriginLifecycle.detach();
 
+const invalidRpCalls = [];
+const invalidRpCreateEvent = makeEvent();
+const invalidRpLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => invalidRpCalls.push(['attach']),
+      detach: async () => invalidRpCalls.push(['detach']),
+      completeCreateRequest: async (details) => invalidRpCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => invalidRpCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => invalidRpCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: invalidRpCreateEvent,
+      onGetRequest: makeEvent(),
+      onIsUvpaaRequest: makeEvent(),
+      onRequestCanceled: makeEvent()
+    }
+  },
+  resolveTrustedOrigin: async () => 'https://evil-example.com',
+  onCreateRequest: async () => {
+    throw new Error('invalid RP ID request should not reach create handler');
+  }
+});
+await invalidRpLifecycle.attach();
+await invalidRpCreateEvent.dispatch({
+  requestId: 71,
+  requestDetailsJson: JSON.stringify({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' })
+});
+assert.deepEqual(plain(invalidRpCalls.find((entry) => entry[0] === 'createComplete')), [
+  'createComplete',
+  { requestId: 71, error: { name: 'NotAllowedError', message: 'Passkey RP ID is not valid for the trusted caller origin.' } }
+], 'lifecycle should reject create requests whose RP ID does not match the trusted origin before calling handlers');
+await invalidRpLifecycle.detach();
+
 const lifecycleCalls = [];
 const lifecycleCreateEvent = makeEvent();
 const lifecycleGetEvent = makeEvent();

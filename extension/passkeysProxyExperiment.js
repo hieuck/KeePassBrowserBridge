@@ -131,6 +131,7 @@
             message: missingOriginMessage
           };
         }
+        assertRequestAllowedForTrustedOrigin(kind, requestInfo, context);
 
         const handler = kind === 'create' ? options.onCreateRequest : options.onGetRequest;
         if (typeof handler !== 'function') {
@@ -221,6 +222,14 @@
         return state.attached;
       }
     };
+  }
+
+  function assertRequestAllowedForTrustedOrigin(kind, requestInfo, context) {
+    if (kind === 'create') {
+      normalizeCreateRequest(requestInfo, context);
+      return;
+    }
+    normalizeGetRequest(requestInfo, context);
   }
 
   function parseRequestDetails(requestInfo) {
