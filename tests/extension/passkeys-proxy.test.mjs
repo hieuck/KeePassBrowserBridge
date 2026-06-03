@@ -90,10 +90,27 @@ const createWithUntrustedOptionOrigin = api.normalizeCreateRequest({
 assert.equal(createWithUntrustedOptionOrigin.Origin, 'https://example.com',
   'trusted context origin should override any origin value inside requestDetailsJson');
 
+const createWithoutRpId = api.normalizeCreateRequest({
+  requestId: 42,
+  requestDetailsJson: JSON.stringify({
+    rp: { name: 'Example' },
+    user: {
+      id: 'YWxpY2U',
+      name: 'alice@example.com',
+      displayName: 'Alice'
+    },
+    challenge: 'Y2hhbGxlbmdl'
+  })
+}, {
+  origin: 'https://login.example.com'
+});
+assert.equal(createWithoutRpId.RpId, 'login.example.com',
+  'create request should default a missing RP ID to the trusted origin host');
+
 const getPayload = api.normalizeGetRequest({
   requestId: 43,
   requestDetailsJson: JSON.stringify({
-    rpId: 'example.com',
+    rpId: 'Example.com',
     challenge: 'Z2V0LWNoYWxsZW5nZQ',
     userVerification: 'required',
     allowCredentials: [
@@ -103,17 +120,56 @@ const getPayload = api.normalizeGetRequest({
     ]
   })
 }, {
-  origin: 'https://example.com'
+  origin: 'https://accounts.example.com'
 });
 
 assert.deepEqual(plain(getPayload), {
   WebAuthnRequestId: '43',
   RpId: 'example.com',
-  Origin: 'https://example.com',
+  Origin: 'https://accounts.example.com',
   Challenge: 'Z2V0LWNoYWxsZW5nZQ',
   AllowCredentialIds: ['Y3JlZC0x', 'Y3JlZC0y'],
   UserVerification: 'required'
-}, 'get request should map Chrome JSON options to bridge payload fields');
+}, 'get request should normalize RP ID and allow trusted subdomain origins');
+
+const getWithoutRpId = api.normalizeGetRequest({
+  requestId: 43,
+  requestDetailsJson: JSON.stringify({
+    challenge: 'Z2V0LWNoYWxsZW5nZQ'
+  })
+}, {
+  origin: 'https://login.example.com'
+});
+assert.equal(getWithoutRpId.RpId, 'login.example.com',
+  'get request should default a missing RP ID to the trusted origin host');
+
+assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
+  'RP ID validation should allow exact origin hosts');
+assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://accounts.example.com/login'), true,
+  'RP ID validation should allow subdomain origin hosts');
+assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://evil-example.com/login'), false,
+  'RP ID validation should reject suffix lookalike hosts');
+assert.equal(api.isRpIdAllowedForOrigin('127.0.0.1', 'https://127.0.0.1/login'), false,
+  'RP ID validation should reject IP-address RP IDs');
+assert.equal(api.isRpIdAllowedForOrigin('example.com', 'http://example.com/login'), false,
+  'RP ID validation should reject non-local HTTP origins');
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 44,
+    requestDetailsJson: JSON.stringify({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl'
+    })
+  }, {
+    origin: 'https://evil-example.com'
+  }),
+  (error) => error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey RP ID is not valid for the trusted caller origin.',
+  'proxy experiment must reject create requests whose RP ID does not match the trusted origin'
+);
 
 assert.throws(
   () => api.normalizeCreateRequest({
@@ -302,6 +358,29 @@ assert.deepEqual(plain(deniedCalls.map(([method, payload]) => [method, payload.W
   ['passkeys.create.begin', '82'],
   ['passkeys.cancel', '82']
 ], 'denied create approval should cancel the backend pending passkey session');
+
+const invalidRpBridgeCalls = [];
+const invalidRpHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    invalidRpBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => invalidRpHandlers.onGetRequest({
+    requestId: 83,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'Y2hhbGxlbmdl'
+    })
+  }, { origin: 'https://evil-example.com' }),
+  (error) => error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey RP ID is not valid for the trusted caller origin.',
+  'bridge helper should reject invalid RP IDs before calling KeePass'
+);
+assert.deepEqual(invalidRpBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when trusted-origin RP ID validation fails');
 
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');

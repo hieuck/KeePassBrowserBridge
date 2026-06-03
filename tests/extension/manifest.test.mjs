@@ -310,6 +310,8 @@ assert.equal(passkeysProxyExperiment.includes('createTrustedOriginResolver'), tr
 assert.equal(passkeysProxyExperiment.includes('webNavigation.getFrame'), true, 'passkey proxy experiment should be able to derive trusted origins from browser frame context when available');
 assert.equal(passkeysProxyExperiment.includes('context && context.origin'), true, 'passkey proxy experiment should require trusted caller origin context');
 assert.equal(passkeysProxyExperiment.includes('options && options.origin'), false, 'passkey proxy experiment must not trust origin from requestDetailsJson');
+assert.equal(passkeysProxyExperiment.includes('isRpIdAllowedForOrigin'), true, 'passkey proxy experiment should reject RP IDs that do not match trusted origin context');
+assert.equal(passkeysProxyExperiment.includes('Passkey RP ID is not valid for the trusted caller origin'), true, 'passkey proxy experiment should fail closed before bridge calls for invalid RP IDs');
 assert.equal(passkeysProxyExperiment.includes('createLifecycle'), true, 'passkey proxy experiment should model attach/detach lifecycle');
 assert.equal(passkeysProxyExperiment.includes('cancelPending'), true, 'passkey proxy experiment should expose explicit pending-request cleanup for browser lock');
 assert.equal(passkeysProxyExperiment.includes('onRequestCanceled'), true, 'passkey proxy experiment should track canceled WebAuthn requests');

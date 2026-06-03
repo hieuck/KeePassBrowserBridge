@@ -241,10 +241,12 @@
     const origin = trustedOrigin(context);
     const user = options.user || {};
     const authenticatorSelection = options.authenticatorSelection || {};
+    const rpId = normalizeRpId(options.rp && options.rp.id ? options.rp.id : rpIdFromOrigin(origin));
+    assertRpIdAllowedForOrigin(rpId, origin);
 
     return {
       WebAuthnRequestId: parsed.requestId,
-      RpId: options.rp && options.rp.id ? String(options.rp.id) : '',
+      RpId: rpId,
       Origin: origin,
       Challenge: stringValue(options.challenge),
       UserHandle: stringValue(user.id),
@@ -259,10 +261,12 @@
     const parsed = parseRequestDetails(requestInfo);
     const options = parsed.details || {};
     const origin = trustedOrigin(context);
+    const rpId = normalizeRpId(options.rpId || rpIdFromOrigin(origin));
+    assertRpIdAllowedForOrigin(rpId, origin);
 
     return {
       WebAuthnRequestId: parsed.requestId,
-      RpId: stringValue(options.rpId),
+      RpId: rpId,
       Origin: origin,
       Challenge: stringValue(options.challenge),
       AllowCredentialIds: Array.isArray(options.allowCredentials)
@@ -425,6 +429,63 @@
   function isLoopbackHost(hostname) {
     const host = stringValue(hostname).toLowerCase();
     return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
+  }
+
+  function isRpIdAllowedForOrigin(rpId, origin) {
+    const normalizedRpId = normalizeRpId(rpId);
+    if (!isValidRpId(normalizedRpId)) return false;
+
+    try {
+      const url = new URL(stringValue(origin).trim());
+      if (!isPotentiallyTrustworthyRpOrigin(url)) return false;
+      const host = normalizeRpId(url.hostname);
+      return host === normalizedRpId || host.endsWith(`.${normalizedRpId}`);
+    } catch {
+      return false;
+    }
+  }
+
+  function assertRpIdAllowedForOrigin(rpId, origin) {
+    if (isRpIdAllowedForOrigin(rpId, origin)) return;
+    throw notAllowedError('Passkey RP ID is not valid for the trusted caller origin.');
+  }
+
+  function rpIdFromOrigin(origin) {
+    try {
+      return normalizeRpId(new URL(stringValue(origin).trim()).hostname);
+    } catch {
+      return '';
+    }
+  }
+
+  function normalizeRpId(value) {
+    return stringValue(value).trim().replace(/\.+$/g, '').toLowerCase();
+  }
+
+  function isValidRpId(rpId) {
+    if (!rpId || rpId.length > 253) return false;
+    if (rpId.startsWith('.') || rpId.includes('..')) return false;
+    if (/[\\/:@]/.test(rpId)) return false;
+    if (isIpAddressLike(rpId)) return false;
+
+    return rpId.split('.').every((label) =>
+      label.length > 0 &&
+      label.length <= 63 &&
+      !label.startsWith('-') &&
+      !label.endsWith('-')
+    );
+  }
+
+  function isIpAddressLike(value) {
+    const text = stringValue(value).trim().toLowerCase();
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(text)) return true;
+    return text.includes(':');
+  }
+
+  function isPotentiallyTrustworthyRpOrigin(url) {
+    if (!url || !url.hostname) return false;
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && normalizeRpId(url.hostname) === 'localhost';
   }
 
   function integerValue(value) {
@@ -643,6 +704,7 @@
     normalizeGetRequest,
     createBridgeRequestHandlers,
     createTrustedOriginResolver,
+    isRpIdAllowedForOrigin,
     completeCreateSuccess,
     completeGetSuccess,
     completeIsUvpaa,
