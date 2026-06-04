@@ -276,7 +276,8 @@
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
     assertUserVerificationSupported(userVerification);
-    assertEs256CredentialAlgorithmAllowed(options.pubKeyCredParams);
+    const credentialAlgorithms = normalizeCredentialAlgorithms(options.pubKeyCredParams);
+    assertEs256CredentialAlgorithmAllowed(credentialAlgorithms);
 
     return {
       WebAuthnRequestId: parsed.requestId,
@@ -287,6 +288,7 @@
       UserName: stringValue(user.name),
       UserDisplayName: stringValue(user.displayName),
       UserVerification: userVerification,
+      CredentialAlgorithms: credentialAlgorithms,
       Transports: []
     };
   }
@@ -499,15 +501,28 @@
     throw notAllowedError('Passkey user verification is not supported by this build.');
   }
 
-  function assertEs256CredentialAlgorithmAllowed(pubKeyCredParams) {
-    if (Array.isArray(pubKeyCredParams) && pubKeyCredParams.some(isEs256PublicKeyCredentialParam)) return;
+  function assertEs256CredentialAlgorithmAllowed(credentialAlgorithms) {
+    if (Array.isArray(credentialAlgorithms) && credentialAlgorithms.includes(-7)) return;
     throw notAllowedError(unsupportedAlgorithmMessage);
   }
 
-  function isEs256PublicKeyCredentialParam(value) {
-    if (!value || typeof value !== 'object') return false;
+  function normalizeCredentialAlgorithms(pubKeyCredParams) {
+    if (!Array.isArray(pubKeyCredParams)) return [];
+    const algorithms = [];
+    for (const value of pubKeyCredParams) {
+      const algorithm = normalizeCredentialAlgorithm(value);
+      if (algorithm === undefined || algorithms.includes(algorithm)) continue;
+      algorithms.push(algorithm);
+    }
+    return algorithms;
+  }
+
+  function normalizeCredentialAlgorithm(value) {
+    if (!value || typeof value !== 'object') return undefined;
     const type = stringValue(value.type).trim().toLowerCase();
-    return type === 'public-key' && Number(value.alg) === -7;
+    if (type !== 'public-key') return undefined;
+    const algorithm = Number(value.alg);
+    return Number.isInteger(algorithm) ? algorithm : undefined;
   }
 
   function rpIdFromOrigin(origin) {

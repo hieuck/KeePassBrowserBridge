@@ -54,7 +54,13 @@ const createPayload = api.normalizeCreateRequest({
     challenge: 'Y2hhbGxlbmdl',
     authenticatorSelection: {
       userVerification: 'preferred'
-    }
+    },
+    pubKeyCredParams: [
+      { type: 'public-key', alg: -257 },
+      { type: 'public-key', alg: -7 },
+      { type: 'PUBLIC-KEY', alg: '-7' },
+      { type: 'password', alg: -8 }
+    ]
   }))
 }, {
   origin: 'https://example.com'
@@ -69,6 +75,7 @@ assert.deepEqual(plain(createPayload), {
   UserName: 'alice@example.com',
   UserDisplayName: 'Alice',
   UserVerification: 'preferred',
+  CredentialAlgorithms: [-257, -7],
   Transports: []
 }, 'create request should map Chrome JSON options to bridge payload fields');
 

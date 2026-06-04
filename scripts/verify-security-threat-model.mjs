@@ -22,6 +22,7 @@ const sources = {
   optionsPageTests: read('tests/e2e/options-page.spec.js'),
   realSiteValidation: read('docs/real-site-validation.md'),
   bridgeMethodPolicy: read('src/Bridge/BridgeMethodPolicy.cs'),
+  protocolModels: read('src/Bridge/ProtocolModels.cs'),
   passkeyService: read('src/Bridge/PasskeyService.cs'),
   loopbackServer: read('src/Bridge/LoopbackBridgeServer.cs'),
   contentScript: read('extension/contentScript.js'),
@@ -108,6 +109,19 @@ requireEvery('passkeyService', [
   'IsUserVerificationRequired',
   'Passkey user verification is not supported by this build.'
 ], 'passkey backend should reject required user verification until KeePass-side verification exists');
+requireEvery('protocolModels', [
+  'CredentialAlgorithms'
+], 'passkey create begin payload should carry credential algorithm policy to the backend');
+requireEvery('passkeyService', [
+  'UnsupportedCredentialAlgorithmErrorCode',
+  'AllowsEs256CredentialAlgorithm',
+  'Passkey ES256 public-key credential algorithm is not allowed by this request.'
+], 'passkey backend should reject create requests that do not allow ES256');
+requireEvery('testsProgram', [
+  'PasskeyPendingRejectsUnsupportedCredentialAlgorithm',
+  'BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled',
+  'unsupported_algorithm'
+], 'backend ES256 create-algorithm enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserVerification',
   'assertUserVerificationSupported',
@@ -120,12 +134,14 @@ requireEvery('passkeysProxyTests', [
 ], 'required user verification rejection should be covered by proxy tests');
 requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
-  'isEs256PublicKeyCredentialParam',
+  'normalizeCredentialAlgorithms',
+  'CredentialAlgorithms',
   'Passkey ES256 public-key credential algorithm is not allowed by this request.'
 ], 'passkey proxy should reject create requests that do not allow ES256');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests missing ES256 public-key credential parameters',
   'proxy experiment must reject create requests that do not allow ES256 credentials',
+  'CredentialAlgorithms: [-257, -7]',
   'bridge helper must not call backend passkey methods when ES256 is not allowed by the request'
 ], 'ES256 create-algorithm enforcement should be covered by proxy tests');
 requireEvery('passkeysProxyExperiment', [

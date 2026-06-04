@@ -17,6 +17,8 @@ namespace KeePassBrowserBridge.Bridge
     {
         internal const string UnsupportedUserVerificationErrorCode = "unsupported_user_verification";
         internal const string UnsupportedUserVerificationError = "Passkey user verification is not supported by this build.";
+        internal const string UnsupportedCredentialAlgorithmErrorCode = "unsupported_algorithm";
+        internal const string UnsupportedCredentialAlgorithmError = "Passkey ES256 public-key credential algorithm is not allowed by this request.";
 
         public PasskeyRegistrationResult CreateCredential(PasskeyRegistrationRequest request)
         {
@@ -160,6 +162,16 @@ namespace KeePassBrowserBridge.Bridge
             string value = (userVerification ?? string.Empty).Trim().ToLowerInvariant();
             if (value == "required" || value == "preferred" || value == "discouraged") return value;
             return string.Empty;
+        }
+
+        internal static bool AllowsEs256CredentialAlgorithm(int[] credentialAlgorithms)
+        {
+            if (credentialAlgorithms == null) return false;
+            for (int i = 0; i < credentialAlgorithms.Length; ++i)
+            {
+                if (credentialAlgorithms[i] == -7) return true;
+            }
+            return false;
         }
 
         private static string[] NormalizeTransports(string[] transports)
@@ -631,6 +643,15 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedUserVerificationErrorCode,
                     PasskeyService.UnsupportedUserVerificationError);
 
+            PasskeyCreateBeginPayload createPayload = null;
+            if (operation == PasskeyPendingOperation.Create)
+            {
+                createPayload = payload as PasskeyCreateBeginPayload;
+                if (createPayload == null || !PasskeyService.AllowsEs256CredentialAlgorithm(createPayload.CredentialAlgorithms))
+                    return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedCredentialAlgorithmErrorCode,
+                        PasskeyService.UnsupportedCredentialAlgorithmError);
+            }
+
             string sessionKey = SessionKey(normalizedClientId, normalizedWebAuthnRequestId);
             PasskeyPendingSession existingSession;
             if (m_sessions.TryGetValue(sessionKey, out existingSession))
@@ -662,7 +683,6 @@ namespace KeePassBrowserBridge.Bridge
             }
             else
             {
-                PasskeyCreateBeginPayload createPayload = payload as PasskeyCreateBeginPayload;
                 if (createPayload != null)
                 {
                     session.UserHandle = NormalizeRequired(createPayload.UserHandle);

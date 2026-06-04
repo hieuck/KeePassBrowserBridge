@@ -39,6 +39,7 @@ internal static class Program
         PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
         PasskeyPendingRejectsRequiredUserVerification();
+        PasskeyPendingRejectsUnsupportedCredentialAlgorithm();
         PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId();
         PasskeyPendingCompletionExpiresStaleSession();
         PasskeyPendingClearForClientRemovesOnlyClientSessions();
@@ -130,6 +131,7 @@ internal static class Program
         BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
         BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession();
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
         BridgeHandlerCompletesPasskeyCreateAndSavesDatabaseWhenFeatureGateIsEnabled();
@@ -590,6 +592,35 @@ internal static class Program
         AssertEqual("unsupported_user_verification", get.ErrorCode,
             "pending get required user verification error code mismatch");
         AssertEqual(0, store.Count, "required user verification should not create pending passkey sessions");
+    }
+
+    private static void PasskeyPendingRejectsUnsupportedCredentialAlgorithm()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload missingAlgorithms = CreatePasskeyCreateBeginPayload("webauthn-create-missing-alg");
+        missingAlgorithms.CredentialAlgorithms = null;
+
+        PasskeyPendingSessionResult missing = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-missing-alg",
+            missingAlgorithms,
+            now);
+        AssertFalse(missing.Success, "pending create should reject missing credential algorithms");
+        AssertEqual("unsupported_algorithm", missing.ErrorCode,
+            "pending create missing credential algorithms error code mismatch");
+
+        PasskeyCreateBeginPayload unsupportedAlgorithms = CreatePasskeyCreateBeginPayload("webauthn-create-unsupported-alg");
+        unsupportedAlgorithms.CredentialAlgorithms = new int[] { -257, -37 };
+        PasskeyPendingSessionResult unsupported = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-unsupported-alg",
+            unsupportedAlgorithms,
+            now);
+        AssertFalse(unsupported.Success, "pending create should reject credential algorithms that do not include ES256");
+        AssertEqual("unsupported_algorithm", unsupported.ErrorCode,
+            "pending create unsupported credential algorithms error code mismatch");
+        AssertEqual(0, store.Count, "unsupported credential algorithms should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId()
@@ -2267,6 +2298,24 @@ internal static class Program
         AssertEqual(0, pending.Count, "bridge required user verification rejection should not leave pending sessions");
     }
 
+    private static void BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending);
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-unsupported-alg-bridge");
+        createPayload.CredentialAlgorithms = new int[] { -257 };
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject unsupported credential algorithms");
+        AssertEqual("unsupported_algorithm", createResponse.ErrorCode,
+            "bridge create unsupported credential algorithm error code mismatch");
+        AssertEqual(0, pending.Count, "bridge unsupported credential algorithm rejection should not leave pending sessions");
+    }
+
     private static void BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession()
     {
         TrustedClientStore store = CreateTrustedStore("client-1", "secret",
@@ -3148,6 +3197,7 @@ internal static class Program
             UserName = "alice@example.com",
             UserDisplayName = "Alice Example",
             UserVerification = "preferred",
+            CredentialAlgorithms = new int[] { -7 },
             Transports = new string[] { "internal" }
         };
     }
