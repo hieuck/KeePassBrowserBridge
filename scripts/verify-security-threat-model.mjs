@@ -28,8 +28,10 @@ const sources = {
   popup: read('extension/popup.js'),
   options: read('extension/options.js'),
   background: read('extension/background.js'),
+  passkeysProxyExperiment: read('extension/passkeysProxyExperiment.js'),
   manifest: read('extension/manifest.json'),
   firefoxManifest: read('extension/manifest.firefox.json'),
+  passkeysProxyTests: read('tests/extension/passkeys-proxy.test.mjs'),
   buildRelease: read('scripts/build-release.ps1'),
   verifyReleaseArtifacts: read('scripts/verify-release-artifacts.ps1'),
   signedReleaseSmoke: read('scripts/verify-signed-release-smoke.ps1'),
@@ -106,6 +108,16 @@ requireEvery('passkeyService', [
   'IsUserVerificationRequired',
   'Passkey user verification is not supported by this build.'
 ], 'passkey backend should reject required user verification until KeePass-side verification exists');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeUserVerification',
+  'assertUserVerificationSupported',
+  'Passkey user verification is not supported by this build.'
+], 'passkey proxy should reject required user verification before bridge calls');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject create requests requiring unsupported user verification',
+  'bridge helper must not call backend passkey methods when required user verification is unsupported',
+  'lifecycle should reject required user verification before calling handlers'
+], 'required user verification rejection should be covered by proxy tests');
 
 requireEvery('testsProgram', [
   'CredentialQueryRedactsProtectedCustomFieldValues',

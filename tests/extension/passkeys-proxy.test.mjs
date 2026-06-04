@@ -112,7 +112,7 @@ const getPayload = api.normalizeGetRequest({
   requestDetailsJson: JSON.stringify({
     rpId: 'Example.com',
     challenge: 'Z2V0LWNoYWxsZW5nZQ',
-    userVerification: 'required',
+    userVerification: 'discouraged',
     allowCredentials: [
       { id: 'Y3JlZC0x', type: 'public-key' },
       { id: '', type: 'public-key' },
@@ -129,7 +129,7 @@ assert.deepEqual(plain(getPayload), {
   Origin: 'https://accounts.example.com',
   Challenge: 'Z2V0LWNoYWxsZW5nZQ',
   AllowCredentialIds: ['Y3JlZC0x', 'Y3JlZC0y'],
-  UserVerification: 'required'
+  UserVerification: 'discouraged'
 }, 'get request should normalize RP ID and allow trusted subdomain origins');
 
 const getWithoutRpId = api.normalizeGetRequest({
@@ -142,6 +142,39 @@ const getWithoutRpId = api.normalizeGetRequest({
 });
 assert.equal(getWithoutRpId.RpId, 'login.example.com',
   'get request should default a missing RP ID to the trusted origin host');
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 46,
+    requestDetailsJson: JSON.stringify({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl',
+      authenticatorSelection: {
+        userVerification: 'required'
+      }
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedUserVerificationError,
+  'proxy experiment must reject create requests requiring unsupported user verification'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 47,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'Z2V0LWNoYWxsZW5nZQ',
+      userVerification: 'required'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedUserVerificationError,
+  'proxy experiment must reject get requests requiring unsupported user verification'
+);
 
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
   'RP ID validation should allow exact origin hosts');
@@ -382,6 +415,43 @@ await assert.rejects(
 assert.deepEqual(invalidRpBridgeCalls, [],
   'bridge helper must not call backend passkey methods when trusted-origin RP ID validation fails');
 
+const requiredUvBridgeCalls = [];
+const requiredUvHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    requiredUvBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => requiredUvHandlers.onCreateRequest({
+    requestId: 84,
+    requestDetailsJson: JSON.stringify({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl',
+      authenticatorSelection: {
+        userVerification: 'required'
+      }
+    })
+  }, { origin: 'https://example.com' }),
+  isUnsupportedUserVerificationError,
+  'create bridge helper should reject required user verification before calling KeePass'
+);
+await assert.rejects(
+  () => requiredUvHandlers.onGetRequest({
+    requestId: 85,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'Y2hhbGxlbmdl',
+      userVerification: 'required'
+    })
+  }, { origin: 'https://example.com' }),
+  isUnsupportedUserVerificationError,
+  'get bridge helper should reject required user verification before calling KeePass'
+);
+assert.deepEqual(requiredUvBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when required user verification is unsupported');
+
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');
 await api.completeCreateSuccess(chromeApi, 45, {
@@ -534,6 +604,50 @@ assert.deepEqual(plain(invalidGetRpCalls.find((entry) => entry[0] === 'getComple
 ], 'lifecycle should reject get requests whose RP ID does not match the trusted origin before calling handlers');
 await invalidGetRpLifecycle.detach();
 
+const requiredUvLifecycleCalls = [];
+const requiredUvCreateEvent = makeEvent();
+let requiredUvHandlerCalled = false;
+const requiredUvLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => requiredUvLifecycleCalls.push(['attach']),
+      detach: async () => requiredUvLifecycleCalls.push(['detach']),
+      completeCreateRequest: async (details) => requiredUvLifecycleCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => requiredUvLifecycleCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => requiredUvLifecycleCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: requiredUvCreateEvent,
+      onGetRequest: makeEvent(),
+      onIsUvpaaRequest: makeEvent(),
+      onRequestCanceled: makeEvent()
+    }
+  },
+  resolveTrustedOrigin: async () => 'https://example.com',
+  onCreateRequest: async () => {
+    requiredUvHandlerCalled = true;
+  }
+});
+await requiredUvLifecycle.attach();
+await requiredUvCreateEvent.dispatch({
+  requestId: 73,
+  requestDetailsJson: JSON.stringify({
+    rp: { id: 'example.com' },
+    user: { id: 'dXNlcg', name: 'alice' },
+    challenge: 'Y2hhbGxlbmdl',
+    authenticatorSelection: {
+      userVerification: 'required'
+    }
+  })
+});
+assert.equal(requiredUvHandlerCalled, false,
+  'lifecycle should not call create handlers for unsupported user verification requests');
+assert.equal(requiredUvLifecycle.pendingCount(), 0,
+  'lifecycle should remove unsupported user verification requests from pending state after completing the error');
+assert.deepEqual(plain(requiredUvLifecycleCalls.find((entry) => entry[0] === 'createComplete')), [
+  'createComplete',
+  { requestId: 73, error: { name: 'NotAllowedError', message: 'Passkey user verification is not supported by this build.' } }
+], 'lifecycle should reject required user verification before calling handlers');
+await requiredUvLifecycle.detach();
+
 const lifecycleCalls = [];
 const lifecycleCreateEvent = makeEvent();
 const lifecycleGetEvent = makeEvent();
@@ -650,6 +764,12 @@ function plain(value) {
 
 function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function isUnsupportedUserVerificationError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey user verification is not supported by this build.');
 }
 
 function makeEvent() {

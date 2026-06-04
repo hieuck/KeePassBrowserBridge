@@ -252,6 +252,8 @@
     const authenticatorSelection = options.authenticatorSelection || {};
     const rpId = normalizeRpId(options.rp && options.rp.id ? options.rp.id : rpIdFromOrigin(origin));
     assertRpIdAllowedForOrigin(rpId, origin);
+    const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
+    assertUserVerificationSupported(userVerification);
 
     return {
       WebAuthnRequestId: parsed.requestId,
@@ -261,7 +263,7 @@
       UserHandle: stringValue(user.id),
       UserName: stringValue(user.name),
       UserDisplayName: stringValue(user.displayName),
-      UserVerification: stringValue(authenticatorSelection.userVerification),
+      UserVerification: userVerification,
       Transports: []
     };
   }
@@ -272,6 +274,8 @@
     const origin = trustedOrigin(context);
     const rpId = normalizeRpId(options.rpId || rpIdFromOrigin(origin));
     assertRpIdAllowedForOrigin(rpId, origin);
+    const userVerification = normalizeUserVerification(options.userVerification);
+    assertUserVerificationSupported(userVerification);
 
     return {
       WebAuthnRequestId: parsed.requestId,
@@ -281,7 +285,7 @@
       AllowCredentialIds: Array.isArray(options.allowCredentials)
         ? options.allowCredentials.map((credential) => stringValue(credential && credential.id)).filter(Boolean)
         : [],
-      UserVerification: stringValue(options.userVerification)
+      UserVerification: userVerification
     };
   }
 
@@ -457,6 +461,19 @@
   function assertRpIdAllowedForOrigin(rpId, origin) {
     if (isRpIdAllowedForOrigin(rpId, origin)) return;
     throw notAllowedError('Passkey RP ID is not valid for the trusted caller origin.');
+  }
+
+  function normalizeUserVerification(value) {
+    const normalized = stringValue(value).trim().toLowerCase();
+    if (normalized === 'required' || normalized === 'preferred' || normalized === 'discouraged') {
+      return normalized;
+    }
+    return '';
+  }
+
+  function assertUserVerificationSupported(userVerification) {
+    if (userVerification !== 'required') return;
+    throw notAllowedError('Passkey user verification is not supported by this build.');
   }
 
   function rpIdFromOrigin(origin) {
