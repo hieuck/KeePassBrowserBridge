@@ -22,6 +22,7 @@ const sources = {
   optionsPageTests: read('tests/e2e/options-page.spec.js'),
   realSiteValidation: read('docs/real-site-validation.md'),
   bridgeMethodPolicy: read('src/Bridge/BridgeMethodPolicy.cs'),
+  passkeyService: read('src/Bridge/PasskeyService.cs'),
   loopbackServer: read('src/Bridge/LoopbackBridgeServer.cs'),
   contentScript: read('extension/contentScript.js'),
   popup: read('extension/popup.js'),
@@ -93,6 +94,18 @@ requireEvery('testsProgram', [
   'BridgeHandlerRejectsReplayedPasskeyCreateCompletionRequestId',
   'BridgeHandlerRejectsReplayedPasskeyGetCompletionRequestId'
 ], 'authenticated request replay protection should be covered by backend tests');
+
+requireEvery('testsProgram', [
+  'PasskeyRegistrationRejectsRequiredUserVerification',
+  'PasskeyAssertionRejectsRequiredUserVerification',
+  'PasskeyPendingRejectsRequiredUserVerification',
+  'BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled'
+], 'required passkey user verification rejection should be covered by backend tests');
+requireEvery('passkeyService', [
+  'unsupported_user_verification',
+  'IsUserVerificationRequired',
+  'Passkey user verification is not supported by this build.'
+], 'passkey backend should reject required user verification until KeePass-side verification exists');
 
 requireEvery('testsProgram', [
   'CredentialQueryRedactsProtectedCustomFieldValues',

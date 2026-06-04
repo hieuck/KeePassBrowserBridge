@@ -15,6 +15,9 @@ namespace KeePassBrowserBridge.Bridge
 {
     internal sealed class PasskeyService
     {
+        internal const string UnsupportedUserVerificationErrorCode = "unsupported_user_verification";
+        internal const string UnsupportedUserVerificationError = "Passkey user verification is not supported by this build.";
+
         public PasskeyRegistrationResult CreateCredential(PasskeyRegistrationRequest request)
         {
             PasskeyValidationResult validation = ValidateRegistrationRequest(request);
@@ -61,6 +64,8 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyAssertionResult.Fail("missing_credential", "Passkey credential material is required.");
             if (request == null)
                 return PasskeyAssertionResult.Fail("invalid_payload", "Passkey assertion request is required.");
+            if (IsUserVerificationRequired(request.UserVerification))
+                return PasskeyAssertionResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
             if (!string.Equals(NormalizeRpId(credential.RpId), NormalizeRpId(request.RpId), StringComparison.Ordinal))
                 return PasskeyAssertionResult.Fail("rp_id_mismatch", "Passkey RP ID does not match the assertion request.");
             if (!PasskeyRelyingPartyValidator.IsRpIdAllowedForOrigin(request.RpId, request.Origin))
@@ -135,6 +140,8 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyValidationResult.Fail("invalid_rp_id", "Passkey RP ID is not valid for the requesting origin.");
             if (string.IsNullOrWhiteSpace(request.UserName))
                 return PasskeyValidationResult.Fail("missing_user_name", "Passkey user name is required.");
+            if (IsUserVerificationRequired(request.UserVerification))
+                return PasskeyValidationResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
             return PasskeyValidationResult.Ok();
         }
 
@@ -143,7 +150,12 @@ namespace KeePassBrowserBridge.Bridge
             return (rpId ?? string.Empty).Trim().TrimEnd('.').ToLowerInvariant();
         }
 
-        private static string NormalizeUserVerification(string userVerification)
+        internal static bool IsUserVerificationRequired(string userVerification)
+        {
+            return string.Equals(NormalizeUserVerification(userVerification), "required", StringComparison.Ordinal);
+        }
+
+        internal static string NormalizeUserVerification(string userVerification)
         {
             string value = (userVerification ?? string.Empty).Trim().ToLowerInvariant();
             if (value == "required" || value == "preferred" || value == "discouraged") return value;
@@ -615,6 +627,9 @@ namespace KeePassBrowserBridge.Bridge
             string challenge = CanonicalizeChallenge(payload.Challenge);
             if (challenge.Length == 0)
                 return PasskeyPendingSessionResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
+            if (PasskeyService.IsUserVerificationRequired(payload.UserVerification))
+                return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedUserVerificationErrorCode,
+                    PasskeyService.UnsupportedUserVerificationError);
 
             string sessionKey = SessionKey(normalizedClientId, normalizedWebAuthnRequestId);
             PasskeyPendingSession existingSession;
@@ -635,6 +650,7 @@ namespace KeePassBrowserBridge.Bridge
                 RpId = NormalizeRpId(payload.RpId),
                 Origin = NormalizeRequired(payload.Origin),
                 Challenge = challenge,
+                UserVerification = NormalizeRequired(payload.UserVerification),
                 CreatedUtcMs = nowUtcMs,
                 ExpiresUtcMs = nowUtcMs + MaxPendingLifetimeMs
             };
@@ -652,7 +668,6 @@ namespace KeePassBrowserBridge.Bridge
                     session.UserHandle = NormalizeRequired(createPayload.UserHandle);
                     session.UserName = NormalizeRequired(createPayload.UserName);
                     session.UserDisplayName = NormalizeRequired(createPayload.UserDisplayName);
-                    session.UserVerification = NormalizeRequired(createPayload.UserVerification);
                     session.Transports = createPayload.Transports ?? new string[0];
                 }
                 session.AllowCredentialIds = new string[0];
@@ -764,6 +779,7 @@ namespace KeePassBrowserBridge.Bridge
         public string RpId { get; set; }
         public string Origin { get; set; }
         public string Challenge { get; set; }
+        public string UserVerification { get; set; }
     }
 
     internal sealed class PasskeyCredentialMaterial

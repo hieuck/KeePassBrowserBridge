@@ -459,7 +459,8 @@ namespace KeePassBrowserBridge.Bridge
             {
                 RpId = pending.Session.RpId,
                 Origin = pending.Session.Origin,
-                Challenge = pending.Session.Challenge
+                Challenge = pending.Session.Challenge,
+                UserVerification = pending.Session.UserVerification
             });
             if (!assertion.Success) return Error(request, assertion.ErrorCode, assertion.Error);
 

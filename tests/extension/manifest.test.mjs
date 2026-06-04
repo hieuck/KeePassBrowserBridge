@@ -327,6 +327,7 @@ assert.equal(passkeyDesign.includes('Firefox'), true, 'passkey design should exp
 assert.equal(passkeyServiceSource.includes('PasskeyRelyingPartyValidator'), true, 'passkey backend prototype should include RP ID validation');
 assert.equal(passkeyServiceSource.includes('KBB-Passkey-PrivateKey'), true, 'passkey backend prototype should store private material in the designed field');
 assert.equal(passkeyServiceSource.includes('new ProtectedString(true'), true, 'passkey backend prototype should protect private key material in KeePass strings');
+assert.equal(passkeyServiceSource.includes('unsupported_user_verification'), true, 'passkey backend prototype should reject required user verification until KeePass-side verification exists');
 assert.equal(passkeysProxyExperiment.includes('webAuthenticationProxy'), true, 'passkey proxy experiment should reference the Chrome WebAuthn proxy API');
 assert.equal(passkeysProxyExperiment.includes('does not expose caller origin'), true, 'passkey proxy experiment should refuse requests without trusted origin context');
 assert.equal(passkeysProxyExperiment.includes('resolveTrustedOrigin'), true, 'passkey proxy experiment should expose a trusted-origin resolver hook');

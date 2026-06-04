@@ -27,8 +27,10 @@ internal static class Program
         PasskeyRpIdValidationAllowsMatchingOriginAndSubdomain();
         PasskeyRpIdValidationRejectsMismatchedOrigin();
         PasskeyRegistrationCreatesCredentialAndAttestation();
+        PasskeyRegistrationRejectsRequiredUserVerification();
         PasskeyCredentialIdsAreUnique();
         PasskeyAssertionSignsChallengeAndIncrementsCounter();
+        PasskeyAssertionRejectsRequiredUserVerification();
         PasskeyEntryStoreProtectsPrivateKeyMaterial();
         PasskeyLookupListsMatchingRpIdWithoutPrivateKeyMaterial();
         PasskeyLookupFiltersAllowedCredentialIds();
@@ -36,6 +38,7 @@ internal static class Program
         PasskeyPendingCreateBindsRequestContext();
         PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
+        PasskeyPendingRejectsRequiredUserVerification();
         PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId();
         PasskeyPendingCompletionExpiresStaleSession();
         PasskeyPendingClearForClientRemovesOnlyClientSessions();
@@ -126,6 +129,7 @@ internal static class Program
         BridgeHandlerListsPasskeysWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
         BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession();
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
         BridgeHandlerCompletesPasskeyCreateAndSavesDatabaseWhenFeatureGateIsEnabled();
@@ -276,6 +280,19 @@ internal static class Program
         AssertTrue(attestationObject.Length > 100, "registration attestationObject should include authenticator data and public key");
     }
 
+    private static void PasskeyRegistrationRejectsRequiredUserVerification()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationRequest request = CreatePasskeyRegistrationRequest();
+        request.UserVerification = "required";
+
+        PasskeyRegistrationResult result = service.CreateCredential(request);
+
+        AssertFalse(result.Success, "passkey registration should reject required user verification until KeePass-side verification exists");
+        AssertEqual("unsupported_user_verification", result.ErrorCode,
+            "required user verification registration error code mismatch");
+    }
+
     private static void PasskeyCredentialIdsAreUnique()
     {
         PasskeyService service = new PasskeyService();
@@ -314,6 +331,27 @@ internal static class Program
         AssertEqual(37, authenticatorData.Length, "assertion authenticatorData should contain rpIdHash, flags, and sign count");
         AssertEqual((byte)0x01, authenticatorData[32], "assertion authenticatorData should set user-present flag");
         AssertEqual((byte)0x01, authenticatorData[36], "assertion authenticatorData should encode sign count 1");
+    }
+
+    private static void PasskeyAssertionRejectsRequiredUserVerification()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before required-UV assertion test: " + registration.Error);
+
+        PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210")),
+            UserVerification = "required"
+        });
+
+        AssertFalse(assertion.Success, "passkey assertion should reject required user verification until KeePass-side verification exists");
+        AssertEqual("unsupported_user_verification", assertion.ErrorCode,
+            "required user verification assertion error code mismatch");
+        AssertEqual((uint)0, registration.Credential.SignCount,
+            "rejected required-UV assertion must not increment sign count");
     }
 
     private static void PasskeyEntryStoreProtectsPrivateKeyMaterial()
@@ -523,6 +561,35 @@ internal static class Program
 
         AssertTrue(allowed.Success, "pending get should accept an allowed credential ID: " + allowed.Error);
         AssertEqual(0, store.Count, "allowed get completion should consume the pending session");
+    }
+
+    private static void PasskeyPendingRejectsRequiredUserVerification()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-required-uv");
+        createPayload.UserVerification = "required";
+
+        PasskeyPendingSessionResult create = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-required-uv-create",
+            createPayload,
+            now);
+        AssertFalse(create.Success, "pending create should reject required user verification");
+        AssertEqual("unsupported_user_verification", create.ErrorCode,
+            "pending create required user verification error code mismatch");
+
+        PasskeyGetBeginPayload getPayload = CreatePasskeyGetBeginPayload("webauthn-get-required-uv", new string[0]);
+        getPayload.UserVerification = "required";
+        PasskeyPendingSessionResult get = store.BeginGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-required-uv-get",
+            getPayload,
+            now);
+        AssertFalse(get.Success, "pending get should reject required user verification");
+        AssertEqual("unsupported_user_verification", get.ErrorCode,
+            "pending get required user verification error code mismatch");
+        AssertEqual(0, store.Count, "required user verification should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId()
@@ -2171,6 +2238,33 @@ internal static class Program
         AssertEqual(registration.Credential.CredentialId, result.Credentials[0].CredentialId,
             "get begin passkey summary credential ID mismatch");
         AssertEqual(1, pending.Count, "get begin should leave one pending session for approval");
+    }
+
+    private static void BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending);
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-required-uv-bridge");
+        createPayload.UserVerification = "required";
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject required user verification");
+        AssertEqual("unsupported_user_verification", createResponse.ErrorCode,
+            "bridge create required user verification error code mismatch");
+
+        PasskeyGetBeginPayload getPayload = CreatePasskeyGetBeginPayload("webauthn-get-required-uv-bridge", new string[0]);
+        getPayload.UserVerification = "required";
+        BridgeResponse getResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(getPayload)));
+
+        AssertFalse(getResponse.Success, "bridge get begin should reject required user verification");
+        AssertEqual("unsupported_user_verification", getResponse.ErrorCode,
+            "bridge get required user verification error code mismatch");
+        AssertEqual(0, pending.Count, "bridge required user verification rejection should not leave pending sessions");
     }
 
     private static void BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession()

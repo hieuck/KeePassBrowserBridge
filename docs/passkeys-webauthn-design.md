@@ -111,7 +111,7 @@ Fallback:
 - Store private key material only in protected KeePass fields.
 - Never return private key material or raw protected fields to the extension UI.
 - Confirm user presence in KeePass UI before registration and assertion.
-- Treat user verification as unsupported until there is a concrete KeePass-side verification step.
+- Treat user verification as unsupported until there is a concrete KeePass-side verification step; backend begin/create/assertion paths reject `userVerification=required` instead of returning an assertion without the UV flag.
 - Bind passkey operations to the requesting extension origin, client ID, bridge request ID, WebAuthn request ID, RP ID, caller origin, operation, and challenge. Backend pending-session tests now cover these bindings before browser-facing enablement.
 - Reject replayed create/get completion requests.
 - Clear pending WebAuthn sessions on browser cancellation, browser revoke, timeout, KeePass database close, or browser lock. Backend and bridge tests cover timeout, client clear, explicit `passkeys.cancel`, trusted-client revoke cleanup, and the handler cleanup path used by KeePass `FileClosingPre`/`FileClosed` events. JS tests cover the non-packaged proxy lifecycle's explicit lock cleanup hook and the background lock/auto-lock/revoke path that calls it when the experiment lifecycle is present; production browser-facing WebAuthn packaging remains future work.
@@ -124,7 +124,7 @@ Backend:
 - RP ID validation, including subdomain and mismatch cases. Covered by backend tests.
 - Credential ID generation uniqueness. Covered by backend tests for the current random generator; add larger deterministic fixtures before public passkey support.
 - Private key protected-field storage. Covered by backend tests.
-- User-verification policy and transport metadata normalization plus KeePass storage round-trip. Covered by backend tests.
+- User-verification policy and transport metadata normalization plus KeePass storage round-trip, with `userVerification=required` rejected until a real KeePass-side verification step exists. Covered by backend tests.
 - Passkey discovery by RP ID and allow-credential ID filters with no private key material in lookup summaries. Covered by backend tests.
 - Pending create/get session binding, duplicate live WebAuthn request ID rejection, completion binding mismatch, get allowCredentialIds enforcement, explicit cancel, timeout cleanup, client-scoped clearing, and clear-all cleanup for KeePass database lifecycle events. Covered by backend tests.
 - Bridge-level feature discovery plus list/create/get/cancel/revoke routing behind an injectable enabled gate, including authenticated request handling, permission checks, disabled `prototype_disabled` status metadata, KeePass approval grant/deny handling, pending-session creation/cancellation, lookup summary response, KeePass passkey entry creation/deletion, assertion signing, sign-count persistence, database save callbacks, and trusted-client revoke cleanup. Covered by backend tests; production default remains `feature_disabled`.

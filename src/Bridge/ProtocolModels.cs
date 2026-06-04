@@ -201,6 +201,7 @@ namespace KeePassBrowserBridge.Bridge
         string RpId { get; set; }
         string Origin { get; set; }
         string Challenge { get; set; }
+        string UserVerification { get; set; }
     }
 
     public sealed class PasskeyCreateBeginPayload : IPasskeyBeginPayload
