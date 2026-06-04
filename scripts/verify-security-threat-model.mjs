@@ -119,6 +119,16 @@ requireEvery('passkeysProxyTests', [
   'lifecycle should reject required user verification before calling handlers'
 ], 'required user verification rejection should be covered by proxy tests');
 requireEvery('passkeysProxyExperiment', [
+  'assertEs256CredentialAlgorithmAllowed',
+  'isEs256PublicKeyCredentialParam',
+  'Passkey ES256 public-key credential algorithm is not allowed by this request.'
+], 'passkey proxy should reject create requests that do not allow ES256');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject create requests missing ES256 public-key credential parameters',
+  'proxy experiment must reject create requests that do not allow ES256 credentials',
+  'bridge helper must not call backend passkey methods when ES256 is not allowed by the request'
+], 'ES256 create-algorithm enforcement should be covered by proxy tests');
+requireEvery('passkeysProxyExperiment', [
   'duplicatePendingRequestMessage',
   'pending.has(requestId)',
   "'duplicate'"

@@ -6,6 +6,8 @@
     'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
   const duplicatePendingRequestMessage =
     'A pending passkey request already exists for this WebAuthn request.';
+  const unsupportedAlgorithmMessage =
+    'Passkey ES256 public-key credential algorithm is not allowed by this request.';
 
   function getApi(chromeLike = globalScope.chrome) {
     return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
@@ -274,6 +276,7 @@
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
     assertUserVerificationSupported(userVerification);
+    assertEs256CredentialAlgorithmAllowed(options.pubKeyCredParams);
 
     return {
       WebAuthnRequestId: parsed.requestId,
@@ -494,6 +497,17 @@
   function assertUserVerificationSupported(userVerification) {
     if (userVerification !== 'required') return;
     throw notAllowedError('Passkey user verification is not supported by this build.');
+  }
+
+  function assertEs256CredentialAlgorithmAllowed(pubKeyCredParams) {
+    if (Array.isArray(pubKeyCredParams) && pubKeyCredParams.some(isEs256PublicKeyCredentialParam)) return;
+    throw notAllowedError(unsupportedAlgorithmMessage);
+  }
+
+  function isEs256PublicKeyCredentialParam(value) {
+    if (!value || typeof value !== 'object') return false;
+    const type = stringValue(value.type).trim().toLowerCase();
+    return type === 'public-key' && Number(value.alg) === -7;
   }
 
   function rpIdFromOrigin(origin) {

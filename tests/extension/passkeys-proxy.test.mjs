@@ -44,7 +44,7 @@ assert.equal(await api.detach(), 'detached', 'detach should delegate to chrome.w
 
 const createPayload = api.normalizeCreateRequest({
   requestId: 42,
-  requestDetailsJson: JSON.stringify({
+  requestDetailsJson: JSON.stringify(createOptions({
     rp: { id: 'example.com', name: 'Example' },
     user: {
       id: 'YWxpY2U',
@@ -55,7 +55,7 @@ const createPayload = api.normalizeCreateRequest({
     authenticatorSelection: {
       userVerification: 'preferred'
     }
-  })
+  }))
 }, {
   origin: 'https://example.com'
 });
@@ -74,7 +74,7 @@ assert.deepEqual(plain(createPayload), {
 
 const createWithUntrustedOptionOrigin = api.normalizeCreateRequest({
   requestId: 42,
-  requestDetailsJson: JSON.stringify({
+  requestDetailsJson: JSON.stringify(createOptions({
     rp: { id: 'example.com', name: 'Example' },
     user: {
       id: 'YWxpY2U',
@@ -83,7 +83,7 @@ const createWithUntrustedOptionOrigin = api.normalizeCreateRequest({
     },
     challenge: 'Y2hhbGxlbmdl',
     origin: 'https://spoofed.example'
-  })
+  }))
 }, {
   origin: 'https://example.com'
 });
@@ -92,7 +92,7 @@ assert.equal(createWithUntrustedOptionOrigin.Origin, 'https://example.com',
 
 const createWithoutRpId = api.normalizeCreateRequest({
   requestId: 42,
-  requestDetailsJson: JSON.stringify({
+  requestDetailsJson: JSON.stringify(createOptions({
     rp: { name: 'Example' },
     user: {
       id: 'YWxpY2U',
@@ -100,7 +100,7 @@ const createWithoutRpId = api.normalizeCreateRequest({
       displayName: 'Alice'
     },
     challenge: 'Y2hhbGxlbmdl'
-  })
+  }))
 }, {
   origin: 'https://login.example.com'
 });
@@ -146,14 +146,14 @@ assert.equal(getWithoutRpId.RpId, 'login.example.com',
 assert.throws(
   () => api.normalizeCreateRequest({
     requestId: 46,
-    requestDetailsJson: JSON.stringify({
+    requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
       challenge: 'Y2hhbGxlbmdl',
       authenticatorSelection: {
         userVerification: 'required'
       }
-    })
+    }))
   }, {
     origin: 'https://example.com'
   }),
@@ -176,6 +176,40 @@ assert.throws(
   'proxy experiment must reject get requests requiring unsupported user verification'
 );
 
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 48,
+    requestDetailsJson: JSON.stringify({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedAlgorithmError,
+  'proxy experiment must reject create requests missing ES256 public-key credential parameters'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 49,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl',
+      pubKeyCredParams: [
+        { type: 'public-key', alg: -257 },
+        { type: 'public-key', alg: -37 }
+      ]
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedAlgorithmError,
+  'proxy experiment must reject create requests that do not allow ES256 credentials'
+);
+
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
   'RP ID validation should allow exact origin hosts');
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://accounts.example.com/login'), true,
@@ -190,11 +224,11 @@ assert.equal(api.isRpIdAllowedForOrigin('example.com', 'http://example.com/login
 assert.throws(
   () => api.normalizeCreateRequest({
     requestId: 44,
-    requestDetailsJson: JSON.stringify({
+    requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
       challenge: 'Y2hhbGxlbmdl'
-    })
+    }))
   }, {
     origin: 'https://evil-example.com'
   }),
@@ -207,11 +241,11 @@ assert.throws(
 assert.throws(
   () => api.normalizeCreateRequest({
     requestId: 44,
-    requestDetailsJson: JSON.stringify({
+    requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
       challenge: 'Y2hhbGxlbmdl'
-    })
+    }))
   }),
   /does not expose caller origin/,
   'proxy experiment must refuse to forward WebAuthn requests without a trusted caller origin'
@@ -324,11 +358,11 @@ const handlers = api.createBridgeRequestHandlers({
 
 const bridgeCreateResponse = await handlers.onCreateRequest({
   requestId: 80,
-  requestDetailsJson: JSON.stringify({
+  requestDetailsJson: JSON.stringify(createOptions({
     rp: { id: 'example.com' },
     user: { id: 'dXNlcg', name: 'alice@example.com' },
     challenge: 'Y2hhbGxlbmdl'
-  })
+  }))
 }, {
   origin: 'https://example.com'
 });
@@ -376,11 +410,11 @@ const deniedHandlers = api.createBridgeRequestHandlers({
 await assert.rejects(
   () => deniedHandlers.onCreateRequest({
     requestId: 82,
-    requestDetailsJson: JSON.stringify({
+    requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'dXNlcg', name: 'alice@example.com' },
       challenge: 'Y2hhbGxlbmdl'
-    })
+    }))
   }, { origin: 'https://example.com' }),
   (error) => error &&
     error.name === 'NotAllowedError' &&
@@ -425,14 +459,14 @@ const requiredUvHandlers = api.createBridgeRequestHandlers({
 await assert.rejects(
   () => requiredUvHandlers.onCreateRequest({
     requestId: 84,
-    requestDetailsJson: JSON.stringify({
+    requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'dXNlcg', name: 'alice@example.com' },
       challenge: 'Y2hhbGxlbmdl',
       authenticatorSelection: {
         userVerification: 'required'
       }
-    })
+    }))
   }, { origin: 'https://example.com' }),
   isUnsupportedUserVerificationError,
   'create bridge helper should reject required user verification before calling KeePass'
@@ -451,6 +485,29 @@ await assert.rejects(
 );
 assert.deepEqual(requiredUvBridgeCalls, [],
   'bridge helper must not call backend passkey methods when required user verification is unsupported');
+
+const unsupportedAlgBridgeCalls = [];
+const unsupportedAlgHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedAlgBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedAlgHandlers.onCreateRequest({
+    requestId: 86,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl',
+      pubKeyCredParams: [{ type: 'public-key', alg: -257 }]
+    }))
+  }, { origin: 'https://example.com' }),
+  isUnsupportedAlgorithmError,
+  'create bridge helper should reject unsupported credential algorithms before calling KeePass'
+);
+assert.deepEqual(unsupportedAlgBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when ES256 is not allowed by the request');
 
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');
@@ -531,7 +588,7 @@ const noOriginLifecycle = api.createLifecycle({
 await noOriginLifecycle.attach();
 await noOriginCreateEvent.dispatch({
   requestId: 70,
-  requestDetailsJson: JSON.stringify({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' })
+  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' }))
 });
 assert.equal(noOriginHandlerCalled, false, 'lifecycle should not call create handler without trusted origin resolver');
 assert.deepEqual(plain(noOriginCalls.find((entry) => entry[0] === 'createComplete')), [
@@ -564,7 +621,7 @@ const invalidRpLifecycle = api.createLifecycle({
 await invalidRpLifecycle.attach();
 await invalidRpCreateEvent.dispatch({
   requestId: 71,
-  requestDetailsJson: JSON.stringify({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' })
+  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' }))
 });
 assert.deepEqual(plain(invalidRpCalls.find((entry) => entry[0] === 'createComplete')), [
   'createComplete',
@@ -629,14 +686,14 @@ const requiredUvLifecycle = api.createLifecycle({
 await requiredUvLifecycle.attach();
 await requiredUvCreateEvent.dispatch({
   requestId: 73,
-  requestDetailsJson: JSON.stringify({
+  requestDetailsJson: JSON.stringify(createOptions({
     rp: { id: 'example.com' },
     user: { id: 'dXNlcg', name: 'alice' },
     challenge: 'Y2hhbGxlbmdl',
     authenticatorSelection: {
       userVerification: 'required'
     }
-  })
+  }))
 });
 assert.equal(requiredUvHandlerCalled, false,
   'lifecycle should not call create handlers for unsupported user verification requests');
@@ -709,7 +766,7 @@ assert.deepEqual(plain(lifecycleCalls.find((entry) => entry[0] === 'isUvpaaCompl
   'lifecycle should complete UVPAA requests through the configured handler');
 await lifecycleCreateEvent.dispatch({
   requestId: 77,
-  requestDetailsJson: JSON.stringify({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' })
+  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' }))
 });
 assert.equal(lifecycle.pendingCount(), 0, 'create request should be completed and removed from pending state');
 
@@ -797,6 +854,15 @@ function plain(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function createOptions(options) {
+  return {
+    ...options,
+    pubKeyCredParams: Object.prototype.hasOwnProperty.call(options, 'pubKeyCredParams')
+      ? options.pubKeyCredParams
+      : [{ type: 'public-key', alg: -7 }]
+  };
+}
+
 function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -805,6 +871,12 @@ function isUnsupportedUserVerificationError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey user verification is not supported by this build.');
+}
+
+function isUnsupportedAlgorithmError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey ES256 public-key credential algorithm is not allowed by this request.');
 }
 
 function makeEvent() {

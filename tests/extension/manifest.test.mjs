@@ -340,6 +340,8 @@ assert.equal(passkeysProxyExperiment.includes('isRpIdAllowedForOrigin'), true, '
 assert.equal(passkeysProxyExperiment.includes('Passkey RP ID is not valid for the trusted caller origin'), true, 'passkey proxy experiment should fail closed before bridge calls for invalid RP IDs');
 assert.equal(passkeysProxyExperiment.includes('assertUserVerificationSupported'), true, 'passkey proxy experiment should reject unsupported user verification before bridge calls');
 assert.equal(passkeysProxyExperiment.includes('Passkey user verification is not supported by this build'), true, 'passkey proxy experiment should expose a WebAuthn error for required user verification');
+assert.equal(passkeysProxyExperiment.includes('assertEs256CredentialAlgorithmAllowed'), true, 'passkey proxy experiment should reject create requests that do not allow ES256');
+assert.equal(passkeysProxyExperiment.includes('Passkey ES256 public-key credential algorithm is not allowed by this request'), true, 'passkey proxy experiment should expose a WebAuthn error for unsupported create algorithms');
 assert.equal(passkeysProxyExperiment.includes('duplicatePendingRequestMessage'), true, 'passkey proxy experiment should reject duplicate pending WebAuthn request IDs');
 assert.equal(passkeysProxyExperiment.includes('duplicate'), true, 'passkey proxy experiment should notify cancellation hooks when duplicate WebAuthn request IDs are rejected');
 assert.equal(passkeysProxyExperiment.includes('createLifecycle'), true, 'passkey proxy experiment should model attach/detach lifecycle');
