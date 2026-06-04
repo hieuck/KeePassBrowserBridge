@@ -667,6 +667,7 @@ const lifecycleChrome = {
   }
 };
 let releaseGetHandler;
+let lifecycleGetHandlerCalls = 0;
 const canceled = [];
 const lifecycle = api.createLifecycle({
   chromeLike: lifecycleChrome,
@@ -686,6 +687,7 @@ const lifecycle = api.createLifecycle({
     };
   },
   onGetRequest: async (requestInfo, context) => {
+    lifecycleGetHandlerCalls += 1;
     assert.equal(context.origin, 'https://example.com', 'get handler should receive trusted origin context');
     assert.equal(api.normalizeGetRequest(requestInfo, context).Origin, 'https://example.com',
       'get handler should be able to normalize with resolved origin context');
@@ -752,6 +754,39 @@ releaseGetHandler({
 await lockDispatch;
 assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false,
   'lock-canceled get request must not be completed after the handler resolves');
+
+const duplicateDispatch = lifecycleGetEvent.dispatch({
+  requestId: 80,
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+});
+await flushPromises();
+assert.equal(lifecycle.pendingCount(), 1, 'first duplicate-check request should be tracked while handler is pending');
+const getHandlerCallsBeforeDuplicate = lifecycleGetHandlerCalls;
+await lifecycleGetEvent.dispatch({
+  requestId: 80,
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+});
+assert.equal(lifecycleGetHandlerCalls, getHandlerCallsBeforeDuplicate,
+  'lifecycle should not call get handlers for duplicate pending WebAuthn request IDs');
+assert.equal(lifecycle.pendingCount(), 0,
+  'lifecycle should clear duplicate pending WebAuthn request IDs instead of overwriting pending state');
+assert.deepEqual(canceled.at(-1), ['80', 'get', 'duplicate'],
+  'duplicate WebAuthn request IDs should cancel the ambiguous pending request');
+assert.deepEqual(plain(lifecycleCalls.filter((entry) => entry[0] === 'getComplete' && entry[1].requestId === 80)), [
+  ['getComplete', { requestId: 80, error: { name: 'NotAllowedError', message: 'A pending passkey request already exists for this WebAuthn request.' } }]
+], 'lifecycle should complete duplicate pending WebAuthn request IDs with a WebAuthn error');
+releaseGetHandler({
+  Assertion: {
+    CredentialId: 'Y3JlZC04MA',
+    AuthenticatorData: 'YXV0aA',
+    ClientDataJson: 'Y2xpZW50',
+    Signature: 'c2ln'
+  }
+});
+await duplicateDispatch;
+assert.deepEqual(plain(lifecycleCalls.filter((entry) => entry[0] === 'getComplete' && entry[1].requestId === 80)), [
+  ['getComplete', { requestId: 80, error: { name: 'NotAllowedError', message: 'A pending passkey request already exists for this WebAuthn request.' } }]
+], 'duplicate-canceled WebAuthn requests must not complete success after the original handler resolves');
 await lifecycle.detach();
 assert.equal(lifecycle.isAttached(), false, 'lifecycle detach should mark proxy detached');
 assert.equal(lifecycleCreateEvent.listenerCount(), 0, 'lifecycle detach should remove create listener');

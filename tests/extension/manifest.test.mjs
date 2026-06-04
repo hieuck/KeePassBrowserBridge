@@ -234,6 +234,7 @@ assert.equal(rootReadme.includes('docs/privacy-policy.md'), true, 'root README s
 assert.equal(rootReadme.includes('docs/release-integrity.md'), true, 'root README should link release integrity guidance');
 assert.equal(rootReadme.includes('docs/release-notes-template.md'), true, 'root README should link release notes template');
 assert.equal(rootReadme.includes('Passkeys/WebAuthn are not supported'), true, 'root README should clearly state current passkey gap');
+assert.equal(rootReadme.includes('duplicate pending WebAuthn request IDs'), true, 'root README should document passkey proxy duplicate request hardening');
 assert.equal(extensionReadme.includes(`Version ${manifest.version}`), true, 'extension README should document the current extension version');
 assert.equal(extensionReadme.includes('0.2.0'), false, 'extension README should not describe an obsolete release version');
 assert.equal(extensionReadme.includes('contentScript.js - Main filling logic (unchanged)'), false, 'extension README should not claim current filling logic is unchanged from an older phase');
@@ -339,6 +340,8 @@ assert.equal(passkeysProxyExperiment.includes('isRpIdAllowedForOrigin'), true, '
 assert.equal(passkeysProxyExperiment.includes('Passkey RP ID is not valid for the trusted caller origin'), true, 'passkey proxy experiment should fail closed before bridge calls for invalid RP IDs');
 assert.equal(passkeysProxyExperiment.includes('assertUserVerificationSupported'), true, 'passkey proxy experiment should reject unsupported user verification before bridge calls');
 assert.equal(passkeysProxyExperiment.includes('Passkey user verification is not supported by this build'), true, 'passkey proxy experiment should expose a WebAuthn error for required user verification');
+assert.equal(passkeysProxyExperiment.includes('duplicatePendingRequestMessage'), true, 'passkey proxy experiment should reject duplicate pending WebAuthn request IDs');
+assert.equal(passkeysProxyExperiment.includes('duplicate'), true, 'passkey proxy experiment should notify cancellation hooks when duplicate WebAuthn request IDs are rejected');
 assert.equal(passkeysProxyExperiment.includes('createLifecycle'), true, 'passkey proxy experiment should model attach/detach lifecycle');
 assert.equal(passkeysProxyExperiment.includes('cancelPending'), true, 'passkey proxy experiment should expose explicit pending-request cleanup for browser lock');
 assert.equal(passkeysProxyExperiment.includes('onRequestCanceled'), true, 'passkey proxy experiment should track canceled WebAuthn requests');

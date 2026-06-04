@@ -118,6 +118,15 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when required user verification is unsupported',
   'lifecycle should reject required user verification before calling handlers'
 ], 'required user verification rejection should be covered by proxy tests');
+requireEvery('passkeysProxyExperiment', [
+  'duplicatePendingRequestMessage',
+  'pending.has(requestId)',
+  "'duplicate'"
+], 'passkey proxy should reject duplicate pending WebAuthn request IDs');
+requireEvery('passkeysProxyTests', [
+  'lifecycle should not call get handlers for duplicate pending WebAuthn request IDs',
+  'duplicate-canceled WebAuthn requests must not complete success after the original handler resolves'
+], 'duplicate pending WebAuthn request ID rejection should be covered by proxy tests');
 
 requireEvery('testsProgram', [
   'CredentialQueryRedactsProtectedCustomFieldValues',

@@ -4,6 +4,8 @@
 
   const missingOriginMessage =
     'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
+  const duplicatePendingRequestMessage =
+    'A pending passkey request already exists for this WebAuthn request.';
 
   function getApi(chromeLike = globalScope.chrome) {
     return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
@@ -120,6 +122,11 @@
 
     async function handleRequest(kind, requestInfo) {
       const requestId = String(requestInfo && requestInfo.requestId);
+      if (pending.has(requestId)) {
+        await rejectDuplicateRequest(kind, requestId);
+        return;
+      }
+
       pending.set(requestId, { kind, requestInfo });
       const context = requestContext(kind, requestId);
 
@@ -147,6 +154,19 @@
           await context.completeError(error);
         }
       }
+    }
+
+    async function rejectDuplicateRequest(kind, requestId) {
+      const existing = pending.get(requestId);
+      pending.delete(requestId);
+      await notifyCanceled(requestId, existing, 'duplicate');
+
+      const completionKind = existing && existing.kind ? existing.kind : kind;
+      const error = notAllowedError(duplicatePendingRequestMessage);
+      if (completionKind === 'create') {
+        return completeCreateError(chromeLike, requestId, error);
+      }
+      return completeGetError(chromeLike, requestId, error);
     }
 
     async function resolveTrustedOrigin(requestInfo, context) {
