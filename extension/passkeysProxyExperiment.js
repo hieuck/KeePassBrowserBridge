@@ -292,6 +292,7 @@
       UserName: stringValue(user.name),
       UserDisplayName: stringValue(user.displayName),
       UserVerification: userVerification,
+      TimeoutMs: normalizeTimeoutMs(options.timeout),
       Attestation: attestation,
       CredentialAlgorithms: credentialAlgorithms,
       ExcludeCredentialIds: normalizeCredentialDescriptorIds(options.excludeCredentials),
@@ -314,7 +315,8 @@
       Origin: origin,
       Challenge: stringValue(options.challenge),
       AllowCredentialIds: normalizeCredentialDescriptorIds(options.allowCredentials),
-      UserVerification: userVerification
+      UserVerification: userVerification,
+      TimeoutMs: normalizeTimeoutMs(options.timeout)
     };
   }
 
@@ -764,6 +766,11 @@
       return Boolean(result.isUvpaa);
     }
     return Boolean(result);
+  }
+
+  function normalizeTimeoutMs(value) {
+    const timeout = Number(value);
+    return Number.isFinite(timeout) && timeout > 0 ? Math.floor(timeout) : 0;
   }
 
   function stringValue(value) {

@@ -202,6 +202,7 @@ namespace KeePassBrowserBridge.Bridge
         string Origin { get; set; }
         string Challenge { get; set; }
         string UserVerification { get; set; }
+        long TimeoutMs { get; set; }
     }
 
     public sealed class PasskeyCreateBeginPayload : IPasskeyBeginPayload
@@ -214,6 +215,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserName { get; set; }
         public string UserDisplayName { get; set; }
         public string UserVerification { get; set; }
+        public long TimeoutMs { get; set; }
         public string Attestation { get; set; }
         public int[] CredentialAlgorithms { get; set; }
         public string[] ExcludeCredentialIds { get; set; }
@@ -255,6 +257,7 @@ namespace KeePassBrowserBridge.Bridge
         public string Challenge { get; set; }
         public string[] AllowCredentialIds { get; set; }
         public string UserVerification { get; set; }
+        public long TimeoutMs { get; set; }
     }
 
     public sealed class PasskeyGetBeginResponsePayload

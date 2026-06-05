@@ -113,8 +113,9 @@ requireEvery('passkeyService', [
 requireEvery('protocolModels', [
   'CredentialAlgorithms',
   'Attestation',
-  'ExcludeCredentialIds'
-], 'passkey create begin payload should carry credential algorithm, attestation, and exclude-credential policy to the backend');
+  'ExcludeCredentialIds',
+  'TimeoutMs'
+], 'passkey create begin payload should carry credential algorithm, attestation, exclude-credential policy, and timeout hints to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -145,6 +146,15 @@ requireEvery('testsProgram', [
   'excluded_credential_exists',
   'bridge excluded credential rejection should not prompt for approval'
 ], 'backend excludeCredentials enforcement should be covered by tests');
+requireEvery('passkeyService', [
+  'NormalizePendingTimeoutMs',
+  'MaxPendingLifetimeMs'
+], 'passkey backend should clamp browser timeout hints to the backend pending-session maximum');
+requireEvery('testsProgram', [
+  'PasskeyPendingHonorsRequestedTimeoutUpToMaximum',
+  'pending create should honor shorter browser request timeout',
+  'pending get should clamp long browser request timeout to the backend maximum'
+], 'backend pending-session timeout clamping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserVerification',
   'assertUserVerificationSupported',
@@ -183,6 +193,14 @@ requireEvery('passkeysProxyExperiment', [
 requireEvery('passkeysProxyTests', [
   "ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y']"
 ], 'proxy excludeCredentials mapping should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeTimeoutMs',
+  'TimeoutMs'
+], 'passkey proxy should forward normalized browser timeout hints to the backend');
+requireEvery('passkeysProxyTests', [
+  'TimeoutMs: 45000',
+  'TimeoutMs: 12000'
+], 'proxy timeout mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'duplicatePendingRequestMessage',
   'pending.has(requestId)',

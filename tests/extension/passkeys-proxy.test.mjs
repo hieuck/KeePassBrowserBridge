@@ -52,6 +52,7 @@ const createPayload = api.normalizeCreateRequest({
       displayName: 'Alice'
     },
     challenge: 'Y2hhbGxlbmdl',
+    timeout: 45000,
     attestation: 'none',
     authenticatorSelection: {
       userVerification: 'preferred'
@@ -83,6 +84,7 @@ assert.deepEqual(plain(createPayload), {
   UserName: 'alice@example.com',
   UserDisplayName: 'Alice',
   UserVerification: 'preferred',
+  TimeoutMs: 45000,
   Attestation: 'none',
   CredentialAlgorithms: [-257, -7],
   ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y'],
@@ -129,6 +131,7 @@ const getPayload = api.normalizeGetRequest({
   requestDetailsJson: JSON.stringify({
     rpId: 'Example.com',
     challenge: 'Z2V0LWNoYWxsZW5nZQ',
+    timeout: 12000.9,
     userVerification: 'discouraged',
     allowCredentials: [
       { id: 'Y3JlZC0x', type: 'public-key' },
@@ -146,7 +149,8 @@ assert.deepEqual(plain(getPayload), {
   Origin: 'https://accounts.example.com',
   Challenge: 'Z2V0LWNoYWxsZW5nZQ',
   AllowCredentialIds: ['Y3JlZC0x', 'Y3JlZC0y'],
-  UserVerification: 'discouraged'
+  UserVerification: 'discouraged',
+  TimeoutMs: 12000
 }, 'get request should normalize RP ID and allow trusted subdomain origins');
 
 const getWithoutRpId = api.normalizeGetRequest({

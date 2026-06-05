@@ -651,6 +651,7 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedUserVerificationErrorCode,
                     PasskeyService.UnsupportedUserVerificationError);
 
+            long pendingLifetimeMs = NormalizePendingTimeoutMs(payload.TimeoutMs);
             PasskeyCreateBeginPayload createPayload = null;
             if (operation == PasskeyPendingOperation.Create)
             {
@@ -684,7 +685,7 @@ namespace KeePassBrowserBridge.Bridge
                 Challenge = challenge,
                 UserVerification = NormalizeRequired(payload.UserVerification),
                 CreatedUtcMs = nowUtcMs,
-                ExpiresUtcMs = nowUtcMs + MaxPendingLifetimeMs
+                ExpiresUtcMs = nowUtcMs + pendingLifetimeMs
             };
 
             if (operation == PasskeyPendingOperation.Get)
@@ -776,6 +777,12 @@ namespace KeePassBrowserBridge.Bridge
             byte[] bytes;
             if (!Base64Url.TryDecode(credentialId, out bytes) || bytes.Length == 0) return string.Empty;
             return Base64Url.Encode(bytes);
+        }
+
+        private static long NormalizePendingTimeoutMs(long timeoutMs)
+        {
+            if (timeoutMs <= 0) return MaxPendingLifetimeMs;
+            return timeoutMs < MaxPendingLifetimeMs ? timeoutMs : MaxPendingLifetimeMs;
         }
 
         private static string[] NormalizeCredentialIds(string[] credentialIds)

@@ -36,6 +36,7 @@ internal static class Program
         PasskeyLookupFiltersAllowedCredentialIds();
         PasskeyLookupRejectsMismatchedOrigin();
         PasskeyPendingCreateBindsRequestContext();
+        PasskeyPendingHonorsRequestedTimeoutUpToMaximum();
         PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
         PasskeyPendingRejectsRequiredUserVerification();
@@ -483,6 +484,48 @@ internal static class Program
         AssertEqual(payload.Challenge, result.Session.Challenge, "pending create challenge binding mismatch");
         AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, result.Session.ExpiresUtcMs,
             "pending create expiration mismatch");
+    }
+
+    private static void PasskeyPendingHonorsRequestedTimeoutUpToMaximum()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-timeout");
+        createPayload.TimeoutMs = 30000;
+
+        PasskeyPendingSessionResult create = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-create-timeout",
+            createPayload,
+            now);
+
+        AssertTrue(create.Success, "passkey create begin should accept a browser timeout: " + create.Error);
+        AssertEqual(now + 30000, create.Session.ExpiresUtcMs,
+            "pending create should honor shorter browser request timeout");
+
+        PasskeyGetBeginPayload getPayload = CreatePasskeyGetBeginPayload("webauthn-get-timeout", new string[0]);
+        getPayload.TimeoutMs = PasskeyPendingSessionStore.MaxPendingLifetimeMs + 1000;
+        PasskeyPendingSessionResult get = store.BeginGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-get-timeout",
+            getPayload,
+            now);
+
+        AssertTrue(get.Success, "passkey get begin should accept a browser timeout: " + get.Error);
+        AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, get.Session.ExpiresUtcMs,
+            "pending get should clamp long browser request timeout to the backend maximum");
+
+        PasskeyCreateBeginPayload invalidTimeout = CreatePasskeyCreateBeginPayload("webauthn-create-invalid-timeout");
+        invalidTimeout.TimeoutMs = -1;
+        PasskeyPendingSessionResult fallback = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-invalid-timeout",
+            invalidTimeout,
+            now);
+
+        AssertTrue(fallback.Success, "passkey create begin should accept missing or invalid timeout hints: " + fallback.Error);
+        AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, fallback.Session.ExpiresUtcMs,
+            "invalid browser timeout should fall back to the backend maximum");
     }
 
     private static void PasskeyPendingCompletionRequiresMatchingBindingAndConsumes()
