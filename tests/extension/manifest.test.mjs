@@ -343,6 +343,8 @@ assert.equal(passkeysProxyExperiment.includes('Passkey user verification is not 
 assert.equal(passkeysProxyExperiment.includes('assertEs256CredentialAlgorithmAllowed'), true, 'passkey proxy experiment should reject create requests that do not allow ES256');
 assert.equal(passkeysProxyExperiment.includes('normalizeCredentialAlgorithms'), true, 'passkey proxy experiment should forward normalized create algorithm policy to the backend');
 assert.equal(passkeysProxyExperiment.includes('Passkey ES256 public-key credential algorithm is not allowed by this request'), true, 'passkey proxy experiment should expose a WebAuthn error for unsupported create algorithms');
+assert.equal(passkeysProxyExperiment.includes('ExcludeCredentialIds'), true, 'passkey proxy experiment should forward create excludeCredentials to the backend');
+assert.equal(passkeysProxyExperiment.includes('normalizeCredentialDescriptorIds'), true, 'passkey proxy experiment should normalize credential descriptor IDs');
 assert.equal(passkeysProxyExperiment.includes('duplicatePendingRequestMessage'), true, 'passkey proxy experiment should reject duplicate pending WebAuthn request IDs');
 assert.equal(passkeysProxyExperiment.includes('duplicate'), true, 'passkey proxy experiment should notify cancellation hooks when duplicate WebAuthn request IDs are rejected');
 assert.equal(passkeysProxyExperiment.includes('createLifecycle'), true, 'passkey proxy experiment should model attach/detach lifecycle');
@@ -365,6 +367,7 @@ assert.equal(bridgeSettings.includes('get { return false; }'), true, 'passkey fe
 assert.equal(protocolModels.includes('passkeys.create.begin'), true, 'protocol models should reserve passkey create method names');
 assert.equal(protocolModels.includes('passkeys.get.begin'), true, 'protocol models should reserve passkey assertion method names');
 assert.equal(protocolModels.includes('passkeys.cancel'), true, 'protocol models should reserve passkey cancellation method name');
+assert.equal(protocolModels.includes('ExcludeCredentialIds'), true, 'protocol models should carry create excludeCredentials to the backend');
 assert.equal(protocolModels.includes('SupportedMethods'), true, 'hello protocol model should advertise supported methods');
 assert.equal(protocolModels.includes('BridgeFeatureInfo'), true, 'hello protocol model should advertise feature flags');
 assert.equal(protocolModels.includes('public string Status'), true, 'hello feature metadata should include feature status');
@@ -379,6 +382,7 @@ assert.equal(backgroundSource.includes('clearPendingPasskeyState'), true, 'exten
 assert.equal(passkeyServiceSource.includes('PasskeyApprovalRequest'), true, 'passkey backend should model KeePass approval requests');
 assert.equal(passkeyServiceSource.includes('PasskeyApprovalResult'), true, 'passkey backend should model KeePass approval decisions');
 assert.equal(bridgeRequestHandler.includes('RequestPasskeyApproval'), true, 'bridge handler should require KeePass approval for passkey begin methods');
+assert.equal(bridgeRequestHandler.includes('excluded_credential_exists'), true, 'bridge handler should reject create requests when excludeCredentials match existing passkeys');
 assert.equal(pluginExt.includes('ShowPasskeyApprovalPrompt'), true, 'KeePass plugin should wire a passkey approval prompt');
 assert.equal(pluginExt.includes('CreatePasskeyApprovalDialog'), true, 'KeePass plugin should include a passkey approval dialog prototype');
 assert.equal(passkeyServiceSource.includes('ClearAll()'), true, 'passkey pending store should support database lifecycle cleanup');

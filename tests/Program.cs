@@ -132,6 +132,7 @@ internal static class Program
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled();
         BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession();
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
         BridgeHandlerCompletesPasskeyCreateAndSavesDatabaseWhenFeatureGateIsEnabled();
@@ -2314,6 +2315,39 @@ internal static class Program
         AssertEqual("unsupported_algorithm", createResponse.ErrorCode,
             "bridge create unsupported credential algorithm error code mismatch");
         AssertEqual(0, pending.Count, "bridge unsupported credential algorithm rejection should not leave pending sessions");
+    }
+
+    private static void BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before excluded credential test: " + registration.Error);
+
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PwDatabase database = CreateDatabase(entry);
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        int approvalCount = 0;
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-excluded");
+        createPayload.ExcludeCredentialIds = new string[] { "not@base64url", registration.Credential.CredentialId };
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject excluded existing credentials");
+        AssertEqual("excluded_credential_exists", createResponse.ErrorCode,
+            "bridge create excluded credential error code mismatch");
+        AssertEqual(0, pending.Count, "bridge excluded credential rejection should not leave pending sessions");
+        AssertEqual(0, approvalCount, "bridge excluded credential rejection should not prompt for approval");
     }
 
     private static void BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession()

@@ -215,6 +215,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserDisplayName { get; set; }
         public string UserVerification { get; set; }
         public int[] CredentialAlgorithms { get; set; }
+        public string[] ExcludeCredentialIds { get; set; }
         public string[] Transports { get; set; }
     }
 

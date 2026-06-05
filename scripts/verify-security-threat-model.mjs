@@ -22,6 +22,7 @@ const sources = {
   optionsPageTests: read('tests/e2e/options-page.spec.js'),
   realSiteValidation: read('docs/real-site-validation.md'),
   bridgeMethodPolicy: read('src/Bridge/BridgeMethodPolicy.cs'),
+  bridgeRequestHandler: read('src/Bridge/BridgeRequestHandler.cs'),
   protocolModels: read('src/Bridge/ProtocolModels.cs'),
   passkeyService: read('src/Bridge/PasskeyService.cs'),
   loopbackServer: read('src/Bridge/LoopbackBridgeServer.cs'),
@@ -110,8 +111,9 @@ requireEvery('passkeyService', [
   'Passkey user verification is not supported by this build.'
 ], 'passkey backend should reject required user verification until KeePass-side verification exists');
 requireEvery('protocolModels', [
-  'CredentialAlgorithms'
-], 'passkey create begin payload should carry credential algorithm policy to the backend');
+  'CredentialAlgorithms',
+  'ExcludeCredentialIds'
+], 'passkey create begin payload should carry credential algorithm and exclude-credential policy to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -122,6 +124,16 @@ requireEvery('testsProgram', [
   'BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled',
   'unsupported_algorithm'
 ], 'backend ES256 create-algorithm enforcement should be covered by tests');
+requireEvery('bridgeRequestHandler', [
+  'RejectExcludedCreateCredential',
+  'excluded_credential_exists',
+  'ExcludeCredentialIds'
+], 'passkey bridge should reject create requests whose excludeCredentials match existing passkeys');
+requireEvery('testsProgram', [
+  'BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled',
+  'excluded_credential_exists',
+  'bridge excluded credential rejection should not prompt for approval'
+], 'backend excludeCredentials enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserVerification',
   'assertUserVerificationSupported',
@@ -144,6 +156,13 @@ requireEvery('passkeysProxyTests', [
   'CredentialAlgorithms: [-257, -7]',
   'bridge helper must not call backend passkey methods when ES256 is not allowed by the request'
 ], 'ES256 create-algorithm enforcement should be covered by proxy tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeCredentialDescriptorIds',
+  'ExcludeCredentialIds'
+], 'passkey proxy should forward create excludeCredentials to the backend');
+requireEvery('passkeysProxyTests', [
+  "ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y']"
+], 'proxy excludeCredentials mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'duplicatePendingRequestMessage',
   'pending.has(requestId)',

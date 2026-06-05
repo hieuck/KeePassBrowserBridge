@@ -319,6 +319,9 @@ namespace KeePassBrowserBridge.Bridge
 
             if (!result.Success) return Error(request, result.ErrorCode, result.Error);
 
+            BridgeResponse excludedCredentialError = RejectExcludedCreateCredential(request, payload, result.Session);
+            if (excludedCredentialError != null) return excludedCredentialError;
+
             PasskeyApprovalResult approval = RequestPasskeyApproval(result.Session, null);
             if (!approval.Approved)
             {
@@ -334,6 +337,29 @@ namespace KeePassBrowserBridge.Bridge
                 ExpiresUtcMs = result.Session.ExpiresUtcMs,
                 PendingApproval = true
             }));
+        }
+
+        private BridgeResponse RejectExcludedCreateCredential(BridgeRequest request, PasskeyCreateBeginPayload payload, PasskeyPendingSession session)
+        {
+            if (payload == null || payload.ExcludeCredentialIds == null || payload.ExcludeCredentialIds.Length == 0) return null;
+
+            PasskeyCredentialLookupResult lookup = m_passkeyCredentialLookupService.List(m_databaseProvider(), new PasskeysListPayload
+            {
+                RpId = session.RpId,
+                Origin = session.Origin,
+                AllowCredentialIds = payload.ExcludeCredentialIds
+            });
+
+            if (!lookup.Success)
+            {
+                m_passkeyPendingSessionStore.Cancel(request.ClientId, session.WebAuthnRequestId);
+                return Error(request, lookup.ErrorCode, lookup.Error);
+            }
+
+            if (lookup.Credentials.Length == 0) return null;
+
+            m_passkeyPendingSessionStore.Cancel(request.ClientId, session.WebAuthnRequestId);
+            return Error(request, "excluded_credential_exists", "Passkey registration excluded credential already exists for this RP.");
         }
 
         private BridgeResponse PasskeysGetBegin(BridgeRequest request)

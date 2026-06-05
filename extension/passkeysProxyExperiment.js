@@ -289,6 +289,7 @@
       UserDisplayName: stringValue(user.displayName),
       UserVerification: userVerification,
       CredentialAlgorithms: credentialAlgorithms,
+      ExcludeCredentialIds: normalizeCredentialDescriptorIds(options.excludeCredentials),
       Transports: []
     };
   }
@@ -307,9 +308,7 @@
       RpId: rpId,
       Origin: origin,
       Challenge: stringValue(options.challenge),
-      AllowCredentialIds: Array.isArray(options.allowCredentials)
-        ? options.allowCredentials.map((credential) => stringValue(credential && credential.id)).filter(Boolean)
-        : [],
+      AllowCredentialIds: normalizeCredentialDescriptorIds(options.allowCredentials),
       UserVerification: userVerification
     };
   }
@@ -523,6 +522,19 @@
     if (type !== 'public-key') return undefined;
     const algorithm = Number(value.alg);
     return Number.isInteger(algorithm) ? algorithm : undefined;
+  }
+
+  function normalizeCredentialDescriptorIds(credentials) {
+    if (!Array.isArray(credentials)) return [];
+    const ids = [];
+    for (const credential of credentials) {
+      const type = stringValue(credential && credential.type).trim().toLowerCase();
+      if (type && type !== 'public-key') continue;
+      const id = stringValue(credential && credential.id);
+      if (!id || ids.includes(id)) continue;
+      ids.push(id);
+    }
+    return ids;
   }
 
   function rpIdFromOrigin(origin) {
