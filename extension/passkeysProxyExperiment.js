@@ -8,6 +8,8 @@
     'A pending passkey request already exists for this WebAuthn request.';
   const unsupportedAlgorithmMessage =
     'Passkey ES256 public-key credential algorithm is not allowed by this request.';
+  const unsupportedAttestationMessage =
+    'Passkey attestation conveyance is not supported by this build.';
 
   function getApi(chromeLike = globalScope.chrome) {
     return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
@@ -276,6 +278,8 @@
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
     assertUserVerificationSupported(userVerification);
+    const attestation = normalizeAttestationConveyance(options.attestation);
+    assertAttestationSupported(attestation);
     const credentialAlgorithms = normalizeCredentialAlgorithms(options.pubKeyCredParams);
     assertEs256CredentialAlgorithmAllowed(credentialAlgorithms);
 
@@ -288,6 +292,7 @@
       UserName: stringValue(user.name),
       UserDisplayName: stringValue(user.displayName),
       UserVerification: userVerification,
+      Attestation: attestation,
       CredentialAlgorithms: credentialAlgorithms,
       ExcludeCredentialIds: normalizeCredentialDescriptorIds(options.excludeCredentials),
       Transports: []
@@ -503,6 +508,19 @@
   function assertEs256CredentialAlgorithmAllowed(credentialAlgorithms) {
     if (Array.isArray(credentialAlgorithms) && credentialAlgorithms.includes(-7)) return;
     throw notAllowedError(unsupportedAlgorithmMessage);
+  }
+
+  function normalizeAttestationConveyance(value) {
+    const normalized = stringValue(value).trim().toLowerCase();
+    return normalized === 'none' || normalized === 'indirect' ||
+      normalized === 'direct' || normalized === 'enterprise'
+      ? normalized
+      : '';
+  }
+
+  function assertAttestationSupported(attestation) {
+    if (!attestation || attestation === 'none') return;
+    throw notAllowedError(unsupportedAttestationMessage);
   }
 
   function normalizeCredentialAlgorithms(pubKeyCredParams) {

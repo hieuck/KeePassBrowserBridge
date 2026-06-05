@@ -52,6 +52,7 @@ const createPayload = api.normalizeCreateRequest({
       displayName: 'Alice'
     },
     challenge: 'Y2hhbGxlbmdl',
+    attestation: 'none',
     authenticatorSelection: {
       userVerification: 'preferred'
     },
@@ -82,6 +83,7 @@ assert.deepEqual(plain(createPayload), {
   UserName: 'alice@example.com',
   UserDisplayName: 'Alice',
   UserVerification: 'preferred',
+  Attestation: 'none',
   CredentialAlgorithms: [-257, -7],
   ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y'],
   Transports: []
@@ -223,6 +225,22 @@ assert.throws(
   }),
   isUnsupportedAlgorithmError,
   'proxy experiment must reject create requests that do not allow ES256 credentials'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 50,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl',
+      attestation: 'direct'
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedAttestationError,
+  'proxy experiment must reject create requests requiring unsupported attestation conveyance'
 );
 
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
@@ -523,6 +541,29 @@ await assert.rejects(
 );
 assert.deepEqual(unsupportedAlgBridgeCalls, [],
   'bridge helper must not call backend passkey methods when ES256 is not allowed by the request');
+
+const unsupportedAttestationBridgeCalls = [];
+const unsupportedAttestationHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedAttestationBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedAttestationHandlers.onCreateRequest({
+    requestId: 87,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl',
+      attestation: 'enterprise'
+    }))
+  }, { origin: 'https://example.com' }),
+  isUnsupportedAttestationError,
+  'create bridge helper should reject unsupported attestation before calling KeePass'
+);
+assert.deepEqual(unsupportedAttestationBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when attestation conveyance is unsupported');
 
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');
@@ -892,6 +933,12 @@ function isUnsupportedAlgorithmError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey ES256 public-key credential algorithm is not allowed by this request.');
+}
+
+function isUnsupportedAttestationError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey attestation conveyance is not supported by this build.');
 }
 
 function makeEvent() {

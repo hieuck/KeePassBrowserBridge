@@ -19,6 +19,8 @@ namespace KeePassBrowserBridge.Bridge
         internal const string UnsupportedUserVerificationError = "Passkey user verification is not supported by this build.";
         internal const string UnsupportedCredentialAlgorithmErrorCode = "unsupported_algorithm";
         internal const string UnsupportedCredentialAlgorithmError = "Passkey ES256 public-key credential algorithm is not allowed by this request.";
+        internal const string UnsupportedAttestationErrorCode = "unsupported_attestation";
+        internal const string UnsupportedAttestationError = "Passkey attestation conveyance is not supported by this build.";
 
         public PasskeyRegistrationResult CreateCredential(PasskeyRegistrationRequest request)
         {
@@ -172,6 +174,12 @@ namespace KeePassBrowserBridge.Bridge
                 if (credentialAlgorithms[i] == -7) return true;
             }
             return false;
+        }
+
+        internal static bool IsNoneAttestationConveyance(string attestation)
+        {
+            string value = (attestation ?? string.Empty).Trim().ToLowerInvariant();
+            return value.Length == 0 || value == "none";
         }
 
         private static string[] NormalizeTransports(string[] transports)
@@ -650,6 +658,9 @@ namespace KeePassBrowserBridge.Bridge
                 if (createPayload == null || !PasskeyService.AllowsEs256CredentialAlgorithm(createPayload.CredentialAlgorithms))
                     return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedCredentialAlgorithmErrorCode,
                         PasskeyService.UnsupportedCredentialAlgorithmError);
+                if (!PasskeyService.IsNoneAttestationConveyance(createPayload.Attestation))
+                    return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedAttestationErrorCode,
+                        PasskeyService.UnsupportedAttestationError);
             }
 
             string sessionKey = SessionKey(normalizedClientId, normalizedWebAuthnRequestId);

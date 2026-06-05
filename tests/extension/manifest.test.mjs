@@ -343,6 +343,8 @@ assert.equal(passkeysProxyExperiment.includes('Passkey user verification is not 
 assert.equal(passkeysProxyExperiment.includes('assertEs256CredentialAlgorithmAllowed'), true, 'passkey proxy experiment should reject create requests that do not allow ES256');
 assert.equal(passkeysProxyExperiment.includes('normalizeCredentialAlgorithms'), true, 'passkey proxy experiment should forward normalized create algorithm policy to the backend');
 assert.equal(passkeysProxyExperiment.includes('Passkey ES256 public-key credential algorithm is not allowed by this request'), true, 'passkey proxy experiment should expose a WebAuthn error for unsupported create algorithms');
+assert.equal(passkeysProxyExperiment.includes('assertAttestationSupported'), true, 'passkey proxy experiment should reject unsupported attestation conveyance before bridge calls');
+assert.equal(passkeysProxyExperiment.includes('Passkey attestation conveyance is not supported by this build'), true, 'passkey proxy experiment should expose a WebAuthn error for unsupported attestation');
 assert.equal(passkeysProxyExperiment.includes('ExcludeCredentialIds'), true, 'passkey proxy experiment should forward create excludeCredentials to the backend');
 assert.equal(passkeysProxyExperiment.includes('normalizeCredentialDescriptorIds'), true, 'passkey proxy experiment should normalize credential descriptor IDs');
 assert.equal(passkeysProxyExperiment.includes('duplicatePendingRequestMessage'), true, 'passkey proxy experiment should reject duplicate pending WebAuthn request IDs');
@@ -367,6 +369,7 @@ assert.equal(bridgeSettings.includes('get { return false; }'), true, 'passkey fe
 assert.equal(protocolModels.includes('passkeys.create.begin'), true, 'protocol models should reserve passkey create method names');
 assert.equal(protocolModels.includes('passkeys.get.begin'), true, 'protocol models should reserve passkey assertion method names');
 assert.equal(protocolModels.includes('passkeys.cancel'), true, 'protocol models should reserve passkey cancellation method name');
+assert.equal(protocolModels.includes('public string Attestation'), true, 'protocol models should carry create attestation preference to the backend');
 assert.equal(protocolModels.includes('ExcludeCredentialIds'), true, 'protocol models should carry create excludeCredentials to the backend');
 assert.equal(protocolModels.includes('SupportedMethods'), true, 'hello protocol model should advertise supported methods');
 assert.equal(protocolModels.includes('BridgeFeatureInfo'), true, 'hello protocol model should advertise feature flags');

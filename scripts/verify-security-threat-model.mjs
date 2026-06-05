@@ -112,8 +112,9 @@ requireEvery('passkeyService', [
 ], 'passkey backend should reject required user verification until KeePass-side verification exists');
 requireEvery('protocolModels', [
   'CredentialAlgorithms',
+  'Attestation',
   'ExcludeCredentialIds'
-], 'passkey create begin payload should carry credential algorithm and exclude-credential policy to the backend');
+], 'passkey create begin payload should carry credential algorithm, attestation, and exclude-credential policy to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -124,6 +125,16 @@ requireEvery('testsProgram', [
   'BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled',
   'unsupported_algorithm'
 ], 'backend ES256 create-algorithm enforcement should be covered by tests');
+requireEvery('passkeyService', [
+  'UnsupportedAttestationErrorCode',
+  'IsNoneAttestationConveyance',
+  'Passkey attestation conveyance is not supported by this build.'
+], 'passkey backend should reject unsupported attestation conveyance');
+requireEvery('testsProgram', [
+  'PasskeyPendingRejectsUnsupportedAttestation',
+  'BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled',
+  'unsupported_attestation'
+], 'backend attestation enforcement should be covered by tests');
 requireEvery('bridgeRequestHandler', [
   'RejectExcludedCreateCredential',
   'excluded_credential_exists',
@@ -156,6 +167,15 @@ requireEvery('passkeysProxyTests', [
   'CredentialAlgorithms: [-257, -7]',
   'bridge helper must not call backend passkey methods when ES256 is not allowed by the request'
 ], 'ES256 create-algorithm enforcement should be covered by proxy tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeAttestationConveyance',
+  'assertAttestationSupported',
+  'Passkey attestation conveyance is not supported by this build.'
+], 'passkey proxy should reject unsupported attestation conveyance before bridge calls');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject create requests requiring unsupported attestation conveyance',
+  'bridge helper must not call backend passkey methods when attestation conveyance is unsupported'
+], 'proxy attestation enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeCredentialDescriptorIds',
   'ExcludeCredentialIds'

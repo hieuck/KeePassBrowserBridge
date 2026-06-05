@@ -40,6 +40,7 @@ internal static class Program
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
         PasskeyPendingRejectsRequiredUserVerification();
         PasskeyPendingRejectsUnsupportedCredentialAlgorithm();
+        PasskeyPendingRejectsUnsupportedAttestation();
         PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId();
         PasskeyPendingCompletionExpiresStaleSession();
         PasskeyPendingClearForClientRemovesOnlyClientSessions();
@@ -132,6 +133,7 @@ internal static class Program
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled();
         BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession();
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
@@ -622,6 +624,25 @@ internal static class Program
         AssertEqual("unsupported_algorithm", unsupported.ErrorCode,
             "pending create unsupported credential algorithms error code mismatch");
         AssertEqual(0, store.Count, "unsupported credential algorithms should not create pending passkey sessions");
+    }
+
+    private static void PasskeyPendingRejectsUnsupportedAttestation()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload payload = CreatePasskeyCreateBeginPayload("webauthn-create-direct-attestation");
+        payload.Attestation = "direct";
+
+        PasskeyPendingSessionResult result = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-direct-attestation",
+            payload,
+            now);
+
+        AssertFalse(result.Success, "pending create should reject unsupported attestation conveyance");
+        AssertEqual("unsupported_attestation", result.ErrorCode,
+            "pending create unsupported attestation error code mismatch");
+        AssertEqual(0, store.Count, "unsupported attestation should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId()
@@ -2317,6 +2338,24 @@ internal static class Program
         AssertEqual(0, pending.Count, "bridge unsupported credential algorithm rejection should not leave pending sessions");
     }
 
+    private static void BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending);
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-direct-attestation-bridge");
+        createPayload.Attestation = "direct";
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject unsupported attestation conveyance");
+        AssertEqual("unsupported_attestation", createResponse.ErrorCode,
+            "bridge create unsupported attestation error code mismatch");
+        AssertEqual(0, pending.Count, "bridge unsupported attestation rejection should not leave pending sessions");
+    }
+
     private static void BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled()
     {
         PasskeyService service = new PasskeyService();
@@ -3231,6 +3270,7 @@ internal static class Program
             UserName = "alice@example.com",
             UserDisplayName = "Alice Example",
             UserVerification = "preferred",
+            Attestation = "none",
             CredentialAlgorithms = new int[] { -7 },
             Transports = new string[] { "internal" }
         };
