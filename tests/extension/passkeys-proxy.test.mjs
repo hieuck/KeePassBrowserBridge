@@ -53,6 +53,9 @@ const createPayload = api.normalizeCreateRequest({
     },
     challenge: 'Y2hhbGxlbmdl',
     timeout: 45000,
+    extensions: {
+      credProps: true
+    },
     attestation: 'none',
     authenticatorSelection: {
       userVerification: 'preferred'
@@ -88,6 +91,7 @@ assert.deepEqual(plain(createPayload), {
   Attestation: 'none',
   CredentialAlgorithms: [-257, -7],
   ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y'],
+  RequestedExtensions: { CredProps: true },
   Transports: []
 }, 'create request should map Chrome JSON options to bridge payload fields');
 
@@ -575,6 +579,11 @@ await api.completeCreateSuccess(chromeApi, 45, {
   Credential: { CredentialId: 'Y3JlZC00NQ' },
   ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
   AttestationObject: 'YXR0ZXN0YXRpb24',
+  ClientExtensionResults: {
+    CredProps: {
+      Rk: true
+    }
+  },
   Transports: ['internal', 'usb']
 });
 await api.completeGetSuccess(chromeApi, 46, {
@@ -599,7 +608,11 @@ assert.deepEqual(createSuccessJson, {
     attestationObject: 'YXR0ZXN0YXRpb24',
     transports: ['internal', 'usb']
   },
-  clientExtensionResults: {}
+  clientExtensionResults: {
+    credProps: {
+      rk: true
+    }
+  }
 }, 'create success should serialize a PublicKeyCredential.toJSON-like response');
 assert.deepEqual(getSuccessJson, {
   id: 'Y3JlZC00Ng',

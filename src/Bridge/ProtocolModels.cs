@@ -219,6 +219,7 @@ namespace KeePassBrowserBridge.Bridge
         public string Attestation { get; set; }
         public int[] CredentialAlgorithms { get; set; }
         public string[] ExcludeCredentialIds { get; set; }
+        public PasskeyRequestedExtensions RequestedExtensions { get; set; }
         public string[] Transports { get; set; }
     }
 
@@ -247,6 +248,22 @@ namespace KeePassBrowserBridge.Bridge
         public string ClientDataJson { get; set; }
         public string AttestationObject { get; set; }
         public string PublicKeyCose { get; set; }
+        public PasskeyClientExtensionResults ClientExtensionResults { get; set; }
+    }
+
+    public sealed class PasskeyRequestedExtensions
+    {
+        public bool CredProps { get; set; }
+    }
+
+    public sealed class PasskeyClientExtensionResults
+    {
+        public PasskeyCredPropsExtensionResult CredProps { get; set; }
+    }
+
+    public sealed class PasskeyCredPropsExtensionResult
+    {
+        public bool Rk { get; set; }
     }
 
     public sealed class PasskeyGetBeginPayload : IPasskeyBeginPayload

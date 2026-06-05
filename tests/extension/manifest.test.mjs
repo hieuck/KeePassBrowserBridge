@@ -349,6 +349,9 @@ assert.equal(passkeysProxyExperiment.includes('ExcludeCredentialIds'), true, 'pa
 assert.equal(passkeysProxyExperiment.includes('normalizeCredentialDescriptorIds'), true, 'passkey proxy experiment should normalize credential descriptor IDs');
 assert.equal(passkeysProxyExperiment.includes('normalizeTimeoutMs'), true, 'passkey proxy experiment should normalize browser timeout hints');
 assert.equal(passkeysProxyExperiment.includes('TimeoutMs'), true, 'passkey proxy experiment should forward browser timeout hints to the backend');
+assert.equal(passkeysProxyExperiment.includes('normalizeRequestedExtensions'), true, 'passkey proxy experiment should normalize requested WebAuthn extensions');
+assert.equal(passkeysProxyExperiment.includes('normalizeClientExtensionResults'), true, 'passkey proxy experiment should normalize bridge extension results for browser responses');
+assert.equal(passkeysProxyExperiment.includes('credProps'), true, 'passkey proxy experiment should handle the WebAuthn credProps extension');
 assert.equal(passkeysProxyExperiment.includes('duplicatePendingRequestMessage'), true, 'passkey proxy experiment should reject duplicate pending WebAuthn request IDs');
 assert.equal(passkeysProxyExperiment.includes('duplicate'), true, 'passkey proxy experiment should notify cancellation hooks when duplicate WebAuthn request IDs are rejected');
 assert.equal(passkeysProxyExperiment.includes('createLifecycle'), true, 'passkey proxy experiment should model attach/detach lifecycle');
@@ -374,6 +377,8 @@ assert.equal(protocolModels.includes('passkeys.cancel'), true, 'protocol models 
 assert.equal(protocolModels.includes('public string Attestation'), true, 'protocol models should carry create attestation preference to the backend');
 assert.equal(protocolModels.includes('ExcludeCredentialIds'), true, 'protocol models should carry create excludeCredentials to the backend');
 assert.equal(protocolModels.includes('public long TimeoutMs'), true, 'protocol models should carry browser timeout hints to the backend');
+assert.equal(protocolModels.includes('RequestedExtensions'), true, 'protocol models should carry requested WebAuthn extensions to the backend');
+assert.equal(protocolModels.includes('ClientExtensionResults'), true, 'protocol models should carry WebAuthn extension results back to the proxy');
 assert.equal(protocolModels.includes('SupportedMethods'), true, 'hello protocol model should advertise supported methods');
 assert.equal(protocolModels.includes('BridgeFeatureInfo'), true, 'hello protocol model should advertise feature flags');
 assert.equal(protocolModels.includes('public string Status'), true, 'hello feature metadata should include feature status');
@@ -397,6 +402,8 @@ assert.equal(bridgeRequestHandler.includes('PasskeysCancel'), true, 'bridge hand
 assert.equal(pluginExt.includes('FileClosingPre'), true, 'plugin should clear pending passkey sessions when KeePass starts closing a database');
 assert.equal(pluginExt.includes('FileClosed'), true, 'plugin should clear pending passkey sessions after KeePass closes a database');
 assert.equal(passkeyServiceSource.includes('NormalizePendingTimeoutMs'), true, 'passkey pending store should clamp browser timeout hints to its maximum lifetime');
+assert.equal(bridgeRequestHandler.includes('CreateClientExtensionResults'), true, 'passkey bridge should return requested WebAuthn extension results');
+assert.equal(bridgeRequestHandler.includes('PasskeyCredPropsExtensionResult'), true, 'passkey bridge should return credProps extension results for created credentials');
 assert.equal(trustedClientStore.includes('PasskeyRead = "passkeyRead"'), true, 'trusted-client store should define passkey read permission');
 assert.equal(trustedClientStore.includes('PasskeyWrite = "passkeyWrite"'), true, 'trusted-client store should define passkey write permission');
 assert.equal(bridgeMethodPolicy.includes('AllMethods'), true, 'bridge method policy should enumerate all supported bridge methods');

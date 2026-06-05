@@ -114,8 +114,10 @@ requireEvery('protocolModels', [
   'CredentialAlgorithms',
   'Attestation',
   'ExcludeCredentialIds',
-  'TimeoutMs'
-], 'passkey create begin payload should carry credential algorithm, attestation, exclude-credential policy, and timeout hints to the backend');
+  'TimeoutMs',
+  'RequestedExtensions',
+  'ClientExtensionResults'
+], 'passkey create begin payload should carry credential algorithm, attestation, exclude-credential policy, timeout hints, and extension-result contracts to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -155,6 +157,15 @@ requireEvery('testsProgram', [
   'pending create should honor shorter browser request timeout',
   'pending get should clamp long browser request timeout to the backend maximum'
 ], 'backend pending-session timeout clamping should be covered by tests');
+requireEvery('bridgeRequestHandler', [
+  'CreateClientExtensionResults',
+  'PasskeyCredPropsExtensionResult',
+  'Rk = true'
+], 'passkey bridge should return requested credProps extension results for discoverable credentials');
+requireEvery('testsProgram', [
+  'pending create should retain requested credProps extension state',
+  'create complete response should include requested credProps resident-key result'
+], 'backend credProps extension result handling should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserVerification',
   'assertUserVerificationSupported',
@@ -201,6 +212,16 @@ requireEvery('passkeysProxyTests', [
   'TimeoutMs: 45000',
   'TimeoutMs: 12000'
 ], 'proxy timeout mapping should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeRequestedExtensions',
+  'normalizeClientExtensionResults',
+  'credProps'
+], 'passkey proxy should map requested and returned credProps extension data');
+requireEvery('passkeysProxyTests', [
+  'RequestedExtensions: { CredProps: true }',
+  'credProps: {',
+  'rk: true'
+], 'proxy credProps request and response mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'duplicatePendingRequestMessage',
   'pending.has(requestId)',

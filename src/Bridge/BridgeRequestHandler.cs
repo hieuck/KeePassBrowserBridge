@@ -440,8 +440,20 @@ namespace KeePassBrowserBridge.Bridge
                 RpId = registration.Credential.RpId,
                 ClientDataJson = registration.ClientDataJson,
                 AttestationObject = registration.AttestationObject,
-                PublicKeyCose = registration.Credential.PublicKeyCose
+                PublicKeyCose = registration.Credential.PublicKeyCose,
+                ClientExtensionResults = CreateClientExtensionResults(pending.Session)
             }));
+        }
+
+        private static PasskeyClientExtensionResults CreateClientExtensionResults(PasskeyPendingSession session)
+        {
+            if (session == null || session.RequestedExtensions == null || !session.RequestedExtensions.CredProps)
+                return null;
+
+            return new PasskeyClientExtensionResults
+            {
+                CredProps = new PasskeyCredPropsExtensionResult { Rk = true }
+            };
         }
 
         private PasskeyApprovalResult RequestPasskeyApproval(PasskeyPendingSession session, PasskeyCredentialSummary[] credentials)

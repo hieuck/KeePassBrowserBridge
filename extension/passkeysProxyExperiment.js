@@ -296,6 +296,7 @@
       Attestation: attestation,
       CredentialAlgorithms: credentialAlgorithms,
       ExcludeCredentialIds: normalizeCredentialDescriptorIds(options.excludeCredentials),
+      RequestedExtensions: normalizeRequestedExtensions(options.extensions),
       Transports: []
     };
   }
@@ -707,7 +708,8 @@
         attestationObject: firstString(response && response.AttestationObject, response && response.attestationObject),
         transports: normalizeStringArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
       }),
-      clientExtensionResults: response && (response.ClientExtensionResults || response.clientExtensionResults) || {}
+      clientExtensionResults: normalizeClientExtensionResults(
+        response && (response.ClientExtensionResults || response.clientExtensionResults))
     }));
   }
 
@@ -736,7 +738,8 @@
         signature: firstString(assertion.Signature, assertion.signature),
         userHandle: firstString(assertion.UserHandle, assertion.userHandle)
       }),
-      clientExtensionResults: response && (response.ClientExtensionResults || response.clientExtensionResults) || {}
+      clientExtensionResults: normalizeClientExtensionResults(
+        response && (response.ClientExtensionResults || response.clientExtensionResults))
     }));
   }
 
@@ -768,6 +771,24 @@
     return Boolean(result);
   }
 
+  function normalizeRequestedExtensions(extensions) {
+    if (!extensions || typeof extensions !== 'object') return undefined;
+    return extensions.credProps === true ? { CredProps: true } : undefined;
+  }
+
+  function normalizeClientExtensionResults(results) {
+    if (!results || typeof results !== 'object') return {};
+    const normalized = {};
+    const credProps = results.credProps || results.CredProps;
+    if (credProps && typeof credProps === 'object') {
+      const rk = firstDefined(credProps.rk, credProps.Rk, credProps.residentKey, credProps.ResidentKey);
+      if (rk !== undefined) {
+        normalized.credProps = { rk: Boolean(rk) };
+      }
+    }
+    return normalized;
+  }
+
   function normalizeTimeoutMs(value) {
     const timeout = Number(value);
     return Number.isFinite(timeout) && timeout > 0 ? Math.floor(timeout) : 0;
@@ -783,6 +804,13 @@
       if (normalized) return normalized;
     }
     return '';
+  }
+
+  function firstDefined(...values) {
+    for (const value of values) {
+      if (value !== undefined && value !== null) return value;
+    }
+    return undefined;
   }
 
   function normalizeStringArray(value) {

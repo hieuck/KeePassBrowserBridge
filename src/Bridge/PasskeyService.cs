@@ -700,6 +700,7 @@ namespace KeePassBrowserBridge.Bridge
                     session.UserHandle = NormalizeRequired(createPayload.UserHandle);
                     session.UserName = NormalizeRequired(createPayload.UserName);
                     session.UserDisplayName = NormalizeRequired(createPayload.UserDisplayName);
+                    session.RequestedExtensions = NormalizeRequestedExtensions(createPayload.RequestedExtensions);
                     session.Transports = createPayload.Transports ?? new string[0];
                 }
                 session.AllowCredentialIds = new string[0];
@@ -783,6 +784,12 @@ namespace KeePassBrowserBridge.Bridge
         {
             if (timeoutMs <= 0) return MaxPendingLifetimeMs;
             return timeoutMs < MaxPendingLifetimeMs ? timeoutMs : MaxPendingLifetimeMs;
+        }
+
+        private static PasskeyRequestedExtensions NormalizeRequestedExtensions(PasskeyRequestedExtensions extensions)
+        {
+            if (extensions == null || !extensions.CredProps) return null;
+            return new PasskeyRequestedExtensions { CredProps = true };
         }
 
         private static string[] NormalizeCredentialIds(string[] credentialIds)
@@ -998,6 +1005,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserName { get; set; }
         public string UserDisplayName { get; set; }
         public string UserVerification { get; set; }
+        public PasskeyRequestedExtensions RequestedExtensions { get; set; }
         public string[] Transports { get; set; }
         public string[] AllowCredentialIds { get; set; }
         public long CreatedUtcMs { get; set; }

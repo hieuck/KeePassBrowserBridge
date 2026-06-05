@@ -468,6 +468,7 @@ internal static class Program
         long now = 1779960000000;
         PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
         PasskeyCreateBeginPayload payload = CreatePasskeyCreateBeginPayload("webauthn-create-1");
+        payload.RequestedExtensions = new PasskeyRequestedExtensions { CredProps = true };
 
         PasskeyPendingSessionResult result = store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
             "bridge-request-1", payload, now);
@@ -482,6 +483,8 @@ internal static class Program
         AssertEqual("webauthn-create-1", result.Session.WebAuthnRequestId, "pending create WebAuthn request binding mismatch");
         AssertEqual("example.com", result.Session.RpId, "pending create RP ID should be normalized");
         AssertEqual(payload.Challenge, result.Session.Challenge, "pending create challenge binding mismatch");
+        AssertTrue(result.Session.RequestedExtensions != null && result.Session.RequestedExtensions.CredProps,
+            "pending create should retain requested credProps extension state");
         AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, result.Session.ExpiresUtcMs,
             "pending create expiration mismatch");
     }
@@ -2500,8 +2503,10 @@ internal static class Program
         BridgeRequestHandler handler = CreatePasskeyEnabledHandler(database, store, pending,
             delegate(PwDatabase changedDatabase) { saveCount += 1; });
 
+        PasskeyCreateBeginPayload beginPayload = CreatePasskeyCreateBeginPayload("webauthn-create-complete");
+        beginPayload.RequestedExtensions = new PasskeyRequestedExtensions { CredProps = true };
         BridgeRequest beginRequest = CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin, "client-1", "secret",
-            BridgeJsonSerializer.Serialize(CreatePasskeyCreateBeginPayload("webauthn-create-complete")));
+            BridgeJsonSerializer.Serialize(beginPayload));
         BridgeResponse beginResponse = handler.Handle(beginRequest);
         AssertTrue(beginResponse.Success, "passkey create begin should succeed before complete: " + beginResponse.Error);
 
@@ -2525,6 +2530,8 @@ internal static class Program
         AssertTrue(!string.IsNullOrWhiteSpace(result.CredentialId), "create complete response should include credential ID");
         AssertTrue(!string.IsNullOrWhiteSpace(result.ClientDataJson), "create complete response should include clientDataJSON");
         AssertTrue(!string.IsNullOrWhiteSpace(result.AttestationObject), "create complete response should include attestationObject");
+        AssertTrue(result.ClientExtensionResults != null && result.ClientExtensionResults.CredProps != null &&
+            result.ClientExtensionResults.CredProps.Rk, "create complete response should include requested credProps resident-key result");
         AssertTrue(PasskeyEntryStore.IsPasskeyEntry(database.RootGroup.Entries.GetAt(0)),
             "created entry should be a passkey entry");
     }
