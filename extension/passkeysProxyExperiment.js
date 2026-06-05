@@ -10,6 +10,8 @@
     'Passkey ES256 public-key credential algorithm is not allowed by this request.';
   const unsupportedAttestationMessage =
     'Passkey attestation conveyance is not supported by this build.';
+  const invalidUserHandleMessage =
+    'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.';
 
   function getApi(chromeLike = globalScope.chrome) {
     return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
@@ -282,13 +284,14 @@
     assertAttestationSupported(attestation);
     const credentialAlgorithms = normalizeCredentialAlgorithms(options.pubKeyCredParams);
     assertEs256CredentialAlgorithmAllowed(credentialAlgorithms);
+    const userHandle = normalizeUserHandle(user.id);
 
     return {
       WebAuthnRequestId: parsed.requestId,
       RpId: rpId,
       Origin: origin,
       Challenge: stringValue(options.challenge),
-      UserHandle: stringValue(user.id),
+      UserHandle: userHandle,
       UserName: stringValue(user.name),
       UserDisplayName: stringValue(user.displayName),
       UserVerification: userVerification,
@@ -524,6 +527,24 @@
   function assertAttestationSupported(attestation) {
     if (!attestation || attestation === 'none') return;
     throw notAllowedError(unsupportedAttestationMessage);
+  }
+
+  function normalizeUserHandle(value) {
+    const text = stringValue(value).trim();
+    const byteLength = base64UrlByteLength(text);
+    if (byteLength < 1 || byteLength > 64) {
+      throw notAllowedError(invalidUserHandleMessage);
+    }
+    return text.replace(/=+$/g, '');
+  }
+
+  function base64UrlByteLength(value) {
+    const text = stringValue(value).trim();
+    if (!/^[A-Za-z0-9_-]+={0,2}$/.test(text)) return -1;
+    const unpadded = text.replace(/=+$/g, '');
+    if (unpadded.length === 0 || unpadded.length % 4 === 1) return -1;
+    const paddedLength = unpadded.length + ((4 - (unpadded.length % 4)) % 4);
+    return (paddedLength / 4) * 3 - (paddedLength - unpadded.length);
   }
 
   function normalizeCredentialAlgorithms(pubKeyCredParams) {

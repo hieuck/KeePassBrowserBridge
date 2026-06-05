@@ -251,6 +251,21 @@ assert.throws(
   'proxy experiment must reject create requests requiring unsupported attestation conveyance'
 );
 
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 51,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'not@base64url', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl'
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidUserHandleError,
+  'proxy experiment must reject create requests with invalid user handles'
+);
+
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
   'RP ID validation should allow exact origin hosts');
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://accounts.example.com/login'), true,
@@ -572,6 +587,28 @@ await assert.rejects(
 );
 assert.deepEqual(unsupportedAttestationBridgeCalls, [],
   'bridge helper must not call backend passkey methods when attestation conveyance is unsupported');
+
+const invalidUserHandleBridgeCalls = [];
+const invalidUserHandleHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    invalidUserHandleBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => invalidUserHandleHandlers.onCreateRequest({
+    requestId: 88,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: '', name: 'alice@example.com' },
+      challenge: 'Y2hhbGxlbmdl'
+    }))
+  }, { origin: 'https://example.com' }),
+  isInvalidUserHandleError,
+  'create bridge helper should reject invalid user handles before calling KeePass'
+);
+assert.deepEqual(invalidUserHandleBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when user handle is invalid');
 
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');
@@ -956,6 +993,12 @@ function isUnsupportedAttestationError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey attestation conveyance is not supported by this build.');
+}
+
+function isInvalidUserHandleError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.');
 }
 
 function makeEvent() {

@@ -110,6 +110,16 @@ requireEvery('passkeyService', [
   'IsUserVerificationRequired',
   'Passkey user verification is not supported by this build.'
 ], 'passkey backend should reject required user verification until KeePass-side verification exists');
+requireEvery('passkeyService', [
+  'CanonicalizeUserHandle',
+  'invalid_user_handle',
+  'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.'
+], 'passkey backend should reject invalid create user handles before approval');
+requireEvery('testsProgram', [
+  'PasskeyPendingRejectsInvalidCreateUserHandle',
+  'BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled',
+  'bridge invalid user handle rejection should not prompt for approval'
+], 'invalid passkey user handle rejection should be covered by backend tests');
 requireEvery('protocolModels', [
   'CredentialAlgorithms',
   'Attestation',
@@ -176,6 +186,15 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when required user verification is unsupported',
   'lifecycle should reject required user verification before calling handlers'
 ], 'required user verification rejection should be covered by proxy tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeUserHandle',
+  'base64UrlByteLength',
+  'invalidUserHandleMessage'
+], 'passkey proxy should reject invalid user handles before bridge calls');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject create requests with invalid user handles',
+  'bridge helper must not call backend passkey methods when user handle is invalid'
+], 'proxy invalid user handle rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',

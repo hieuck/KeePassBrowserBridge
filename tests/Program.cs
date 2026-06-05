@@ -36,6 +36,7 @@ internal static class Program
         PasskeyLookupFiltersAllowedCredentialIds();
         PasskeyLookupRejectsMismatchedOrigin();
         PasskeyPendingCreateBindsRequestContext();
+        PasskeyPendingRejectsInvalidCreateUserHandle();
         PasskeyPendingHonorsRequestedTimeoutUpToMaximum();
         PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
@@ -133,6 +134,7 @@ internal static class Program
         BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled();
@@ -487,6 +489,35 @@ internal static class Program
             "pending create should retain requested credProps extension state");
         AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, result.Session.ExpiresUtcMs,
             "pending create expiration mismatch");
+    }
+
+    private static void PasskeyPendingRejectsInvalidCreateUserHandle()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload invalidBase64 = CreatePasskeyCreateBeginPayload("webauthn-create-invalid-user-handle");
+        invalidBase64.UserHandle = "not@base64url";
+
+        PasskeyPendingSessionResult invalid = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-invalid-user-handle",
+            invalidBase64,
+            now);
+
+        AssertFalse(invalid.Success, "pending create should reject invalid base64url user handles");
+        AssertEqual("invalid_user_handle", invalid.ErrorCode, "pending invalid user handle error code mismatch");
+
+        PasskeyCreateBeginPayload tooLong = CreatePasskeyCreateBeginPayload("webauthn-create-long-user-handle");
+        tooLong.UserHandle = Base64Url.Encode(new byte[65]);
+        PasskeyPendingSessionResult oversized = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-long-user-handle",
+            tooLong,
+            now);
+
+        AssertFalse(oversized.Success, "pending create should reject user handles longer than 64 bytes");
+        AssertEqual("invalid_user_handle", oversized.ErrorCode, "pending oversized user handle error code mismatch");
+        AssertEqual(0, store.Count, "invalid user handles should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingHonorsRequestedTimeoutUpToMaximum()
@@ -2364,6 +2395,32 @@ internal static class Program
         AssertEqual("unsupported_user_verification", getResponse.ErrorCode,
             "bridge get required user verification error code mismatch");
         AssertEqual(0, pending.Count, "bridge required user verification rejection should not leave pending sessions");
+    }
+
+    private static void BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled()
+    {
+        int approvalCount = 0;
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-invalid-user-handle-bridge");
+        createPayload.UserHandle = "not@base64url";
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject invalid user handles");
+        AssertEqual("invalid_user_handle", createResponse.ErrorCode,
+            "bridge create invalid user handle error code mismatch");
+        AssertEqual(0, approvalCount, "bridge invalid user handle rejection should not prompt for approval");
+        AssertEqual(0, pending.Count, "bridge invalid user handle rejection should not leave pending sessions");
     }
 
     private static void BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled()

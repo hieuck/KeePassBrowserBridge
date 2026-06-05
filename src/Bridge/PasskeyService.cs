@@ -653,6 +653,7 @@ namespace KeePassBrowserBridge.Bridge
 
             long pendingLifetimeMs = NormalizePendingTimeoutMs(payload.TimeoutMs);
             PasskeyCreateBeginPayload createPayload = null;
+            string canonicalUserHandle = null;
             if (operation == PasskeyPendingOperation.Create)
             {
                 createPayload = payload as PasskeyCreateBeginPayload;
@@ -662,6 +663,10 @@ namespace KeePassBrowserBridge.Bridge
                 if (!PasskeyService.IsNoneAttestationConveyance(createPayload.Attestation))
                     return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedAttestationErrorCode,
                         PasskeyService.UnsupportedAttestationError);
+                canonicalUserHandle = CanonicalizeUserHandle(createPayload.UserHandle);
+                if (canonicalUserHandle.Length == 0)
+                    return PasskeyPendingSessionResult.Fail("invalid_user_handle",
+                        "WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.");
             }
 
             string sessionKey = SessionKey(normalizedClientId, normalizedWebAuthnRequestId);
@@ -697,7 +702,7 @@ namespace KeePassBrowserBridge.Bridge
             {
                 if (createPayload != null)
                 {
-                    session.UserHandle = NormalizeRequired(createPayload.UserHandle);
+                    session.UserHandle = canonicalUserHandle;
                     session.UserName = NormalizeRequired(createPayload.UserName);
                     session.UserDisplayName = NormalizeRequired(createPayload.UserDisplayName);
                     session.RequestedExtensions = NormalizeRequestedExtensions(createPayload.RequestedExtensions);
@@ -777,6 +782,13 @@ namespace KeePassBrowserBridge.Bridge
         {
             byte[] bytes;
             if (!Base64Url.TryDecode(credentialId, out bytes) || bytes.Length == 0) return string.Empty;
+            return Base64Url.Encode(bytes);
+        }
+
+        private static string CanonicalizeUserHandle(string userHandle)
+        {
+            byte[] bytes;
+            if (!Base64Url.TryDecode(userHandle, out bytes) || bytes.Length == 0 || bytes.Length > 64) return string.Empty;
             return Base64Url.Encode(bytes);
         }
 
