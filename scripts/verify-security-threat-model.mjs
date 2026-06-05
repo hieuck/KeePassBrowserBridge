@@ -196,6 +196,16 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when user handle is invalid'
 ], 'proxy invalid user handle rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
+  'normalizeChallenge',
+  'invalidChallengeMessage',
+  'base64UrlByteLength'
+], 'passkey proxy should reject invalid challenges before bridge calls');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject create requests with short challenges',
+  'proxy experiment must reject get requests with invalid challenges',
+  'bridge helper must not call backend passkey methods when challenge is invalid'
+], 'proxy invalid challenge rejection should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',
   'CredentialAlgorithms',

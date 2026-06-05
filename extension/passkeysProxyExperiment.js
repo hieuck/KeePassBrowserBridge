@@ -12,6 +12,8 @@
     'Passkey attestation conveyance is not supported by this build.';
   const invalidUserHandleMessage =
     'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.';
+  const invalidChallengeMessage =
+    'WebAuthn challenge must be base64url-encoded and at least 16 bytes.';
 
   function getApi(chromeLike = globalScope.chrome) {
     return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
@@ -284,13 +286,14 @@
     assertAttestationSupported(attestation);
     const credentialAlgorithms = normalizeCredentialAlgorithms(options.pubKeyCredParams);
     assertEs256CredentialAlgorithmAllowed(credentialAlgorithms);
+    const challenge = normalizeChallenge(options.challenge);
     const userHandle = normalizeUserHandle(user.id);
 
     return {
       WebAuthnRequestId: parsed.requestId,
       RpId: rpId,
       Origin: origin,
-      Challenge: stringValue(options.challenge),
+      Challenge: challenge,
       UserHandle: userHandle,
       UserName: stringValue(user.name),
       UserDisplayName: stringValue(user.displayName),
@@ -312,12 +315,13 @@
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(options.userVerification);
     assertUserVerificationSupported(userVerification);
+    const challenge = normalizeChallenge(options.challenge);
 
     return {
       WebAuthnRequestId: parsed.requestId,
       RpId: rpId,
       Origin: origin,
-      Challenge: stringValue(options.challenge),
+      Challenge: challenge,
       AllowCredentialIds: normalizeCredentialDescriptorIds(options.allowCredentials),
       UserVerification: userVerification,
       TimeoutMs: normalizeTimeoutMs(options.timeout)
@@ -534,6 +538,14 @@
     const byteLength = base64UrlByteLength(text);
     if (byteLength < 1 || byteLength > 64) {
       throw notAllowedError(invalidUserHandleMessage);
+    }
+    return text.replace(/=+$/g, '');
+  }
+
+  function normalizeChallenge(value) {
+    const text = stringValue(value).trim();
+    if (base64UrlByteLength(text) < 16) {
+      throw notAllowedError(invalidChallengeMessage);
     }
     return text.replace(/=+$/g, '');
   }

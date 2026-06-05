@@ -344,6 +344,8 @@ assert.equal(passkeysProxyExperiment.includes('assertUserVerificationSupported')
 assert.equal(passkeysProxyExperiment.includes('Passkey user verification is not supported by this build'), true, 'passkey proxy experiment should expose a WebAuthn error for required user verification');
 assert.equal(passkeysProxyExperiment.includes('normalizeUserHandle'), true, 'passkey proxy experiment should reject invalid create user handles before bridge calls');
 assert.equal(passkeysProxyExperiment.includes('invalidUserHandleMessage'), true, 'passkey proxy experiment should expose a WebAuthn error for invalid user handles');
+assert.equal(passkeysProxyExperiment.includes('normalizeChallenge'), true, 'passkey proxy experiment should reject invalid challenges before bridge calls');
+assert.equal(passkeysProxyExperiment.includes('invalidChallengeMessage'), true, 'passkey proxy experiment should expose a WebAuthn error for invalid challenges');
 assert.equal(passkeysProxyExperiment.includes('assertEs256CredentialAlgorithmAllowed'), true, 'passkey proxy experiment should reject create requests that do not allow ES256');
 assert.equal(passkeysProxyExperiment.includes('normalizeCredentialAlgorithms'), true, 'passkey proxy experiment should forward normalized create algorithm policy to the backend');
 assert.equal(passkeysProxyExperiment.includes('Passkey ES256 public-key credential algorithm is not allowed by this request'), true, 'passkey proxy experiment should expose a WebAuthn error for unsupported create algorithms');

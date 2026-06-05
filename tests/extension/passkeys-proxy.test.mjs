@@ -51,7 +51,7 @@ const createPayload = api.normalizeCreateRequest({
       name: 'alice@example.com',
       displayName: 'Alice'
     },
-    challenge: 'Y2hhbGxlbmdl',
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
     timeout: 45000,
     extensions: {
       credProps: true
@@ -82,7 +82,7 @@ assert.deepEqual(plain(createPayload), {
   WebAuthnRequestId: '42',
   RpId: 'example.com',
   Origin: 'https://example.com',
-  Challenge: 'Y2hhbGxlbmdl',
+  Challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
   UserHandle: 'YWxpY2U',
   UserName: 'alice@example.com',
   UserDisplayName: 'Alice',
@@ -104,7 +104,7 @@ const createWithUntrustedOptionOrigin = api.normalizeCreateRequest({
       name: 'alice@example.com',
       displayName: 'Alice'
     },
-    challenge: 'Y2hhbGxlbmdl',
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
     origin: 'https://spoofed.example'
   }))
 }, {
@@ -122,7 +122,7 @@ const createWithoutRpId = api.normalizeCreateRequest({
       name: 'alice@example.com',
       displayName: 'Alice'
     },
-    challenge: 'Y2hhbGxlbmdl'
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
   }))
 }, {
   origin: 'https://login.example.com'
@@ -134,7 +134,7 @@ const getPayload = api.normalizeGetRequest({
   requestId: 43,
   requestDetailsJson: JSON.stringify({
     rpId: 'Example.com',
-    challenge: 'Z2V0LWNoYWxsZW5nZQ',
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
     timeout: 12000.9,
     userVerification: 'discouraged',
     allowCredentials: [
@@ -151,7 +151,7 @@ assert.deepEqual(plain(getPayload), {
   WebAuthnRequestId: '43',
   RpId: 'example.com',
   Origin: 'https://accounts.example.com',
-  Challenge: 'Z2V0LWNoYWxsZW5nZQ',
+  Challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
   AllowCredentialIds: ['Y3JlZC0x', 'Y3JlZC0y'],
   UserVerification: 'discouraged',
   TimeoutMs: 12000
@@ -160,7 +160,7 @@ assert.deepEqual(plain(getPayload), {
 const getWithoutRpId = api.normalizeGetRequest({
   requestId: 43,
   requestDetailsJson: JSON.stringify({
-    challenge: 'Z2V0LWNoYWxsZW5nZQ'
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
   })
 }, {
   origin: 'https://login.example.com'
@@ -174,7 +174,7 @@ assert.throws(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       authenticatorSelection: {
         userVerification: 'required'
       }
@@ -191,7 +191,7 @@ assert.throws(
     requestId: 47,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
-      challenge: 'Z2V0LWNoYWxsZW5nZQ',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       userVerification: 'required'
     })
   }, {
@@ -207,7 +207,7 @@ assert.throws(
     requestDetailsJson: JSON.stringify({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl'
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
     })
   }, {
     origin: 'https://example.com'
@@ -222,7 +222,7 @@ assert.throws(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       pubKeyCredParams: [
         { type: 'public-key', alg: -257 },
         { type: 'public-key', alg: -37 }
@@ -241,7 +241,7 @@ assert.throws(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       attestation: 'direct'
     }))
   }, {
@@ -257,13 +257,42 @@ assert.throws(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'not@base64url', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl'
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
     }))
   }, {
     origin: 'https://example.com'
   }),
   isInvalidUserHandleError,
   'proxy experiment must reject create requests with invalid user handles'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 52,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'c2hvcnQ'
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidChallengeError,
+  'proxy experiment must reject create requests with short challenges'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 53,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'not@base64url'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidChallengeError,
+  'proxy experiment must reject get requests with invalid challenges'
 );
 
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
@@ -283,7 +312,7 @@ assert.throws(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl'
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
     }))
   }, {
     origin: 'https://evil-example.com'
@@ -300,7 +329,7 @@ assert.throws(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl'
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
     }))
   }),
   /does not expose caller origin/,
@@ -312,7 +341,7 @@ assert.throws(
     requestId: 45,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
-      challenge: 'Z2V0LWNoYWxsZW5nZQ',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       origin: 'https://spoofed.example'
     })
   }),
@@ -417,7 +446,7 @@ const bridgeCreateResponse = await handlers.onCreateRequest({
   requestDetailsJson: JSON.stringify(createOptions({
     rp: { id: 'example.com' },
     user: { id: 'dXNlcg', name: 'alice@example.com' },
-    challenge: 'Y2hhbGxlbmdl'
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
   }))
 }, {
   origin: 'https://example.com'
@@ -433,7 +462,7 @@ const bridgeGetResponse = await handlers.onGetRequest({
   requestId: 81,
   requestDetailsJson: JSON.stringify({
     rpId: 'example.com',
-    challenge: 'Y2hhbGxlbmdl',
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
     allowCredentials: [{ id: 'Y3JlZC0y' }]
   })
 }, {
@@ -469,7 +498,7 @@ await assert.rejects(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'dXNlcg', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl'
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
     }))
   }, { origin: 'https://example.com' }),
   (error) => error &&
@@ -494,7 +523,7 @@ await assert.rejects(
     requestId: 83,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
-      challenge: 'Y2hhbGxlbmdl'
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
     })
   }, { origin: 'https://evil-example.com' }),
   (error) => error &&
@@ -518,7 +547,7 @@ await assert.rejects(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'dXNlcg', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       authenticatorSelection: {
         userVerification: 'required'
       }
@@ -532,7 +561,7 @@ await assert.rejects(
     requestId: 85,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
-      challenge: 'Y2hhbGxlbmdl',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       userVerification: 'required'
     })
   }, { origin: 'https://example.com' }),
@@ -555,7 +584,7 @@ await assert.rejects(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'dXNlcg', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       pubKeyCredParams: [{ type: 'public-key', alg: -257 }]
     }))
   }, { origin: 'https://example.com' }),
@@ -578,7 +607,7 @@ await assert.rejects(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: 'dXNlcg', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       attestation: 'enterprise'
     }))
   }, { origin: 'https://example.com' }),
@@ -601,7 +630,7 @@ await assert.rejects(
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
       user: { id: '', name: 'alice@example.com' },
-      challenge: 'Y2hhbGxlbmdl'
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
     }))
   }, { origin: 'https://example.com' }),
   isInvalidUserHandleError,
@@ -609,6 +638,27 @@ await assert.rejects(
 );
 assert.deepEqual(invalidUserHandleBridgeCalls, [],
   'bridge helper must not call backend passkey methods when user handle is invalid');
+
+const invalidChallengeBridgeCalls = [];
+const invalidChallengeHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    invalidChallengeBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => invalidChallengeHandlers.onGetRequest({
+    requestId: 89,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'c2hvcnQ'
+    })
+  }, { origin: 'https://example.com' }),
+  isInvalidChallengeError,
+  'get bridge helper should reject invalid challenges before calling KeePass'
+);
+assert.deepEqual(invalidChallengeBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when challenge is invalid');
 
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');
@@ -698,7 +748,7 @@ const noOriginLifecycle = api.createLifecycle({
 await noOriginLifecycle.attach();
 await noOriginCreateEvent.dispatch({
   requestId: 70,
-  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' }))
+  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' }))
 });
 assert.equal(noOriginHandlerCalled, false, 'lifecycle should not call create handler without trusted origin resolver');
 assert.deepEqual(plain(noOriginCalls.find((entry) => entry[0] === 'createComplete')), [
@@ -731,7 +781,7 @@ const invalidRpLifecycle = api.createLifecycle({
 await invalidRpLifecycle.attach();
 await invalidRpCreateEvent.dispatch({
   requestId: 71,
-  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' }))
+  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' }))
 });
 assert.deepEqual(plain(invalidRpCalls.find((entry) => entry[0] === 'createComplete')), [
   'createComplete',
@@ -763,7 +813,7 @@ const invalidGetRpLifecycle = api.createLifecycle({
 await invalidGetRpLifecycle.attach();
 await invalidGetRpEvent.dispatch({
   requestId: 72,
-  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl', allowCredentials: [{ id: 'Y3JlZA' }] })
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'MDEyMzQ1Njc4OWFiY2RlZg', allowCredentials: [{ id: 'Y3JlZA' }] })
 });
 assert.deepEqual(plain(invalidGetRpCalls.find((entry) => entry[0] === 'getComplete')), [
   'getComplete',
@@ -799,7 +849,7 @@ await requiredUvCreateEvent.dispatch({
   requestDetailsJson: JSON.stringify(createOptions({
     rp: { id: 'example.com' },
     user: { id: 'dXNlcg', name: 'alice' },
-    challenge: 'Y2hhbGxlbmdl',
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
     authenticatorSelection: {
       userVerification: 'required'
     }
@@ -876,13 +926,13 @@ assert.deepEqual(plain(lifecycleCalls.find((entry) => entry[0] === 'isUvpaaCompl
   'lifecycle should complete UVPAA requests through the configured handler');
 await lifecycleCreateEvent.dispatch({
   requestId: 77,
-  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'Y2hhbGxlbmdl' }))
+  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' }))
 });
 assert.equal(lifecycle.pendingCount(), 0, 'create request should be completed and removed from pending state');
 
 const getDispatch = lifecycleGetEvent.dispatch({
   requestId: 78,
-  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' })
 });
 await flushPromises();
 assert.equal(lifecycle.pendingCount(), 1, 'in-flight get request should be tracked');
@@ -901,7 +951,7 @@ assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false, 
 
 const lockDispatch = lifecycleGetEvent.dispatch({
   requestId: 79,
-  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' })
 });
 await flushPromises();
 assert.equal(lifecycle.pendingCount(), 1, 'in-flight get request should be tracked before lock cleanup');
@@ -924,14 +974,14 @@ assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false,
 
 const duplicateDispatch = lifecycleGetEvent.dispatch({
   requestId: 80,
-  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' })
 });
 await flushPromises();
 assert.equal(lifecycle.pendingCount(), 1, 'first duplicate-check request should be tracked while handler is pending');
 const getHandlerCallsBeforeDuplicate = lifecycleGetHandlerCalls;
 await lifecycleGetEvent.dispatch({
   requestId: 80,
-  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'Y2hhbGxlbmdl' })
+  requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' })
 });
 assert.equal(lifecycleGetHandlerCalls, getHandlerCallsBeforeDuplicate,
   'lifecycle should not call get handlers for duplicate pending WebAuthn request IDs');
@@ -999,6 +1049,12 @@ function isInvalidUserHandleError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.');
+}
+
+function isInvalidChallengeError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'WebAuthn challenge must be base64url-encoded and at least 16 bytes.');
 }
 
 function makeEvent() {
