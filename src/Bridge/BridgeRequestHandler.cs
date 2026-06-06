@@ -524,6 +524,7 @@ namespace KeePassBrowserBridge.Bridge
         {
             PasskeysListPayload payload = BridgeJsonSerializer.Deserialize<PasskeysListPayload>(request.Payload);
             PasskeyCredentialLookupResult result = m_passkeyCredentialLookupService.List(m_databaseProvider(), payload);
+            if (!result.Success) return Error(request, result.ErrorCode, result.Error);
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 

@@ -401,7 +401,10 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyCredentialLookupResult.Fail("invalid_rp_id", "Passkey RP ID is not valid for the requesting origin.");
 
             bool hasAllowList;
-            HashSet<string> allowedCredentialIds = NormalizeAllowCredentialIds(payload.AllowCredentialIds, out hasAllowList);
+            HashSet<string> allowedCredentialIds;
+            if (!TryNormalizeAllowCredentialIds(payload.AllowCredentialIds, out allowedCredentialIds, out hasAllowList))
+                return PasskeyCredentialLookupResult.Fail("invalid_allow_credential",
+                    "Passkey allowCredentials contains an invalid credential ID.");
             List<PasskeyCredentialSummary> credentials = new List<PasskeyCredentialSummary>();
             CollectMatches(database.RootGroup, NormalizeRpId(payload.RpId), allowedCredentialIds, hasAllowList, credentials, string.Empty);
 
@@ -489,20 +492,23 @@ namespace KeePassBrowserBridge.Bridge
             return null;
         }
 
-        private static HashSet<string> NormalizeAllowCredentialIds(string[] allowCredentialIds, out bool hasAllowList)
+        private static bool TryNormalizeAllowCredentialIds(
+            string[] allowCredentialIds,
+            out HashSet<string> normalized,
+            out bool hasAllowList)
         {
             hasAllowList = allowCredentialIds != null && allowCredentialIds.Length > 0;
-            HashSet<string> normalized = new HashSet<string>(StringComparer.Ordinal);
-            if (!hasAllowList) return normalized;
+            normalized = new HashSet<string>(StringComparer.Ordinal);
+            if (!hasAllowList) return true;
 
             for (int i = 0; i < allowCredentialIds.Length; ++i)
             {
                 string credentialId = CanonicalizeCredentialId(allowCredentialIds[i]);
-                if (credentialId.Length == 0) continue;
+                if (credentialId.Length == 0) return false;
                 normalized.Add(credentialId);
             }
 
-            return normalized;
+            return true;
         }
 
         private static string CanonicalizeCredentialId(string credentialId)

@@ -331,6 +331,7 @@ assert.equal(passkeyServiceSource.includes('new ProtectedString(true'), true, 'p
 assert.equal(passkeyServiceSource.includes('unsupported_user_verification'), true, 'passkey backend prototype should reject required user verification until KeePass-side verification exists');
 assert.equal(passkeyServiceSource.includes('CanonicalizeUserHandle'), true, 'passkey backend prototype should reject invalid create user handles before approval');
 assert.equal(passkeyServiceSource.includes('invalid_user_handle'), true, 'passkey backend prototype should expose a stable invalid user-handle error code');
+assert.equal(passkeyServiceSource.includes('TryNormalizeAllowCredentialIds'), true, 'passkey backend prototype should fail closed on invalid passkey list allowCredentialIds');
 assert.equal(passkeyServiceSource.includes('TryNormalizeCredentialIds'), true, 'passkey backend prototype should fail closed on invalid allowCredentials before approval');
 assert.equal(passkeyServiceSource.includes('invalid_allow_credential'), true, 'passkey backend prototype should expose a stable invalid allowCredentials error code');
 assert.equal(passkeyServiceSource.includes('invalid_exclude_credential'), true, 'passkey backend prototype should expose a stable invalid excludeCredentials error code');

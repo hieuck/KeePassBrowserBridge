@@ -121,15 +121,21 @@ requireEvery('testsProgram', [
   'bridge invalid user handle rejection should not prompt for approval'
 ], 'invalid passkey user handle rejection should be covered by backend tests');
 requireEvery('passkeyService', [
+  'TryNormalizeAllowCredentialIds',
   'TryNormalizeCredentialIds',
   'invalid_allow_credential',
   'Passkey allowCredentials contains an invalid credential ID.'
 ], 'passkey backend should reject invalid get allowCredentials before approval');
 requireEvery('testsProgram', [
   'PasskeyPendingRejectsInvalidAllowCredentialIds',
+  'PasskeyLookupRejectsInvalidAllowedCredentialIds',
+  'BridgeHandlerRejectsInvalidPasskeyListAllowCredentialWhenFeatureGateIsEnabled',
   'BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled',
   'bridge invalid allowCredentials rejection should not prompt for approval'
 ], 'invalid passkey allowCredentials rejection should be covered by backend tests');
+requireEvery('bridgeRequestHandler', [
+  'if (!result.Success) return Error(request, result.ErrorCode, result.Error);'
+], 'passkey list lookup failures should be returned as bridge errors');
 requireEvery('passkeyService', [
   'invalid_exclude_credential',
   'Passkey excludeCredentials contains an invalid credential ID.'

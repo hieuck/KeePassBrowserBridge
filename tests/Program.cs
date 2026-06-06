@@ -34,6 +34,7 @@ internal static class Program
         PasskeyEntryStoreProtectsPrivateKeyMaterial();
         PasskeyLookupListsMatchingRpIdWithoutPrivateKeyMaterial();
         PasskeyLookupFiltersAllowedCredentialIds();
+        PasskeyLookupRejectsInvalidAllowedCredentialIds();
         PasskeyLookupRejectsMismatchedOrigin();
         PasskeyPendingCreateBindsRequestContext();
         PasskeyPendingRejectsInvalidCreateUserHandle();
@@ -133,6 +134,7 @@ internal static class Program
         BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyMethod();
         BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyWriteMethod();
         BridgeHandlerListsPasskeysWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsInvalidPasskeyListAllowCredentialWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled();
@@ -448,13 +450,33 @@ internal static class Program
         {
             RpId = "example.com",
             Origin = "https://example.com/login",
-            AllowCredentialIds = new string[] { "not@base64url", second.Credential.CredentialId }
+            AllowCredentialIds = new string[] { second.Credential.CredentialId, second.Credential.CredentialId }
         });
 
         AssertTrue(result.Success, "passkey allow-list lookup should succeed: " + result.Error);
         AssertEqual(1, result.Credentials.Length, "passkey allow-list lookup should return only allowed credential IDs");
         AssertEqual(second.Credential.CredentialId, result.Credentials[0].CredentialId,
             "passkey allow-list lookup returned the wrong credential");
+    }
+
+    private static void PasskeyLookupRejectsInvalidAllowedCredentialIds()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before invalid allow-list lookup: " + registration.Error);
+
+        PwEntry entry = new PwEntry(true, true);
+        PasskeyEntryStore.Write(entry, registration.Credential);
+        PasskeyCredentialLookupResult result = new PasskeyCredentialLookupService().List(CreateDatabase(entry), new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            AllowCredentialIds = new string[] { registration.Credential.CredentialId, "not@base64url" }
+        });
+
+        AssertFalse(result.Success, "passkey list lookup should reject invalid allowCredentialIds instead of dropping them");
+        AssertEqual("invalid_allow_credential", result.ErrorCode,
+            "passkey list invalid allowCredentialIds error code mismatch");
     }
 
     private static void PasskeyLookupRejectsMismatchedOrigin()
@@ -2360,6 +2382,26 @@ internal static class Program
         AssertEqual(1, result.Credentials.Length, "enabled passkeys.list should return matching passkey summaries");
         AssertEqual(registration.Credential.CredentialId, result.Credentials[0].CredentialId,
             "enabled passkeys.list credential ID mismatch");
+    }
+
+    private static void BridgeHandlerRejectsInvalidPasskeyListAllowCredentialWhenFeatureGateIsEnabled()
+    {
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store);
+        string payload = BridgeJsonSerializer.Serialize(new PasskeysListPayload
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            AllowCredentialIds = new string[] { "not@base64url" }
+        });
+        BridgeRequest request = CreateAuthenticatedRequest(BridgeMethods.PasskeysList, "client-1", "secret", payload);
+
+        BridgeResponse response = handler.Handle(request);
+
+        AssertFalse(response.Success, "enabled passkeys.list should reject invalid allowCredentialIds");
+        AssertEqual("invalid_allow_credential", response.ErrorCode,
+            "enabled passkeys.list invalid allowCredentialIds error code mismatch");
     }
 
     private static void BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled()
