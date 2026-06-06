@@ -120,6 +120,16 @@ requireEvery('testsProgram', [
   'BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled',
   'bridge invalid user handle rejection should not prompt for approval'
 ], 'invalid passkey user handle rejection should be covered by backend tests');
+requireEvery('passkeyService', [
+  'TryNormalizeCredentialIds',
+  'invalid_allow_credential',
+  'Passkey allowCredentials contains an invalid credential ID.'
+], 'passkey backend should reject invalid get allowCredentials before approval');
+requireEvery('testsProgram', [
+  'PasskeyPendingRejectsInvalidAllowCredentialIds',
+  'BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled',
+  'bridge invalid allowCredentials rejection should not prompt for approval'
+], 'invalid passkey allowCredentials rejection should be covered by backend tests');
 requireEvery('protocolModels', [
   'CredentialAlgorithms',
   'Attestation',
@@ -205,6 +215,15 @@ requireEvery('passkeysProxyTests', [
   'proxy experiment must reject get requests with invalid challenges',
   'bridge helper must not call backend passkey methods when challenge is invalid'
 ], 'proxy invalid challenge rejection should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeAllowCredentialIds',
+  'invalidAllowCredentialMessage',
+  'Passkey allowCredentials contains an invalid credential ID.'
+], 'passkey proxy should reject invalid get allowCredentials before bridge calls');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject get requests with invalid allowCredentials',
+  'bridge helper must not call backend passkey methods when allowCredentials is invalid'
+], 'proxy invalid allowCredentials rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',

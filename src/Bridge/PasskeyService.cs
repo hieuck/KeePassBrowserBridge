@@ -668,6 +668,16 @@ namespace KeePassBrowserBridge.Bridge
                     return PasskeyPendingSessionResult.Fail("invalid_user_handle",
                         "WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.");
             }
+            string[] allowCredentialIds = new string[0];
+            if (operation == PasskeyPendingOperation.Get)
+            {
+                PasskeyGetBeginPayload getPayload = payload as PasskeyGetBeginPayload;
+                if (getPayload == null)
+                    return PasskeyPendingSessionResult.Fail("invalid_payload", "Passkey get begin payload is required.");
+                if (!TryNormalizeCredentialIds(getPayload.AllowCredentialIds, out allowCredentialIds))
+                    return PasskeyPendingSessionResult.Fail("invalid_allow_credential",
+                        "Passkey allowCredentials contains an invalid credential ID.");
+            }
 
             string sessionKey = SessionKey(normalizedClientId, normalizedWebAuthnRequestId);
             PasskeyPendingSession existingSession;
@@ -695,8 +705,7 @@ namespace KeePassBrowserBridge.Bridge
 
             if (operation == PasskeyPendingOperation.Get)
             {
-                PasskeyGetBeginPayload getPayload = payload as PasskeyGetBeginPayload;
-                session.AllowCredentialIds = getPayload == null ? new string[0] : NormalizeCredentialIds(getPayload.AllowCredentialIds);
+                session.AllowCredentialIds = allowCredentialIds;
             }
             else
             {
@@ -804,18 +813,21 @@ namespace KeePassBrowserBridge.Bridge
             return new PasskeyRequestedExtensions { CredProps = true };
         }
 
-        private static string[] NormalizeCredentialIds(string[] credentialIds)
+        private static bool TryNormalizeCredentialIds(string[] credentialIds, out string[] normalized)
         {
-            if (credentialIds == null || credentialIds.Length == 0) return new string[0];
+            normalized = new string[0];
+            if (credentialIds == null || credentialIds.Length == 0) return true;
 
-            List<string> normalized = new List<string>();
+            List<string> normalizedIds = new List<string>();
             for (int i = 0; i < credentialIds.Length; ++i)
             {
                 string credentialId = CanonicalizeCredentialId(credentialIds[i]);
-                if (credentialId.Length == 0 || normalized.Contains(credentialId)) continue;
-                normalized.Add(credentialId);
+                if (credentialId.Length == 0) return false;
+                if (normalizedIds.Contains(credentialId)) continue;
+                normalizedIds.Add(credentialId);
             }
-            return normalized.ToArray();
+            normalized = normalizedIds.ToArray();
+            return true;
         }
     }
 

@@ -14,6 +14,8 @@
     'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.';
   const invalidChallengeMessage =
     'WebAuthn challenge must be base64url-encoded and at least 16 bytes.';
+  const invalidAllowCredentialMessage =
+    'Passkey allowCredentials contains an invalid credential ID.';
 
   function getApi(chromeLike = globalScope.chrome) {
     return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
@@ -322,7 +324,7 @@
       RpId: rpId,
       Origin: origin,
       Challenge: challenge,
-      AllowCredentialIds: normalizeCredentialDescriptorIds(options.allowCredentials),
+      AllowCredentialIds: normalizeAllowCredentialIds(options.allowCredentials),
       UserVerification: userVerification,
       TimeoutMs: normalizeTimeoutMs(options.timeout)
     };
@@ -584,11 +586,31 @@
     for (const credential of credentials) {
       const type = stringValue(credential && credential.type).trim().toLowerCase();
       if (type && type !== 'public-key') continue;
-      const id = stringValue(credential && credential.id);
+      const id = normalizeCredentialId(credential && credential.id);
       if (!id || ids.includes(id)) continue;
       ids.push(id);
     }
     return ids;
+  }
+
+  function normalizeAllowCredentialIds(credentials) {
+    if (!Array.isArray(credentials)) return [];
+    const ids = [];
+    for (const credential of credentials) {
+      const type = stringValue(credential && credential.type).trim().toLowerCase();
+      if (type && type !== 'public-key') continue;
+      const id = normalizeCredentialId(credential && credential.id);
+      if (!id) throw notAllowedError(invalidAllowCredentialMessage);
+      if (ids.includes(id)) continue;
+      ids.push(id);
+    }
+    return ids;
+  }
+
+  function normalizeCredentialId(value) {
+    const text = stringValue(value).trim();
+    if (base64UrlByteLength(text) < 1) return '';
+    return text.replace(/=+$/g, '');
   }
 
   function rpIdFromOrigin(origin) {

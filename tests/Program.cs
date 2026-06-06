@@ -40,6 +40,7 @@ internal static class Program
         PasskeyPendingHonorsRequestedTimeoutUpToMaximum();
         PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
+        PasskeyPendingRejectsInvalidAllowCredentialIds();
         PasskeyPendingRejectsRequiredUserVerification();
         PasskeyPendingRejectsUnsupportedCredentialAlgorithm();
         PasskeyPendingRejectsUnsupportedAttestation();
@@ -133,6 +134,7 @@ internal static class Program
         BridgeHandlerListsPasskeysWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
@@ -608,7 +610,7 @@ internal static class Program
         string blockedCredentialId = Base64Url.Encode(Encoding.ASCII.GetBytes("blocked-credential"));
         PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
         PasskeyGetBeginPayload beginPayload = CreatePasskeyGetBeginPayload("webauthn-get-1",
-            new string[] { "not@base64url", allowedCredentialId, allowedCredentialId });
+            new string[] { allowedCredentialId, allowedCredentialId });
         PasskeyPendingSessionResult begin = store.BeginGet("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
             "bridge-request-3", beginPayload, now);
         AssertTrue(begin.Success, "passkey get begin should succeed before allow-list completion test: " + begin.Error);
@@ -643,6 +645,25 @@ internal static class Program
 
         AssertTrue(allowed.Success, "pending get should accept an allowed credential ID: " + allowed.Error);
         AssertEqual(0, store.Count, "allowed get completion should consume the pending session");
+    }
+
+    private static void PasskeyPendingRejectsInvalidAllowCredentialIds()
+    {
+        long now = 1779960000000;
+        string allowedCredentialId = Base64Url.Encode(Encoding.ASCII.GetBytes("allowed-credential"));
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyGetBeginPayload beginPayload = CreatePasskeyGetBeginPayload("webauthn-get-invalid-allow",
+            new string[] { allowedCredentialId, "not@base64url" });
+
+        PasskeyPendingSessionResult begin = store.BeginGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-invalid-allow",
+            beginPayload,
+            now);
+
+        AssertFalse(begin.Success, "pending get should reject invalid allowCredentialIds instead of dropping them");
+        AssertEqual("invalid_allow_credential", begin.ErrorCode, "pending invalid allowCredentialIds error code mismatch");
+        AssertEqual(0, store.Count, "pending invalid allowCredentialIds rejection should not leave pending sessions");
     }
 
     private static void PasskeyPendingRejectsRequiredUserVerification()
@@ -2368,6 +2389,32 @@ internal static class Program
         AssertEqual(registration.Credential.CredentialId, result.Credentials[0].CredentialId,
             "get begin passkey summary credential ID mismatch");
         AssertEqual(1, pending.Count, "get begin should leave one pending session for approval");
+    }
+
+    private static void BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled()
+    {
+        int approvalCount = 0;
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyGetBeginPayload getPayload = CreatePasskeyGetBeginPayload("webauthn-get-invalid-allow-credential-bridge",
+            new string[] { "not@base64url" });
+        BridgeResponse getResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(getPayload)));
+
+        AssertFalse(getResponse.Success, "bridge get begin should reject invalid allowCredentials");
+        AssertEqual("invalid_allow_credential", getResponse.ErrorCode,
+            "bridge get invalid allowCredentials error code mismatch");
+        AssertEqual(0, approvalCount, "bridge invalid allowCredentials rejection should not prompt for approval");
+        AssertEqual(0, pending.Count, "bridge invalid allowCredentials rejection should not leave pending sessions");
     }
 
     private static void BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled()

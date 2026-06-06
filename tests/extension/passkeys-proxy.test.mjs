@@ -138,8 +138,7 @@ const getPayload = api.normalizeGetRequest({
     timeout: 12000.9,
     userVerification: 'discouraged',
     allowCredentials: [
-      { id: 'Y3JlZC0x', type: 'public-key' },
-      { id: '', type: 'public-key' },
+      { id: 'Y3JlZC0x==', type: 'public-key' },
       { id: 'Y3JlZC0y', type: 'public-key' }
     ]
   })
@@ -293,6 +292,24 @@ assert.throws(
   }),
   isInvalidChallengeError,
   'proxy experiment must reject get requests with invalid challenges'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 54,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      allowCredentials: [
+        { id: 'Y3JlZC0x', type: 'public-key' },
+        { id: 'not@base64url', type: 'public-key' }
+      ]
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidAllowCredentialError,
+  'proxy experiment must reject get requests with invalid allowCredentials'
 );
 
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
@@ -659,6 +676,28 @@ await assert.rejects(
 );
 assert.deepEqual(invalidChallengeBridgeCalls, [],
   'bridge helper must not call backend passkey methods when challenge is invalid');
+
+const invalidAllowCredentialBridgeCalls = [];
+const invalidAllowCredentialHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    invalidAllowCredentialBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => invalidAllowCredentialHandlers.onGetRequest({
+    requestId: 90,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      allowCredentials: [{ id: 'not@base64url', type: 'public-key' }]
+    })
+  }, { origin: 'https://example.com' }),
+  isInvalidAllowCredentialError,
+  'get bridge helper should reject invalid allowCredentials before calling KeePass'
+);
+assert.deepEqual(invalidAllowCredentialBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when allowCredentials is invalid');
 
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');
@@ -1055,6 +1094,12 @@ function isInvalidChallengeError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'WebAuthn challenge must be base64url-encoded and at least 16 bytes.');
+}
+
+function isInvalidAllowCredentialError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey allowCredentials contains an invalid credential ID.');
 }
 
 function makeEvent() {
