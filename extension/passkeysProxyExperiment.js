@@ -14,6 +14,8 @@
     'Passkey attestation conveyance is not supported by this build.';
   const unsupportedAuthenticatorAttachmentMessage =
     'Passkey authenticator attachment is not supported by this build.';
+  const unsupportedExtensionMessage =
+    'Passkey requested WebAuthn extension is not supported by this build.';
   const invalidUserHandleMessage =
     'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.';
   const invalidChallengeMessage =
@@ -851,7 +853,28 @@
 
   function normalizeRequestedExtensions(extensions) {
     if (!extensions || typeof extensions !== 'object') return undefined;
+    const unsupportedExtensions = unsupportedRequestedExtensionNames(extensions);
+    if (unsupportedExtensions.length > 0) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
     return extensions.credProps === true ? { CredProps: true } : undefined;
+  }
+
+  function unsupportedRequestedExtensionNames(extensions) {
+    const unsupported = [];
+    for (const [name, value] of Object.entries(extensions || {})) {
+      if (name === 'credProps') continue;
+      if (isRequestedExtensionValue(value)) unsupported.push(name);
+    }
+    return unsupported;
+  }
+
+  function isRequestedExtensionValue(value) {
+    if (value === undefined || value === null || value === false) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return Boolean(value);
   }
 
   function normalizeClientExtensionResults(results) {

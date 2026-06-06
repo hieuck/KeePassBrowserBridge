@@ -156,8 +156,9 @@ requireEvery('protocolModels', [
   'ExcludeCredentialIds',
   'TimeoutMs',
   'RequestedExtensions',
+  'UnsupportedExtensions',
   'ClientExtensionResults'
-], 'passkey create begin payload should carry credential algorithm, attestation, authenticator attachment, exclude-credential policy, timeout hints, and extension-result contracts to the backend');
+], 'passkey create begin payload should carry credential algorithm, attestation, authenticator attachment, exclude-credential policy, timeout hints, unsupported-extension policy, and extension-result contracts to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -216,6 +217,16 @@ requireEvery('testsProgram', [
   'pending create should retain requested credProps extension state',
   'create complete response should include requested credProps resident-key result'
 ], 'backend credProps extension result handling should be covered by tests');
+requireEvery('passkeyService', [
+  'UnsupportedExtensionErrorCode',
+  'HasUnsupportedRequestedExtensions',
+  'Passkey requested WebAuthn extension is not supported by this build.'
+], 'passkey backend should reject unsupported requested WebAuthn extensions');
+requireEvery('testsProgram', [
+  'PasskeyPendingRejectsUnsupportedRequestedExtension',
+  'BridgeHandlerRejectsUnsupportedPasskeyExtensionWhenFeatureGateIsEnabled',
+  'bridge unsupported requested extension rejection should not prompt for approval'
+], 'backend unsupported requested extension rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserVerification',
   'assertUserVerificationSupported',
@@ -317,14 +328,18 @@ requireEvery('passkeysProxyTests', [
 ], 'proxy timeout mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeRequestedExtensions',
+  'unsupportedRequestedExtensionNames',
+  'Passkey requested WebAuthn extension is not supported by this build.',
   'normalizeClientExtensionResults',
   'credProps'
-], 'passkey proxy should map requested and returned credProps extension data');
+], 'passkey proxy should map requested credProps and reject unsupported WebAuthn extensions');
 requireEvery('passkeysProxyTests', [
   'RequestedExtensions: { CredProps: true }',
+  'proxy experiment must reject create requests with unsupported WebAuthn extensions',
+  'bridge helper must not call backend passkey methods when requested extensions are unsupported',
   'credProps: {',
   'rk: true'
-], 'proxy credProps request and response mapping should be covered by tests');
+], 'proxy WebAuthn extension handling should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'duplicatePendingRequestMessage',
   'pending.has(requestId)',

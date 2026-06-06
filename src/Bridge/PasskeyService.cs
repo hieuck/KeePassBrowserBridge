@@ -23,6 +23,8 @@ namespace KeePassBrowserBridge.Bridge
         internal const string UnsupportedAttestationError = "Passkey attestation conveyance is not supported by this build.";
         internal const string UnsupportedAuthenticatorAttachmentErrorCode = "unsupported_authenticator_attachment";
         internal const string UnsupportedAuthenticatorAttachmentError = "Passkey authenticator attachment is not supported by this build.";
+        internal const string UnsupportedExtensionErrorCode = "unsupported_extension";
+        internal const string UnsupportedExtensionError = "Passkey requested WebAuthn extension is not supported by this build.";
 
         public PasskeyRegistrationResult CreateCredential(PasskeyRegistrationRequest request)
         {
@@ -196,6 +198,16 @@ namespace KeePassBrowserBridge.Bridge
         {
             string value = (authenticatorAttachment ?? string.Empty).Trim().ToLowerInvariant();
             return value.Length == 0 || value == "cross-platform";
+        }
+
+        internal static bool HasUnsupportedRequestedExtensions(PasskeyRequestedExtensions extensions)
+        {
+            if (extensions == null || extensions.UnsupportedExtensions == null) return false;
+            for (int i = 0; i < extensions.UnsupportedExtensions.Length; ++i)
+            {
+                if (!string.IsNullOrWhiteSpace(extensions.UnsupportedExtensions[i])) return true;
+            }
+            return false;
         }
 
         private static string[] NormalizeTransports(string[] transports)
@@ -692,6 +704,9 @@ namespace KeePassBrowserBridge.Bridge
                 if (!PasskeyService.IsSupportedAuthenticatorAttachment(createPayload.AuthenticatorAttachment))
                     return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedAuthenticatorAttachmentErrorCode,
                         PasskeyService.UnsupportedAuthenticatorAttachmentError);
+                if (PasskeyService.HasUnsupportedRequestedExtensions(createPayload.RequestedExtensions))
+                    return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedExtensionErrorCode,
+                        PasskeyService.UnsupportedExtensionError);
                 canonicalUserHandle = CanonicalizeUserHandle(createPayload.UserHandle);
                 if (canonicalUserHandle.Length == 0)
                     return PasskeyPendingSessionResult.Fail("invalid_user_handle",

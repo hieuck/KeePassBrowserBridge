@@ -338,6 +338,25 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeCreateRequest({
+    requestId: 61,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      extensions: {
+        credProps: true,
+        prf: { eval: { first: 'Zmlyc3Qtc2FsdC0xMjM0NTY' } }
+      }
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedExtensionError,
+  'proxy experiment must reject create requests with unsupported WebAuthn extensions'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
     requestId: 51,
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
@@ -763,6 +782,31 @@ await assert.rejects(
 );
 assert.deepEqual(unsupportedAttachmentBridgeCalls, [],
   'bridge helper must not call backend passkey methods when authenticator attachment is unsupported');
+
+const unsupportedExtensionBridgeCalls = [];
+const unsupportedExtensionHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedExtensionBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedExtensionHandlers.onCreateRequest({
+    requestId: 93,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      extensions: {
+        largeBlob: { support: 'required' }
+      }
+    }))
+  }, { origin: 'https://example.com' }),
+  isUnsupportedExtensionError,
+  'create bridge helper should reject unsupported WebAuthn extensions before calling KeePass'
+);
+assert.deepEqual(unsupportedExtensionBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when requested extensions are unsupported');
 
 const invalidUserHandleBridgeCalls = [];
 const invalidUserHandleHandlers = api.createBridgeRequestHandlers({
@@ -1241,6 +1285,12 @@ function isUnsupportedAuthenticatorAttachmentError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey authenticator attachment is not supported by this build.');
+}
+
+function isUnsupportedExtensionError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey requested WebAuthn extension is not supported by this build.');
 }
 
 function isInvalidUserHandleError(error) {

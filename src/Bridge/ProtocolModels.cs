@@ -255,6 +255,7 @@ namespace KeePassBrowserBridge.Bridge
     public sealed class PasskeyRequestedExtensions
     {
         public bool CredProps { get; set; }
+        public string[] UnsupportedExtensions { get; set; }
     }
 
     public sealed class PasskeyClientExtensionResults
