@@ -277,6 +277,7 @@ namespace KeePassBrowserBridge.Bridge
         public string[] AllowCredentialIds { get; set; }
         public string UserVerification { get; set; }
         public long TimeoutMs { get; set; }
+        public string[] UnsupportedExtensions { get; set; }
     }
 
     public sealed class PasskeyGetBeginResponsePayload

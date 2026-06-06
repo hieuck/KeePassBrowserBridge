@@ -356,6 +356,23 @@ assert.throws(
 );
 
 assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 62,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      extensions: {
+        appid: 'https://example.com'
+      }
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedExtensionError,
+  'proxy experiment must reject get requests with unsupported WebAuthn extensions'
+);
+
+assert.throws(
   () => api.normalizeCreateRequest({
     requestId: 51,
     requestDetailsJson: JSON.stringify(createOptions({
@@ -807,6 +824,30 @@ await assert.rejects(
 );
 assert.deepEqual(unsupportedExtensionBridgeCalls, [],
   'bridge helper must not call backend passkey methods when requested extensions are unsupported');
+
+const unsupportedGetExtensionBridgeCalls = [];
+const unsupportedGetExtensionHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedGetExtensionBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedGetExtensionHandlers.onGetRequest({
+    requestId: 94,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      extensions: {
+        prf: { eval: { first: 'Zmlyc3Qtc2FsdC0xMjM0NTY' } }
+      }
+    })
+  }, { origin: 'https://example.com' }),
+  isUnsupportedExtensionError,
+  'get bridge helper should reject unsupported WebAuthn extensions before calling KeePass'
+);
+assert.deepEqual(unsupportedGetExtensionBridgeCalls, [],
+  'bridge helper must not call backend get passkey methods when requested extensions are unsupported');
 
 const invalidUserHandleBridgeCalls = [];
 const invalidUserHandleHandlers = api.createBridgeRequestHandlers({

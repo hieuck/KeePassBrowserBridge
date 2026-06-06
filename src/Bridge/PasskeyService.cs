@@ -202,10 +202,15 @@ namespace KeePassBrowserBridge.Bridge
 
         internal static bool HasUnsupportedRequestedExtensions(PasskeyRequestedExtensions extensions)
         {
-            if (extensions == null || extensions.UnsupportedExtensions == null) return false;
-            for (int i = 0; i < extensions.UnsupportedExtensions.Length; ++i)
+            return extensions != null && HasUnsupportedExtensionNames(extensions.UnsupportedExtensions);
+        }
+
+        internal static bool HasUnsupportedExtensionNames(string[] extensionNames)
+        {
+            if (extensionNames == null) return false;
+            for (int i = 0; i < extensionNames.Length; ++i)
             {
-                if (!string.IsNullOrWhiteSpace(extensions.UnsupportedExtensions[i])) return true;
+                if (!string.IsNullOrWhiteSpace(extensionNames[i])) return true;
             }
             return false;
         }
@@ -722,6 +727,9 @@ namespace KeePassBrowserBridge.Bridge
                 PasskeyGetBeginPayload getPayload = payload as PasskeyGetBeginPayload;
                 if (getPayload == null)
                     return PasskeyPendingSessionResult.Fail("invalid_payload", "Passkey get begin payload is required.");
+                if (PasskeyService.HasUnsupportedExtensionNames(getPayload.UnsupportedExtensions))
+                    return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedExtensionErrorCode,
+                        PasskeyService.UnsupportedExtensionError);
                 if (!TryNormalizeCredentialIds(getPayload.AllowCredentialIds, out allowCredentialIds))
                     return PasskeyPendingSessionResult.Fail("invalid_allow_credential",
                         "Passkey allowCredentials contains an invalid credential ID.");

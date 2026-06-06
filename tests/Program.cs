@@ -39,6 +39,7 @@ internal static class Program
         PasskeyLookupRejectsMismatchedOrigin();
         PasskeyPendingCreateBindsRequestContext();
         PasskeyPendingRejectsUnsupportedRequestedExtension();
+        PasskeyPendingRejectsUnsupportedGetExtension();
         PasskeyPendingRejectsInvalidCreateUserHandle();
         PasskeyPendingRejectsInvalidExcludeCredentialIds();
         PasskeyPendingHonorsRequestedTimeoutUpToMaximum();
@@ -150,6 +151,7 @@ internal static class Program
         BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyAuthenticatorAttachmentWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyExtensionWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsUnsupportedPasskeyGetExtensionWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled();
         BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession();
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
@@ -558,6 +560,25 @@ internal static class Program
         AssertEqual("unsupported_extension", result.ErrorCode,
             "pending create unsupported requested extension error code mismatch");
         AssertEqual(0, store.Count, "unsupported requested extensions should not create pending passkey sessions");
+    }
+
+    private static void PasskeyPendingRejectsUnsupportedGetExtension()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyGetBeginPayload payload = CreatePasskeyGetBeginPayload("webauthn-get-unsupported-extension", new string[0]);
+        payload.UnsupportedExtensions = new string[] { "appid" };
+
+        PasskeyPendingSessionResult result = store.BeginGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-get-unsupported-extension",
+            payload,
+            now);
+
+        AssertFalse(result.Success, "pending get should reject unsupported requested WebAuthn extensions");
+        AssertEqual("unsupported_extension", result.ErrorCode,
+            "pending get unsupported requested extension error code mismatch");
+        AssertEqual(0, store.Count, "unsupported requested get extensions should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingRejectsInvalidCreateUserHandle()
@@ -2775,6 +2796,33 @@ internal static class Program
             "bridge create unsupported requested extension error code mismatch");
         AssertEqual(0, approvalCount, "bridge unsupported requested extension rejection should not prompt for approval");
         AssertEqual(0, pending.Count, "bridge unsupported requested extension rejection should not leave pending sessions");
+    }
+
+    private static void BridgeHandlerRejectsUnsupportedPasskeyGetExtensionWhenFeatureGateIsEnabled()
+    {
+        int approvalCount = 0;
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyGetBeginPayload getPayload = CreatePasskeyGetBeginPayload("webauthn-get-unsupported-extension-bridge",
+            new string[0]);
+        getPayload.UnsupportedExtensions = new string[] { "appid" };
+        BridgeResponse getResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(getPayload)));
+
+        AssertFalse(getResponse.Success, "bridge get begin should reject unsupported requested WebAuthn extensions");
+        AssertEqual("unsupported_extension", getResponse.ErrorCode,
+            "bridge get unsupported requested extension error code mismatch");
+        AssertEqual(0, approvalCount, "bridge unsupported requested get extension rejection should not prompt for approval");
+        AssertEqual(0, pending.Count, "bridge unsupported requested get extension rejection should not leave pending sessions");
     }
 
     private static void BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled()

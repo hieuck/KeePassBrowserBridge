@@ -329,6 +329,7 @@
     const userVerification = normalizeUserVerification(options.userVerification);
     assertUserVerificationSupported(userVerification);
     const challenge = normalizeChallenge(options.challenge);
+    assertNoUnsupportedGetExtensions(options.extensions);
 
     return {
       WebAuthnRequestId: parsed.requestId,
@@ -858,6 +859,14 @@
       throw notAllowedError(unsupportedExtensionMessage);
     }
     return extensions.credProps === true ? { CredProps: true } : undefined;
+  }
+
+  function assertNoUnsupportedGetExtensions(extensions) {
+    if (!extensions || typeof extensions !== 'object') return;
+    if (unsupportedRequestedExtensionNames(extensions).length > 0 ||
+        isRequestedExtensionValue(extensions.credProps)) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
   }
 
   function unsupportedRequestedExtensionNames(extensions) {

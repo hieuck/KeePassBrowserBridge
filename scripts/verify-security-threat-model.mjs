@@ -220,12 +220,16 @@ requireEvery('testsProgram', [
 requireEvery('passkeyService', [
   'UnsupportedExtensionErrorCode',
   'HasUnsupportedRequestedExtensions',
+  'HasUnsupportedExtensionNames',
   'Passkey requested WebAuthn extension is not supported by this build.'
 ], 'passkey backend should reject unsupported requested WebAuthn extensions');
 requireEvery('testsProgram', [
   'PasskeyPendingRejectsUnsupportedRequestedExtension',
+  'PasskeyPendingRejectsUnsupportedGetExtension',
   'BridgeHandlerRejectsUnsupportedPasskeyExtensionWhenFeatureGateIsEnabled',
-  'bridge unsupported requested extension rejection should not prompt for approval'
+  'BridgeHandlerRejectsUnsupportedPasskeyGetExtensionWhenFeatureGateIsEnabled',
+  'bridge unsupported requested extension rejection should not prompt for approval',
+  'bridge unsupported requested get extension rejection should not prompt for approval'
 ], 'backend unsupported requested extension rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserVerification',
@@ -328,6 +332,7 @@ requireEvery('passkeysProxyTests', [
 ], 'proxy timeout mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeRequestedExtensions',
+  'assertNoUnsupportedGetExtensions',
   'unsupportedRequestedExtensionNames',
   'Passkey requested WebAuthn extension is not supported by this build.',
   'normalizeClientExtensionResults',
@@ -336,7 +341,9 @@ requireEvery('passkeysProxyExperiment', [
 requireEvery('passkeysProxyTests', [
   'RequestedExtensions: { CredProps: true }',
   'proxy experiment must reject create requests with unsupported WebAuthn extensions',
+  'proxy experiment must reject get requests with unsupported WebAuthn extensions',
   'bridge helper must not call backend passkey methods when requested extensions are unsupported',
+  'bridge helper must not call backend get passkey methods when requested extensions are unsupported',
   'credProps: {',
   'rk: true'
 ], 'proxy WebAuthn extension handling should be covered by tests');
