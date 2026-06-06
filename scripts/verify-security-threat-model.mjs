@@ -148,11 +148,12 @@ requireEvery('testsProgram', [
 requireEvery('protocolModels', [
   'CredentialAlgorithms',
   'Attestation',
+  'AuthenticatorAttachment',
   'ExcludeCredentialIds',
   'TimeoutMs',
   'RequestedExtensions',
   'ClientExtensionResults'
-], 'passkey create begin payload should carry credential algorithm, attestation, exclude-credential policy, timeout hints, and extension-result contracts to the backend');
+], 'passkey create begin payload should carry credential algorithm, attestation, authenticator attachment, exclude-credential policy, timeout hints, and extension-result contracts to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -173,6 +174,16 @@ requireEvery('testsProgram', [
   'BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled',
   'unsupported_attestation'
 ], 'backend attestation enforcement should be covered by tests');
+requireEvery('passkeyService', [
+  'UnsupportedAuthenticatorAttachmentErrorCode',
+  'IsSupportedAuthenticatorAttachment',
+  'Passkey authenticator attachment is not supported by this build.'
+], 'passkey backend should reject unsupported authenticator attachment');
+requireEvery('testsProgram', [
+  'PasskeyPendingRejectsUnsupportedAuthenticatorAttachment',
+  'BridgeHandlerRejectsUnsupportedPasskeyAuthenticatorAttachmentWhenFeatureGateIsEnabled',
+  'bridge unsupported authenticator attachment rejection should not prompt for approval'
+], 'backend authenticator attachment enforcement should be covered by tests');
 requireEvery('bridgeRequestHandler', [
   'RejectExcludedCreateCredential',
   'excluded_credential_exists',
@@ -269,6 +280,16 @@ requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests requiring unsupported attestation conveyance',
   'bridge helper must not call backend passkey methods when attestation conveyance is unsupported'
 ], 'proxy attestation enforcement should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeAuthenticatorAttachment',
+  'assertAuthenticatorAttachmentSupported',
+  'Passkey authenticator attachment is not supported by this build.'
+], 'passkey proxy should reject unsupported authenticator attachment before bridge calls');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject create requests requiring unsupported authenticator attachment',
+  'bridge helper must not call backend passkey methods when authenticator attachment is unsupported',
+  "AuthenticatorAttachment: 'cross-platform'"
+], 'proxy authenticator attachment enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeExcludeCredentialIds',
   'normalizeCredentialDescriptorIds',

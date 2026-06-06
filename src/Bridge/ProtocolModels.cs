@@ -217,6 +217,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserVerification { get; set; }
         public long TimeoutMs { get; set; }
         public string Attestation { get; set; }
+        public string AuthenticatorAttachment { get; set; }
         public int[] CredentialAlgorithms { get; set; }
         public string[] ExcludeCredentialIds { get; set; }
         public PasskeyRequestedExtensions RequestedExtensions { get; set; }

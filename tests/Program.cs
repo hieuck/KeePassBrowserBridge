@@ -46,6 +46,7 @@ internal static class Program
         PasskeyPendingRejectsRequiredUserVerification();
         PasskeyPendingRejectsUnsupportedCredentialAlgorithm();
         PasskeyPendingRejectsUnsupportedAttestation();
+        PasskeyPendingRejectsUnsupportedAuthenticatorAttachment();
         PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId();
         PasskeyPendingCompletionExpiresStaleSession();
         PasskeyPendingClearForClientRemovesOnlyClientSessions();
@@ -143,6 +144,7 @@ internal static class Program
         BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsUnsupportedPasskeyAuthenticatorAttachmentWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled();
         BridgeHandlerDeniedPasskeyCreateApprovalCancelsPendingSession();
         BridgeHandlerDeniedPasskeyGetApprovalCancelsPendingSession();
@@ -784,6 +786,25 @@ internal static class Program
         AssertEqual("unsupported_attestation", result.ErrorCode,
             "pending create unsupported attestation error code mismatch");
         AssertEqual(0, store.Count, "unsupported attestation should not create pending passkey sessions");
+    }
+
+    private static void PasskeyPendingRejectsUnsupportedAuthenticatorAttachment()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload payload = CreatePasskeyCreateBeginPayload("webauthn-create-platform-attachment");
+        payload.AuthenticatorAttachment = "platform";
+
+        PasskeyPendingSessionResult result = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-platform-attachment",
+            payload,
+            now);
+
+        AssertFalse(result.Success, "pending create should reject unsupported authenticator attachment");
+        AssertEqual("unsupported_authenticator_attachment", result.ErrorCode,
+            "pending create unsupported authenticator attachment error code mismatch");
+        AssertEqual(0, store.Count, "unsupported authenticator attachment should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId()
@@ -2595,6 +2616,32 @@ internal static class Program
         AssertEqual(0, pending.Count, "bridge unsupported attestation rejection should not leave pending sessions");
     }
 
+    private static void BridgeHandlerRejectsUnsupportedPasskeyAuthenticatorAttachmentWhenFeatureGateIsEnabled()
+    {
+        int approvalCount = 0;
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-platform-attachment-bridge");
+        createPayload.AuthenticatorAttachment = "platform";
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject unsupported authenticator attachment");
+        AssertEqual("unsupported_authenticator_attachment", createResponse.ErrorCode,
+            "bridge create unsupported authenticator attachment error code mismatch");
+        AssertEqual(0, approvalCount, "bridge unsupported authenticator attachment rejection should not prompt for approval");
+        AssertEqual(0, pending.Count, "bridge unsupported authenticator attachment rejection should not leave pending sessions");
+    }
+
     private static void BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled()
     {
         PasskeyService service = new PasskeyService();
@@ -3514,6 +3561,7 @@ internal static class Program
             UserDisplayName = "Alice Example",
             UserVerification = "preferred",
             Attestation = "none",
+            AuthenticatorAttachment = "cross-platform",
             CredentialAlgorithms = new int[] { -7 },
             Transports = new string[] { "internal" }
         };

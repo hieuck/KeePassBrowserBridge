@@ -10,6 +10,8 @@
     'Passkey ES256 public-key credential algorithm is not allowed by this request.';
   const unsupportedAttestationMessage =
     'Passkey attestation conveyance is not supported by this build.';
+  const unsupportedAuthenticatorAttachmentMessage =
+    'Passkey authenticator attachment is not supported by this build.';
   const invalidUserHandleMessage =
     'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.';
   const invalidChallengeMessage =
@@ -288,6 +290,8 @@
     assertUserVerificationSupported(userVerification);
     const attestation = normalizeAttestationConveyance(options.attestation);
     assertAttestationSupported(attestation);
+    const authenticatorAttachment = normalizeAuthenticatorAttachment(authenticatorSelection.authenticatorAttachment);
+    assertAuthenticatorAttachmentSupported(authenticatorAttachment);
     const credentialAlgorithms = normalizeCredentialAlgorithms(options.pubKeyCredParams);
     assertEs256CredentialAlgorithmAllowed(credentialAlgorithms);
     const challenge = normalizeChallenge(options.challenge);
@@ -304,6 +308,7 @@
       UserVerification: userVerification,
       TimeoutMs: normalizeTimeoutMs(options.timeout),
       Attestation: attestation,
+      AuthenticatorAttachment: authenticatorAttachment,
       CredentialAlgorithms: credentialAlgorithms,
       ExcludeCredentialIds: normalizeExcludeCredentialIds(options.excludeCredentials),
       RequestedExtensions: normalizeRequestedExtensions(options.extensions),
@@ -535,6 +540,16 @@
   function assertAttestationSupported(attestation) {
     if (!attestation || attestation === 'none') return;
     throw notAllowedError(unsupportedAttestationMessage);
+  }
+
+  function normalizeAuthenticatorAttachment(value) {
+    const normalized = stringValue(value).trim().toLowerCase();
+    return normalized === 'platform' || normalized === 'cross-platform' ? normalized : '';
+  }
+
+  function assertAuthenticatorAttachmentSupported(authenticatorAttachment) {
+    if (!authenticatorAttachment || authenticatorAttachment === 'cross-platform') return;
+    throw notAllowedError(unsupportedAuthenticatorAttachmentMessage);
   }
 
   function normalizeUserHandle(value) {

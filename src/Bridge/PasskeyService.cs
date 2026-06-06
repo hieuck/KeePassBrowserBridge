@@ -21,6 +21,8 @@ namespace KeePassBrowserBridge.Bridge
         internal const string UnsupportedCredentialAlgorithmError = "Passkey ES256 public-key credential algorithm is not allowed by this request.";
         internal const string UnsupportedAttestationErrorCode = "unsupported_attestation";
         internal const string UnsupportedAttestationError = "Passkey attestation conveyance is not supported by this build.";
+        internal const string UnsupportedAuthenticatorAttachmentErrorCode = "unsupported_authenticator_attachment";
+        internal const string UnsupportedAuthenticatorAttachmentError = "Passkey authenticator attachment is not supported by this build.";
 
         public PasskeyRegistrationResult CreateCredential(PasskeyRegistrationRequest request)
         {
@@ -180,6 +182,12 @@ namespace KeePassBrowserBridge.Bridge
         {
             string value = (attestation ?? string.Empty).Trim().ToLowerInvariant();
             return value.Length == 0 || value == "none";
+        }
+
+        internal static bool IsSupportedAuthenticatorAttachment(string authenticatorAttachment)
+        {
+            string value = (authenticatorAttachment ?? string.Empty).Trim().ToLowerInvariant();
+            return value.Length == 0 || value == "cross-platform";
         }
 
         private static string[] NormalizeTransports(string[] transports)
@@ -670,6 +678,9 @@ namespace KeePassBrowserBridge.Bridge
                 if (!PasskeyService.IsNoneAttestationConveyance(createPayload.Attestation))
                     return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedAttestationErrorCode,
                         PasskeyService.UnsupportedAttestationError);
+                if (!PasskeyService.IsSupportedAuthenticatorAttachment(createPayload.AuthenticatorAttachment))
+                    return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedAuthenticatorAttachmentErrorCode,
+                        PasskeyService.UnsupportedAuthenticatorAttachmentError);
                 canonicalUserHandle = CanonicalizeUserHandle(createPayload.UserHandle);
                 if (canonicalUserHandle.Length == 0)
                     return PasskeyPendingSessionResult.Fail("invalid_user_handle",

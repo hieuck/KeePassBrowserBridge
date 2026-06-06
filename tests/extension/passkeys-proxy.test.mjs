@@ -58,6 +58,7 @@ const createPayload = api.normalizeCreateRequest({
     },
     attestation: 'none',
     authenticatorSelection: {
+      authenticatorAttachment: 'cross-platform',
       userVerification: 'preferred'
     },
     pubKeyCredParams: [
@@ -88,6 +89,7 @@ assert.deepEqual(plain(createPayload), {
   UserVerification: 'preferred',
   TimeoutMs: 45000,
   Attestation: 'none',
+  AuthenticatorAttachment: 'cross-platform',
   CredentialAlgorithms: [-257, -7],
   ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y'],
   RequestedExtensions: { CredProps: true },
@@ -247,6 +249,24 @@ assert.throws(
   }),
   isUnsupportedAttestationError,
   'proxy experiment must reject create requests requiring unsupported attestation conveyance'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 56,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform'
+      }
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedAuthenticatorAttachmentError,
+  'proxy experiment must reject create requests requiring unsupported authenticator attachment'
 );
 
 assert.throws(
@@ -651,6 +671,31 @@ await assert.rejects(
 );
 assert.deepEqual(unsupportedAttestationBridgeCalls, [],
   'bridge helper must not call backend passkey methods when attestation conveyance is unsupported');
+
+const unsupportedAttachmentBridgeCalls = [];
+const unsupportedAttachmentHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedAttachmentBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedAttachmentHandlers.onCreateRequest({
+    requestId: 92,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform'
+      }
+    }))
+  }, { origin: 'https://example.com' }),
+  isUnsupportedAuthenticatorAttachmentError,
+  'create bridge helper should reject unsupported authenticator attachment before calling KeePass'
+);
+assert.deepEqual(unsupportedAttachmentBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when authenticator attachment is unsupported');
 
 const invalidUserHandleBridgeCalls = [];
 const invalidUserHandleHandlers = api.createBridgeRequestHandlers({
@@ -1123,6 +1168,12 @@ function isUnsupportedAttestationError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey attestation conveyance is not supported by this build.');
+}
+
+function isUnsupportedAuthenticatorAttachmentError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey authenticator attachment is not supported by this build.');
 }
 
 function isInvalidUserHandleError(error) {
