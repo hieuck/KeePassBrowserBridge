@@ -28,6 +28,7 @@ internal static class Program
         PasskeyRpIdValidationRejectsMismatchedOrigin();
         PasskeyRegistrationCreatesCredentialAndAttestation();
         PasskeyRegistrationRejectsRequiredUserVerification();
+        PasskeyRegistrationRejectsUnknownUserVerification();
         PasskeyCredentialIdsAreUnique();
         PasskeyAssertionSignsChallengeAndIncrementsCounter();
         PasskeyAssertionRejectsRequiredUserVerification();
@@ -44,6 +45,7 @@ internal static class Program
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
         PasskeyPendingRejectsInvalidAllowCredentialIds();
         PasskeyPendingRejectsRequiredUserVerification();
+        PasskeyPendingRejectsUnknownUserVerification();
         PasskeyPendingRejectsUnsupportedCredentialAlgorithm();
         PasskeyPendingRejectsUnsupportedAttestation();
         PasskeyPendingRejectsUnsupportedAuthenticatorAttachment();
@@ -141,6 +143,7 @@ internal static class Program
         BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsInvalidPasskeyExcludeCredentialBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsUnknownPasskeyUserVerificationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled();
@@ -307,6 +310,19 @@ internal static class Program
         AssertFalse(result.Success, "passkey registration should reject required user verification until KeePass-side verification exists");
         AssertEqual("unsupported_user_verification", result.ErrorCode,
             "required user verification registration error code mismatch");
+    }
+
+    private static void PasskeyRegistrationRejectsUnknownUserVerification()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationRequest request = CreatePasskeyRegistrationRequest();
+        request.UserVerification = "future-required";
+
+        PasskeyRegistrationResult result = service.CreateCredential(request);
+
+        AssertFalse(result.Success, "passkey registration should reject unknown user verification policy values");
+        AssertEqual("unsupported_user_verification", result.ErrorCode,
+            "unknown user verification registration error code mismatch");
     }
 
     private static void PasskeyCredentialIdsAreUnique()
@@ -738,6 +754,35 @@ internal static class Program
         AssertEqual("unsupported_user_verification", get.ErrorCode,
             "pending get required user verification error code mismatch");
         AssertEqual(0, store.Count, "required user verification should not create pending passkey sessions");
+    }
+
+    private static void PasskeyPendingRejectsUnknownUserVerification()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-unknown-uv");
+        createPayload.UserVerification = "future-required";
+
+        PasskeyPendingSessionResult create = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-unknown-uv-create",
+            createPayload,
+            now);
+        AssertFalse(create.Success, "pending create should reject unknown user verification policy values");
+        AssertEqual("unsupported_user_verification", create.ErrorCode,
+            "pending create unknown user verification error code mismatch");
+
+        PasskeyGetBeginPayload getPayload = CreatePasskeyGetBeginPayload("webauthn-get-unknown-uv", new string[0]);
+        getPayload.UserVerification = "future-required";
+        PasskeyPendingSessionResult get = store.BeginGet("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-unknown-uv-get",
+            getPayload,
+            now);
+        AssertFalse(get.Success, "pending get should reject unknown user verification policy values");
+        AssertEqual("unsupported_user_verification", get.ErrorCode,
+            "pending get unknown user verification error code mismatch");
+        AssertEqual(0, store.Count, "unknown user verification should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingRejectsUnsupportedCredentialAlgorithm()
@@ -2552,6 +2597,41 @@ internal static class Program
         AssertEqual("unsupported_user_verification", getResponse.ErrorCode,
             "bridge get required user verification error code mismatch");
         AssertEqual(0, pending.Count, "bridge required user verification rejection should not leave pending sessions");
+    }
+
+    private static void BridgeHandlerRejectsUnknownPasskeyUserVerificationWhenFeatureGateIsEnabled()
+    {
+        int approvalCount = 0;
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-unknown-uv-bridge");
+        createPayload.UserVerification = "future-required";
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject unknown user verification policy values");
+        AssertEqual("unsupported_user_verification", createResponse.ErrorCode,
+            "bridge create unknown user verification error code mismatch");
+
+        PasskeyGetBeginPayload getPayload = CreatePasskeyGetBeginPayload("webauthn-get-unknown-uv-bridge", new string[0]);
+        getPayload.UserVerification = "future-required";
+        BridgeResponse getResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysGetBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(getPayload)));
+
+        AssertFalse(getResponse.Success, "bridge get begin should reject unknown user verification policy values");
+        AssertEqual("unsupported_user_verification", getResponse.ErrorCode,
+            "bridge get unknown user verification error code mismatch");
+        AssertEqual(0, approvalCount, "bridge unknown user verification rejection should not prompt for approval");
+        AssertEqual(0, pending.Count, "bridge unknown user verification rejection should not leave pending sessions");
     }
 
     private static void BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled()

@@ -329,6 +329,7 @@ assert.equal(passkeyServiceSource.includes('PasskeyRelyingPartyValidator'), true
 assert.equal(passkeyServiceSource.includes('KBB-Passkey-PrivateKey'), true, 'passkey backend prototype should store private material in the designed field');
 assert.equal(passkeyServiceSource.includes('new ProtectedString(true'), true, 'passkey backend prototype should protect private key material in KeePass strings');
 assert.equal(passkeyServiceSource.includes('unsupported_user_verification'), true, 'passkey backend prototype should reject required user verification until KeePass-side verification exists');
+assert.equal(passkeyServiceSource.includes('IsKnownUserVerification'), true, 'passkey backend prototype should reject unknown user verification policy values');
 assert.equal(passkeyServiceSource.includes('CanonicalizeUserHandle'), true, 'passkey backend prototype should reject invalid create user handles before approval');
 assert.equal(passkeyServiceSource.includes('invalid_user_handle'), true, 'passkey backend prototype should expose a stable invalid user-handle error code');
 assert.equal(passkeyServiceSource.includes('TryNormalizeAllowCredentialIds'), true, 'passkey backend prototype should fail closed on invalid passkey list allowCredentialIds');
@@ -347,6 +348,7 @@ assert.equal(passkeysProxyExperiment.includes('options && options.origin'), fals
 assert.equal(passkeysProxyExperiment.includes('isRpIdAllowedForOrigin'), true, 'passkey proxy experiment should reject RP IDs that do not match trusted origin context');
 assert.equal(passkeysProxyExperiment.includes('Passkey RP ID is not valid for the trusted caller origin'), true, 'passkey proxy experiment should fail closed before bridge calls for invalid RP IDs');
 assert.equal(passkeysProxyExperiment.includes('assertUserVerificationSupported'), true, 'passkey proxy experiment should reject unsupported user verification before bridge calls');
+assert.equal(passkeysProxyExperiment.includes('normalizeKnownOptionalEnum'), true, 'passkey proxy experiment should fail closed on unknown WebAuthn enum values');
 assert.equal(passkeysProxyExperiment.includes('Passkey user verification is not supported by this build'), true, 'passkey proxy experiment should expose a WebAuthn error for required user verification');
 assert.equal(passkeysProxyExperiment.includes('normalizeUserHandle'), true, 'passkey proxy experiment should reject invalid create user handles before bridge calls');
 assert.equal(passkeysProxyExperiment.includes('invalidUserHandleMessage'), true, 'passkey proxy experiment should expose a WebAuthn error for invalid user handles');

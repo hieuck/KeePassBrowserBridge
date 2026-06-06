@@ -6,6 +6,8 @@
     'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
   const duplicatePendingRequestMessage =
     'A pending passkey request already exists for this WebAuthn request.';
+  const unsupportedUserVerificationMessage =
+    'Passkey user verification is not supported by this build.';
   const unsupportedAlgorithmMessage =
     'Passkey ES256 public-key credential algorithm is not allowed by this request.';
   const unsupportedAttestationMessage =
@@ -512,16 +514,14 @@
   }
 
   function normalizeUserVerification(value) {
-    const normalized = stringValue(value).trim().toLowerCase();
-    if (normalized === 'required' || normalized === 'preferred' || normalized === 'discouraged') {
-      return normalized;
-    }
-    return '';
+    return normalizeKnownOptionalEnum(value,
+      ['required', 'preferred', 'discouraged'],
+      unsupportedUserVerificationMessage);
   }
 
   function assertUserVerificationSupported(userVerification) {
     if (userVerification !== 'required') return;
-    throw notAllowedError('Passkey user verification is not supported by this build.');
+    throw notAllowedError(unsupportedUserVerificationMessage);
   }
 
   function assertEs256CredentialAlgorithmAllowed(credentialAlgorithms) {
@@ -530,11 +530,9 @@
   }
 
   function normalizeAttestationConveyance(value) {
-    const normalized = stringValue(value).trim().toLowerCase();
-    return normalized === 'none' || normalized === 'indirect' ||
-      normalized === 'direct' || normalized === 'enterprise'
-      ? normalized
-      : '';
+    return normalizeKnownOptionalEnum(value,
+      ['none', 'indirect', 'direct', 'enterprise'],
+      unsupportedAttestationMessage);
   }
 
   function assertAttestationSupported(attestation) {
@@ -543,8 +541,9 @@
   }
 
   function normalizeAuthenticatorAttachment(value) {
-    const normalized = stringValue(value).trim().toLowerCase();
-    return normalized === 'platform' || normalized === 'cross-platform' ? normalized : '';
+    return normalizeKnownOptionalEnum(value,
+      ['platform', 'cross-platform'],
+      unsupportedAuthenticatorAttachmentMessage);
   }
 
   function assertAuthenticatorAttachmentSupported(authenticatorAttachment) {
@@ -595,6 +594,14 @@
     if (type !== 'public-key') return undefined;
     const algorithm = Number(value.alg);
     return Number.isInteger(algorithm) ? algorithm : undefined;
+  }
+
+  function normalizeKnownOptionalEnum(value, allowedValues, unsupportedMessage) {
+    const text = stringValue(value).trim();
+    if (!text) return '';
+    const normalized = text.toLowerCase();
+    if (allowedValues.includes(normalized)) return normalized;
+    throw notAllowedError(unsupportedMessage);
   }
 
   function normalizeCredentialDescriptorIds(credentials) {

@@ -103,13 +103,17 @@ requireEvery('testsProgram', [
   'PasskeyRegistrationRejectsRequiredUserVerification',
   'PasskeyAssertionRejectsRequiredUserVerification',
   'PasskeyPendingRejectsRequiredUserVerification',
-  'BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled'
-], 'required passkey user verification rejection should be covered by backend tests');
+  'PasskeyRegistrationRejectsUnknownUserVerification',
+  'PasskeyPendingRejectsUnknownUserVerification',
+  'BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled',
+  'BridgeHandlerRejectsUnknownPasskeyUserVerificationWhenFeatureGateIsEnabled'
+], 'required and unknown passkey user verification rejection should be covered by backend tests');
 requireEvery('passkeyService', [
   'unsupported_user_verification',
   'IsUserVerificationRequired',
+  'IsKnownUserVerification',
   'Passkey user verification is not supported by this build.'
-], 'passkey backend should reject required user verification until KeePass-side verification exists');
+], 'passkey backend should reject required or unknown user verification until KeePass-side verification exists');
 requireEvery('passkeyService', [
   'CanonicalizeUserHandle',
   'invalid_user_handle',
@@ -215,13 +219,16 @@ requireEvery('testsProgram', [
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserVerification',
   'assertUserVerificationSupported',
+  'normalizeKnownOptionalEnum',
   'Passkey user verification is not supported by this build.'
-], 'passkey proxy should reject required user verification before bridge calls');
+], 'passkey proxy should reject required or unknown user verification before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests requiring unsupported user verification',
+  'proxy experiment must reject create requests with unknown user verification values',
+  'proxy experiment must reject get requests with unknown user verification values',
   'bridge helper must not call backend passkey methods when required user verification is unsupported',
   'lifecycle should reject required user verification before calling handlers'
-], 'required user verification rejection should be covered by proxy tests');
+], 'user verification rejection should be covered by proxy tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserHandle',
   'base64UrlByteLength',
@@ -278,6 +285,7 @@ requireEvery('passkeysProxyExperiment', [
 ], 'passkey proxy should reject unsupported attestation conveyance before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests requiring unsupported attestation conveyance',
+  'proxy experiment must reject create requests with unknown attestation conveyance',
   'bridge helper must not call backend passkey methods when attestation conveyance is unsupported'
 ], 'proxy attestation enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
@@ -287,6 +295,7 @@ requireEvery('passkeysProxyExperiment', [
 ], 'passkey proxy should reject unsupported authenticator attachment before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests requiring unsupported authenticator attachment',
+  'proxy experiment must reject create requests with unknown authenticator attachment',
   'bridge helper must not call backend passkey methods when authenticator attachment is unsupported',
   "AuthenticatorAttachment: 'cross-platform'"
 ], 'proxy authenticator attachment enforcement should be covered by tests');

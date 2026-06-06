@@ -203,6 +203,39 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeCreateRequest({
+    requestId: 57,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      authenticatorSelection: {
+        userVerification: 'future-required'
+      }
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedUserVerificationError,
+  'proxy experiment must reject create requests with unknown user verification values'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 58,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      userVerification: 'future-required'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedUserVerificationError,
+  'proxy experiment must reject get requests with unknown user verification values'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
     requestId: 48,
     requestDetailsJson: JSON.stringify({
       rp: { id: 'example.com' },
@@ -253,6 +286,22 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeCreateRequest({
+    requestId: 59,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      attestation: 'future-attestation'
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedAttestationError,
+  'proxy experiment must reject create requests with unknown attestation conveyance'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
     requestId: 56,
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
@@ -267,6 +316,24 @@ assert.throws(
   }),
   isUnsupportedAuthenticatorAttachmentError,
   'proxy experiment must reject create requests requiring unsupported authenticator attachment'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 60,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      authenticatorSelection: {
+        authenticatorAttachment: 'future-attachment'
+      }
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedAuthenticatorAttachmentError,
+  'proxy experiment must reject create requests with unknown authenticator attachment'
 );
 
 assert.throws(

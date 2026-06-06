@@ -146,6 +146,8 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyValidationResult.Fail("invalid_rp_id", "Passkey RP ID is not valid for the requesting origin.");
             if (string.IsNullOrWhiteSpace(request.UserName))
                 return PasskeyValidationResult.Fail("missing_user_name", "Passkey user name is required.");
+            if (!IsKnownUserVerification(request.UserVerification))
+                return PasskeyValidationResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
             if (IsUserVerificationRequired(request.UserVerification))
                 return PasskeyValidationResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
             return PasskeyValidationResult.Ok();
@@ -159,6 +161,12 @@ namespace KeePassBrowserBridge.Bridge
         internal static bool IsUserVerificationRequired(string userVerification)
         {
             return string.Equals(NormalizeUserVerification(userVerification), "required", StringComparison.Ordinal);
+        }
+
+        internal static bool IsKnownUserVerification(string userVerification)
+        {
+            string value = (userVerification ?? string.Empty).Trim().ToLowerInvariant();
+            return value.Length == 0 || value == "required" || value == "preferred" || value == "discouraged";
         }
 
         internal static string NormalizeUserVerification(string userVerification)
@@ -661,6 +669,9 @@ namespace KeePassBrowserBridge.Bridge
             string challenge = CanonicalizeChallenge(payload.Challenge);
             if (challenge.Length == 0)
                 return PasskeyPendingSessionResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
+            if (!PasskeyService.IsKnownUserVerification(payload.UserVerification))
+                return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedUserVerificationErrorCode,
+                    PasskeyService.UnsupportedUserVerificationError);
             if (PasskeyService.IsUserVerificationRequired(payload.UserVerification))
                 return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedUserVerificationErrorCode,
                     PasskeyService.UnsupportedUserVerificationError);
