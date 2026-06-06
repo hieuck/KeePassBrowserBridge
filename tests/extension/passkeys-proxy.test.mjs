@@ -67,11 +67,10 @@ const createPayload = api.normalizeCreateRequest({
       { type: 'password', alg: -8 }
     ],
     excludeCredentials: [
-      { type: 'public-key', id: 'ZXhjbHVkZS0x' },
+      { type: 'public-key', id: 'ZXhjbHVkZS0x==' },
       { type: 'PUBLIC-KEY', id: 'ZXhjbHVkZS0x' },
       { type: 'password', id: 'cGFzc3dvcmQtY3JlZA' },
-      { id: 'ZXhjbHVkZS0y' },
-      { id: '' }
+      { id: 'ZXhjbHVkZS0y' }
     ]
   }))
 }, {
@@ -281,8 +280,27 @@ assert.throws(
 );
 
 assert.throws(
-  () => api.normalizeGetRequest({
+  () => api.normalizeCreateRequest({
     requestId: 53,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      excludeCredentials: [
+        { id: 'ZXhjbHVkZS0x', type: 'public-key' },
+        { id: 'not@base64url', type: 'public-key' }
+      ]
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidExcludeCredentialError,
+  'proxy experiment must reject create requests with invalid excludeCredentials'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 54,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
       challenge: 'not@base64url'
@@ -296,7 +314,7 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeGetRequest({
-    requestId: 54,
+    requestId: 55,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
       challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
@@ -656,6 +674,29 @@ await assert.rejects(
 assert.deepEqual(invalidUserHandleBridgeCalls, [],
   'bridge helper must not call backend passkey methods when user handle is invalid');
 
+const invalidExcludeCredentialBridgeCalls = [];
+const invalidExcludeCredentialHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    invalidExcludeCredentialBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => invalidExcludeCredentialHandlers.onCreateRequest({
+    requestId: 89,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      excludeCredentials: [{ id: 'not@base64url', type: 'public-key' }]
+    }))
+  }, { origin: 'https://example.com' }),
+  isInvalidExcludeCredentialError,
+  'create bridge helper should reject invalid excludeCredentials before calling KeePass'
+);
+assert.deepEqual(invalidExcludeCredentialBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when excludeCredentials is invalid');
+
 const invalidChallengeBridgeCalls = [];
 const invalidChallengeHandlers = api.createBridgeRequestHandlers({
   bridgeCall: async (method, payload) => {
@@ -665,7 +706,7 @@ const invalidChallengeHandlers = api.createBridgeRequestHandlers({
 });
 await assert.rejects(
   () => invalidChallengeHandlers.onGetRequest({
-    requestId: 89,
+    requestId: 90,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
       challenge: 'c2hvcnQ'
@@ -686,7 +727,7 @@ const invalidAllowCredentialHandlers = api.createBridgeRequestHandlers({
 });
 await assert.rejects(
   () => invalidAllowCredentialHandlers.onGetRequest({
-    requestId: 90,
+    requestId: 91,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
       challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
@@ -1088,6 +1129,12 @@ function isInvalidUserHandleError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.');
+}
+
+function isInvalidExcludeCredentialError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey excludeCredentials contains an invalid credential ID.');
 }
 
 function isInvalidChallengeError(error) {

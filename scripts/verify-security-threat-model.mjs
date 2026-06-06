@@ -130,6 +130,15 @@ requireEvery('testsProgram', [
   'BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled',
   'bridge invalid allowCredentials rejection should not prompt for approval'
 ], 'invalid passkey allowCredentials rejection should be covered by backend tests');
+requireEvery('passkeyService', [
+  'invalid_exclude_credential',
+  'Passkey excludeCredentials contains an invalid credential ID.'
+], 'passkey backend should reject invalid create excludeCredentials before approval');
+requireEvery('testsProgram', [
+  'PasskeyPendingRejectsInvalidExcludeCredentialIds',
+  'BridgeHandlerRejectsInvalidPasskeyExcludeCredentialBeforeApprovalWhenFeatureGateIsEnabled',
+  'bridge invalid excludeCredentials rejection should not prompt for approval'
+], 'invalid passkey excludeCredentials rejection should be covered by backend tests');
 requireEvery('protocolModels', [
   'CredentialAlgorithms',
   'Attestation',
@@ -206,6 +215,15 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when user handle is invalid'
 ], 'proxy invalid user handle rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
+  'normalizeExcludeCredentialIds',
+  'invalidExcludeCredentialMessage',
+  'Passkey excludeCredentials contains an invalid credential ID.'
+], 'passkey proxy should reject invalid create excludeCredentials before bridge calls');
+requireEvery('passkeysProxyTests', [
+  'proxy experiment must reject create requests with invalid excludeCredentials',
+  'bridge helper must not call backend passkey methods when excludeCredentials is invalid'
+], 'proxy invalid excludeCredentials rejection should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
   'normalizeChallenge',
   'invalidChallengeMessage',
   'base64UrlByteLength'
@@ -246,6 +264,7 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when attestation conveyance is unsupported'
 ], 'proxy attestation enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
+  'normalizeExcludeCredentialIds',
   'normalizeCredentialDescriptorIds',
   'ExcludeCredentialIds'
 ], 'passkey proxy should forward create excludeCredentials to the backend');

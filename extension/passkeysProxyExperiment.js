@@ -14,6 +14,8 @@
     'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.';
   const invalidChallengeMessage =
     'WebAuthn challenge must be base64url-encoded and at least 16 bytes.';
+  const invalidExcludeCredentialMessage =
+    'Passkey excludeCredentials contains an invalid credential ID.';
   const invalidAllowCredentialMessage =
     'Passkey allowCredentials contains an invalid credential ID.';
 
@@ -303,7 +305,7 @@
       TimeoutMs: normalizeTimeoutMs(options.timeout),
       Attestation: attestation,
       CredentialAlgorithms: credentialAlgorithms,
-      ExcludeCredentialIds: normalizeCredentialDescriptorIds(options.excludeCredentials),
+      ExcludeCredentialIds: normalizeExcludeCredentialIds(options.excludeCredentials),
       RequestedExtensions: normalizeRequestedExtensions(options.extensions),
       Transports: []
     };
@@ -581,27 +583,26 @@
   }
 
   function normalizeCredentialDescriptorIds(credentials) {
-    if (!Array.isArray(credentials)) return [];
-    const ids = [];
-    for (const credential of credentials) {
-      const type = stringValue(credential && credential.type).trim().toLowerCase();
-      if (type && type !== 'public-key') continue;
-      const id = normalizeCredentialId(credential && credential.id);
-      if (!id || ids.includes(id)) continue;
-      ids.push(id);
-    }
-    return ids;
+    return normalizeCredentialDescriptorIdsWithError(credentials, '');
+  }
+
+  function normalizeExcludeCredentialIds(credentials) {
+    return normalizeCredentialDescriptorIdsWithError(credentials, invalidExcludeCredentialMessage);
   }
 
   function normalizeAllowCredentialIds(credentials) {
+    return normalizeCredentialDescriptorIdsWithError(credentials, invalidAllowCredentialMessage);
+  }
+
+  function normalizeCredentialDescriptorIdsWithError(credentials, invalidMessage) {
     if (!Array.isArray(credentials)) return [];
     const ids = [];
     for (const credential of credentials) {
       const type = stringValue(credential && credential.type).trim().toLowerCase();
       if (type && type !== 'public-key') continue;
       const id = normalizeCredentialId(credential && credential.id);
-      if (!id) throw notAllowedError(invalidAllowCredentialMessage);
-      if (ids.includes(id)) continue;
+      if (!id && invalidMessage) throw notAllowedError(invalidMessage);
+      if (!id || ids.includes(id)) continue;
       ids.push(id);
     }
     return ids;

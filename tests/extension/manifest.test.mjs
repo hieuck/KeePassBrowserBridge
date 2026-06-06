@@ -333,6 +333,7 @@ assert.equal(passkeyServiceSource.includes('CanonicalizeUserHandle'), true, 'pas
 assert.equal(passkeyServiceSource.includes('invalid_user_handle'), true, 'passkey backend prototype should expose a stable invalid user-handle error code');
 assert.equal(passkeyServiceSource.includes('TryNormalizeCredentialIds'), true, 'passkey backend prototype should fail closed on invalid allowCredentials before approval');
 assert.equal(passkeyServiceSource.includes('invalid_allow_credential'), true, 'passkey backend prototype should expose a stable invalid allowCredentials error code');
+assert.equal(passkeyServiceSource.includes('invalid_exclude_credential'), true, 'passkey backend prototype should expose a stable invalid excludeCredentials error code');
 assert.equal(passkeysProxyExperiment.includes('webAuthenticationProxy'), true, 'passkey proxy experiment should reference the Chrome WebAuthn proxy API');
 assert.equal(passkeysProxyExperiment.includes('does not expose caller origin'), true, 'passkey proxy experiment should refuse requests without trusted origin context');
 assert.equal(passkeysProxyExperiment.includes('resolveTrustedOrigin'), true, 'passkey proxy experiment should expose a trusted-origin resolver hook');
@@ -348,6 +349,8 @@ assert.equal(passkeysProxyExperiment.includes('normalizeUserHandle'), true, 'pas
 assert.equal(passkeysProxyExperiment.includes('invalidUserHandleMessage'), true, 'passkey proxy experiment should expose a WebAuthn error for invalid user handles');
 assert.equal(passkeysProxyExperiment.includes('normalizeChallenge'), true, 'passkey proxy experiment should reject invalid challenges before bridge calls');
 assert.equal(passkeysProxyExperiment.includes('invalidChallengeMessage'), true, 'passkey proxy experiment should expose a WebAuthn error for invalid challenges');
+assert.equal(passkeysProxyExperiment.includes('normalizeExcludeCredentialIds'), true, 'passkey proxy experiment should reject invalid create excludeCredentials before bridge calls');
+assert.equal(passkeysProxyExperiment.includes('invalidExcludeCredentialMessage'), true, 'passkey proxy experiment should expose a WebAuthn error for invalid excludeCredentials');
 assert.equal(passkeysProxyExperiment.includes('normalizeAllowCredentialIds'), true, 'passkey proxy experiment should reject invalid get allowCredentials before bridge calls');
 assert.equal(passkeysProxyExperiment.includes('invalidAllowCredentialMessage'), true, 'passkey proxy experiment should expose a WebAuthn error for invalid allowCredentials');
 assert.equal(passkeysProxyExperiment.includes('assertEs256CredentialAlgorithmAllowed'), true, 'passkey proxy experiment should reject create requests that do not allow ES256');

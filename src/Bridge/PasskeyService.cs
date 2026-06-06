@@ -654,6 +654,7 @@ namespace KeePassBrowserBridge.Bridge
             long pendingLifetimeMs = NormalizePendingTimeoutMs(payload.TimeoutMs);
             PasskeyCreateBeginPayload createPayload = null;
             string canonicalUserHandle = null;
+            string[] excludeCredentialIds = new string[0];
             if (operation == PasskeyPendingOperation.Create)
             {
                 createPayload = payload as PasskeyCreateBeginPayload;
@@ -667,6 +668,10 @@ namespace KeePassBrowserBridge.Bridge
                 if (canonicalUserHandle.Length == 0)
                     return PasskeyPendingSessionResult.Fail("invalid_user_handle",
                         "WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.");
+                if (!TryNormalizeCredentialIds(createPayload.ExcludeCredentialIds, out excludeCredentialIds))
+                    return PasskeyPendingSessionResult.Fail("invalid_exclude_credential",
+                        "Passkey excludeCredentials contains an invalid credential ID.");
+                createPayload.ExcludeCredentialIds = excludeCredentialIds;
             }
             string[] allowCredentialIds = new string[0];
             if (operation == PasskeyPendingOperation.Get)

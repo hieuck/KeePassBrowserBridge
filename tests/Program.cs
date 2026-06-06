@@ -37,6 +37,7 @@ internal static class Program
         PasskeyLookupRejectsMismatchedOrigin();
         PasskeyPendingCreateBindsRequestContext();
         PasskeyPendingRejectsInvalidCreateUserHandle();
+        PasskeyPendingRejectsInvalidExcludeCredentialIds();
         PasskeyPendingHonorsRequestedTimeoutUpToMaximum();
         PasskeyPendingCompletionRequiresMatchingBindingAndConsumes();
         PasskeyPendingGetRejectsCredentialOutsideAllowList();
@@ -135,6 +136,7 @@ internal static class Program
         BridgeHandlerBeginsPasskeyCreateWhenFeatureGateIsEnabled();
         BridgeHandlerBeginsPasskeyGetWithCredentialSummariesWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsInvalidPasskeyAllowCredentialBeforeApprovalWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsInvalidPasskeyExcludeCredentialBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
@@ -520,6 +522,25 @@ internal static class Program
         AssertFalse(oversized.Success, "pending create should reject user handles longer than 64 bytes");
         AssertEqual("invalid_user_handle", oversized.ErrorCode, "pending oversized user handle error code mismatch");
         AssertEqual(0, store.Count, "invalid user handles should not create pending passkey sessions");
+    }
+
+    private static void PasskeyPendingRejectsInvalidExcludeCredentialIds()
+    {
+        long now = 1779960000000;
+        string existingCredentialId = Base64Url.Encode(Encoding.ASCII.GetBytes("existing-credential"));
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload payload = CreatePasskeyCreateBeginPayload("webauthn-create-invalid-exclude");
+        payload.ExcludeCredentialIds = new string[] { existingCredentialId, "not@base64url" };
+
+        PasskeyPendingSessionResult result = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-invalid-exclude",
+            payload,
+            now);
+
+        AssertFalse(result.Success, "pending create should reject invalid excludeCredentialIds instead of dropping them");
+        AssertEqual("invalid_exclude_credential", result.ErrorCode, "pending invalid excludeCredentialIds error code mismatch");
+        AssertEqual(0, store.Count, "pending invalid excludeCredentialIds rejection should not leave pending sessions");
     }
 
     private static void PasskeyPendingHonorsRequestedTimeoutUpToMaximum()
@@ -2417,6 +2438,32 @@ internal static class Program
         AssertEqual(0, pending.Count, "bridge invalid allowCredentials rejection should not leave pending sessions");
     }
 
+    private static void BridgeHandlerRejectsInvalidPasskeyExcludeCredentialBeforeApprovalWhenFeatureGateIsEnabled()
+    {
+        int approvalCount = 0;
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-invalid-exclude-credential-bridge");
+        createPayload.ExcludeCredentialIds = new string[] { "not@base64url" };
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject invalid excludeCredentials");
+        AssertEqual("invalid_exclude_credential", createResponse.ErrorCode,
+            "bridge create invalid excludeCredentials error code mismatch");
+        AssertEqual(0, approvalCount, "bridge invalid excludeCredentials rejection should not prompt for approval");
+        AssertEqual(0, pending.Count, "bridge invalid excludeCredentials rejection should not leave pending sessions");
+    }
+
     private static void BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled()
     {
         TrustedClientStore store = CreateTrustedStore("client-1", "secret",
@@ -2528,7 +2575,7 @@ internal static class Program
             });
 
         PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-excluded");
-        createPayload.ExcludeCredentialIds = new string[] { "not@base64url", registration.Credential.CredentialId };
+        createPayload.ExcludeCredentialIds = new string[] { registration.Credential.CredentialId, registration.Credential.CredentialId };
         BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
             "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
 
