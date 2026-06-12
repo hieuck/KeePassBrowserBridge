@@ -23,6 +23,8 @@ namespace KeePassBrowserBridge.Bridge
         internal const string UnsupportedAttestationError = "Passkey attestation conveyance is not supported by this build.";
         internal const string UnsupportedAuthenticatorAttachmentErrorCode = "unsupported_authenticator_attachment";
         internal const string UnsupportedAuthenticatorAttachmentError = "Passkey authenticator attachment is not supported by this build.";
+        internal const string UnsupportedResidentKeyErrorCode = "unsupported_resident_key";
+        internal const string UnsupportedResidentKeyError = "Passkey resident-key requirement is not supported by this build.";
         internal const string UnsupportedExtensionErrorCode = "unsupported_extension";
         internal const string UnsupportedExtensionError = "Passkey requested WebAuthn extension is not supported by this build.";
 
@@ -59,6 +61,7 @@ namespace KeePassBrowserBridge.Bridge
                 UserName = request.UserName == null ? string.Empty : request.UserName.Trim(),
                 UserDisplayName = request.UserDisplayName == null ? string.Empty : request.UserDisplayName.Trim(),
                 UserVerification = NormalizeUserVerification(request.UserVerification),
+                ResidentKey = NormalizeResidentKeyRequirement(request.ResidentKey),
                 Transports = NormalizeTransports(request.Transports),
                 PublicKeyCose = Base64Url.Encode(publicKeyCose),
                 PrivateKey = Base64Url.Encode(key.PrivateBlob),
@@ -152,6 +155,8 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyValidationResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
             if (IsUserVerificationRequired(request.UserVerification))
                 return PasskeyValidationResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
+            if (!IsKnownResidentKeyRequirement(request.ResidentKey))
+                return PasskeyValidationResult.Fail(UnsupportedResidentKeyErrorCode, UnsupportedResidentKeyError);
             return PasskeyValidationResult.Ok();
         }
 
@@ -198,6 +203,19 @@ namespace KeePassBrowserBridge.Bridge
         {
             string value = (authenticatorAttachment ?? string.Empty).Trim().ToLowerInvariant();
             return value.Length == 0 || value == "cross-platform";
+        }
+
+        internal static bool IsKnownResidentKeyRequirement(string residentKey)
+        {
+            string value = (residentKey ?? string.Empty).Trim().ToLowerInvariant();
+            return value.Length == 0 || value == "required" || value == "preferred" || value == "discouraged";
+        }
+
+        internal static string NormalizeResidentKeyRequirement(string residentKey)
+        {
+            string value = (residentKey ?? string.Empty).Trim().ToLowerInvariant();
+            if (value == "required" || value == "preferred" || value == "discouraged") return value;
+            return string.Empty;
         }
 
         internal static bool HasUnsupportedRequestedExtensions(PasskeyRequestedExtensions extensions)
@@ -352,6 +370,7 @@ namespace KeePassBrowserBridge.Bridge
         public const string PrivateKeyField = "KBB-Passkey-PrivateKey";
         public const string SignCountField = "KBB-Passkey-SignCount";
         public const string UserVerificationField = "KBB-Passkey-UserVerification";
+        public const string ResidentKeyField = "KBB-Passkey-ResidentKey";
         public const string TransportsField = "KBB-Passkey-Transports";
 
         public static bool IsPasskeyEntry(PwEntry entry)
@@ -381,6 +400,7 @@ namespace KeePassBrowserBridge.Bridge
             entry.Strings.Set(PrivateKeyField, new ProtectedString(true, material.PrivateKey ?? string.Empty));
             entry.Strings.Set(SignCountField, new ProtectedString(false, material.SignCount.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             entry.Strings.Set(UserVerificationField, new ProtectedString(false, material.UserVerification ?? string.Empty));
+            entry.Strings.Set(ResidentKeyField, new ProtectedString(false, material.ResidentKey ?? string.Empty));
             entry.Strings.Set(TransportsField, new ProtectedString(false, BridgeJsonSerializer.Serialize(material.Transports ?? new string[0])));
         }
 
@@ -401,6 +421,7 @@ namespace KeePassBrowserBridge.Bridge
                 PrivateKey = entry.Strings.ReadSafe(PrivateKeyField),
                 SignCount = signCount,
                 UserVerification = entry.Strings.ReadSafe(UserVerificationField),
+                ResidentKey = entry.Strings.ReadSafe(ResidentKeyField),
                 Transports = ReadTransports(entry)
             };
         }
@@ -709,6 +730,9 @@ namespace KeePassBrowserBridge.Bridge
                 if (!PasskeyService.IsSupportedAuthenticatorAttachment(createPayload.AuthenticatorAttachment))
                     return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedAuthenticatorAttachmentErrorCode,
                         PasskeyService.UnsupportedAuthenticatorAttachmentError);
+                if (!PasskeyService.IsKnownResidentKeyRequirement(createPayload.ResidentKey))
+                    return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedResidentKeyErrorCode,
+                        PasskeyService.UnsupportedResidentKeyError);
                 if (PasskeyService.HasUnsupportedRequestedExtensions(createPayload.RequestedExtensions))
                     return PasskeyPendingSessionResult.Fail(PasskeyService.UnsupportedExtensionErrorCode,
                         PasskeyService.UnsupportedExtensionError);
@@ -770,6 +794,7 @@ namespace KeePassBrowserBridge.Bridge
                     session.UserHandle = canonicalUserHandle;
                     session.UserName = NormalizeRequired(createPayload.UserName);
                     session.UserDisplayName = NormalizeRequired(createPayload.UserDisplayName);
+                    session.ResidentKey = PasskeyService.NormalizeResidentKeyRequirement(createPayload.ResidentKey);
                     session.RequestedExtensions = NormalizeRequestedExtensions(createPayload.RequestedExtensions);
                     session.Transports = createPayload.Transports ?? new string[0];
                 }
@@ -896,6 +921,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserName { get; set; }
         public string UserDisplayName { get; set; }
         public string UserVerification { get; set; }
+        public string ResidentKey { get; set; }
         public string[] Transports { get; set; }
     }
 
@@ -916,6 +942,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserName { get; set; }
         public string UserDisplayName { get; set; }
         public string UserVerification { get; set; }
+        public string ResidentKey { get; set; }
         public string[] Transports { get; set; }
         public string PublicKeyCose { get; set; }
         public string PrivateKey { get; set; }
@@ -1085,6 +1112,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserName { get; set; }
         public string UserDisplayName { get; set; }
         public string UserVerification { get; set; }
+        public string ResidentKey { get; set; }
         public PasskeyRequestedExtensions RequestedExtensions { get; set; }
         public string[] Transports { get; set; }
         public string[] AllowCredentialIds { get; set; }
@@ -1129,6 +1157,7 @@ namespace KeePassBrowserBridge.Bridge
         public string Origin { get; set; }
         public string UserName { get; set; }
         public string UserDisplayName { get; set; }
+        public string ResidentKey { get; set; }
         public PasskeyCredentialSummary[] Credentials { get; set; }
     }
 

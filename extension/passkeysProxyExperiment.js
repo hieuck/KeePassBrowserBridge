@@ -14,6 +14,8 @@
     'Passkey attestation conveyance is not supported by this build.';
   const unsupportedAuthenticatorAttachmentMessage =
     'Passkey authenticator attachment is not supported by this build.';
+  const unsupportedResidentKeyMessage =
+    'Passkey resident-key requirement is not supported by this build.';
   const unsupportedExtensionMessage =
     'Passkey requested WebAuthn extension is not supported by this build.';
   const invalidUserHandleMessage =
@@ -296,6 +298,7 @@
     assertAttestationSupported(attestation);
     const authenticatorAttachment = normalizeAuthenticatorAttachment(authenticatorSelection.authenticatorAttachment);
     assertAuthenticatorAttachmentSupported(authenticatorAttachment);
+    const residentKey = normalizeResidentKey(authenticatorSelection);
     const credentialAlgorithms = normalizeCredentialAlgorithms(options.pubKeyCredParams);
     assertEs256CredentialAlgorithmAllowed(credentialAlgorithms);
     const challenge = normalizeChallenge(options.challenge);
@@ -313,6 +316,7 @@
       TimeoutMs: normalizeTimeoutMs(options.timeout),
       Attestation: attestation,
       AuthenticatorAttachment: authenticatorAttachment,
+      ResidentKey: residentKey,
       CredentialAlgorithms: credentialAlgorithms,
       ExcludeCredentialIds: normalizeExcludeCredentialIds(options.excludeCredentials),
       RequestedExtensions: normalizeRequestedExtensions(options.extensions),
@@ -552,6 +556,14 @@
   function assertAuthenticatorAttachmentSupported(authenticatorAttachment) {
     if (!authenticatorAttachment || authenticatorAttachment === 'cross-platform') return;
     throw notAllowedError(unsupportedAuthenticatorAttachmentMessage);
+  }
+
+  function normalizeResidentKey(authenticatorSelection) {
+    const residentKey = normalizeKnownOptionalEnum(authenticatorSelection && authenticatorSelection.residentKey,
+      ['required', 'preferred', 'discouraged'],
+      unsupportedResidentKeyMessage);
+    if (residentKey) return residentKey;
+    return authenticatorSelection && authenticatorSelection.requireResidentKey === true ? 'required' : '';
   }
 
   function normalizeUserHandle(value) {

@@ -421,6 +421,7 @@ namespace KeePassBrowserBridge.Bridge
                 UserName = pending.Session.UserName,
                 UserDisplayName = pending.Session.UserDisplayName,
                 UserVerification = pending.Session.UserVerification,
+                ResidentKey = pending.Session.ResidentKey,
                 Transports = pending.Session.Transports
             });
             if (!registration.Success) return Error(request, registration.ErrorCode, registration.Error);
@@ -468,6 +469,7 @@ namespace KeePassBrowserBridge.Bridge
                 Origin = session.Origin,
                 UserName = session.UserName,
                 UserDisplayName = session.UserDisplayName,
+                ResidentKey = session.ResidentKey,
                 Credentials = credentials ?? new PasskeyCredentialSummary[0]
             });
 

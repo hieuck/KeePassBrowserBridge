@@ -153,12 +153,13 @@ requireEvery('protocolModels', [
   'CredentialAlgorithms',
   'Attestation',
   'AuthenticatorAttachment',
+  'ResidentKey',
   'ExcludeCredentialIds',
   'TimeoutMs',
   'RequestedExtensions',
   'UnsupportedExtensions',
   'ClientExtensionResults'
-], 'passkey create begin payload should carry credential algorithm, attestation, authenticator attachment, exclude-credential policy, timeout hints, unsupported-extension policy, and extension-result contracts to the backend');
+], 'passkey create begin payload should carry credential algorithm, attestation, authenticator attachment, resident-key policy, exclude-credential policy, timeout hints, unsupported-extension policy, and extension-result contracts to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -189,6 +190,20 @@ requireEvery('testsProgram', [
   'BridgeHandlerRejectsUnsupportedPasskeyAuthenticatorAttachmentWhenFeatureGateIsEnabled',
   'bridge unsupported authenticator attachment rejection should not prompt for approval'
 ], 'backend authenticator attachment enforcement should be covered by tests');
+requireEvery('passkeyService', [
+  'UnsupportedResidentKeyErrorCode',
+  'IsKnownResidentKeyRequirement',
+  'NormalizeResidentKeyRequirement',
+  'KBB-Passkey-ResidentKey',
+  'Passkey resident-key requirement is not supported by this build.'
+], 'passkey backend should reject unknown resident-key requirements and preserve normalized resident-key metadata');
+requireEvery('testsProgram', [
+  'PasskeyRegistrationRejectsUnknownResidentKey',
+  'PasskeyPendingRejectsUnsupportedResidentKey',
+  'BridgeHandlerRejectsUnsupportedPasskeyResidentKeyWhenFeatureGateIsEnabled',
+  'bridge unsupported resident-key rejection should not prompt for approval',
+  'stored passkey resident-key requirement mismatch'
+], 'backend resident-key policy handling should be covered by tests');
 requireEvery('bridgeRequestHandler', [
   'RejectExcludedCreateCredential',
   'excluded_credential_exists',
@@ -314,6 +329,18 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when authenticator attachment is unsupported',
   "AuthenticatorAttachment: 'cross-platform'"
 ], 'proxy authenticator attachment enforcement should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
+  'normalizeResidentKey',
+  'requireResidentKey',
+  'Passkey resident-key requirement is not supported by this build.',
+  'ResidentKey'
+], 'passkey proxy should normalize resident-key requirements before bridge calls');
+requireEvery('passkeysProxyTests', [
+  "ResidentKey: 'preferred'",
+  'legacy requireResidentKey=true',
+  'proxy experiment must reject create requests with unknown resident-key requirements',
+  'bridge helper must not call backend passkey methods when resident-key requirement is unsupported'
+], 'proxy resident-key policy handling should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeExcludeCredentialIds',
   'normalizeCredentialDescriptorIds',

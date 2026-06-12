@@ -338,6 +338,9 @@ assert.equal(passkeyServiceSource.includes('invalid_allow_credential'), true, 'p
 assert.equal(passkeyServiceSource.includes('invalid_exclude_credential'), true, 'passkey backend prototype should expose a stable invalid excludeCredentials error code');
 assert.equal(passkeyServiceSource.includes('UnsupportedAuthenticatorAttachmentErrorCode'), true, 'passkey backend prototype should reject unsupported authenticator attachment before approval');
 assert.equal(passkeyServiceSource.includes('IsSupportedAuthenticatorAttachment'), true, 'passkey backend prototype should centralize authenticator attachment policy');
+assert.equal(passkeyServiceSource.includes('UnsupportedResidentKeyErrorCode'), true, 'passkey backend prototype should reject unknown resident-key policy values before approval');
+assert.equal(passkeyServiceSource.includes('IsKnownResidentKeyRequirement'), true, 'passkey backend prototype should centralize resident-key policy');
+assert.equal(passkeyServiceSource.includes('KBB-Passkey-ResidentKey'), true, 'passkey backend prototype should preserve resident-key metadata in KeePass entries');
 assert.equal(passkeyServiceSource.includes('UnsupportedExtensionErrorCode'), true, 'passkey backend prototype should reject unsupported WebAuthn extensions before approval');
 assert.equal(passkeyServiceSource.includes('HasUnsupportedRequestedExtensions'), true, 'passkey backend prototype should centralize requested extension policy');
 assert.equal(passkeyServiceSource.includes('HasUnsupportedExtensionNames'), true, 'passkey backend prototype should reject unsupported get assertion extensions');
@@ -369,6 +372,9 @@ assert.equal(passkeysProxyExperiment.includes('Passkey attestation conveyance is
 assert.equal(passkeysProxyExperiment.includes('normalizeAuthenticatorAttachment'), true, 'passkey proxy experiment should normalize authenticator attachment requests');
 assert.equal(passkeysProxyExperiment.includes('assertAuthenticatorAttachmentSupported'), true, 'passkey proxy experiment should reject unsupported authenticator attachment before bridge calls');
 assert.equal(passkeysProxyExperiment.includes('Passkey authenticator attachment is not supported by this build'), true, 'passkey proxy experiment should expose a WebAuthn error for unsupported authenticator attachment');
+assert.equal(passkeysProxyExperiment.includes('normalizeResidentKey'), true, 'passkey proxy experiment should normalize resident-key requests');
+assert.equal(passkeysProxyExperiment.includes('requireResidentKey'), true, 'passkey proxy experiment should map legacy requireResidentKey requests');
+assert.equal(passkeysProxyExperiment.includes('Passkey resident-key requirement is not supported by this build'), true, 'passkey proxy experiment should expose a WebAuthn error for unknown resident-key requirements');
 assert.equal(passkeysProxyExperiment.includes('ExcludeCredentialIds'), true, 'passkey proxy experiment should forward create excludeCredentials to the backend');
 assert.equal(passkeysProxyExperiment.includes('normalizeCredentialDescriptorIds'), true, 'passkey proxy experiment should normalize credential descriptor IDs');
 assert.equal(passkeysProxyExperiment.includes('normalizeTimeoutMs'), true, 'passkey proxy experiment should normalize browser timeout hints');
@@ -403,6 +409,7 @@ assert.equal(protocolModels.includes('passkeys.get.begin'), true, 'protocol mode
 assert.equal(protocolModels.includes('passkeys.cancel'), true, 'protocol models should reserve passkey cancellation method name');
 assert.equal(protocolModels.includes('public string Attestation'), true, 'protocol models should carry create attestation preference to the backend');
 assert.equal(protocolModels.includes('public string AuthenticatorAttachment'), true, 'protocol models should carry create authenticator attachment preference to the backend');
+assert.equal(protocolModels.includes('public string ResidentKey'), true, 'protocol models should carry create resident-key preference to the backend');
 assert.equal(protocolModels.includes('ExcludeCredentialIds'), true, 'protocol models should carry create excludeCredentials to the backend');
 assert.equal(protocolModels.includes('public long TimeoutMs'), true, 'protocol models should carry browser timeout hints to the backend');
 assert.equal(protocolModels.includes('RequestedExtensions'), true, 'protocol models should carry requested WebAuthn extensions to the backend');

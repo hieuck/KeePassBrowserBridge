@@ -29,6 +29,7 @@ internal static class Program
         PasskeyRegistrationCreatesCredentialAndAttestation();
         PasskeyRegistrationRejectsRequiredUserVerification();
         PasskeyRegistrationRejectsUnknownUserVerification();
+        PasskeyRegistrationRejectsUnknownResidentKey();
         PasskeyCredentialIdsAreUnique();
         PasskeyAssertionSignsChallengeAndIncrementsCounter();
         PasskeyAssertionRejectsRequiredUserVerification();
@@ -51,6 +52,7 @@ internal static class Program
         PasskeyPendingRejectsUnsupportedCredentialAlgorithm();
         PasskeyPendingRejectsUnsupportedAttestation();
         PasskeyPendingRejectsUnsupportedAuthenticatorAttachment();
+        PasskeyPendingRejectsUnsupportedResidentKey();
         PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId();
         PasskeyPendingCompletionExpiresStaleSession();
         PasskeyPendingClearForClientRemovesOnlyClientSessions();
@@ -150,6 +152,7 @@ internal static class Program
         BridgeHandlerRejectsUnsupportedPasskeyCredentialAlgorithmWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyAttestationWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyAuthenticatorAttachmentWhenFeatureGateIsEnabled();
+        BridgeHandlerRejectsUnsupportedPasskeyResidentKeyWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyExtensionWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsUnsupportedPasskeyGetExtensionWhenFeatureGateIsEnabled();
         BridgeHandlerRejectsPasskeyCreateExcludedCredentialWhenFeatureGateIsEnabled();
@@ -290,6 +293,7 @@ internal static class Program
         AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.PrivateKey), "passkey private key material should be generated for protected KeePass storage");
         AssertEqual("example.com", result.Credential.RpId, "passkey RP ID should be normalized");
         AssertEqual("preferred", result.Credential.UserVerification, "passkey user verification should be normalized");
+        AssertEqual("preferred", result.Credential.ResidentKey, "passkey resident-key requirement should be normalized");
         AssertEqual(2, result.Credential.Transports.Length, "passkey transports should be normalized and de-duplicated");
         AssertEqual("internal", result.Credential.Transports[0], "first passkey transport mismatch");
         AssertEqual("usb", result.Credential.Transports[1], "second passkey transport mismatch");
@@ -327,6 +331,19 @@ internal static class Program
         AssertFalse(result.Success, "passkey registration should reject unknown user verification policy values");
         AssertEqual("unsupported_user_verification", result.ErrorCode,
             "unknown user verification registration error code mismatch");
+    }
+
+    private static void PasskeyRegistrationRejectsUnknownResidentKey()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationRequest request = CreatePasskeyRegistrationRequest();
+        request.ResidentKey = "future-resident-key";
+
+        PasskeyRegistrationResult result = service.CreateCredential(request);
+
+        AssertFalse(result.Success, "passkey registration should reject unknown resident-key requirement values");
+        AssertEqual("unsupported_resident_key", result.ErrorCode,
+            "unknown resident-key registration error code mismatch");
     }
 
     private static void PasskeyCredentialIdsAreUnique()
@@ -409,6 +426,7 @@ internal static class Program
         AssertEqual(registration.Credential.CredentialId, restored.CredentialId, "stored passkey credential ID mismatch");
         AssertEqual(registration.Credential.PrivateKey, restored.PrivateKey, "stored passkey private key mismatch");
         AssertEqual(registration.Credential.UserVerification, restored.UserVerification, "stored passkey user verification mismatch");
+        AssertEqual(registration.Credential.ResidentKey, restored.ResidentKey, "stored passkey resident-key requirement mismatch");
         AssertEqual(registration.Credential.Transports.Length, restored.Transports.Length, "stored passkey transport count mismatch");
         AssertEqual(registration.Credential.Transports[0], restored.Transports[0], "stored passkey first transport mismatch");
         AssertEqual(registration.Credential.Transports[1], restored.Transports[1], "stored passkey second transport mismatch");
@@ -533,6 +551,7 @@ internal static class Program
         AssertEqual("webauthn-create-1", result.Session.WebAuthnRequestId, "pending create WebAuthn request binding mismatch");
         AssertEqual("example.com", result.Session.RpId, "pending create RP ID should be normalized");
         AssertEqual(payload.Challenge, result.Session.Challenge, "pending create challenge binding mismatch");
+        AssertEqual("preferred", result.Session.ResidentKey, "pending create should retain resident-key requirement");
         AssertTrue(result.Session.RequestedExtensions != null && result.Session.RequestedExtensions.CredProps,
             "pending create should retain requested credProps extension state");
         AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, result.Session.ExpiresUtcMs,
@@ -896,6 +915,25 @@ internal static class Program
         AssertEqual("unsupported_authenticator_attachment", result.ErrorCode,
             "pending create unsupported authenticator attachment error code mismatch");
         AssertEqual(0, store.Count, "unsupported authenticator attachment should not create pending passkey sessions");
+    }
+
+    private static void PasskeyPendingRejectsUnsupportedResidentKey()
+    {
+        long now = 1779960000000;
+        PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
+        PasskeyCreateBeginPayload payload = CreatePasskeyCreateBeginPayload("webauthn-create-unknown-resident-key");
+        payload.ResidentKey = "future-resident-key";
+
+        PasskeyPendingSessionResult result = store.BeginCreate("client-1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+            "bridge-request-unknown-resident-key",
+            payload,
+            now);
+
+        AssertFalse(result.Success, "pending create should reject unknown resident-key requirement values");
+        AssertEqual("unsupported_resident_key", result.ErrorCode,
+            "pending create unsupported resident-key requirement error code mismatch");
+        AssertEqual(0, store.Count, "unsupported resident-key requirements should not create pending passkey sessions");
     }
 
     private static void PasskeyPendingRejectsDuplicateLiveWebAuthnRequestId()
@@ -2768,6 +2806,32 @@ internal static class Program
         AssertEqual(0, pending.Count, "bridge unsupported authenticator attachment rejection should not leave pending sessions");
     }
 
+    private static void BridgeHandlerRejectsUnsupportedPasskeyResidentKeyWhenFeatureGateIsEnabled()
+    {
+        int approvalCount = 0;
+        TrustedClientStore store = CreateTrustedStore("client-1", "secret",
+            new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
+        PasskeyPendingSessionStore pending = new PasskeyPendingSessionStore();
+        BridgeRequestHandler handler = CreatePasskeyEnabledHandler(CreateDatabase(), store, pending,
+            delegate(PwDatabase changedDatabase) { },
+            delegate(PasskeyApprovalRequest approval)
+            {
+                approvalCount += 1;
+                return PasskeyApprovalResult.Approve();
+            });
+
+        PasskeyCreateBeginPayload createPayload = CreatePasskeyCreateBeginPayload("webauthn-create-unknown-resident-key-bridge");
+        createPayload.ResidentKey = "future-resident-key";
+        BridgeResponse createResponse = handler.Handle(CreateAuthenticatedRequest(BridgeMethods.PasskeysCreateBegin,
+            "client-1", "secret", BridgeJsonSerializer.Serialize(createPayload)));
+
+        AssertFalse(createResponse.Success, "bridge create begin should reject unknown resident-key requirement values");
+        AssertEqual("unsupported_resident_key", createResponse.ErrorCode,
+            "bridge create unsupported resident-key requirement error code mismatch");
+        AssertEqual(0, approvalCount, "bridge unsupported resident-key rejection should not prompt for approval");
+        AssertEqual(0, pending.Count, "bridge unsupported resident-key rejection should not leave pending sessions");
+    }
+
     private static void BridgeHandlerRejectsUnsupportedPasskeyExtensionWhenFeatureGateIsEnabled()
     {
         int approvalCount = 0;
@@ -3727,6 +3791,7 @@ internal static class Program
             UserName = userName,
             UserDisplayName = userDisplayName,
             UserVerification = "Preferred",
+            ResidentKey = "Preferred",
             Transports = new string[] { "Internal", "usb", "usb", "invalid value" }
         };
     }
@@ -3745,6 +3810,7 @@ internal static class Program
             UserVerification = "preferred",
             Attestation = "none",
             AuthenticatorAttachment = "cross-platform",
+            ResidentKey = "preferred",
             CredentialAlgorithms = new int[] { -7 },
             Transports = new string[] { "internal" }
         };

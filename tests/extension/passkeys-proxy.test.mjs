@@ -59,6 +59,7 @@ const createPayload = api.normalizeCreateRequest({
     attestation: 'none',
     authenticatorSelection: {
       authenticatorAttachment: 'cross-platform',
+      residentKey: 'preferred',
       userVerification: 'preferred'
     },
     pubKeyCredParams: [
@@ -90,6 +91,7 @@ assert.deepEqual(plain(createPayload), {
   TimeoutMs: 45000,
   Attestation: 'none',
   AuthenticatorAttachment: 'cross-platform',
+  ResidentKey: 'preferred',
   CredentialAlgorithms: [-257, -7],
   ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y'],
   RequestedExtensions: { CredProps: true },
@@ -130,6 +132,26 @@ const createWithoutRpId = api.normalizeCreateRequest({
 });
 assert.equal(createWithoutRpId.RpId, 'login.example.com',
   'create request should default a missing RP ID to the trusted origin host');
+
+const createWithLegacyResidentKey = api.normalizeCreateRequest({
+  requestId: 44,
+  requestDetailsJson: JSON.stringify(createOptions({
+    rp: { id: 'example.com', name: 'Example' },
+    user: {
+      id: 'YWxpY2U',
+      name: 'alice@example.com',
+      displayName: 'Alice'
+    },
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+    authenticatorSelection: {
+      requireResidentKey: true
+    }
+  }))
+}, {
+  origin: 'https://example.com'
+});
+assert.equal(createWithLegacyResidentKey.ResidentKey, 'required',
+  'create request should map legacy requireResidentKey=true to a required resident-key requirement');
 
 const getPayload = api.normalizeGetRequest({
   requestId: 43,
@@ -343,6 +365,24 @@ assert.throws(
       rp: { id: 'example.com' },
       user: { id: 'YWxpY2U', name: 'alice@example.com' },
       challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      authenticatorSelection: {
+        residentKey: 'future-resident-key'
+      }
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedResidentKeyError,
+  'proxy experiment must reject create requests with unknown resident-key requirements'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 62,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
       extensions: {
         credProps: true,
         prf: { eval: { first: 'Zmlyc3Qtc2FsdC0xMjM0NTY' } }
@@ -357,7 +397,7 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeGetRequest({
-    requestId: 62,
+    requestId: 63,
     requestDetailsJson: JSON.stringify({
       rpId: 'example.com',
       challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
@@ -799,6 +839,31 @@ await assert.rejects(
 );
 assert.deepEqual(unsupportedAttachmentBridgeCalls, [],
   'bridge helper must not call backend passkey methods when authenticator attachment is unsupported');
+
+const unsupportedResidentKeyBridgeCalls = [];
+const unsupportedResidentKeyHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedResidentKeyBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedResidentKeyHandlers.onCreateRequest({
+    requestId: 95,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      authenticatorSelection: {
+        residentKey: 'future-resident-key'
+      }
+    }))
+  }, { origin: 'https://example.com' }),
+  isUnsupportedResidentKeyError,
+  'create bridge helper should reject unknown resident-key requirements before calling KeePass'
+);
+assert.deepEqual(unsupportedResidentKeyBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when resident-key requirement is unsupported');
 
 const unsupportedExtensionBridgeCalls = [];
 const unsupportedExtensionHandlers = api.createBridgeRequestHandlers({
@@ -1326,6 +1391,12 @@ function isUnsupportedAuthenticatorAttachmentError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey authenticator attachment is not supported by this build.');
+}
+
+function isUnsupportedResidentKeyError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey resident-key requirement is not supported by this build.');
 }
 
 function isUnsupportedExtensionError(error) {

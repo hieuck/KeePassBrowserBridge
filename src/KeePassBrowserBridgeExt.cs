@@ -584,7 +584,8 @@ namespace KeePassBrowserBridge
             {
                 return "WebAuthn request ID: " + SafeDisplay(request.WebAuthnRequestId) + Environment.NewLine +
                     "User name: " + SafeDisplay(request.UserName) + Environment.NewLine +
-                    "Display name: " + SafeDisplay(request.UserDisplayName);
+                    "Display name: " + SafeDisplay(request.UserDisplayName) + Environment.NewLine +
+                    "Resident key: " + SafeDisplay(request.ResidentKey);
             }
 
             StringWriter writer = new StringWriter();
