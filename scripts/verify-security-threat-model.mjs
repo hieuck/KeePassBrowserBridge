@@ -104,6 +104,7 @@ requireEvery('testsProgram', [
   'PasskeyAssertionRejectsRequiredUserVerification',
   'PasskeyPendingRejectsRequiredUserVerification',
   'PasskeyRegistrationRejectsUnknownUserVerification',
+  'PasskeyAssertionRejectsUnknownUserVerification',
   'PasskeyPendingRejectsUnknownUserVerification',
   'BridgeHandlerRejectsRequiredPasskeyUserVerificationWhenFeatureGateIsEnabled',
   'BridgeHandlerRejectsUnknownPasskeyUserVerificationWhenFeatureGateIsEnabled'

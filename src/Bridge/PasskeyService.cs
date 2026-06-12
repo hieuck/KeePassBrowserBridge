@@ -75,6 +75,8 @@ namespace KeePassBrowserBridge.Bridge
                 return PasskeyAssertionResult.Fail("missing_credential", "Passkey credential material is required.");
             if (request == null)
                 return PasskeyAssertionResult.Fail("invalid_payload", "Passkey assertion request is required.");
+            if (!IsKnownUserVerification(request.UserVerification))
+                return PasskeyAssertionResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
             if (IsUserVerificationRequired(request.UserVerification))
                 return PasskeyAssertionResult.Fail(UnsupportedUserVerificationErrorCode, UnsupportedUserVerificationError);
             if (!string.Equals(NormalizeRpId(credential.RpId), NormalizeRpId(request.RpId), StringComparison.Ordinal))

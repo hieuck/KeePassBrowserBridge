@@ -34,6 +34,7 @@ internal static class Program
         PasskeyCredentialIdsAreUnique();
         PasskeyAssertionSignsChallengeAndIncrementsCounter();
         PasskeyAssertionRejectsRequiredUserVerification();
+        PasskeyAssertionRejectsUnknownUserVerification();
         PasskeyEntryStoreProtectsPrivateKeyMaterial();
         PasskeyLookupListsMatchingRpIdWithoutPrivateKeyMaterial();
         PasskeyLookupFiltersAllowedCredentialIds();
@@ -426,6 +427,27 @@ internal static class Program
             "required user verification assertion error code mismatch");
         AssertEqual((uint)0, registration.Credential.SignCount,
             "rejected required-UV assertion must not increment sign count");
+    }
+
+    private static void PasskeyAssertionRejectsUnknownUserVerification()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before unknown-UV assertion test: " + registration.Error);
+
+        PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210")),
+            UserVerification = "future-required"
+        });
+
+        AssertFalse(assertion.Success, "passkey assertion should reject unknown user verification policy values");
+        AssertEqual("unsupported_user_verification", assertion.ErrorCode,
+            "unknown user verification assertion error code mismatch");
+        AssertEqual((uint)0, registration.Credential.SignCount,
+            "rejected unknown-UV assertion must not increment sign count");
     }
 
     private static void PasskeyEntryStoreProtectsPrivateKeyMaterial()
