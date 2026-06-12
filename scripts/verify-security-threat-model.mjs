@@ -115,6 +115,20 @@ requireEvery('passkeyService', [
   'Passkey user verification is not supported by this build.'
 ], 'passkey backend should reject required or unknown user verification until KeePass-side verification exists');
 requireEvery('passkeyService', [
+  'WebAuthnAttestationObject',
+  'CreateNone',
+  'WebAuthnAuthenticatorData.CreateAttestationData',
+  'UserPresentFlag',
+  'AttestedCredentialDataFlag'
+], 'passkey backend should produce structured none-attestation authenticator data');
+requireEvery('testsProgram', [
+  'ReadNoneAttestationAuthData',
+  'registration attestationObject fmt mismatch',
+  'registration authenticatorData should set user-present and attested-credential flags only',
+  'registration authenticatorData credential ID mismatch',
+  'registration authenticatorData public key COSE mismatch'
+], 'passkey registration authenticator-data structure should be covered by backend tests');
+requireEvery('passkeyService', [
   'CanonicalizeUserHandle',
   'invalid_user_handle',
   'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.'

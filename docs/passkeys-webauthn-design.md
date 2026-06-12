@@ -134,6 +134,7 @@ Fallback:
 Backend:
 
 - RP ID validation, including subdomain and mismatch cases. Covered by backend tests.
+- None-attestation authenticator-data structure, including RP ID hash, user-present and attested-credential flags, zero sign count, zero AAGUID, credential ID length, credential ID, and public key COSE bytes. Covered by backend tests.
 - Browser-proxy and backend create algorithm gating for ES256 (`alg: -7`) public-key credentials. Covered by non-packaged proxy JS tests before bridge dispatch and backend bridge tests after protocol deserialization.
 - Browser-proxy and backend fail-closed handling for unknown WebAuthn enum values, including resident-key requirements. Covered by non-packaged proxy JS tests and backend pending/bridge tests.
 - Browser-proxy and backend fail-closed handling for unsupported requested WebAuthn create/get extensions. Covered by non-packaged proxy JS tests and backend pending/bridge tests.

@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using KeePassBrowserBridge.Bridge;
 using KeePassLib;
@@ -301,10 +302,30 @@ internal static class Program
 
         byte[] clientDataJson;
         byte[] attestationObject;
+        byte[] credentialId;
+        byte[] publicKeyCose;
         AssertTrue(Base64Url.TryDecode(result.ClientDataJson, out clientDataJson), "passkey clientDataJSON should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.AttestationObject, out attestationObject), "passkey attestationObject should be base64url encoded");
+        AssertTrue(Base64Url.TryDecode(result.Credential.CredentialId, out credentialId), "passkey credential ID should be base64url encoded");
+        AssertTrue(Base64Url.TryDecode(result.Credential.PublicKeyCose, out publicKeyCose), "passkey public key COSE should be base64url encoded");
         AssertTrue(Encoding.UTF8.GetString(clientDataJson).Contains("webauthn.create"), "registration clientDataJSON should identify a create request");
-        AssertTrue(attestationObject.Length > 100, "registration attestationObject should include authenticator data and public key");
+        byte[] authData = ReadNoneAttestationAuthData(attestationObject);
+        AssertEqual(37 + 16 + 2 + credentialId.Length + publicKeyCose.Length, authData.Length,
+            "registration authenticatorData should include fixed header, AAGUID, credential ID, and public key");
+        AssertByteArrayEqual(Sha256(Encoding.ASCII.GetBytes("example.com")), Slice(authData, 0, 32),
+            "registration authenticatorData RP ID hash mismatch");
+        AssertEqual((byte)0x41, authData[32],
+            "registration authenticatorData should set user-present and attested-credential flags only");
+        AssertEqual((uint)0, ReadUInt32BigEndian(authData, 33),
+            "registration authenticatorData sign count should start at zero");
+        AssertByteArrayEqual(new byte[16], Slice(authData, 37, 16),
+            "registration authenticatorData should use a zero AAGUID for none attestation prototype");
+        AssertEqual(credentialId.Length, ReadUInt16BigEndian(authData, 53),
+            "registration authenticatorData credential ID length mismatch");
+        AssertByteArrayEqual(credentialId, Slice(authData, 55, credentialId.Length),
+            "registration authenticatorData credential ID mismatch");
+        AssertByteArrayEqual(publicKeyCose, Slice(authData, 55 + credentialId.Length, publicKeyCose.Length),
+            "registration authenticatorData public key COSE mismatch");
     }
 
     private static void PasskeyRegistrationRejectsRequiredUserVerification()
@@ -4057,6 +4078,117 @@ internal static class Program
         }
 
         throw new Exception("hello response did not include feature metadata for " + name);
+    }
+
+    private static byte[] ReadNoneAttestationAuthData(byte[] attestationObject)
+    {
+        int offset = 0;
+        AssertEqual(3, (int)ReadCborLength(attestationObject, ref offset, 5),
+            "registration attestationObject should be a three-entry CBOR map");
+        AssertEqual("fmt", ReadCborTextString(attestationObject, ref offset),
+            "registration attestationObject first key mismatch");
+        AssertEqual("none", ReadCborTextString(attestationObject, ref offset),
+            "registration attestationObject fmt mismatch");
+        AssertEqual("attStmt", ReadCborTextString(attestationObject, ref offset),
+            "registration attestationObject second key mismatch");
+        AssertEqual(0, (int)ReadCborLength(attestationObject, ref offset, 5),
+            "registration attestationObject none attStmt should be empty");
+        AssertEqual("authData", ReadCborTextString(attestationObject, ref offset),
+            "registration attestationObject third key mismatch");
+        byte[] authData = ReadCborByteString(attestationObject, ref offset);
+        AssertEqual(attestationObject.Length, offset,
+            "registration attestationObject should not contain trailing CBOR bytes");
+        return authData;
+    }
+
+    private static string ReadCborTextString(byte[] bytes, ref int offset)
+    {
+        ulong length = ReadCborLength(bytes, ref offset, 3);
+        if (length > int.MaxValue || offset + (int)length > bytes.Length)
+            throw new Exception("CBOR text string length is invalid.");
+        string text = Encoding.UTF8.GetString(bytes, offset, (int)length);
+        offset += (int)length;
+        return text;
+    }
+
+    private static byte[] ReadCborByteString(byte[] bytes, ref int offset)
+    {
+        ulong length = ReadCborLength(bytes, ref offset, 2);
+        if (length > int.MaxValue || offset + (int)length > bytes.Length)
+            throw new Exception("CBOR byte string length is invalid.");
+        byte[] value = Slice(bytes, offset, (int)length);
+        offset += (int)length;
+        return value;
+    }
+
+    private static ulong ReadCborLength(byte[] bytes, ref int offset, int expectedMajorType)
+    {
+        if (bytes == null || offset >= bytes.Length) throw new Exception("CBOR value is truncated.");
+        byte initial = bytes[offset++];
+        int majorType = initial >> 5;
+        int additionalInfo = initial & 0x1f;
+        if (majorType != expectedMajorType)
+            throw new Exception("CBOR major type mismatch. Expected: " + expectedMajorType + ", actual: " + majorType);
+        if (additionalInfo < 24) return (ulong)additionalInfo;
+        if (additionalInfo == 24)
+        {
+            if (offset >= bytes.Length) throw new Exception("CBOR uint8 length is truncated.");
+            return bytes[offset++];
+        }
+        if (additionalInfo == 25)
+        {
+            if (offset + 2 > bytes.Length) throw new Exception("CBOR uint16 length is truncated.");
+            return (ulong)((bytes[offset++] << 8) | bytes[offset++]);
+        }
+        throw new Exception("CBOR additional info is not supported by this test reader.");
+    }
+
+    private static int ReadUInt16BigEndian(byte[] bytes, int offset)
+    {
+        if (bytes == null || offset < 0 || offset + 2 > bytes.Length)
+            throw new Exception("UInt16 read is out of range.");
+        return (bytes[offset] << 8) | bytes[offset + 1];
+    }
+
+    private static uint ReadUInt32BigEndian(byte[] bytes, int offset)
+    {
+        if (bytes == null || offset < 0 || offset + 4 > bytes.Length)
+            throw new Exception("UInt32 read is out of range.");
+        return ((uint)bytes[offset] << 24) |
+            ((uint)bytes[offset + 1] << 16) |
+            ((uint)bytes[offset + 2] << 8) |
+            bytes[offset + 3];
+    }
+
+    private static byte[] Sha256(byte[] bytes)
+    {
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            return sha256.ComputeHash(bytes);
+        }
+    }
+
+    private static byte[] Slice(byte[] bytes, int offset, int length)
+    {
+        if (bytes == null || offset < 0 || length < 0 || offset + length > bytes.Length)
+            throw new Exception("Byte slice is out of range.");
+        byte[] value = new byte[length];
+        Buffer.BlockCopy(bytes, offset, value, 0, length);
+        return value;
+    }
+
+    private static void AssertByteArrayEqual(byte[] expected, byte[] actual, string message)
+    {
+        if (expected == null || actual == null || expected.Length != actual.Length)
+            throw new Exception(message + ". Expected length: " +
+                (expected == null ? -1 : expected.Length) + ", actual length: " +
+                (actual == null ? -1 : actual.Length));
+        for (int i = 0; i < expected.Length; ++i)
+        {
+            if (expected[i] != actual[i])
+                throw new Exception(message + ". Byte mismatch at index " + i +
+                    ". Expected: " + expected[i] + ", actual: " + actual[i]);
+        }
     }
 
     private static void AssertTrue(bool value, string message)
