@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using KeePassBrowserBridge.Bridge;
@@ -286,8 +287,9 @@ internal static class Program
     private static void PasskeyRegistrationCreatesCredentialAndAttestation()
     {
         PasskeyService service = new PasskeyService();
+        PasskeyRegistrationRequest request = CreatePasskeyRegistrationRequest();
 
-        PasskeyRegistrationResult result = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        PasskeyRegistrationResult result = service.CreateCredential(request);
 
         AssertTrue(result.Success, "passkey registration prototype should create credential material: " + result.Error);
         AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.CredentialId), "passkey credential ID should be generated");
@@ -309,7 +311,8 @@ internal static class Program
         AssertTrue(Base64Url.TryDecode(result.AttestationObject, out attestationObject), "passkey attestationObject should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.Credential.CredentialId, out credentialId), "passkey credential ID should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.Credential.PublicKeyCose, out publicKeyCose), "passkey public key COSE should be base64url encoded");
-        AssertTrue(Encoding.UTF8.GetString(clientDataJson).Contains("webauthn.create"), "registration clientDataJSON should identify a create request");
+        AssertWebAuthnClientData(clientDataJson, "webauthn.create", request.Challenge, request.Origin,
+            "registration clientDataJSON");
         byte[] authData = ReadNoneAttestationAuthData(attestationObject);
         AssertEqual(37 + 16 + 2 + credentialId.Length + publicKeyCose.Length, authData.Length,
             "registration authenticatorData should include fixed header, AAGUID, credential ID, and public key");
@@ -401,11 +404,21 @@ internal static class Program
             "passkey assertion signature should verify against the generated public key");
 
         byte[] authenticatorData;
+        byte[] clientDataJson;
         AssertTrue(Base64Url.TryDecode(assertion.Assertion.AuthenticatorData, out authenticatorData),
             "passkey assertion authenticatorData should be base64url encoded");
+        AssertTrue(Base64Url.TryDecode(assertion.Assertion.ClientDataJson, out clientDataJson),
+            "passkey assertion clientDataJSON should be base64url encoded");
+        AssertWebAuthnClientData(clientDataJson, "webauthn.get",
+            Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210")),
+            "https://example.com/login",
+            "assertion clientDataJSON");
         AssertEqual(37, authenticatorData.Length, "assertion authenticatorData should contain rpIdHash, flags, and sign count");
+        AssertByteArrayEqual(Sha256(Encoding.ASCII.GetBytes("example.com")), Slice(authenticatorData, 0, 32),
+            "assertion authenticatorData RP ID hash mismatch");
         AssertEqual((byte)0x01, authenticatorData[32], "assertion authenticatorData should set user-present flag");
-        AssertEqual((byte)0x01, authenticatorData[36], "assertion authenticatorData should encode sign count 1");
+        AssertEqual((uint)1, ReadUInt32BigEndian(authenticatorData, 33),
+            "assertion authenticatorData should encode sign count 1");
     }
 
     private static void PasskeyAssertionRejectsRequiredUserVerification()
@@ -4102,6 +4115,16 @@ internal static class Program
         throw new Exception("hello response did not include feature metadata for " + name);
     }
 
+    private static void AssertWebAuthnClientData(byte[] clientDataJson, string expectedType, string expectedChallenge, string expectedOrigin, string label)
+    {
+        WebAuthnClientDataForTest clientData = BridgeJsonSerializer.Deserialize<WebAuthnClientDataForTest>(
+            Encoding.UTF8.GetString(clientDataJson ?? new byte[0]));
+        AssertEqual(expectedType, clientData.Type, label + " type mismatch");
+        AssertEqual(expectedChallenge, clientData.Challenge, label + " challenge mismatch");
+        AssertEqual(expectedOrigin, clientData.Origin, label + " origin mismatch");
+        AssertFalse(clientData.CrossOrigin, label + " crossOrigin should be false");
+    }
+
     private static byte[] ReadNoneAttestationAuthData(byte[] attestationObject)
     {
         int offset = 0;
@@ -4227,6 +4250,22 @@ internal static class Program
     {
         if (!object.Equals(expected, actual))
             throw new Exception(message + ". Expected: " + expected + ", actual: " + actual);
+    }
+
+    [DataContract]
+    private sealed class WebAuthnClientDataForTest
+    {
+        [DataMember(Name = "type")]
+        public string Type { get; set; }
+
+        [DataMember(Name = "challenge")]
+        public string Challenge { get; set; }
+
+        [DataMember(Name = "origin")]
+        public string Origin { get; set; }
+
+        [DataMember(Name = "crossOrigin")]
+        public bool CrossOrigin { get; set; }
     }
 
     private sealed class DeterministicSecretGenerator : ISecretGenerator

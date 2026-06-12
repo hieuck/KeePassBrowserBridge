@@ -116,6 +116,22 @@ requireEvery('passkeyService', [
   'Passkey user verification is not supported by this build.'
 ], 'passkey backend should reject required or unknown user verification until KeePass-side verification exists');
 requireEvery('passkeyService', [
+  'WebAuthnClientDataJson',
+  'webauthn.create',
+  'webauthn.get',
+  'CrossOrigin = false'
+], 'passkey backend should produce structured WebAuthn clientDataJSON');
+requireEvery('testsProgram', [
+  'AssertWebAuthnClientData',
+  'registration clientDataJSON',
+  'assertion clientDataJSON',
+  'type mismatch',
+  'challenge mismatch',
+  'crossOrigin should be false',
+  'assertion authenticatorData RP ID hash mismatch',
+  'assertion authenticatorData should encode sign count 1'
+], 'passkey registration and assertion clientDataJSON plus assertion authenticator-data structure should be covered by backend tests');
+requireEvery('passkeyService', [
   'WebAuthnAttestationObject',
   'CreateNone',
   'WebAuthnAuthenticatorData.CreateAttestationData',
