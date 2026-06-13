@@ -34,6 +34,7 @@ internal static class Program
         PasskeyRegistrationRejectsUnknownResidentKey();
         PasskeyCredentialIdsAreUnique();
         PasskeyAssertionSignsChallengeAndIncrementsCounter();
+        PasskeyAssertionRejectsNonEs256PublicKeyCose();
         PasskeyAssertionRejectsRequiredUserVerification();
         PasskeyAssertionRejectsUnknownUserVerification();
         PasskeyEntryStoreProtectsPrivateKeyMaterial();
@@ -422,6 +423,29 @@ internal static class Program
         AssertEqual((byte)0x01, authenticatorData[32], "assertion authenticatorData should set user-present flag");
         AssertEqual((uint)1, ReadUInt32BigEndian(authenticatorData, 33),
             "assertion authenticatorData should encode sign count 1");
+    }
+
+    private static void PasskeyAssertionRejectsNonEs256PublicKeyCose()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before malformed COSE verification test: " + registration.Error);
+
+        PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210"))
+        });
+        AssertTrue(assertion.Success, "passkey assertion should succeed before malformed COSE verification test: " + assertion.Error);
+
+        string validPublicKeyCose = registration.Credential.PublicKeyCose;
+        AssertRejectsPublicKeyCoseMutation(service, registration.Credential, assertion.Assertion, validPublicKeyCose,
+            0x01, 0x02, 0x01, "passkey assertion verification must reject public key COSE when kty is not EC2");
+        AssertRejectsPublicKeyCoseMutation(service, registration.Credential, assertion.Assertion, validPublicKeyCose,
+            0x03, 0x26, 0x20, "passkey assertion verification must reject public key COSE when alg is not ES256");
+        AssertRejectsPublicKeyCoseMutation(service, registration.Credential, assertion.Assertion, validPublicKeyCose,
+            0x20, 0x01, 0x02, "passkey assertion verification must reject public key COSE when crv is not P-256");
     }
 
     private static void PasskeyAssertionRejectsRequiredUserVerification()
@@ -4223,6 +4247,37 @@ internal static class Program
         byte[] value = new byte[length];
         Buffer.BlockCopy(bytes, offset, value, 0, length);
         return value;
+    }
+
+    private static void AssertRejectsPublicKeyCoseMutation(
+        PasskeyService service,
+        PasskeyCredentialMaterial credential,
+        PasskeyAssertionResponse assertion,
+        string validPublicKeyCose,
+        byte keyMarker,
+        byte expectedValue,
+        byte replacementValue,
+        string message)
+    {
+        credential.PublicKeyCose = ReplaceCoseValueAfterKey(validPublicKeyCose, keyMarker, expectedValue, replacementValue);
+        AssertFalse(service.VerifyAssertionSignature(credential, assertion), message);
+        credential.PublicKeyCose = validPublicKeyCose;
+    }
+
+    private static string ReplaceCoseValueAfterKey(string publicKeyCose, byte keyMarker, byte expectedValue, byte replacementValue)
+    {
+        byte[] cose;
+        AssertTrue(Base64Url.TryDecode(publicKeyCose, out cose), "test public key COSE should be base64url encoded");
+        for (int i = 0; i < cose.Length - 1; ++i)
+        {
+            if (cose[i] == keyMarker && cose[i + 1] == expectedValue)
+            {
+                cose[i + 1] = replacementValue;
+                return Base64Url.Encode(cose);
+            }
+        }
+
+        throw new Exception("test public key COSE did not contain the expected key/value marker.");
     }
 
     private static void AssertByteArrayEqual(byte[] expected, byte[] actual, string message)

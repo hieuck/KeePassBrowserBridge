@@ -1335,58 +1335,141 @@ namespace KeePassBrowserBridge.Bridge
         public static bool TryDecodeEs256PublicKey(byte[] coseKey, out EccPublicKey publicKey)
         {
             publicKey = null;
-            if (coseKey == null || coseKey.Length < 77) return false;
+            if (coseKey == null) return false;
 
-            int nextOffset;
-            byte[] x = FindByteStringAfterMarker(coseKey, 0x21, 0, out nextOffset);
-            byte[] y = FindByteStringAfterMarker(coseKey, 0x22, nextOffset, out nextOffset);
-            if (x == null || y == null || x.Length != 32 || y.Length != 32) return false;
+            int offset = 0;
+            int entryCount;
+            if (!TryReadMapLength(coseKey, ref offset, out entryCount)) return false;
+
+            bool hasKty = false;
+            bool hasAlg = false;
+            bool hasCrv = false;
+            bool hasX = false;
+            bool hasY = false;
+            byte[] x = null;
+            byte[] y = null;
+
+            for (int i = 0; i < entryCount; ++i)
+            {
+                int key;
+                if (!TryReadInt(coseKey, ref offset, out key)) return false;
+
+                if (key == 1)
+                {
+                    int value;
+                    if (hasKty || !TryReadInt(coseKey, ref offset, out value) || value != 2) return false;
+                    hasKty = true;
+                }
+                else if (key == 3)
+                {
+                    int value;
+                    if (hasAlg || !TryReadInt(coseKey, ref offset, out value) || value != -7) return false;
+                    hasAlg = true;
+                }
+                else if (key == -1)
+                {
+                    int value;
+                    if (hasCrv || !TryReadInt(coseKey, ref offset, out value) || value != 1) return false;
+                    hasCrv = true;
+                }
+                else if (key == -2)
+                {
+                    if (hasX || !TryReadByteString(coseKey, ref offset, out x) || x.Length != 32) return false;
+                    hasX = true;
+                }
+                else if (key == -3)
+                {
+                    if (hasY || !TryReadByteString(coseKey, ref offset, out y) || y.Length != 32) return false;
+                    hasY = true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            if (offset != coseKey.Length || !hasKty || !hasAlg || !hasCrv || !hasX || !hasY) return false;
 
             publicKey = new EccPublicKey { X = x, Y = y };
             return true;
         }
 
-        private static byte[] FindByteStringAfterMarker(byte[] bytes, byte marker, int startOffset, out int nextOffset)
+        private static bool TryReadMapLength(byte[] bytes, ref int offset, out int entryCount)
         {
-            nextOffset = startOffset;
-            for (int i = Math.Max(0, startOffset); i < bytes.Length - 2; ++i)
+            entryCount = 0;
+            int majorType;
+            ulong length;
+            if (!TryReadTypeAndLength(bytes, ref offset, out majorType, out length) || majorType != 5 ||
+                length > int.MaxValue)
+                return false;
+            entryCount = (int)length;
+            return true;
+        }
+
+        private static bool TryReadInt(byte[] bytes, ref int offset, out int value)
+        {
+            value = 0;
+            int majorType;
+            ulong rawValue;
+            if (!TryReadTypeAndLength(bytes, ref offset, out majorType, out rawValue)) return false;
+            if (majorType == 0)
             {
-                if (bytes[i] != marker) continue;
-                int next = i + 1;
-                if ((bytes[next] & 0xe0) != 0x40) continue;
-
-                int additional = bytes[next] & 0x1f;
-                int valueStart;
-                int length;
-                if (additional < 24)
-                {
-                    length = additional;
-                    valueStart = next + 1;
-                }
-                else if (additional == 24)
-                {
-                    if (next + 1 >= bytes.Length) return null;
-                    length = bytes[next + 1];
-                    valueStart = next + 2;
-                }
-                else if (additional == 25)
-                {
-                    if (next + 2 >= bytes.Length) return null;
-                    length = (bytes[next + 1] << 8) | bytes[next + 2];
-                    valueStart = next + 3;
-                }
-                else
-                {
-                    return null;
-                }
-
-                if (valueStart + length > bytes.Length) return null;
-                byte[] value = new byte[length];
-                Buffer.BlockCopy(bytes, valueStart, value, 0, length);
-                nextOffset = valueStart + length;
-                return value;
+                if (rawValue > int.MaxValue) return false;
+                value = (int)rawValue;
+                return true;
             }
-            return null;
+            if (majorType == 1)
+            {
+                if (rawValue > int.MaxValue) return false;
+                value = -1 - (int)rawValue;
+                return true;
+            }
+            return false;
+        }
+
+        private static bool TryReadByteString(byte[] bytes, ref int offset, out byte[] value)
+        {
+            value = null;
+            int majorType;
+            ulong length;
+            if (!TryReadTypeAndLength(bytes, ref offset, out majorType, out length) || majorType != 2 ||
+                length > int.MaxValue || offset + (int)length > bytes.Length)
+                return false;
+
+            value = new byte[(int)length];
+            Buffer.BlockCopy(bytes, offset, value, 0, (int)length);
+            offset += (int)length;
+            return true;
+        }
+
+        private static bool TryReadTypeAndLength(byte[] bytes, ref int offset, out int majorType, out ulong length)
+        {
+            majorType = 0;
+            length = 0;
+            if (bytes == null || offset >= bytes.Length) return false;
+
+            byte initial = bytes[offset++];
+            majorType = initial >> 5;
+            int additionalInfo = initial & 0x1f;
+            if (additionalInfo < 24)
+            {
+                length = (ulong)additionalInfo;
+                return true;
+            }
+            if (additionalInfo == 24)
+            {
+                if (offset >= bytes.Length) return false;
+                length = bytes[offset++];
+                return true;
+            }
+            if (additionalInfo == 25)
+            {
+                if (offset + 2 > bytes.Length) return false;
+                length = (ulong)((bytes[offset] << 8) | bytes[offset + 1]);
+                offset += 2;
+                return true;
+            }
+            return false;
         }
     }
 

@@ -149,6 +149,21 @@ requireEvery('testsProgram', [
   'registration authenticatorData public key COSE mismatch'
 ], 'passkey registration authenticator-data structure should be covered by backend tests');
 requireEvery('passkeyService', [
+  'TryDecodeEs256PublicKey',
+  'value != 2',
+  'value != -7',
+  'value != 1',
+  'x.Length != 32',
+  'y.Length != 32',
+  'offset != coseKey.Length'
+], 'passkey assertion verification should reject stored public keys that are not strict EC2 P-256 ES256 COSE keys');
+requireEvery('testsProgram', [
+  'PasskeyAssertionRejectsNonEs256PublicKeyCose',
+  'when kty is not EC2',
+  'when alg is not ES256',
+  'when crv is not P-256'
+], 'strict passkey public-key COSE verification should be covered by backend tests');
+requireEvery('passkeyService', [
   'CanonicalizeUserHandle',
   'invalid_user_handle',
   'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.'
