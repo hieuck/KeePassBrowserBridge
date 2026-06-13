@@ -1262,7 +1262,7 @@ namespace KeePassBrowserBridge.Bridge
 
         public static byte[] CreateAssertionData(string rpId, uint signCount)
         {
-            byte[] rpIdHash = Sha256(Encoding.ASCII.GetBytes((rpId ?? string.Empty).Trim().ToLowerInvariant()));
+            byte[] rpIdHash = CreateRpIdHash(rpId);
             using (MemoryStream stream = new MemoryStream())
             {
                 stream.Write(rpIdHash, 0, rpIdHash.Length);
@@ -1274,7 +1274,7 @@ namespace KeePassBrowserBridge.Bridge
 
         public static byte[] CreateAttestationData(string rpId, byte[] credentialId, byte[] publicKeyCose)
         {
-            byte[] rpIdHash = Sha256(Encoding.ASCII.GetBytes((rpId ?? string.Empty).Trim().ToLowerInvariant()));
+            byte[] rpIdHash = CreateRpIdHash(rpId);
             using (MemoryStream stream = new MemoryStream())
             {
                 stream.Write(rpIdHash, 0, rpIdHash.Length);
@@ -1286,6 +1286,16 @@ namespace KeePassBrowserBridge.Bridge
                 if (publicKeyCose != null) stream.Write(publicKeyCose, 0, publicKeyCose.Length);
                 return stream.ToArray();
             }
+        }
+
+        private static byte[] CreateRpIdHash(string rpId)
+        {
+            return Sha256(Encoding.ASCII.GetBytes(NormalizeRpId(rpId)));
+        }
+
+        private static string NormalizeRpId(string rpId)
+        {
+            return (rpId ?? string.Empty).Trim().TrimEnd('.').ToLowerInvariant();
         }
 
         private static byte[] Sha256(byte[] bytes)

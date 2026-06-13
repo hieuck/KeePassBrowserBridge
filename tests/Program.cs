@@ -292,6 +292,7 @@ internal static class Program
         string canonicalChallenge = request.Challenge;
         string canonicalOrigin = "https://example.com";
         request.Challenge = canonicalChallenge + "==";
+        request.RpId = "Example.com.";
 
         PasskeyRegistrationResult result = service.CreateCredential(request);
 
@@ -399,7 +400,7 @@ internal static class Program
 
         PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
         {
-            RpId = "example.com",
+            RpId = "Example.com.",
             Origin = "https://example.com/login",
             Challenge = canonicalChallenge + "=="
         });

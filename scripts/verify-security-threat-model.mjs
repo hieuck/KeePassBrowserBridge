@@ -142,16 +142,23 @@ requireEvery('passkeyService', [
   'WebAuthnAttestationObject',
   'CreateNone',
   'WebAuthnAuthenticatorData.CreateAttestationData',
+  'CreateRpIdHash',
+  'NormalizeRpId(rpId)',
+  "TrimEnd('.')",
   'UserPresentFlag',
   'AttestedCredentialDataFlag'
-], 'passkey backend should produce structured none-attestation authenticator data');
+], 'passkey backend should produce structured none-attestation authenticator data with canonical RP ID hashes');
 requireEvery('testsProgram', [
   'ReadNoneAttestationAuthData',
+  'request.RpId = "Example.com."',
+  'RpId = "Example.com."',
   'registration attestationObject fmt mismatch',
+  'registration authenticatorData RP ID hash mismatch',
+  'assertion authenticatorData RP ID hash mismatch',
   'registration authenticatorData should set user-present and attested-credential flags only',
   'registration authenticatorData credential ID mismatch',
   'registration authenticatorData public key COSE mismatch'
-], 'passkey registration authenticator-data structure should be covered by backend tests');
+], 'passkey registration and assertion authenticator-data canonical RP ID structure should be covered by backend tests');
 requireEvery('passkeyService', [
   'TryDecodeEs256PublicKey',
   'value != 2',
