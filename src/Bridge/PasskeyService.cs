@@ -94,6 +94,11 @@ namespace KeePassBrowserBridge.Bridge
             if (!Base64Url.TryDecode(credential.PrivateKey, out privateKey) || privateKey.Length == 0)
                 return PasskeyAssertionResult.Fail("invalid_private_key", "Stored passkey private key material is invalid.");
 
+            byte[] userHandle;
+            if (!Base64Url.TryDecode(credential.UserHandle, out userHandle) || userHandle.Length == 0 || userHandle.Length > 64)
+                return PasskeyAssertionResult.Fail("invalid_user_handle", "Stored passkey user handle is invalid.");
+            string canonicalUserHandle = Base64Url.Encode(userHandle);
+
             byte[] challenge;
             if (!Base64Url.TryDecode(request.Challenge, out challenge) || challenge.Length < 16)
                 return PasskeyAssertionResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
@@ -120,7 +125,7 @@ namespace KeePassBrowserBridge.Bridge
                 AuthenticatorData = Base64Url.Encode(authenticatorData),
                 ClientDataJson = Base64Url.Encode(clientDataJson),
                 Signature = Base64Url.Encode(signatureDer),
-                UserHandle = credential.UserHandle,
+                UserHandle = canonicalUserHandle,
                 SignCount = nextSignCount
             });
         }

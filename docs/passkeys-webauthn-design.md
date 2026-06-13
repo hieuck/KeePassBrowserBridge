@@ -143,7 +143,7 @@ Backend:
 - Browser-proxy and backend attestation conveyance gating for `none`. Covered by non-packaged proxy JS tests before bridge dispatch and backend bridge tests after protocol deserialization.
 - Browser-proxy and backend authenticator attachment gating for platform-authenticator requests. Covered by non-packaged proxy JS tests before bridge dispatch and backend pending/bridge tests after protocol deserialization.
 - Create `excludeCredentials` mapping, invalid descriptor rejection, and backend conflict rejection before approval. Covered by non-packaged proxy JS tests and backend pending/bridge tests.
-- User-handle validation before approval. Covered by backend pending/bridge tests and non-packaged proxy JS tests.
+- User-handle validation before approval plus canonical assertion `userHandle` output from stored passkey material. Covered by backend tests and non-packaged proxy JS tests.
 - Credential ID generation uniqueness. Covered by backend tests for the current random generator; add larger deterministic fixtures before public passkey support.
 - Private key protected-field storage. Covered by backend tests.
 - User-verification, resident-key, and transport metadata normalization plus KeePass storage round-trip, with `userVerification=required` and unknown user-verification values rejected until a real KeePass-side verification step exists. Covered by backend tests and non-packaged proxy JS tests.

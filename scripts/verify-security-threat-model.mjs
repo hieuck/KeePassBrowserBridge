@@ -176,12 +176,15 @@ requireEvery('testsProgram', [
 ], 'strict passkey public-key COSE verification should be covered by backend tests');
 requireEvery('passkeyService', [
   'CanonicalizeUserHandle',
+  'string canonicalUserHandle = Base64Url.Encode(userHandle);',
+  'Stored passkey user handle is invalid.',
   'invalid_user_handle',
   'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.'
-], 'passkey backend should reject invalid create user handles before approval');
+], 'passkey backend should reject invalid create user handles before approval and canonicalize assertion user handles');
 requireEvery('testsProgram', [
   'PasskeyPendingRejectsInvalidCreateUserHandle',
   'BridgeHandlerRejectsInvalidPasskeyUserHandleBeforeApprovalWhenFeatureGateIsEnabled',
+  'passkey assertion should return canonical user handle bytes',
   'bridge invalid user handle rejection should not prompt for approval'
 ], 'invalid passkey user handle rejection should be covered by backend tests');
 requireEvery('passkeyService', [

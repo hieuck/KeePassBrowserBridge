@@ -397,6 +397,8 @@ internal static class Program
         AssertTrue(registration.Success, "passkey registration should succeed before assertion: " + registration.Error);
         string canonicalChallenge = Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210"));
         string canonicalOrigin = "https://example.com";
+        string canonicalUserHandle = Base64Url.Encode(Encoding.ASCII.GetBytes("alice"));
+        registration.Credential.UserHandle = canonicalUserHandle + "=";
 
         PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
         {
@@ -406,6 +408,8 @@ internal static class Program
         });
 
         AssertTrue(assertion.Success, "passkey assertion prototype should sign a challenge: " + assertion.Error);
+        AssertEqual(canonicalUserHandle, assertion.Assertion.UserHandle,
+            "passkey assertion should return canonical user handle bytes");
         AssertEqual((uint)1, assertion.Assertion.SignCount, "passkey assertion should return incremented sign count");
         AssertEqual((uint)1, registration.Credential.SignCount, "passkey assertion should persist incremented sign count in material");
         AssertTrue(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion),
