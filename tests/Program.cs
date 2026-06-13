@@ -290,6 +290,7 @@ internal static class Program
         PasskeyService service = new PasskeyService();
         PasskeyRegistrationRequest request = CreatePasskeyRegistrationRequest();
         string canonicalChallenge = request.Challenge;
+        string canonicalOrigin = "https://example.com";
         request.Challenge = canonicalChallenge + "==";
 
         PasskeyRegistrationResult result = service.CreateCredential(request);
@@ -299,6 +300,7 @@ internal static class Program
         AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.PublicKeyCose), "passkey COSE public key should be generated");
         AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.PrivateKey), "passkey private key material should be generated for protected KeePass storage");
         AssertEqual("example.com", result.Credential.RpId, "passkey RP ID should be normalized");
+        AssertEqual(canonicalOrigin, result.Credential.Origin, "passkey credential origin should be normalized to a WebAuthn origin");
         AssertEqual("preferred", result.Credential.UserVerification, "passkey user verification should be normalized");
         AssertEqual("preferred", result.Credential.ResidentKey, "passkey resident-key requirement should be normalized");
         AssertEqual(2, result.Credential.Transports.Length, "passkey transports should be normalized and de-duplicated");
@@ -314,7 +316,7 @@ internal static class Program
         AssertTrue(Base64Url.TryDecode(result.AttestationObject, out attestationObject), "passkey attestationObject should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.Credential.CredentialId, out credentialId), "passkey credential ID should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.Credential.PublicKeyCose, out publicKeyCose), "passkey public key COSE should be base64url encoded");
-        AssertWebAuthnClientData(clientDataJson, "webauthn.create", canonicalChallenge, request.Origin,
+        AssertWebAuthnClientData(clientDataJson, "webauthn.create", canonicalChallenge, canonicalOrigin,
             "registration clientDataJSON");
         byte[] authData = ReadNoneAttestationAuthData(attestationObject);
         AssertEqual(37 + 16 + 2 + credentialId.Length + publicKeyCose.Length, authData.Length,
@@ -393,6 +395,7 @@ internal static class Program
         PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
         AssertTrue(registration.Success, "passkey registration should succeed before assertion: " + registration.Error);
         string canonicalChallenge = Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210"));
+        string canonicalOrigin = "https://example.com";
 
         PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
         {
@@ -415,7 +418,7 @@ internal static class Program
             "passkey assertion clientDataJSON should be base64url encoded");
         AssertWebAuthnClientData(clientDataJson, "webauthn.get",
             canonicalChallenge,
-            "https://example.com/login",
+            canonicalOrigin,
             "assertion clientDataJSON");
         AssertEqual(37, authenticatorData.Length, "assertion authenticatorData should contain rpIdHash, flags, and sign count");
         AssertByteArrayEqual(Sha256(Encoding.ASCII.GetBytes("example.com")), Slice(authenticatorData, 0, 32),

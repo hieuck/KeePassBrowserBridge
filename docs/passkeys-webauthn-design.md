@@ -134,7 +134,7 @@ Fallback:
 Backend:
 
 - RP ID validation, including subdomain and mismatch cases. Covered by backend tests.
-- Create/get `clientDataJSON` type, canonical base64url challenge, origin, and `crossOrigin=false` fields. Covered by backend tests.
+- Create/get `clientDataJSON` type, canonical base64url challenge, canonical WebAuthn origin, and `crossOrigin=false` fields. Covered by backend tests.
 - None-attestation authenticator-data structure, including RP ID hash, user-present and attested-credential flags, zero sign count, zero AAGUID, credential ID length, credential ID, and public key COSE bytes. Covered by backend tests.
 - Assertion authenticator-data structure, including RP ID hash, user-present flag, and big-endian sign count. Covered by backend tests.
 - Browser-proxy and backend create algorithm gating for ES256 (`alg: -7`) public-key credentials. Covered by non-packaged proxy JS tests before bridge dispatch and backend bridge tests after protocol deserialization.

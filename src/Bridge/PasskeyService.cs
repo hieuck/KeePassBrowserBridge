@@ -37,6 +37,7 @@ namespace KeePassBrowserBridge.Bridge
             if (!Base64Url.TryDecode(request.Challenge, out challenge) || challenge.Length < 16)
                 return PasskeyRegistrationResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
             string canonicalChallenge = Base64Url.Encode(challenge);
+            string canonicalOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(request.Origin);
 
             byte[] userHandle;
             if (!Base64Url.TryDecode(request.UserHandle, out userHandle) || userHandle.Length == 0 || userHandle.Length > 64)
@@ -50,13 +51,13 @@ namespace KeePassBrowserBridge.Bridge
             byte[] credentialId = RandomBytes(32);
             EccKeyBlob key = EccKeyBlob.Create();
             byte[] publicKeyCose = CoseKey.EncodeEs256PublicKey(key.PublicX, key.PublicY);
-            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.create", canonicalChallenge, request.Origin);
+            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.create", canonicalChallenge, canonicalOrigin);
             byte[] attestationObject = WebAuthnAttestationObject.CreateNone(request.RpId, credentialId, publicKeyCose);
 
             return PasskeyRegistrationResult.Ok(new PasskeyCredentialMaterial
             {
                 RpId = NormalizeRpId(request.RpId),
-                Origin = request.Origin.Trim(),
+                Origin = canonicalOrigin,
                 CredentialId = Base64Url.Encode(credentialId),
                 UserHandle = Base64Url.Encode(userHandle),
                 UserName = request.UserName == null ? string.Empty : request.UserName.Trim(),
@@ -97,6 +98,7 @@ namespace KeePassBrowserBridge.Bridge
             if (!Base64Url.TryDecode(request.Challenge, out challenge) || challenge.Length < 16)
                 return PasskeyAssertionResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
             string canonicalChallenge = Base64Url.Encode(challenge);
+            string canonicalOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(request.Origin);
 
 #if NET8_0_OR_GREATER
             if (!OperatingSystem.IsWindows())
@@ -105,7 +107,7 @@ namespace KeePassBrowserBridge.Bridge
 
             uint nextSignCount = credential.SignCount == uint.MaxValue ? uint.MaxValue : credential.SignCount + 1;
             byte[] authenticatorData = WebAuthnAuthenticatorData.CreateAssertionData(request.RpId, nextSignCount);
-            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.get", canonicalChallenge, request.Origin);
+            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.get", canonicalChallenge, canonicalOrigin);
             byte[] clientDataHash = Sha256(clientDataJson);
             byte[] signedData = Combine(authenticatorData, clientDataHash);
             byte[] signatureDer = EccKeyBlob.SignDer(privateKey, signedData);
@@ -317,13 +319,19 @@ namespace KeePassBrowserBridge.Bridge
             if (!IsValidRpId(normalizedRpId)) return false;
 
             Uri uri;
-            if (!Uri.TryCreate((origin ?? string.Empty).Trim(), UriKind.Absolute, out uri)) return false;
-            if (!IsPotentiallyTrustworthyOrigin(uri)) return false;
+            if (!TryCreatePotentiallyTrustworthyOrigin(origin, out uri)) return false;
 
             string host = NormalizeRpId(uri.Host);
             if (host.Length == 0) return false;
             if (string.Equals(host, normalizedRpId, StringComparison.Ordinal)) return true;
             return host.EndsWith("." + normalizedRpId, StringComparison.Ordinal);
+        }
+
+        public static string NormalizeOrigin(string origin)
+        {
+            Uri uri;
+            if (!TryCreatePotentiallyTrustworthyOrigin(origin, out uri)) return string.Empty;
+            return uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
         }
 
         private static string NormalizeRpId(string value)
@@ -348,6 +356,13 @@ namespace KeePassBrowserBridge.Bridge
             }
 
             return true;
+        }
+
+        private static bool TryCreatePotentiallyTrustworthyOrigin(string origin, out Uri uri)
+        {
+            uri = null;
+            if (!Uri.TryCreate((origin ?? string.Empty).Trim(), UriKind.Absolute, out uri)) return false;
+            return IsPotentiallyTrustworthyOrigin(uri);
         }
 
         private static bool IsPotentiallyTrustworthyOrigin(Uri uri)
