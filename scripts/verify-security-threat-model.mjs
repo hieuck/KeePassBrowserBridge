@@ -119,18 +119,21 @@ requireEvery('passkeyService', [
   'WebAuthnClientDataJson',
   'webauthn.create',
   'webauthn.get',
+  'string canonicalChallenge = Base64Url.Encode(challenge);',
   'CrossOrigin = false'
-], 'passkey backend should produce structured WebAuthn clientDataJSON');
+], 'passkey backend should produce structured WebAuthn clientDataJSON with canonical challenges');
 requireEvery('testsProgram', [
   'AssertWebAuthnClientData',
   'registration clientDataJSON',
   'assertion clientDataJSON',
+  'request.Challenge = canonicalChallenge + "=="',
+  'Challenge = canonicalChallenge + "=="',
   'type mismatch',
   'challenge mismatch',
   'crossOrigin should be false',
   'assertion authenticatorData RP ID hash mismatch',
   'assertion authenticatorData should encode sign count 1'
-], 'passkey registration and assertion clientDataJSON plus assertion authenticator-data structure should be covered by backend tests');
+], 'passkey registration and assertion clientDataJSON canonicalization plus assertion authenticator-data structure should be covered by backend tests');
 requireEvery('passkeyService', [
   'WebAuthnAttestationObject',
   'CreateNone',

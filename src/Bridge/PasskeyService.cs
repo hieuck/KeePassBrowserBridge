@@ -36,6 +36,7 @@ namespace KeePassBrowserBridge.Bridge
             byte[] challenge;
             if (!Base64Url.TryDecode(request.Challenge, out challenge) || challenge.Length < 16)
                 return PasskeyRegistrationResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
+            string canonicalChallenge = Base64Url.Encode(challenge);
 
             byte[] userHandle;
             if (!Base64Url.TryDecode(request.UserHandle, out userHandle) || userHandle.Length == 0 || userHandle.Length > 64)
@@ -49,7 +50,7 @@ namespace KeePassBrowserBridge.Bridge
             byte[] credentialId = RandomBytes(32);
             EccKeyBlob key = EccKeyBlob.Create();
             byte[] publicKeyCose = CoseKey.EncodeEs256PublicKey(key.PublicX, key.PublicY);
-            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.create", request.Challenge, request.Origin);
+            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.create", canonicalChallenge, request.Origin);
             byte[] attestationObject = WebAuthnAttestationObject.CreateNone(request.RpId, credentialId, publicKeyCose);
 
             return PasskeyRegistrationResult.Ok(new PasskeyCredentialMaterial
@@ -95,6 +96,7 @@ namespace KeePassBrowserBridge.Bridge
             byte[] challenge;
             if (!Base64Url.TryDecode(request.Challenge, out challenge) || challenge.Length < 16)
                 return PasskeyAssertionResult.Fail("invalid_challenge", "WebAuthn challenge must be base64url-encoded and at least 16 bytes.");
+            string canonicalChallenge = Base64Url.Encode(challenge);
 
 #if NET8_0_OR_GREATER
             if (!OperatingSystem.IsWindows())
@@ -103,7 +105,7 @@ namespace KeePassBrowserBridge.Bridge
 
             uint nextSignCount = credential.SignCount == uint.MaxValue ? uint.MaxValue : credential.SignCount + 1;
             byte[] authenticatorData = WebAuthnAuthenticatorData.CreateAssertionData(request.RpId, nextSignCount);
-            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.get", request.Challenge, request.Origin);
+            byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.get", canonicalChallenge, request.Origin);
             byte[] clientDataHash = Sha256(clientDataJson);
             byte[] signedData = Combine(authenticatorData, clientDataHash);
             byte[] signatureDer = EccKeyBlob.SignDer(privateKey, signedData);
