@@ -161,11 +161,12 @@ requireEvery('testsProgram', [
 ], 'passkey registration and assertion authenticator-data canonical RP ID structure should be covered by backend tests');
 requireEvery('passkeyService', [
   'TryDecodeEs256PublicKey',
-  'IsAssertionClientDataForOrigin(clientDataJson, credential.Origin)',
+  'IsAssertionClientDataForOrigin(clientDataJson, credential.Origin, expectedChallenge)',
   'string canonicalExpectedOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(expectedOrigin);',
   'WebAuthnAuthenticatorData.AssertionDataLength',
   'WebAuthnAuthenticatorData.UserPresentFlag',
   'WebAuthnAuthenticatorData.CreateRpIdHash(credential.RpId)',
+  'string canonicalExpectedChallenge = null;',
   'FixedTimeEquals(storedCredentialId, assertionCredentialId)',
   'FixedTimeEquals(storedUserHandle, assertionUserHandle)',
   'assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)',
@@ -175,7 +176,7 @@ requireEvery('passkeyService', [
   'x.Length != 32',
   'y.Length != 32',
   'offset != coseKey.Length'
-], 'passkey assertion verification should reject authenticatorData RP ID hash, flag, origin, and metadata mismatches plus stored public keys that are not strict EC2 P-256 ES256 COSE keys');
+], 'passkey assertion verification should reject authenticatorData RP ID hash, flag, origin, challenge, and metadata mismatches plus stored public keys that are not strict EC2 P-256 ES256 COSE keys');
 requireEvery('testsProgram', [
   'PasskeyAssertionRejectsNonEs256PublicKeyCose',
   'passkey assertion verification must reject clientDataJSON origin mismatches',
@@ -183,13 +184,14 @@ requireEvery('testsProgram', [
   'passkey assertion verification must reject unsupported authenticatorData flags',
   'passkey assertion verification must reject trailing authenticatorData bytes',
   'passkey assertion verification must reject authenticatorData RP ID hash mismatches',
+  'passkey assertion verification must reject clientDataJSON challenge mismatches',
   'passkey assertion verification must reject credential ID mismatches',
   'passkey assertion verification must reject user handle mismatches',
   'passkey assertion verification must reject sign count metadata mismatches',
   'when kty is not EC2',
   'when alg is not ES256',
   'when crv is not P-256'
-], 'strict passkey assertion RP ID hash/flag/origin/metadata and public-key COSE verification should be covered by backend tests');
+], 'strict passkey assertion RP ID hash/flag/origin/challenge/metadata and public-key COSE verification should be covered by backend tests');
 requireEvery('passkeyService', [
   'CanonicalizeUserHandle',
   'string canonicalUserHandle = Base64Url.Encode(userHandle);',

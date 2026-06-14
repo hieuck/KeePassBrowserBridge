@@ -132,6 +132,11 @@ namespace KeePassBrowserBridge.Bridge
 
         public bool VerifyAssertionSignature(PasskeyCredentialMaterial credential, PasskeyAssertionResponse assertion)
         {
+            return VerifyAssertionSignature(credential, assertion, null);
+        }
+
+        public bool VerifyAssertionSignature(PasskeyCredentialMaterial credential, PasskeyAssertionResponse assertion, string expectedChallenge)
+        {
             if (credential == null || assertion == null) return false;
 
             byte[] publicKeyCose;
@@ -155,7 +160,7 @@ namespace KeePassBrowserBridge.Bridge
                 assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)) return false;
             if (!FixedTimeEquals(Slice(authenticatorData, 0, 32), WebAuthnAuthenticatorData.CreateRpIdHash(credential.RpId))) return false;
             if (!Base64Url.TryDecode(assertion.ClientDataJson, out clientDataJson)) return false;
-            if (!WebAuthnClientDataJson.IsAssertionClientDataForOrigin(clientDataJson, credential.Origin)) return false;
+            if (!WebAuthnClientDataJson.IsAssertionClientDataForOrigin(clientDataJson, credential.Origin, expectedChallenge)) return false;
             if (!Base64Url.TryDecode(assertion.Signature, out signatureDer)) return false;
 
             EccPublicKey publicKey;
@@ -1316,8 +1321,21 @@ namespace KeePassBrowserBridge.Bridge
 
         public static bool IsAssertionClientDataForOrigin(byte[] clientDataJson, string expectedOrigin)
         {
+            return IsAssertionClientDataForOrigin(clientDataJson, expectedOrigin, null);
+        }
+
+        public static bool IsAssertionClientDataForOrigin(byte[] clientDataJson, string expectedOrigin, string expectedChallenge)
+        {
             string canonicalExpectedOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(expectedOrigin);
             if (canonicalExpectedOrigin.Length == 0) return false;
+            string canonicalExpectedChallenge = null;
+            if (expectedChallenge != null)
+            {
+                byte[] expectedChallengeBytes;
+                if (!Base64Url.TryDecode(expectedChallenge, out expectedChallengeBytes) || expectedChallengeBytes.Length < 16)
+                    return false;
+                canonicalExpectedChallenge = Base64Url.Encode(expectedChallengeBytes);
+            }
 
             WebAuthnClientData clientData;
             try
@@ -1333,6 +1351,8 @@ namespace KeePassBrowserBridge.Bridge
             return clientData != null &&
                 string.Equals(clientData.Type, "webauthn.get", StringComparison.Ordinal) &&
                 string.Equals(clientData.Origin ?? string.Empty, canonicalExpectedOrigin, StringComparison.Ordinal) &&
+                (canonicalExpectedChallenge == null ||
+                    string.Equals(clientData.Challenge ?? string.Empty, canonicalExpectedChallenge, StringComparison.Ordinal)) &&
                 !clientData.CrossOrigin;
         }
 

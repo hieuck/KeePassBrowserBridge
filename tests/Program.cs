@@ -414,6 +414,8 @@ internal static class Program
         AssertEqual((uint)1, registration.Credential.SignCount, "passkey assertion should persist incremented sign count in material");
         AssertTrue(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion),
             "passkey assertion signature should verify against the generated public key");
+        AssertTrue(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion, canonicalChallenge),
+            "passkey assertion signature should verify against the generated public key and expected challenge");
         PasskeyCredentialMaterial wrongOriginCredential = CopyPasskeyCredential(registration.Credential);
         wrongOriginCredential.Origin = "https://evil.example";
         AssertFalse(service.VerifyAssertionSignature(wrongOriginCredential, assertion.Assertion),
@@ -474,6 +476,12 @@ internal static class Program
             wrongRpIdHashAuthenticatorData, clientDataJson, privateKey);
         AssertFalse(service.VerifyAssertionSignature(registration.Credential, wrongRpIdHash),
             "passkey assertion verification must reject authenticatorData RP ID hash mismatches");
+        byte[] wrongChallengeClientDataJson = WebAuthnClientDataJson.Create("webauthn.get",
+            Base64Url.Encode(Encoding.ASCII.GetBytes("0123456789abcdef")), canonicalOrigin);
+        PasskeyAssertionResponse wrongChallenge = ResignPasskeyAssertion(assertion.Assertion,
+            authenticatorData, wrongChallengeClientDataJson, privateKey);
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, wrongChallenge, canonicalChallenge),
+            "passkey assertion verification must reject clientDataJSON challenge mismatches");
     }
 
     private static void PasskeyAssertionRejectsNonEs256PublicKeyCose()
@@ -4368,6 +4376,7 @@ internal static class Program
     {
         PasskeyAssertionResponse copy = CopyPasskeyAssertion(assertion);
         copy.AuthenticatorData = Base64Url.Encode(authenticatorData);
+        copy.ClientDataJson = Base64Url.Encode(clientDataJson);
 #if NET8_0_OR_GREATER
         if (!OperatingSystem.IsWindows()) throw new Exception("Passkey assertion verification fixture requires Windows CNG.");
 #endif
