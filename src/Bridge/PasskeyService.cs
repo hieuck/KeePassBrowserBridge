@@ -135,11 +135,22 @@ namespace KeePassBrowserBridge.Bridge
             if (credential == null || assertion == null) return false;
 
             byte[] publicKeyCose;
+            byte[] storedCredentialId;
+            byte[] assertionCredentialId;
+            byte[] storedUserHandle;
+            byte[] assertionUserHandle;
             byte[] authenticatorData;
             byte[] clientDataJson;
             byte[] signatureDer;
             if (!Base64Url.TryDecode(credential.PublicKeyCose, out publicKeyCose)) return false;
+            if (!Base64Url.TryDecode(credential.CredentialId, out storedCredentialId) || storedCredentialId.Length == 0) return false;
+            if (!Base64Url.TryDecode(assertion.CredentialId, out assertionCredentialId) || assertionCredentialId.Length == 0) return false;
+            if (!FixedTimeEquals(storedCredentialId, assertionCredentialId)) return false;
+            if (!Base64Url.TryDecode(credential.UserHandle, out storedUserHandle) || storedUserHandle.Length == 0 || storedUserHandle.Length > 64) return false;
+            if (!Base64Url.TryDecode(assertion.UserHandle, out assertionUserHandle) || assertionUserHandle.Length == 0 || assertionUserHandle.Length > 64) return false;
+            if (!FixedTimeEquals(storedUserHandle, assertionUserHandle)) return false;
             if (!Base64Url.TryDecode(assertion.AuthenticatorData, out authenticatorData)) return false;
+            if (authenticatorData.Length < 37 || assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)) return false;
             if (!Base64Url.TryDecode(assertion.ClientDataJson, out clientDataJson)) return false;
             if (!Base64Url.TryDecode(assertion.Signature, out signatureDer)) return false;
 
@@ -152,6 +163,29 @@ namespace KeePassBrowserBridge.Bridge
 
             byte[] signedData = Combine(authenticatorData, Sha256(clientDataJson));
             return EccKeyBlob.VerifyDer(publicKey.X, publicKey.Y, signedData, signatureDer);
+        }
+
+        private static bool FixedTimeEquals(byte[] left, byte[] right)
+        {
+            if (left == null || right == null) return false;
+
+            int diff = left.Length ^ right.Length;
+            int count = Math.Min(left.Length, right.Length);
+            for (int i = 0; i < count; ++i)
+            {
+                diff |= left[i] ^ right[i];
+            }
+
+            return diff == 0;
+        }
+
+        private static uint ReadUInt32BigEndian(byte[] bytes, int offset)
+        {
+            if (bytes == null || offset < 0 || offset + 4 > bytes.Length) return 0;
+            return ((uint)bytes[offset] << 24) |
+                ((uint)bytes[offset + 1] << 16) |
+                ((uint)bytes[offset + 2] << 8) |
+                bytes[offset + 3];
         }
 
         private static PasskeyValidationResult ValidateRegistrationRequest(PasskeyRegistrationRequest request)

@@ -414,6 +414,18 @@ internal static class Program
         AssertEqual((uint)1, registration.Credential.SignCount, "passkey assertion should persist incremented sign count in material");
         AssertTrue(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion),
             "passkey assertion signature should verify against the generated public key");
+        PasskeyAssertionResponse wrongCredentialId = CopyPasskeyAssertion(assertion.Assertion);
+        wrongCredentialId.CredentialId = Base64Url.Encode(Encoding.ASCII.GetBytes("wrong-credential-id"));
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, wrongCredentialId),
+            "passkey assertion verification must reject credential ID mismatches");
+        PasskeyAssertionResponse wrongUserHandle = CopyPasskeyAssertion(assertion.Assertion);
+        wrongUserHandle.UserHandle = Base64Url.Encode(Encoding.ASCII.GetBytes("wrong-user"));
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, wrongUserHandle),
+            "passkey assertion verification must reject user handle mismatches");
+        PasskeyAssertionResponse wrongSignCount = CopyPasskeyAssertion(assertion.Assertion);
+        wrongSignCount.SignCount = 2;
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, wrongSignCount),
+            "passkey assertion verification must reject sign count metadata mismatches");
 
         byte[] authenticatorData;
         byte[] clientDataJson;
@@ -4270,6 +4282,19 @@ internal static class Program
         credential.PublicKeyCose = ReplaceCoseValueAfterKey(validPublicKeyCose, keyMarker, expectedValue, replacementValue);
         AssertFalse(service.VerifyAssertionSignature(credential, assertion), message);
         credential.PublicKeyCose = validPublicKeyCose;
+    }
+
+    private static PasskeyAssertionResponse CopyPasskeyAssertion(PasskeyAssertionResponse assertion)
+    {
+        return new PasskeyAssertionResponse
+        {
+            CredentialId = assertion.CredentialId,
+            AuthenticatorData = assertion.AuthenticatorData,
+            ClientDataJson = assertion.ClientDataJson,
+            Signature = assertion.Signature,
+            UserHandle = assertion.UserHandle,
+            SignCount = assertion.SignCount
+        };
     }
 
     private static string ReplaceCoseValueAfterKey(string publicKeyCose, byte keyMarker, byte expectedValue, byte replacementValue)
