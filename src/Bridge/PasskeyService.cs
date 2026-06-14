@@ -153,6 +153,7 @@ namespace KeePassBrowserBridge.Bridge
             if (authenticatorData.Length != WebAuthnAuthenticatorData.AssertionDataLength ||
                 authenticatorData[32] != WebAuthnAuthenticatorData.UserPresentFlag ||
                 assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)) return false;
+            if (!FixedTimeEquals(Slice(authenticatorData, 0, 32), WebAuthnAuthenticatorData.CreateRpIdHash(credential.RpId))) return false;
             if (!Base64Url.TryDecode(assertion.ClientDataJson, out clientDataJson)) return false;
             if (!WebAuthnClientDataJson.IsAssertionClientDataForOrigin(clientDataJson, credential.Origin)) return false;
             if (!Base64Url.TryDecode(assertion.Signature, out signatureDer)) return false;
@@ -189,6 +190,13 @@ namespace KeePassBrowserBridge.Bridge
                 ((uint)bytes[offset + 1] << 16) |
                 ((uint)bytes[offset + 2] << 8) |
                 bytes[offset + 3];
+        }
+
+        private static byte[] Slice(byte[] bytes, int offset, int length)
+        {
+            byte[] slice = new byte[length];
+            Buffer.BlockCopy(bytes, offset, slice, 0, length);
+            return slice;
         }
 
         private static PasskeyValidationResult ValidateRegistrationRequest(PasskeyRegistrationRequest request)
@@ -1379,7 +1387,7 @@ namespace KeePassBrowserBridge.Bridge
             }
         }
 
-        private static byte[] CreateRpIdHash(string rpId)
+        public static byte[] CreateRpIdHash(string rpId)
         {
             return Sha256(Encoding.ASCII.GetBytes(NormalizeRpId(rpId)));
         }

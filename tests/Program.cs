@@ -468,6 +468,12 @@ internal static class Program
             trailingAuthenticatorData, clientDataJson, privateKey);
         AssertFalse(service.VerifyAssertionSignature(registration.Credential, trailingData),
             "passkey assertion verification must reject trailing authenticatorData bytes");
+        byte[] wrongRpIdHashAuthenticatorData = (byte[])authenticatorData.Clone();
+        wrongRpIdHashAuthenticatorData[0] ^= 0xff;
+        PasskeyAssertionResponse wrongRpIdHash = ResignPasskeyAssertion(assertion.Assertion,
+            wrongRpIdHashAuthenticatorData, clientDataJson, privateKey);
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, wrongRpIdHash),
+            "passkey assertion verification must reject authenticatorData RP ID hash mismatches");
     }
 
     private static void PasskeyAssertionRejectsNonEs256PublicKeyCose()
