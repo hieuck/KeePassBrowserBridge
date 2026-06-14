@@ -10,6 +10,8 @@
     'Passkey WebAuthn request timed out.';
   const requestCanceledMessage =
     'Passkey WebAuthn request was canceled.';
+  const beginResponseMismatchMessage =
+    'Passkey begin response did not match the WebAuthn request.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -432,6 +434,7 @@
         const payload = normalizeCreateRequest(requestInfo, context);
         const begin = await bridgeCall('passkeys.create.begin', payload);
         try {
+          assertBeginMatchesRequest(payload, begin);
           if (typeof options.approveCreate === 'function') {
             const approved = await options.approveCreate({ payload, begin, context });
             if (!approved) throw notAllowedError('Passkey registration was denied.');
@@ -452,6 +455,7 @@
         const payload = normalizeGetRequest(requestInfo, context);
         const begin = await bridgeCall('passkeys.get.begin', payload);
         try {
+          assertBeginMatchesRequest(payload, begin);
           const credentials = Array.isArray(begin && begin.Credentials) ? begin.Credentials : [];
           const selected = typeof options.chooseCredential === 'function'
             ? await options.chooseCredential({ payload, begin, credentials, context })
@@ -483,6 +487,14 @@
         return cancelBridgeRequest(bridgeCall, requestId);
       }
     };
+  }
+
+  function assertBeginMatchesRequest(payload, begin) {
+    const expected = stringValue(payload && payload.WebAuthnRequestId).trim();
+    const actual = stringValue(begin && begin.WebAuthnRequestId).trim();
+    if (actual && actual !== expected) {
+      throw notAllowedError(beginResponseMismatchMessage);
+    }
   }
 
   function credentialIdFromSummary(credential) {

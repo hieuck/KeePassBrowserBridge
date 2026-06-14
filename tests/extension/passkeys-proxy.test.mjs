@@ -749,6 +749,51 @@ assert.deepEqual(plain(unlistedCredentialCalls.map(([method, payload]) => [metho
   ['passkeys.cancel', '84', '']
 ], 'bridge helper must not complete get requests for unlisted selected credentials');
 
+const mismatchedBeginCalls = [];
+let mismatchedBeginChooseCalled = false;
+const mismatchedBeginHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    mismatchedBeginCalls.push([method, payload]);
+    if (method === 'passkeys.get.begin') {
+      return {
+        WebAuthnRequestId: 'wrong-request',
+        Credentials: [
+          { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' }
+        ]
+      };
+    }
+    if (method === 'passkeys.cancel') {
+      return { WebAuthnRequestId: payload.WebAuthnRequestId, Cancelled: true };
+    }
+    throw new Error(`unexpected method ${method}`);
+  },
+  chooseCredential: async ({ credentials }) => {
+    mismatchedBeginChooseCalled = true;
+    return credentials[0];
+  }
+});
+await assert.rejects(
+  () => mismatchedBeginHandlers.onGetRequest({
+    requestId: 85,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  (error) => error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey begin response did not match the WebAuthn request.',
+  'get bridge helper should reject begin responses for a different WebAuthn request'
+);
+assert.equal(mismatchedBeginChooseCalled, false,
+  'bridge helper must not ask the user to choose credentials after mismatched begin responses');
+assert.deepEqual(plain(mismatchedBeginCalls.map(([method, payload]) => [method, payload.WebAuthnRequestId, payload.CredentialId || ''])), [
+  ['passkeys.get.begin', '85', ''],
+  ['passkeys.cancel', '85', '']
+], 'bridge helper must not complete get requests after mismatched begin responses');
+
 const bridgeCancelResponse = await handlers.onRequestCanceled('81', { kind: 'get' }, 'canceled');
 assert.equal(bridgeCancelResponse.Cancelled, true, 'cancel bridge helper should return cancel response');
 assert.deepEqual(plain(bridgeCalls[4]), [

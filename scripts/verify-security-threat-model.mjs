@@ -443,6 +443,15 @@ requireEvery('passkeysProxyTests', [
   'Selected passkey credential was not returned by KeePass.'
 ], 'proxy selected-credential allow-list enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
+  'assertBeginMatchesRequest',
+  'Passkey begin response did not match the WebAuthn request.'
+], 'passkey proxy bridge helper should reject mismatched begin responses before completion');
+requireEvery('passkeysProxyTests', [
+  'get bridge helper should reject begin responses for a different WebAuthn request',
+  'bridge helper must not complete get requests after mismatched begin responses',
+  'Passkey begin response did not match the WebAuthn request.'
+], 'proxy begin-response WebAuthn request binding should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',
   'CredentialAlgorithms',
