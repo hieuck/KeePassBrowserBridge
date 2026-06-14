@@ -23,6 +23,7 @@ namespace KeePassBrowserBridge.Bridge
         internal const string UnsupportedAttestationError = "Passkey attestation conveyance is not supported by this build.";
         internal const string UnsupportedAuthenticatorAttachmentErrorCode = "unsupported_authenticator_attachment";
         internal const string UnsupportedAuthenticatorAttachmentError = "Passkey authenticator attachment is not supported by this build.";
+        internal const string CrossPlatformAuthenticatorAttachment = "cross-platform";
         internal const string UnsupportedResidentKeyErrorCode = "unsupported_resident_key";
         internal const string UnsupportedResidentKeyError = "Passkey resident-key requirement is not supported by this build.";
         internal const string UnsupportedExtensionErrorCode = "unsupported_extension";
@@ -263,7 +264,7 @@ namespace KeePassBrowserBridge.Bridge
         internal static bool IsSupportedAuthenticatorAttachment(string authenticatorAttachment)
         {
             string value = (authenticatorAttachment ?? string.Empty).Trim().ToLowerInvariant();
-            return value.Length == 0 || value == "cross-platform";
+            return value.Length == 0 || value == CrossPlatformAuthenticatorAttachment;
         }
 
         internal static bool IsKnownResidentKeyRequirement(string residentKey)

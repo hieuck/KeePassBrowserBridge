@@ -250,6 +250,7 @@ namespace KeePassBrowserBridge.Bridge
         public string ClientDataJson { get; set; }
         public string AttestationObject { get; set; }
         public string PublicKeyCose { get; set; }
+        public string AuthenticatorAttachment { get; set; }
         public string[] Transports { get; set; }
         public PasskeyClientExtensionResults ClientExtensionResults { get; set; }
     }

@@ -3164,6 +3164,8 @@ internal static class Program
         AssertTrue(!string.IsNullOrWhiteSpace(result.CredentialId), "create complete response should include credential ID");
         AssertTrue(!string.IsNullOrWhiteSpace(result.ClientDataJson), "create complete response should include clientDataJSON");
         AssertTrue(!string.IsNullOrWhiteSpace(result.AttestationObject), "create complete response should include attestationObject");
+        AssertEqual("cross-platform", result.AuthenticatorAttachment,
+            "create complete response should include cross-platform authenticator attachment");
         AssertEqual(1, result.Transports.Length, "create complete response should include normalized transport metadata");
         AssertEqual("internal", result.Transports[0], "create complete response transport mismatch");
         AssertTrue(result.ClientExtensionResults != null && result.ClientExtensionResults.CredProps != null &&
