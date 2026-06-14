@@ -150,8 +150,9 @@ namespace KeePassBrowserBridge.Bridge
             if (!Base64Url.TryDecode(assertion.UserHandle, out assertionUserHandle) || assertionUserHandle.Length == 0 || assertionUserHandle.Length > 64) return false;
             if (!FixedTimeEquals(storedUserHandle, assertionUserHandle)) return false;
             if (!Base64Url.TryDecode(assertion.AuthenticatorData, out authenticatorData)) return false;
-            if (authenticatorData.Length < 37 || assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)) return false;
-            if ((authenticatorData[32] & WebAuthnAuthenticatorData.UserPresentFlag) == 0) return false;
+            if (authenticatorData.Length != WebAuthnAuthenticatorData.AssertionDataLength ||
+                authenticatorData[32] != WebAuthnAuthenticatorData.UserPresentFlag ||
+                assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)) return false;
             if (!Base64Url.TryDecode(assertion.ClientDataJson, out clientDataJson)) return false;
             if (!WebAuthnClientDataJson.IsAssertionClientDataForOrigin(clientDataJson, credential.Origin)) return false;
             if (!Base64Url.TryDecode(assertion.Signature, out signatureDer)) return false;
@@ -1346,6 +1347,7 @@ namespace KeePassBrowserBridge.Bridge
 
     internal static class WebAuthnAuthenticatorData
     {
+        public const int AssertionDataLength = 37;
         public const byte UserPresentFlag = 0x01;
         private const byte AttestedCredentialDataFlag = 0x40;
 

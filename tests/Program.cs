@@ -453,15 +453,21 @@ internal static class Program
             "passkey private key should be base64url encoded for flag verification fixture");
         byte[] missingUserPresentAuthenticatorData = (byte[])authenticatorData.Clone();
         missingUserPresentAuthenticatorData[32] = 0x00;
-        PasskeyAssertionResponse missingUserPresent = CopyPasskeyAssertion(assertion.Assertion);
-        missingUserPresent.AuthenticatorData = Base64Url.Encode(missingUserPresentAuthenticatorData);
-#if NET8_0_OR_GREATER
-        if (!OperatingSystem.IsWindows()) throw new Exception("Passkey flag verification fixture requires Windows CNG.");
-#endif
-        missingUserPresent.Signature = Base64Url.Encode(EccKeyBlob.SignDer(privateKey,
-            CombineBytes(missingUserPresentAuthenticatorData, Sha256(clientDataJson))));
+        PasskeyAssertionResponse missingUserPresent = ResignPasskeyAssertion(assertion.Assertion,
+            missingUserPresentAuthenticatorData, clientDataJson, privateKey);
         AssertFalse(service.VerifyAssertionSignature(registration.Credential, missingUserPresent),
             "passkey assertion verification must reject authenticatorData without user-present flag");
+        byte[] unsupportedFlagAuthenticatorData = (byte[])authenticatorData.Clone();
+        unsupportedFlagAuthenticatorData[32] = 0x41;
+        PasskeyAssertionResponse unsupportedFlag = ResignPasskeyAssertion(assertion.Assertion,
+            unsupportedFlagAuthenticatorData, clientDataJson, privateKey);
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, unsupportedFlag),
+            "passkey assertion verification must reject unsupported authenticatorData flags");
+        byte[] trailingAuthenticatorData = CombineBytes(authenticatorData, new byte[] { 0x00 });
+        PasskeyAssertionResponse trailingData = ResignPasskeyAssertion(assertion.Assertion,
+            trailingAuthenticatorData, clientDataJson, privateKey);
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, trailingData),
+            "passkey assertion verification must reject trailing authenticatorData bytes");
     }
 
     private static void PasskeyAssertionRejectsNonEs256PublicKeyCose()
@@ -4346,6 +4352,22 @@ internal static class Program
             UserHandle = assertion.UserHandle,
             SignCount = assertion.SignCount
         };
+    }
+
+    private static PasskeyAssertionResponse ResignPasskeyAssertion(
+        PasskeyAssertionResponse assertion,
+        byte[] authenticatorData,
+        byte[] clientDataJson,
+        byte[] privateKey)
+    {
+        PasskeyAssertionResponse copy = CopyPasskeyAssertion(assertion);
+        copy.AuthenticatorData = Base64Url.Encode(authenticatorData);
+#if NET8_0_OR_GREATER
+        if (!OperatingSystem.IsWindows()) throw new Exception("Passkey assertion verification fixture requires Windows CNG.");
+#endif
+        copy.Signature = Base64Url.Encode(EccKeyBlob.SignDer(privateKey,
+            CombineBytes(authenticatorData, Sha256(clientDataJson))));
+        return copy;
     }
 
     private static string ReplaceCoseValueAfterKey(string publicKeyCose, byte keyMarker, byte expectedValue, byte replacementValue)
