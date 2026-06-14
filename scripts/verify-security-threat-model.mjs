@@ -461,13 +461,17 @@ requireEvery('passkeysProxyExperiment', [
   'assertCreateCompleteMatchesRequest',
   'assertGetCompleteMatchesRequest',
   "assertCompleteFieldMatches(payload, complete, 'CredentialId')",
-  'Passkey complete response did not match the WebAuthn request.'
+  'Passkey complete response did not match the WebAuthn request.',
+  'assertRequiredCompleteFields',
+  'Passkey complete response was missing required WebAuthn fields.'
 ], 'passkey proxy bridge helper should reject mismatched complete response bindings before browser completion');
 requireEvery('passkeysProxyTests', [
   'get bridge helper should reject complete responses for a different selected credential',
   'bridge helper must not return mismatched get complete responses',
-  'Passkey complete response did not match the WebAuthn request.'
-], 'proxy complete-response WebAuthn request, RP ID, and credential binding should be covered by tests');
+  'Passkey complete response did not match the WebAuthn request.',
+  'get success should fail closed when KeePass omits required assertion fields',
+  'Passkey complete response was missing required WebAuthn fields.'
+], 'proxy complete-response WebAuthn request, RP ID, credential, and required-field binding should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',
@@ -578,7 +582,8 @@ requireEvery('passkeysProxyExperiment', [
   'unsupportedRequestedExtensionNames',
   'Passkey requested WebAuthn extension is not supported by this build.',
   'normalizeClientExtensionResults',
-  'authenticatorData: firstString',
+  'const authenticatorData = firstString',
+  'assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject)',
   'response && response.PublicKey',
   'PublicKeyCose',
   'publicKeyAlgorithm: publicKey ? -7 : undefined',

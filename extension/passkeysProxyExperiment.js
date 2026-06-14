@@ -14,6 +14,8 @@
     'Passkey begin response did not match the WebAuthn request.';
   const completeResponseMismatchMessage =
     'Passkey complete response did not match the WebAuthn request.';
+  const missingCompleteResponseFieldsMessage =
+    'Passkey complete response was missing required WebAuthn fields.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -880,7 +882,13 @@
     if (!api || typeof api.completeCreateRequest !== 'function') {
       throw new Error('chrome.webAuthenticationProxy.completeCreateRequest is not available.');
     }
-    return api.completeCreateRequest(successDetails(requestId, createResponseJson(response)));
+    let responseJson;
+    try {
+      responseJson = createResponseJson(response);
+    } catch (error) {
+      return completeCreateError(chromeLike, requestId, error);
+    }
+    return api.completeCreateRequest(successDetails(requestId, responseJson));
   }
 
   async function completeGetSuccess(chromeLike, requestId, response) {
@@ -888,7 +896,13 @@
     if (!api || typeof api.completeGetRequest !== 'function') {
       throw new Error('chrome.webAuthenticationProxy.completeGetRequest is not available.');
     }
-    return api.completeGetRequest(successDetails(requestId, getResponseJson(response)));
+    let responseJson;
+    try {
+      responseJson = getResponseJson(response);
+    } catch (error) {
+      return completeGetError(chromeLike, requestId, error);
+    }
+    return api.completeGetRequest(successDetails(requestId, responseJson));
   }
 
   async function completeIsUvpaa(chromeLike, requestId, result) {
@@ -950,6 +964,14 @@
       credential.PublicKeyCose,
       credential.publicKeyCose
     );
+    const clientDataJson = firstString(response && response.ClientDataJson, response && response.clientDataJSON);
+    const attestationObject = firstString(response && response.AttestationObject, response && response.attestationObject);
+    const authenticatorData = firstString(
+      response && response.AuthenticatorData,
+      response && response.authenticatorData,
+      credential.AuthenticatorData,
+      credential.authenticatorData);
+    assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
 
     return JSON.stringify(compactObject({
       id: credentialId,
@@ -957,13 +979,9 @@
       type: 'public-key',
       authenticatorAttachment: firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment),
       response: compactObject({
-        clientDataJSON: firstString(response && response.ClientDataJson, response && response.clientDataJSON),
-        attestationObject: firstString(response && response.AttestationObject, response && response.attestationObject),
-        authenticatorData: firstString(
-          response && response.AuthenticatorData,
-          response && response.authenticatorData,
-          credential.AuthenticatorData,
-          credential.authenticatorData),
+        clientDataJSON: clientDataJson,
+        attestationObject,
+        authenticatorData,
         publicKey,
         publicKeyAlgorithm: publicKey ? -7 : undefined,
         transports: normalizeStringArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
@@ -986,6 +1004,10 @@
       response && response.id,
       response && response.rawId
     );
+    const authenticatorData = firstString(assertion.AuthenticatorData, assertion.authenticatorData);
+    const clientDataJson = firstString(assertion.ClientDataJson, assertion.clientDataJSON);
+    const signature = firstString(assertion.Signature, assertion.signature);
+    assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
 
     return JSON.stringify(compactObject({
       id: credentialId,
@@ -993,14 +1015,20 @@
       type: 'public-key',
       authenticatorAttachment: firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment),
       response: compactObject({
-        authenticatorData: firstString(assertion.AuthenticatorData, assertion.authenticatorData),
-        clientDataJSON: firstString(assertion.ClientDataJson, assertion.clientDataJSON),
-        signature: firstString(assertion.Signature, assertion.signature),
+        authenticatorData,
+        clientDataJSON: clientDataJson,
+        signature,
         userHandle: firstString(assertion.UserHandle, assertion.userHandle)
       }),
       clientExtensionResults: normalizeClientExtensionResults(
         response && (response.ClientExtensionResults || response.clientExtensionResults))
     }));
+  }
+
+  function assertRequiredCompleteFields(...values) {
+    if (values.some((value) => !stringValue(value).trim())) {
+      throw notAllowedError(missingCompleteResponseFieldsMessage);
+    }
   }
 
   function normalizeError(error) {

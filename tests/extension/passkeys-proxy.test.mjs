@@ -1316,6 +1316,13 @@ await api.completeGetSuccess(chromeApi, 46, {
   }
 });
 await api.completeIsUvpaa(chromeApi, 47, { isUvpaa: false });
+await api.completeGetSuccess(chromeApi, 48, {
+  Assertion: {
+    CredentialId: 'Y3JlZC00OA',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA'
+  }
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -1351,6 +1358,16 @@ assert.deepEqual(getSuccessJson, {
   },
   clientExtensionResults: {}
 }, 'get success should serialize a PublicKeyCredential.toJSON-like response');
+assert.deepEqual(plain(calls[5]), [
+  'get',
+  {
+    requestId: 48,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response was missing required WebAuthn fields.'
+    }
+  }
+], 'get success should fail closed when KeePass omits required assertion fields');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
