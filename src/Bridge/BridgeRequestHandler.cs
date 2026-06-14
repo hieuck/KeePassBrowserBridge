@@ -520,6 +520,7 @@ namespace KeePassBrowserBridge.Bridge
                 ClientDataJson = assertion.Assertion.ClientDataJson,
                 Signature = assertion.Assertion.Signature,
                 UserHandle = assertion.Assertion.UserHandle,
+                AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment,
                 SignCount = assertion.Assertion.SignCount
             }));
         }

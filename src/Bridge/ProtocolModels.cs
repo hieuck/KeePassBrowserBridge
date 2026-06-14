@@ -310,6 +310,7 @@ namespace KeePassBrowserBridge.Bridge
         public string ClientDataJson { get; set; }
         public string Signature { get; set; }
         public string UserHandle { get; set; }
+        public string AuthenticatorAttachment { get; set; }
         public uint SignCount { get; set; }
     }
 

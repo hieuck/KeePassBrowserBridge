@@ -1017,6 +1017,7 @@ await api.completeCreateSuccess(chromeApi, 45, {
   Transports: ['internal', 'usb']
 });
 await api.completeGetSuccess(chromeApi, 46, {
+  AuthenticatorAttachment: 'cross-platform',
   Assertion: {
     CredentialId: 'Y3JlZC00Ng',
     AuthenticatorData: 'YXV0aC1kYXRh',
@@ -1049,6 +1050,7 @@ assert.deepEqual(getSuccessJson, {
   id: 'Y3JlZC00Ng',
   rawId: 'Y3JlZC00Ng',
   type: 'public-key',
+  authenticatorAttachment: 'cross-platform',
   response: {
     authenticatorData: 'YXV0aC1kYXRh',
     clientDataJSON: 'Y2xpZW50LWdldA',

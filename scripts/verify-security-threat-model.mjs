@@ -64,6 +64,15 @@ function requireEvery(sourceName, needles, message) {
   }
 }
 
+function requireCountAtLeast(sourceName, needle, expectedCount, message) {
+  const source = sources[sourceName];
+  const count = source.split(needle).length - 1;
+  if (count < expectedCount) {
+    throw new Error(`${message} Expected ${expectedCount} occurrences of ${JSON.stringify(needle)} in ${sourceName}, found ${count}.`);
+  }
+  checks.push(message);
+}
+
 requireIncludes('securityThreatModel', '## Security Review Checklist',
   'security threat model should keep a pre-release checklist');
 requireIncludes('securityThreatModel', 'Before public replacement release',
@@ -316,23 +325,30 @@ requireEvery('bridgeRequestHandler', [
   'Transports = registration.Credential.Transports',
   'Rk = true'
 ], 'passkey bridge should return requested credProps extension results, authenticator attachment, and transport metadata for discoverable credentials');
+requireCountAtLeast('bridgeRequestHandler', 'AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment', 2,
+  'passkey bridge should return authenticator attachment metadata for create and get completion responses');
 requireEvery('protocolModels', [
   'PasskeyCreateCompleteResponsePayload',
+  'PasskeyGetCompleteResponsePayload',
   'public string AuthenticatorAttachment { get; set; }',
   'public string[] Transports { get; set; }'
-], 'passkey create-complete response contract should carry authenticator attachment and transport metadata to the proxy');
+], 'passkey complete response contracts should carry authenticator attachment metadata to the proxy');
+requireCountAtLeast('protocolModels', 'public string AuthenticatorAttachment { get; set; }', 2,
+  'passkey create/get complete response contracts should each carry authenticator attachment metadata');
 requireEvery('testsProgram', [
   'pending create should retain requested credProps extension state',
   'create complete response should include cross-platform authenticator attachment',
+  'get complete response should include cross-platform authenticator attachment',
   'create complete response should include normalized transport metadata',
   'create complete response should include requested credProps resident-key result'
-], 'backend credProps extension result and create-complete metadata handling should be covered by tests');
+], 'backend credProps extension result and complete-response metadata handling should be covered by tests');
 requireEvery('passkeyDesign', [
   'create-complete response also carries the cross-platform authenticator attachment and normalized credential transports',
+  'get-complete response carries cross-platform authenticator attachment metadata',
   'authenticatorAttachment plus response.transports',
   'create response transports',
   'create-complete authenticator attachment and transport metadata'
-], 'passkey design should document create-complete authenticator attachment, transport metadata, and proxy serialization');
+], 'passkey design should document complete-response authenticator attachment, transport metadata, and proxy serialization');
 requireEvery('passkeyService', [
   'UnsupportedExtensionErrorCode',
   'HasUnsupportedRequestedExtensions',
@@ -431,6 +447,8 @@ requireEvery('passkeysProxyTests', [
   "authenticatorAttachment: 'cross-platform'",
   "AuthenticatorAttachment: 'cross-platform'"
 ], 'proxy authenticator attachment enforcement should be covered by tests');
+requireCountAtLeast('passkeysProxyTests', "authenticatorAttachment: 'cross-platform'", 2,
+  'proxy success serialization should include authenticator attachment for create and get completions');
 requireEvery('passkeysProxyExperiment', [
   'normalizeResidentKey',
   'requireResidentKey',
