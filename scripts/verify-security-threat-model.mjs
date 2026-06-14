@@ -322,6 +322,7 @@ requireEvery('bridgeRequestHandler', [
   'CreateClientExtensionResults',
   'PasskeyCredPropsExtensionResult',
   'AuthenticatorData = registration.AuthenticatorData',
+  'PublicKey = registration.PublicKey',
   'AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment',
   'Transports = registration.Credential.Transports',
   'Rk = true'
@@ -332,28 +333,32 @@ requireEvery('protocolModels', [
   'PasskeyCreateCompleteResponsePayload',
   'PasskeyGetCompleteResponsePayload',
   'public string AuthenticatorData { get; set; }',
+  'public string PublicKey { get; set; }',
   'public string AuthenticatorAttachment { get; set; }',
   'public string[] Transports { get; set; }'
-], 'passkey complete response contracts should carry authenticator data and attachment metadata to the proxy');
+], 'passkey complete response contracts should carry authenticator data, SPKI public key data, and attachment metadata to the proxy');
 requireCountAtLeast('protocolModels', 'public string AuthenticatorAttachment { get; set; }', 2,
   'passkey create/get complete response contracts should each carry authenticator attachment metadata');
 requireEvery('testsProgram', [
   'pending create should retain requested credProps extension state',
   'create complete response should include authenticatorData',
   'create complete response authenticatorData mismatch',
+  'AssertP256SubjectPublicKeyInfo',
+  'DER prefix mismatch',
+  'create complete response should include public key SPKI',
   'create complete response should include cross-platform authenticator attachment',
   'get complete response should include cross-platform authenticator attachment',
   'create complete response should include normalized transport metadata',
   'create complete response should include requested credProps resident-key result'
 ], 'backend credProps extension result and complete-response metadata handling should be covered by tests');
 requireEvery('passkeyDesign', [
-  'create-complete response also carries authenticator data, the cross-platform authenticator attachment, normalized credential transports, public-key COSE, and ES256 algorithm metadata',
+  'create-complete response also carries authenticator data, SPKI publicKey, the cross-platform authenticator attachment, normalized credential transports, public-key COSE storage metadata, and ES256 algorithm metadata',
   'get-complete response carries cross-platform authenticator attachment metadata',
   'authenticatorAttachment plus response.authenticatorData/transports/publicKey/publicKeyAlgorithm',
   'create response authenticatorData, transports',
-  'create public-key COSE',
-  'create-complete authenticatorData, authenticator attachment, and transport metadata'
-], 'passkey design should document complete-response authenticator data, authenticator attachment, transport metadata, and proxy serialization');
+  'create public-key SPKI',
+  'create-complete authenticatorData, SPKI publicKey, authenticator attachment, and transport metadata'
+], 'passkey design should document complete-response authenticator data, SPKI publicKey, authenticator attachment, transport metadata, and proxy serialization');
 requireEvery('passkeyService', [
   'UnsupportedExtensionErrorCode',
   'HasUnsupportedRequestedExtensions',
@@ -495,6 +500,7 @@ requireEvery('passkeysProxyExperiment', [
   'Passkey requested WebAuthn extension is not supported by this build.',
   'normalizeClientExtensionResults',
   'authenticatorData: firstString',
+  'response && response.PublicKey',
   'PublicKeyCose',
   'publicKeyAlgorithm: publicKey ? -7 : undefined',
   'credProps'
@@ -506,7 +512,8 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when requested extensions are unsupported',
   'bridge helper must not call backend get passkey methods when requested extensions are unsupported',
   "authenticatorData: 'YXV0aC1jcmVhdGU'",
-  "publicKey: 'cHVibGljLWtleS1jb3Nl'",
+  "PublicKey: 'c3BraS1wdWJsaWMta2V5'",
+  "publicKey: 'c3BraS1wdWJsaWMta2V5'",
   'publicKeyAlgorithm: -7',
   'credProps: {',
   'rk: true'

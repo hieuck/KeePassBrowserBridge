@@ -52,6 +52,7 @@ namespace KeePassBrowserBridge.Bridge
             byte[] credentialId = RandomBytes(32);
             EccKeyBlob key = EccKeyBlob.Create();
             byte[] publicKeyCose = CoseKey.EncodeEs256PublicKey(key.PublicX, key.PublicY);
+            byte[] publicKeySpki = EccKeyBlob.EncodeSubjectPublicKeyInfo(key.PublicX, key.PublicY);
             byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.create", canonicalChallenge, canonicalOrigin);
             byte[] authenticatorData;
             byte[] attestationObject = WebAuthnAttestationObject.CreateNone(request.RpId, credentialId, publicKeyCose, out authenticatorData);
@@ -70,7 +71,8 @@ namespace KeePassBrowserBridge.Bridge
                 PublicKeyCose = Base64Url.Encode(publicKeyCose),
                 PrivateKey = Base64Url.Encode(key.PrivateBlob),
                 SignCount = 0
-            }, Base64Url.Encode(clientDataJson), Base64Url.Encode(attestationObject), Base64Url.Encode(authenticatorData));
+            }, Base64Url.Encode(clientDataJson), Base64Url.Encode(attestationObject),
+                Base64Url.Encode(authenticatorData), Base64Url.Encode(publicKeySpki));
         }
 
         public PasskeyAssertionResult CreateAssertion(PasskeyCredentialMaterial credential, PasskeyAssertionRequest request)
@@ -1060,8 +1062,9 @@ namespace KeePassBrowserBridge.Bridge
         public string ClientDataJson { get; set; }
         public string AttestationObject { get; set; }
         public string AuthenticatorData { get; set; }
+        public string PublicKey { get; set; }
 
-        public static PasskeyRegistrationResult Ok(PasskeyCredentialMaterial credential, string clientDataJson, string attestationObject, string authenticatorData)
+        public static PasskeyRegistrationResult Ok(PasskeyCredentialMaterial credential, string clientDataJson, string attestationObject, string authenticatorData, string publicKey)
         {
             return new PasskeyRegistrationResult
             {
@@ -1069,7 +1072,8 @@ namespace KeePassBrowserBridge.Bridge
                 Credential = credential,
                 ClientDataJson = clientDataJson,
                 AttestationObject = attestationObject,
-                AuthenticatorData = authenticatorData
+                AuthenticatorData = authenticatorData,
+                PublicKey = publicKey
             };
         }
 
@@ -1679,6 +1683,25 @@ namespace KeePassBrowserBridge.Bridge
                 byte[] hash = Sha256(data);
                 return ecdsa.VerifyHash(hash, signatureP1363);
             }
+        }
+
+        public static byte[] EncodeSubjectPublicKeyInfo(byte[] publicX, byte[] publicY)
+        {
+            if (publicX == null || publicY == null || publicX.Length != 32 || publicY.Length != 32)
+                throw new InvalidOperationException("P-256 public key coordinates must be 32 bytes.");
+
+            byte[] prefix = new byte[]
+            {
+                0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86,
+                0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a,
+                0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03,
+                0x42, 0x00, 0x04
+            };
+            byte[] spki = new byte[prefix.Length + publicX.Length + publicY.Length];
+            Buffer.BlockCopy(prefix, 0, spki, 0, prefix.Length);
+            Buffer.BlockCopy(publicX, 0, spki, prefix.Length, publicX.Length);
+            Buffer.BlockCopy(publicY, 0, spki, prefix.Length + publicX.Length, publicY.Length);
+            return spki;
         }
 
         private static byte[] Sha256(byte[] bytes)

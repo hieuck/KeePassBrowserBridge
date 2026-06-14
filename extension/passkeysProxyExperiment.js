@@ -794,12 +794,18 @@
       response && response.rawId
     );
     const publicKey = firstString(
+      response && response.PublicKey,
+      response && response.publicKey,
+      response && response.PublicKeySpki,
+      response && response.publicKeySpki,
+      credential.PublicKey,
+      credential.publicKey,
+      credential.PublicKeySpki,
+      credential.publicKeySpki,
       response && response.PublicKeyCose,
       response && response.publicKeyCose,
-      response && response.publicKey,
       credential.PublicKeyCose,
-      credential.publicKeyCose,
-      credential.publicKey
+      credential.publicKeyCose
     );
 
     return JSON.stringify(compactObject({

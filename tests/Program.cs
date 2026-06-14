@@ -299,6 +299,7 @@ internal static class Program
         AssertTrue(result.Success, "passkey registration prototype should create credential material: " + result.Error);
         AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.CredentialId), "passkey credential ID should be generated");
         AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.PublicKeyCose), "passkey COSE public key should be generated");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.PublicKey), "passkey registration result should include public key SPKI");
         AssertTrue(!string.IsNullOrWhiteSpace(result.Credential.PrivateKey), "passkey private key material should be generated for protected KeePass storage");
         AssertEqual("example.com", result.Credential.RpId, "passkey RP ID should be normalized");
         AssertEqual(canonicalOrigin, result.Credential.Origin, "passkey credential origin should be normalized to a WebAuthn origin");
@@ -313,10 +314,13 @@ internal static class Program
         byte[] attestationObject;
         byte[] credentialId;
         byte[] publicKeyCose;
+        byte[] publicKeySpki;
         AssertTrue(Base64Url.TryDecode(result.ClientDataJson, out clientDataJson), "passkey clientDataJSON should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.AttestationObject, out attestationObject), "passkey attestationObject should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.Credential.CredentialId, out credentialId), "passkey credential ID should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.Credential.PublicKeyCose, out publicKeyCose), "passkey public key COSE should be base64url encoded");
+        AssertTrue(Base64Url.TryDecode(result.PublicKey, out publicKeySpki), "passkey public key SPKI should be base64url encoded");
+        AssertP256SubjectPublicKeyInfo(publicKeySpki, publicKeyCose, "registration public key SPKI");
         AssertWebAuthnClientData(clientDataJson, "webauthn.create", canonicalChallenge, canonicalOrigin,
             "registration clientDataJSON");
         byte[] authData = ReadNoneAttestationAuthData(attestationObject);
@@ -3165,12 +3169,16 @@ internal static class Program
         AssertTrue(!string.IsNullOrWhiteSpace(result.ClientDataJson), "create complete response should include clientDataJSON");
         AssertTrue(!string.IsNullOrWhiteSpace(result.AttestationObject), "create complete response should include attestationObject");
         AssertTrue(!string.IsNullOrWhiteSpace(result.AuthenticatorData), "create complete response should include authenticatorData");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.PublicKey), "create complete response should include public key SPKI");
         byte[] responseAttestationObject;
         byte[] responseAuthenticatorData;
+        byte[] responsePublicKeySpki;
         AssertTrue(Base64Url.TryDecode(result.AttestationObject, out responseAttestationObject),
             "create complete response attestationObject should be base64url encoded");
         AssertTrue(Base64Url.TryDecode(result.AuthenticatorData, out responseAuthenticatorData),
             "create complete response authenticatorData should be base64url encoded");
+        AssertTrue(Base64Url.TryDecode(result.PublicKey, out responsePublicKeySpki),
+            "create complete response public key SPKI should be base64url encoded");
         AssertByteArrayEqual(ReadNoneAttestationAuthData(responseAttestationObject), responseAuthenticatorData,
             "create complete response authenticatorData mismatch");
         AssertEqual("cross-platform", result.AuthenticatorAttachment,
@@ -4414,6 +4422,39 @@ internal static class Program
         }
 
         throw new Exception("test public key COSE did not contain the expected key/value marker.");
+    }
+
+    private static void AssertP256SubjectPublicKeyInfo(byte[] spki, byte[] publicKeyCose, string label)
+    {
+        byte[] x = ReadCoseCoordinate(publicKeyCose, (byte)0x21);
+        byte[] y = ReadCoseCoordinate(publicKeyCose, (byte)0x22);
+        byte[] expectedPrefix = new byte[]
+        {
+            0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86,
+            0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a,
+            0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03,
+            0x42, 0x00, 0x04
+        };
+
+        AssertEqual(expectedPrefix.Length + x.Length + y.Length, spki.Length,
+            label + " length mismatch");
+        AssertByteArrayEqual(expectedPrefix, Slice(spki, 0, expectedPrefix.Length),
+            label + " DER prefix mismatch");
+        AssertByteArrayEqual(x, Slice(spki, expectedPrefix.Length, x.Length),
+            label + " X coordinate mismatch");
+        AssertByteArrayEqual(y, Slice(spki, expectedPrefix.Length + x.Length, y.Length),
+            label + " Y coordinate mismatch");
+    }
+
+    private static byte[] ReadCoseCoordinate(byte[] cose, byte keyMarker)
+    {
+        for (int i = 0; i < cose.Length - 34; ++i)
+        {
+            if (cose[i] == keyMarker && cose[i + 1] == 0x58 && cose[i + 2] == 0x20)
+                return Slice(cose, i + 3, 32);
+        }
+
+        throw new Exception("test public key COSE did not contain expected coordinate marker.");
     }
 
     private static void AssertByteArrayEqual(byte[] expected, byte[] actual, string message)

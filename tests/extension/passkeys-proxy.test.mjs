@@ -1088,6 +1088,7 @@ await api.completeCreateSuccess(chromeApi, 45, {
   ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
   AttestationObject: 'YXR0ZXN0YXRpb24',
   AuthenticatorData: 'YXV0aC1jcmVhdGU',
+  PublicKey: 'c3BraS1wdWJsaWMta2V5',
   PublicKeyCose: 'cHVibGljLWtleS1jb3Nl',
   AuthenticatorAttachment: 'cross-platform',
   ClientExtensionResults: {
@@ -1120,7 +1121,7 @@ assert.deepEqual(createSuccessJson, {
     clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
     attestationObject: 'YXR0ZXN0YXRpb24',
     authenticatorData: 'YXV0aC1jcmVhdGU',
-    publicKey: 'cHVibGljLWtleS1jb3Nl',
+    publicKey: 'c3BraS1wdWJsaWMta2V5',
     publicKeyAlgorithm: -7,
     transports: ['internal', 'usb']
   },
