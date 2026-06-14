@@ -71,7 +71,6 @@ const createPayload = api.normalizeCreateRequest({
     excludeCredentials: [
       { type: 'public-key', id: 'ZXhjbHVkZS0x==' },
       { type: 'PUBLIC-KEY', id: 'ZXhjbHVkZS0x' },
-      { type: 'password', id: 'cGFzc3dvcmQtY3JlZA' },
       { id: 'ZXhjbHVkZS0y' }
     ]
   }))
@@ -462,6 +461,24 @@ assert.throws(
 );
 
 assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 56,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      excludeCredentials: [
+        { id: 'ZXhjbHVkZS0x', type: 'future-public-key' }
+      ]
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidExcludeCredentialError,
+  'proxy experiment must reject create requests with unsupported excludeCredentials descriptor types'
+);
+
+assert.throws(
   () => api.normalizeGetRequest({
     requestId: 54,
     requestDetailsJson: JSON.stringify({
@@ -491,6 +508,23 @@ assert.throws(
   }),
   isInvalidAllowCredentialError,
   'proxy experiment must reject get requests with invalid allowCredentials'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 57,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      allowCredentials: [
+        { id: 'Y3JlZC0x', type: 'future-public-key' }
+      ]
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidAllowCredentialError,
+  'proxy experiment must reject get requests with unsupported allowCredentials descriptor types'
 );
 
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,
@@ -959,6 +993,29 @@ await assert.rejects(
 assert.deepEqual(invalidExcludeCredentialBridgeCalls, [],
   'bridge helper must not call backend passkey methods when excludeCredentials is invalid');
 
+const unsupportedExcludeCredentialTypeBridgeCalls = [];
+const unsupportedExcludeCredentialTypeHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedExcludeCredentialTypeBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedExcludeCredentialTypeHandlers.onCreateRequest({
+    requestId: 92,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'dXNlcg', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      excludeCredentials: [{ id: 'ZXhjbHVkZS0x', type: 'future-public-key' }]
+    }))
+  }, { origin: 'https://example.com' }),
+  isInvalidExcludeCredentialError,
+  'create bridge helper should reject unsupported excludeCredentials descriptor types before calling KeePass'
+);
+assert.deepEqual(unsupportedExcludeCredentialTypeBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when excludeCredentials descriptor type is unsupported');
+
 const invalidChallengeBridgeCalls = [];
 const invalidChallengeHandlers = api.createBridgeRequestHandlers({
   bridgeCall: async (method, payload) => {
@@ -1001,6 +1058,28 @@ await assert.rejects(
 );
 assert.deepEqual(invalidAllowCredentialBridgeCalls, [],
   'bridge helper must not call backend passkey methods when allowCredentials is invalid');
+
+const unsupportedAllowCredentialTypeBridgeCalls = [];
+const unsupportedAllowCredentialTypeHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unsupportedAllowCredentialTypeBridgeCalls.push([method, payload]);
+    return { PendingApproval: true };
+  }
+});
+await assert.rejects(
+  () => unsupportedAllowCredentialTypeHandlers.onGetRequest({
+    requestId: 93,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      allowCredentials: [{ id: 'Y3JlZC0x', type: 'future-public-key' }]
+    })
+  }, { origin: 'https://example.com' }),
+  isInvalidAllowCredentialError,
+  'get bridge helper should reject unsupported allowCredentials descriptor types before calling KeePass'
+);
+assert.deepEqual(unsupportedAllowCredentialTypeBridgeCalls, [],
+  'bridge helper must not call backend passkey methods when allowCredentials descriptor type is unsupported');
 
 await api.completeCreateError(chromeApi, 42, { name: 'NotAllowedError', message: 'Denied' });
 await api.completeGetError(chromeApi, 43, 'Bridge unavailable');

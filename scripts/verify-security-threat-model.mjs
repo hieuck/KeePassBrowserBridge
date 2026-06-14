@@ -387,13 +387,16 @@ requireEvery('passkeysProxyTests', [
 ], 'proxy invalid user handle rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeExcludeCredentialIds',
+  "type !== 'public-key'",
   'invalidExcludeCredentialMessage',
   'Passkey excludeCredentials contains an invalid credential ID.'
-], 'passkey proxy should reject invalid create excludeCredentials before bridge calls');
+], 'passkey proxy should reject invalid create excludeCredentials IDs and descriptor types before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with invalid excludeCredentials',
-  'bridge helper must not call backend passkey methods when excludeCredentials is invalid'
-], 'proxy invalid excludeCredentials rejection should be covered by tests');
+  'proxy experiment must reject create requests with unsupported excludeCredentials descriptor types',
+  'bridge helper must not call backend passkey methods when excludeCredentials is invalid',
+  'bridge helper must not call backend passkey methods when excludeCredentials descriptor type is unsupported'
+], 'proxy invalid excludeCredentials ID and descriptor type rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeChallenge',
   'invalidChallengeMessage',
@@ -406,13 +409,16 @@ requireEvery('passkeysProxyTests', [
 ], 'proxy invalid challenge rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeAllowCredentialIds',
+  "type !== 'public-key'",
   'invalidAllowCredentialMessage',
   'Passkey allowCredentials contains an invalid credential ID.'
-], 'passkey proxy should reject invalid get allowCredentials before bridge calls');
+], 'passkey proxy should reject invalid get allowCredentials IDs and descriptor types before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject get requests with invalid allowCredentials',
-  'bridge helper must not call backend passkey methods when allowCredentials is invalid'
-], 'proxy invalid allowCredentials rejection should be covered by tests');
+  'proxy experiment must reject get requests with unsupported allowCredentials descriptor types',
+  'bridge helper must not call backend passkey methods when allowCredentials is invalid',
+  'bridge helper must not call backend passkey methods when allowCredentials descriptor type is unsupported'
+], 'proxy invalid allowCredentials ID and descriptor type rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',

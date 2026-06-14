@@ -636,7 +636,10 @@
     const ids = [];
     for (const credential of credentials) {
       const type = stringValue(credential && credential.type).trim().toLowerCase();
-      if (type && type !== 'public-key') continue;
+      if (type && type !== 'public-key') {
+        if (invalidMessage) throw notAllowedError(invalidMessage);
+        continue;
+      }
       const id = normalizeCredentialId(credential && credential.id);
       if (!id && invalidMessage) throw notAllowedError(invalidMessage);
       if (!id || ids.includes(id)) continue;
