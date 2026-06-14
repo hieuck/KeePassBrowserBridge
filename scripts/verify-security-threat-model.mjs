@@ -30,6 +30,7 @@ const sources = {
   popup: read('extension/popup.js'),
   options: read('extension/options.js'),
   background: read('extension/background.js'),
+  backgroundTests: read('tests/extension/background.test.mjs'),
   passkeysProxyExperiment: read('extension/passkeysProxyExperiment.js'),
   manifest: read('extension/manifest.json'),
   firefoxManifest: read('extension/manifest.firefox.json'),
@@ -549,6 +550,17 @@ requireEvery('passkeysProxyTests', [
   'lock-canceled get request must not be completed after the handler resolves',
   'Passkey WebAuthn request was canceled.'
 ], 'proxy explicit cleanup error completion should be covered by lifecycle tests');
+requireEvery('background', [
+  'clearPendingPasskeyState',
+  "clearSensitiveRuntimeState('client-revoke')",
+  "await lifecycle.cancelPending(reason || 'clear')"
+], 'background lock, auto-lock, and current-client revoke should trigger passkey proxy cleanup');
+requireEvery('backgroundTests', [
+  "passkeyCleanupCalls.at(-1), 'client-revoke'",
+  'current client revoke should cancel pending passkey proxy requests',
+  "passkeyCleanupCalls.at(-1), 'lock'",
+  "passkeyCleanupCalls.at(-1), 'auto-lock'"
+], 'background passkey proxy cleanup hooks should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeRequestedExtensions',
   'assertNoUnsupportedGetExtensions',
