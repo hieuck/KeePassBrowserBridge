@@ -76,6 +76,7 @@ Use ordinary KeePass entries so users can back up, move, and inspect metadata wi
 | `URL` | Origin or login URL |
 | `KBB-Passkey-RpId` | WebAuthn RP ID |
 | `KBB-Passkey-CredentialId` | Base64url credential ID |
+| `KBB-Passkey-Origin` | Canonical WebAuthn origin used for assertion verification |
 | `KBB-Passkey-UserHandle` | Base64url user handle |
 | `KBB-Passkey-PublicKeyCose` | Base64url COSE public key |
 | `KBB-Passkey-PrivateKey` | Protected private key material |
@@ -146,13 +147,13 @@ Backend:
 - User-handle validation before approval plus canonical assertion `userHandle` output from stored passkey material. Covered by backend tests and non-packaged proxy JS tests.
 - Credential ID generation uniqueness. Covered by backend tests for the current random generator; add larger deterministic fixtures before public passkey support.
 - Private key protected-field storage. Covered by backend tests.
-- User-verification, resident-key, and transport metadata normalization plus KeePass storage round-trip, with `userVerification=required` and unknown user-verification values rejected until a real KeePass-side verification step exists. Covered by backend tests and non-packaged proxy JS tests.
+- Origin, user-verification, resident-key, and transport metadata normalization plus KeePass storage round-trip, with `userVerification=required` and unknown user-verification values rejected until a real KeePass-side verification step exists. Covered by backend tests and non-packaged proxy JS tests.
 - Passkey discovery by RP ID and allow-credential ID filters with no private key material in lookup summaries, with invalid allow-credential filters returned as bridge errors. Covered by backend tests.
 - Pending create/get session binding, browser timeout hint clamping, resident-key policy normalization, requested `credProps` extension result handling, unsupported requested WebAuthn create/get extension rejection, duplicate live WebAuthn request ID rejection, invalid create excludeCredentialIds and list/get allowCredentialIds rejection, completion binding mismatch, get allowCredentialIds enforcement, explicit cancel, timeout cleanup, client-scoped clearing, and clear-all cleanup for KeePass database lifecycle events. Covered by backend tests; the non-packaged proxy lifecycle also rejects duplicate pending WebAuthn request IDs before handler dispatch.
 - Bridge-level feature discovery plus list/create/get/cancel/revoke routing behind an injectable enabled gate, including authenticated request handling, permission checks, disabled `prototype_disabled` status metadata, KeePass approval grant/deny handling, pending-session creation/cancellation, lookup summary response, KeePass passkey entry creation/deletion, assertion signing, sign-count persistence, database save callbacks, and trusted-client revoke cleanup. Covered by backend tests; production default remains `feature_disabled`.
 - KeePass-side passkey approval prompt wiring that shows RP ID, caller origin, extension origin, account metadata, and matching credentials before allowing feature-gated create/get begin requests. Compiled through plugin build verification; full UI automation remains future work.
 - Feature-gated trusted-browser permission controls for `passkeyRead` and `passkeyWrite` in popup and settings UI. Covered by E2E tests; production `hello` keeps the controls hidden while passkeys are disabled.
-- Assertion signature verification against generated public keys, with assertion credential ID, user handle, sign-count metadata, and stored public-key COSE metadata required to match the expected EC2/P-256/ES256 credential. Covered by backend tests.
+- Assertion signature verification against generated public keys, with `clientDataJSON` origin, assertion credential ID, user handle, sign-count metadata, and stored public-key COSE metadata required to match the expected EC2/P-256/ES256 credential. Covered by backend tests.
 - Signature counter increment and persistence in credential material and KeePass entry storage across repeated bridge assertion sessions. Covered by backend tests.
 - Replay rejection for create and get completion requests. Covered by backend bridge tests that replay the authenticated completion `RequestId` and assert no duplicate entry, save, or sign-count update occurs.
 - Permission denial for clients without `passkeyRead` or `passkeyWrite`. Covered by disabled-gate backend tests.

@@ -161,6 +161,8 @@ requireEvery('testsProgram', [
 ], 'passkey registration and assertion authenticator-data canonical RP ID structure should be covered by backend tests');
 requireEvery('passkeyService', [
   'TryDecodeEs256PublicKey',
+  'IsAssertionClientDataForOrigin(clientDataJson, credential.Origin)',
+  'string canonicalExpectedOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(expectedOrigin);',
   'FixedTimeEquals(storedCredentialId, assertionCredentialId)',
   'FixedTimeEquals(storedUserHandle, assertionUserHandle)',
   'assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)',
@@ -170,16 +172,17 @@ requireEvery('passkeyService', [
   'x.Length != 32',
   'y.Length != 32',
   'offset != coseKey.Length'
-], 'passkey assertion verification should reject metadata mismatches and stored public keys that are not strict EC2 P-256 ES256 COSE keys');
+], 'passkey assertion verification should reject origin/metadata mismatches and stored public keys that are not strict EC2 P-256 ES256 COSE keys');
 requireEvery('testsProgram', [
   'PasskeyAssertionRejectsNonEs256PublicKeyCose',
+  'passkey assertion verification must reject clientDataJSON origin mismatches',
   'passkey assertion verification must reject credential ID mismatches',
   'passkey assertion verification must reject user handle mismatches',
   'passkey assertion verification must reject sign count metadata mismatches',
   'when kty is not EC2',
   'when alg is not ES256',
   'when crv is not P-256'
-], 'strict passkey assertion metadata and public-key COSE verification should be covered by backend tests');
+], 'strict passkey assertion origin/metadata and public-key COSE verification should be covered by backend tests');
 requireEvery('passkeyService', [
   'CanonicalizeUserHandle',
   'string canonicalUserHandle = Base64Url.Encode(userHandle);',
@@ -263,16 +266,20 @@ requireEvery('passkeyService', [
   'UnsupportedResidentKeyErrorCode',
   'IsKnownResidentKeyRequirement',
   'NormalizeResidentKeyRequirement',
+  'KBB-Passkey-Origin',
+  'OriginFromRpId',
   'KBB-Passkey-ResidentKey',
   'Passkey resident-key requirement is not supported by this build.'
-], 'passkey backend should reject unknown resident-key requirements and preserve normalized resident-key metadata');
+], 'passkey backend should reject unknown resident-key requirements and preserve origin plus normalized resident-key metadata');
 requireEvery('testsProgram', [
   'PasskeyRegistrationRejectsUnknownResidentKey',
   'PasskeyPendingRejectsUnsupportedResidentKey',
   'BridgeHandlerRejectsUnsupportedPasskeyResidentKeyWhenFeatureGateIsEnabled',
   'bridge unsupported resident-key rejection should not prompt for approval',
+  'stored passkey origin mismatch',
+  'stored passkey origin fallback mismatch',
   'stored passkey resident-key requirement mismatch'
-], 'backend resident-key policy handling should be covered by tests');
+], 'backend resident-key policy and passkey-origin storage should be covered by tests');
 requireEvery('bridgeRequestHandler', [
   'RejectExcludedCreateCredential',
   'excluded_credential_exists',

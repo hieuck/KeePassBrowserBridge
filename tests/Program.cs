@@ -414,6 +414,10 @@ internal static class Program
         AssertEqual((uint)1, registration.Credential.SignCount, "passkey assertion should persist incremented sign count in material");
         AssertTrue(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion),
             "passkey assertion signature should verify against the generated public key");
+        PasskeyCredentialMaterial wrongOriginCredential = CopyPasskeyCredential(registration.Credential);
+        wrongOriginCredential.Origin = "https://evil.example";
+        AssertFalse(service.VerifyAssertionSignature(wrongOriginCredential, assertion.Assertion),
+            "passkey assertion verification must reject clientDataJSON origin mismatches");
         PasskeyAssertionResponse wrongCredentialId = CopyPasskeyAssertion(assertion.Assertion);
         wrongCredentialId.CredentialId = Base64Url.Encode(Encoding.ASCII.GetBytes("wrong-credential-id"));
         AssertFalse(service.VerifyAssertionSignature(registration.Credential, wrongCredentialId),
@@ -528,11 +532,16 @@ internal static class Program
         PasskeyCredentialMaterial restored = PasskeyEntryStore.Read(entry);
         AssertEqual(registration.Credential.CredentialId, restored.CredentialId, "stored passkey credential ID mismatch");
         AssertEqual(registration.Credential.PrivateKey, restored.PrivateKey, "stored passkey private key mismatch");
+        AssertEqual(registration.Credential.Origin, restored.Origin, "stored passkey origin mismatch");
         AssertEqual(registration.Credential.UserVerification, restored.UserVerification, "stored passkey user verification mismatch");
         AssertEqual(registration.Credential.ResidentKey, restored.ResidentKey, "stored passkey resident-key requirement mismatch");
         AssertEqual(registration.Credential.Transports.Length, restored.Transports.Length, "stored passkey transport count mismatch");
         AssertEqual(registration.Credential.Transports[0], restored.Transports[0], "stored passkey first transport mismatch");
         AssertEqual(registration.Credential.Transports[1], restored.Transports[1], "stored passkey second transport mismatch");
+
+        entry.Strings.Remove(PasskeyEntryStore.OriginField);
+        PasskeyCredentialMaterial legacyRestored = PasskeyEntryStore.Read(entry);
+        AssertEqual(registration.Credential.Origin, legacyRestored.Origin, "stored passkey origin fallback mismatch");
     }
 
     private static void PasskeyLookupListsMatchingRpIdWithoutPrivateKeyMaterial()
@@ -4282,6 +4291,25 @@ internal static class Program
         credential.PublicKeyCose = ReplaceCoseValueAfterKey(validPublicKeyCose, keyMarker, expectedValue, replacementValue);
         AssertFalse(service.VerifyAssertionSignature(credential, assertion), message);
         credential.PublicKeyCose = validPublicKeyCose;
+    }
+
+    private static PasskeyCredentialMaterial CopyPasskeyCredential(PasskeyCredentialMaterial credential)
+    {
+        return new PasskeyCredentialMaterial
+        {
+            RpId = credential.RpId,
+            Origin = credential.Origin,
+            CredentialId = credential.CredentialId,
+            UserHandle = credential.UserHandle,
+            UserName = credential.UserName,
+            UserDisplayName = credential.UserDisplayName,
+            UserVerification = credential.UserVerification,
+            ResidentKey = credential.ResidentKey,
+            Transports = credential.Transports,
+            PublicKeyCose = credential.PublicKeyCose,
+            PrivateKey = credential.PrivateKey,
+            SignCount = credential.SignCount
+        };
     }
 
     private static PasskeyAssertionResponse CopyPasskeyAssertion(PasskeyAssertionResponse assertion)

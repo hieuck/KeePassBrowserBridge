@@ -152,6 +152,7 @@ namespace KeePassBrowserBridge.Bridge
             if (!Base64Url.TryDecode(assertion.AuthenticatorData, out authenticatorData)) return false;
             if (authenticatorData.Length < 37 || assertion.SignCount != ReadUInt32BigEndian(authenticatorData, 33)) return false;
             if (!Base64Url.TryDecode(assertion.ClientDataJson, out clientDataJson)) return false;
+            if (!WebAuthnClientDataJson.IsAssertionClientDataForOrigin(clientDataJson, credential.Origin)) return false;
             if (!Base64Url.TryDecode(assertion.Signature, out signatureDer)) return false;
 
             EccPublicKey publicKey;
@@ -423,6 +424,7 @@ namespace KeePassBrowserBridge.Bridge
     {
         public const string RpIdField = "KBB-Passkey-RpId";
         public const string CredentialIdField = "KBB-Passkey-CredentialId";
+        public const string OriginField = "KBB-Passkey-Origin";
         public const string UserHandleField = "KBB-Passkey-UserHandle";
         public const string PublicKeyCoseField = "KBB-Passkey-PublicKeyCose";
         public const string PrivateKeyField = "KBB-Passkey-PrivateKey";
@@ -445,6 +447,12 @@ namespace KeePassBrowserBridge.Bridge
             if (material == null) throw new ArgumentNullException("material");
 
             string rpId = (material.RpId ?? string.Empty).Trim();
+            string origin = PasskeyRelyingPartyValidator.NormalizeOrigin(material.Origin);
+            if (origin.Length == 0 && !string.IsNullOrWhiteSpace(rpId))
+            {
+                origin = OriginFromRpId(rpId);
+            }
+
             string userName = (material.UserName ?? string.Empty).Trim();
             string title = string.IsNullOrWhiteSpace(userName) ? "Passkey: " + rpId : "Passkey: " + userName + " @ " + rpId;
 
@@ -453,6 +461,7 @@ namespace KeePassBrowserBridge.Bridge
             entry.Strings.Set(PwDefs.UrlField, new ProtectedString(false, "https://" + rpId + "/"));
             entry.Strings.Set(RpIdField, new ProtectedString(false, rpId));
             entry.Strings.Set(CredentialIdField, new ProtectedString(false, material.CredentialId ?? string.Empty));
+            entry.Strings.Set(OriginField, new ProtectedString(false, origin));
             entry.Strings.Set(UserHandleField, new ProtectedString(false, material.UserHandle ?? string.Empty));
             entry.Strings.Set(PublicKeyCoseField, new ProtectedString(false, material.PublicKeyCose ?? string.Empty));
             entry.Strings.Set(PrivateKeyField, new ProtectedString(true, material.PrivateKey ?? string.Empty));
@@ -468,10 +477,22 @@ namespace KeePassBrowserBridge.Bridge
 
             uint signCount = 0;
             uint.TryParse(entry.Strings.ReadSafe(SignCountField), out signCount);
+            string rpId = entry.Strings.ReadSafe(RpIdField);
+            string origin = PasskeyRelyingPartyValidator.NormalizeOrigin(entry.Strings.ReadSafe(OriginField));
+            if (origin.Length == 0)
+            {
+                origin = PasskeyRelyingPartyValidator.NormalizeOrigin(entry.Strings.ReadSafe(PwDefs.UrlField));
+            }
+
+            if (origin.Length == 0 && !string.IsNullOrWhiteSpace(rpId))
+            {
+                origin = OriginFromRpId(rpId);
+            }
 
             return new PasskeyCredentialMaterial
             {
-                RpId = entry.Strings.ReadSafe(RpIdField),
+                RpId = rpId,
+                Origin = origin,
                 CredentialId = entry.Strings.ReadSafe(CredentialIdField),
                 UserHandle = entry.Strings.ReadSafe(UserHandleField),
                 UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
@@ -498,6 +519,12 @@ namespace KeePassBrowserBridge.Bridge
             {
                 return new string[0];
             }
+        }
+
+        private static string OriginFromRpId(string rpId)
+        {
+            string normalizedRpId = (rpId ?? string.Empty).Trim().TrimEnd('.').ToLowerInvariant();
+            return normalizedRpId.Length == 0 ? string.Empty : "https://" + normalizedRpId;
         }
     }
 
@@ -1275,6 +1302,28 @@ namespace KeePassBrowserBridge.Bridge
                 CrossOrigin = false
             });
             return Encoding.UTF8.GetBytes(json);
+        }
+
+        public static bool IsAssertionClientDataForOrigin(byte[] clientDataJson, string expectedOrigin)
+        {
+            string canonicalExpectedOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(expectedOrigin);
+            if (canonicalExpectedOrigin.Length == 0) return false;
+
+            WebAuthnClientData clientData;
+            try
+            {
+                clientData = BridgeJsonSerializer.Deserialize<WebAuthnClientData>(
+                    Encoding.UTF8.GetString(clientDataJson ?? new byte[0]));
+            }
+            catch
+            {
+                return false;
+            }
+
+            return clientData != null &&
+                string.Equals(clientData.Type, "webauthn.get", StringComparison.Ordinal) &&
+                string.Equals(clientData.Origin ?? string.Empty, canonicalExpectedOrigin, StringComparison.Ordinal) &&
+                !clientData.CrossOrigin;
         }
 
         [DataContract]
