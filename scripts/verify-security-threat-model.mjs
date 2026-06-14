@@ -458,6 +458,17 @@ requireEvery('passkeysProxyTests', [
   'Passkey begin response did not match the WebAuthn request.'
 ], 'proxy begin-response WebAuthn request, RP ID, and origin binding should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
+  'assertCreateCompleteMatchesRequest',
+  'assertGetCompleteMatchesRequest',
+  "assertCompleteFieldMatches(payload, complete, 'CredentialId')",
+  'Passkey complete response did not match the WebAuthn request.'
+], 'passkey proxy bridge helper should reject mismatched complete response bindings before browser completion');
+requireEvery('passkeysProxyTests', [
+  'get bridge helper should reject complete responses for a different selected credential',
+  'bridge helper must not return mismatched get complete responses',
+  'Passkey complete response did not match the WebAuthn request.'
+], 'proxy complete-response WebAuthn request, RP ID, and credential binding should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',
   'CredentialAlgorithms',

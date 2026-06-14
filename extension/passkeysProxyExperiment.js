@@ -12,6 +12,8 @@
     'Passkey WebAuthn request was canceled.';
   const beginResponseMismatchMessage =
     'Passkey begin response did not match the WebAuthn request.';
+  const completeResponseMismatchMessage =
+    'Passkey complete response did not match the WebAuthn request.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -440,11 +442,14 @@
             if (!approved) throw notAllowedError('Passkey registration was denied.');
           }
 
-          return bridgeCall('passkeys.create.complete', {
+          const completePayload = {
             WebAuthnRequestId: payload.WebAuthnRequestId,
             RpId: payload.RpId,
             Origin: payload.Origin
-          });
+          };
+          const complete = await bridgeCall('passkeys.create.complete', completePayload);
+          assertCreateCompleteMatchesRequest(completePayload, complete);
+          return complete;
         } catch (error) {
           await cancelBridgeRequestBestEffort(bridgeCall, payload.WebAuthnRequestId);
           throw error;
@@ -471,12 +476,15 @@
             throw notAllowedError(selectedCredentialNotReturnedMessage);
           }
 
-          return bridgeCall('passkeys.get.complete', {
+          const completePayload = {
             WebAuthnRequestId: payload.WebAuthnRequestId,
             RpId: payload.RpId,
             Origin: payload.Origin,
             CredentialId: credentialId
-          });
+          };
+          const complete = await bridgeCall('passkeys.get.complete', completePayload);
+          assertGetCompleteMatchesRequest(completePayload, complete);
+          return complete;
         } catch (error) {
           await cancelBridgeRequestBestEffort(bridgeCall, payload.WebAuthnRequestId);
           throw error;
@@ -500,6 +508,24 @@
     const actual = stringValue(begin && begin[fieldName]).trim();
     if (!actual || actual !== expected) {
       throw notAllowedError(beginResponseMismatchMessage);
+    }
+  }
+
+  function assertCreateCompleteMatchesRequest(payload, complete) {
+    assertCompleteFieldMatches(payload, complete, 'WebAuthnRequestId');
+    assertCompleteFieldMatches(payload, complete, 'RpId');
+  }
+
+  function assertGetCompleteMatchesRequest(payload, complete) {
+    assertCompleteFieldMatches(payload, complete, 'WebAuthnRequestId');
+    assertCompleteFieldMatches(payload, complete, 'CredentialId');
+  }
+
+  function assertCompleteFieldMatches(payload, complete, fieldName) {
+    const expected = stringValue(payload && payload[fieldName]).trim();
+    const actual = stringValue(complete && complete[fieldName]).trim();
+    if (!actual || actual !== expected) {
+      throw notAllowedError(completeResponseMismatchMessage);
     }
   }
 
