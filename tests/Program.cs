@@ -447,6 +447,21 @@ internal static class Program
         AssertEqual((byte)0x01, authenticatorData[32], "assertion authenticatorData should set user-present flag");
         AssertEqual((uint)1, ReadUInt32BigEndian(authenticatorData, 33),
             "assertion authenticatorData should encode sign count 1");
+
+        byte[] privateKey;
+        AssertTrue(Base64Url.TryDecode(registration.Credential.PrivateKey, out privateKey),
+            "passkey private key should be base64url encoded for flag verification fixture");
+        byte[] missingUserPresentAuthenticatorData = (byte[])authenticatorData.Clone();
+        missingUserPresentAuthenticatorData[32] = 0x00;
+        PasskeyAssertionResponse missingUserPresent = CopyPasskeyAssertion(assertion.Assertion);
+        missingUserPresent.AuthenticatorData = Base64Url.Encode(missingUserPresentAuthenticatorData);
+#if NET8_0_OR_GREATER
+        if (!OperatingSystem.IsWindows()) throw new Exception("Passkey flag verification fixture requires Windows CNG.");
+#endif
+        missingUserPresent.Signature = Base64Url.Encode(EccKeyBlob.SignDer(privateKey,
+            CombineBytes(missingUserPresentAuthenticatorData, Sha256(clientDataJson))));
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, missingUserPresent),
+            "passkey assertion verification must reject authenticatorData without user-present flag");
     }
 
     private static void PasskeyAssertionRejectsNonEs256PublicKeyCose()
@@ -4276,6 +4291,14 @@ internal static class Program
         byte[] value = new byte[length];
         Buffer.BlockCopy(bytes, offset, value, 0, length);
         return value;
+    }
+
+    private static byte[] CombineBytes(byte[] first, byte[] second)
+    {
+        byte[] combined = new byte[(first == null ? 0 : first.Length) + (second == null ? 0 : second.Length)];
+        if (first != null) Buffer.BlockCopy(first, 0, combined, 0, first.Length);
+        if (second != null) Buffer.BlockCopy(second, 0, combined, first == null ? 0 : first.Length, second.Length);
+        return combined;
     }
 
     private static void AssertRejectsPublicKeyCoseMutation(
