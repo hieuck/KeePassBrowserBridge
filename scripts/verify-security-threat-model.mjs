@@ -246,10 +246,11 @@ requireEvery('protocolModels', [
   'ResidentKey',
   'ExcludeCredentialIds',
   'TimeoutMs',
+  'Hints',
   'RequestedExtensions',
   'UnsupportedExtensions',
   'ClientExtensionResults'
-], 'passkey create begin payload should carry credential algorithm, attestation, authenticator attachment, resident-key policy, exclude-credential policy, timeout hints, unsupported-extension policy, and extension-result contracts to the backend');
+], 'passkey create/get begin payloads should carry credential algorithm, attestation, authenticator attachment, resident-key policy, exclude-credential policy, timeout and UX hints, unsupported-extension policy, and extension-result contracts to the backend');
 requireEvery('passkeyService', [
   'UnsupportedCredentialAlgorithmErrorCode',
   'AllowsEs256CredentialAlgorithm',
@@ -316,8 +317,10 @@ requireEvery('passkeyService', [
 requireEvery('testsProgram', [
   'PasskeyPendingHonorsRequestedTimeoutUpToMaximum',
   'pending create should honor shorter browser request timeout',
-  'pending get should clamp long browser request timeout to the backend maximum'
-], 'backend pending-session timeout clamping should be covered by tests');
+  'pending get should clamp long browser request timeout to the backend maximum',
+  'pending create should retain WebAuthn hints',
+  'pending get should retain WebAuthn hints'
+], 'backend pending-session timeout clamping and WebAuthn hint retention should be covered by tests');
 requireEvery('bridgeRequestHandler', [
   'CreateClientExtensionResults',
   'PasskeyCredPropsExtensionResult',
@@ -487,12 +490,16 @@ requireEvery('passkeysProxyTests', [
 ], 'proxy excludeCredentials mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeTimeoutMs',
-  'TimeoutMs'
-], 'passkey proxy should forward normalized browser timeout hints to the backend');
+  'normalizeHints',
+  'TimeoutMs',
+  'Hints'
+], 'passkey proxy should forward normalized browser timeout and WebAuthn UX hints to the backend');
 requireEvery('passkeysProxyTests', [
   'TimeoutMs: 45000',
-  'TimeoutMs: 12000'
-], 'proxy timeout mapping should be covered by tests');
+  'TimeoutMs: 12000',
+  "Hints: ['hybrid', 'security-key']",
+  "Hints: ['client-device', 'hybrid']"
+], 'proxy timeout and WebAuthn hint mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeRequestedExtensions',
   'assertNoUnsupportedGetExtensions',

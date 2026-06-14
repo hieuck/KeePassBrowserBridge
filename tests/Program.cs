@@ -688,6 +688,7 @@ internal static class Program
         PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
         PasskeyCreateBeginPayload payload = CreatePasskeyCreateBeginPayload("webauthn-create-1");
         payload.RequestedExtensions = new PasskeyRequestedExtensions { CredProps = true };
+        payload.Hints = new string[] { "hybrid", "security-key" };
 
         PasskeyPendingSessionResult result = store.BeginCreate("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
             "bridge-request-1", payload, now);
@@ -703,6 +704,9 @@ internal static class Program
         AssertEqual("example.com", result.Session.RpId, "pending create RP ID should be normalized");
         AssertEqual(payload.Challenge, result.Session.Challenge, "pending create challenge binding mismatch");
         AssertEqual("preferred", result.Session.ResidentKey, "pending create should retain resident-key requirement");
+        AssertEqual(2, result.Session.Hints.Length, "pending create should retain WebAuthn hints");
+        AssertEqual("hybrid", result.Session.Hints[0], "pending create first hint mismatch");
+        AssertEqual("security-key", result.Session.Hints[1], "pending create second hint mismatch");
         AssertTrue(result.Session.RequestedExtensions != null && result.Session.RequestedExtensions.CredProps,
             "pending create should retain requested credProps extension state");
         AssertEqual(now + PasskeyPendingSessionStore.MaxPendingLifetimeMs, result.Session.ExpiresUtcMs,
@@ -888,11 +892,15 @@ internal static class Program
         PasskeyPendingSessionStore store = new PasskeyPendingSessionStore();
         PasskeyGetBeginPayload beginPayload = CreatePasskeyGetBeginPayload("webauthn-get-1",
             new string[] { allowedCredentialId, allowedCredentialId });
+        beginPayload.Hints = new string[] { "client-device", "hybrid" };
         PasskeyPendingSessionResult begin = store.BeginGet("client-1", "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
             "bridge-request-3", beginPayload, now);
         AssertTrue(begin.Success, "passkey get begin should succeed before allow-list completion test: " + begin.Error);
         AssertEqual(1, begin.Session.AllowCredentialIds.Length, "pending get should normalize allowed credential IDs");
         AssertEqual(allowedCredentialId, begin.Session.AllowCredentialIds[0], "pending get allowed credential ID mismatch");
+        AssertEqual(2, begin.Session.Hints.Length, "pending get should retain WebAuthn hints");
+        AssertEqual("client-device", begin.Session.Hints[0], "pending get first hint mismatch");
+        AssertEqual("hybrid", begin.Session.Hints[1], "pending get second hint mismatch");
 
         PasskeyPendingSessionResult blocked = store.CompleteGet("client-1",
             "chrome-extension://abcdefghijklmnopabcdefghijklmnop",

@@ -314,6 +314,7 @@
       UserDisplayName: stringValue(user.displayName),
       UserVerification: userVerification,
       TimeoutMs: normalizeTimeoutMs(options.timeout),
+      Hints: normalizeHints(options.hints),
       Attestation: attestation,
       AuthenticatorAttachment: authenticatorAttachment,
       ResidentKey: residentKey,
@@ -342,7 +343,8 @@
       Challenge: challenge,
       AllowCredentialIds: normalizeAllowCredentialIds(options.allowCredentials),
       UserVerification: userVerification,
-      TimeoutMs: normalizeTimeoutMs(options.timeout)
+      TimeoutMs: normalizeTimeoutMs(options.timeout),
+      Hints: normalizeHints(options.hints)
     };
   }
 
@@ -617,6 +619,18 @@
     const normalized = text.toLowerCase();
     if (allowedValues.includes(normalized)) return normalized;
     throw notAllowedError(unsupportedMessage);
+  }
+
+  function normalizeHints(hints) {
+    if (!Array.isArray(hints)) return [];
+    const normalizedHints = [];
+    for (const value of hints) {
+      const hint = stringValue(value).trim().toLowerCase();
+      if (!['security-key', 'client-device', 'hybrid'].includes(hint)) continue;
+      if (normalizedHints.includes(hint)) continue;
+      normalizedHints.push(hint);
+    }
+    return normalizedHints;
   }
 
   function normalizeCredentialDescriptorIds(credentials) {

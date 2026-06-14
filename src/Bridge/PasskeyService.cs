@@ -883,6 +883,7 @@ namespace KeePassBrowserBridge.Bridge
                 Origin = NormalizeRequired(payload.Origin),
                 Challenge = challenge,
                 UserVerification = NormalizeRequired(payload.UserVerification),
+                Hints = NormalizeHints(payload.Hints),
                 CreatedUtcMs = nowUtcMs,
                 ExpiresUtcMs = nowUtcMs + pendingLifetimeMs
             };
@@ -996,6 +997,21 @@ namespace KeePassBrowserBridge.Bridge
         {
             if (extensions == null || !extensions.CredProps) return null;
             return new PasskeyRequestedExtensions { CredProps = true };
+        }
+
+        private static string[] NormalizeHints(string[] hints)
+        {
+            if (hints == null || hints.Length == 0) return new string[0];
+
+            List<string> normalized = new List<string>();
+            for (int i = 0; i < hints.Length; ++i)
+            {
+                string hint = NormalizeRequired(hints[i]).ToLowerInvariant();
+                if (hint != "security-key" && hint != "client-device" && hint != "hybrid") continue;
+                if (normalized.Contains(hint)) continue;
+                normalized.Add(hint);
+            }
+            return normalized.ToArray();
         }
 
         private static bool TryNormalizeCredentialIds(string[] credentialIds, out string[] normalized)
@@ -1222,6 +1238,7 @@ namespace KeePassBrowserBridge.Bridge
         public string UserVerification { get; set; }
         public string ResidentKey { get; set; }
         public PasskeyRequestedExtensions RequestedExtensions { get; set; }
+        public string[] Hints { get; set; }
         public string[] Transports { get; set; }
         public string[] AllowCredentialIds { get; set; }
         public long CreatedUtcMs { get; set; }

@@ -53,6 +53,7 @@ const createPayload = api.normalizeCreateRequest({
     },
     challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
     timeout: 45000,
+    hints: ['hybrid', 'security-key', 'hybrid', 'future-hint'],
     extensions: {
       credProps: true
     },
@@ -88,6 +89,7 @@ assert.deepEqual(plain(createPayload), {
   UserDisplayName: 'Alice',
   UserVerification: 'preferred',
   TimeoutMs: 45000,
+  Hints: ['hybrid', 'security-key'],
   Attestation: 'none',
   AuthenticatorAttachment: 'cross-platform',
   ResidentKey: 'preferred',
@@ -158,6 +160,7 @@ const getPayload = api.normalizeGetRequest({
     rpId: 'Example.com',
     challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
     timeout: 12000.9,
+    hints: ['client-device', 'hybrid', 'unknown-hint'],
     userVerification: 'discouraged',
     allowCredentials: [
       { id: 'Y3JlZC0x==', type: 'public-key' },
@@ -175,7 +178,8 @@ assert.deepEqual(plain(getPayload), {
   Challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
   AllowCredentialIds: ['Y3JlZC0x', 'Y3JlZC0y'],
   UserVerification: 'discouraged',
-  TimeoutMs: 12000
+  TimeoutMs: 12000,
+  Hints: ['client-device', 'hybrid']
 }, 'get request should normalize RP ID and allow trusted subdomain origins');
 
 const getWithoutRpId = api.normalizeGetRequest({
