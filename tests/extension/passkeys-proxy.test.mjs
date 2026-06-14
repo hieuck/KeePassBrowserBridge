@@ -637,7 +637,12 @@ const handlers = api.createBridgeRequestHandlers({
   bridgeCall: async (method, payload) => {
     bridgeCalls.push([method, payload]);
     if (method === 'passkeys.create.begin') {
-      return { PendingApproval: true, WebAuthnRequestId: payload.WebAuthnRequestId };
+      return {
+        PendingApproval: true,
+        WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: payload.RpId,
+        Origin: payload.Origin
+      };
     }
     if (method === 'passkeys.create.complete') {
       return {
@@ -649,6 +654,9 @@ const handlers = api.createBridgeRequestHandlers({
     if (method === 'passkeys.get.begin') {
       return {
         PendingApproval: true,
+        WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: payload.RpId,
+        Origin: payload.Origin,
         Credentials: [
           { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' },
           { CredentialId: 'Y3JlZC0y', UserName: 'bob@example.com' }
@@ -717,6 +725,9 @@ const unlistedCredentialHandlers = api.createBridgeRequestHandlers({
     unlistedCredentialCalls.push([method, payload]);
     if (method === 'passkeys.get.begin') {
       return {
+        WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: payload.RpId,
+        Origin: payload.Origin,
         Credentials: [
           { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' }
         ]
@@ -757,6 +768,8 @@ const mismatchedBeginHandlers = api.createBridgeRequestHandlers({
     if (method === 'passkeys.get.begin') {
       return {
         WebAuthnRequestId: 'wrong-request',
+        RpId: payload.RpId,
+        Origin: payload.Origin,
         Credentials: [
           { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' }
         ]
@@ -794,6 +807,53 @@ assert.deepEqual(plain(mismatchedBeginCalls.map(([method, payload]) => [method, 
   ['passkeys.cancel', '85', '']
 ], 'bridge helper must not complete get requests after mismatched begin responses');
 
+const mismatchedBeginOriginCalls = [];
+let mismatchedBeginOriginChooseCalled = false;
+const mismatchedBeginOriginHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    mismatchedBeginOriginCalls.push([method, payload]);
+    if (method === 'passkeys.get.begin') {
+      return {
+        WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: payload.RpId,
+        Origin: 'https://other.example',
+        Credentials: [
+          { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' }
+        ]
+      };
+    }
+    if (method === 'passkeys.cancel') {
+      return { WebAuthnRequestId: payload.WebAuthnRequestId, Cancelled: true };
+    }
+    throw new Error(`unexpected method ${method}`);
+  },
+  chooseCredential: async ({ credentials }) => {
+    mismatchedBeginOriginChooseCalled = true;
+    return credentials[0];
+  }
+});
+await assert.rejects(
+  () => mismatchedBeginOriginHandlers.onGetRequest({
+    requestId: 86,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  (error) => error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey begin response did not match the WebAuthn request.',
+  'get bridge helper should reject begin responses with a different origin binding'
+);
+assert.equal(mismatchedBeginOriginChooseCalled, false,
+  'bridge helper must not ask the user to choose credentials after mismatched begin origin responses');
+assert.deepEqual(plain(mismatchedBeginOriginCalls.map(([method, payload]) => [method, payload.WebAuthnRequestId, payload.CredentialId || ''])), [
+  ['passkeys.get.begin', '86', ''],
+  ['passkeys.cancel', '86', '']
+], 'bridge helper must not complete get requests after mismatched begin origin responses');
+
 const bridgeCancelResponse = await handlers.onRequestCanceled('81', { kind: 'get' }, 'canceled');
 assert.equal(bridgeCancelResponse.Cancelled, true, 'cancel bridge helper should return cancel response');
 assert.deepEqual(plain(bridgeCalls[4]), [
@@ -807,7 +867,12 @@ const deniedHandlers = api.createBridgeRequestHandlers({
     deniedCalls.push([method, payload]);
     return method === 'passkeys.cancel'
       ? { WebAuthnRequestId: payload.WebAuthnRequestId, Cancelled: true }
-      : { PendingApproval: true };
+      : {
+          PendingApproval: true,
+          WebAuthnRequestId: payload.WebAuthnRequestId,
+          RpId: payload.RpId,
+          Origin: payload.Origin
+        };
   },
   approveCreate: async () => false
 });

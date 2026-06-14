@@ -444,13 +444,18 @@ requireEvery('passkeysProxyTests', [
 ], 'proxy selected-credential allow-list enforcement should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'assertBeginMatchesRequest',
+  'assertBeginFieldMatches',
+  "assertBeginFieldMatches(payload, begin, 'RpId')",
+  "assertBeginFieldMatches(payload, begin, 'Origin')",
   'Passkey begin response did not match the WebAuthn request.'
-], 'passkey proxy bridge helper should reject mismatched begin responses before completion');
+], 'passkey proxy bridge helper should reject mismatched begin response bindings before completion');
 requireEvery('passkeysProxyTests', [
   'get bridge helper should reject begin responses for a different WebAuthn request',
+  'get bridge helper should reject begin responses with a different origin binding',
   'bridge helper must not complete get requests after mismatched begin responses',
+  'bridge helper must not complete get requests after mismatched begin origin responses',
   'Passkey begin response did not match the WebAuthn request.'
-], 'proxy begin-response WebAuthn request binding should be covered by tests');
+], 'proxy begin-response WebAuthn request, RP ID, and origin binding should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',

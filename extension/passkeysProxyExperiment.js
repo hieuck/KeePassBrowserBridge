@@ -490,9 +490,15 @@
   }
 
   function assertBeginMatchesRequest(payload, begin) {
-    const expected = stringValue(payload && payload.WebAuthnRequestId).trim();
-    const actual = stringValue(begin && begin.WebAuthnRequestId).trim();
-    if (actual && actual !== expected) {
+    assertBeginFieldMatches(payload, begin, 'WebAuthnRequestId');
+    assertBeginFieldMatches(payload, begin, 'RpId');
+    assertBeginFieldMatches(payload, begin, 'Origin');
+  }
+
+  function assertBeginFieldMatches(payload, begin, fieldName) {
+    const expected = stringValue(payload && payload[fieldName]).trim();
+    const actual = stringValue(begin && begin[fieldName]).trim();
+    if (!actual || actual !== expected) {
       throw notAllowedError(beginResponseMismatchMessage);
     }
   }
