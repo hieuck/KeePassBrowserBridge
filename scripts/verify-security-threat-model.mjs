@@ -327,10 +327,12 @@ requireEvery('bridgeRequestHandler', [
   'PasskeyCredPropsExtensionResult',
   'AuthenticatorData = registration.AuthenticatorData',
   'PublicKey = registration.PublicKey',
+  'PasskeyGetCompleteResponsePayload',
+  'RpId = pending.Session.RpId',
   'AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment',
   'Transports = registration.Credential.Transports',
   'Rk = true'
-], 'passkey bridge should return requested credProps extension results, authenticator data, authenticator attachment, and transport metadata for discoverable credentials');
+], 'passkey bridge should return requested credProps extension results, authenticator data, RP ID, authenticator attachment, and transport metadata for discoverable credentials');
 requireCountAtLeast('bridgeRequestHandler', 'AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment', 2,
   'passkey bridge should return authenticator attachment metadata for create and get completion responses');
 requireEvery('protocolModels', [
@@ -351,13 +353,14 @@ requireEvery('testsProgram', [
   'DER prefix mismatch',
   'create complete response should include public key SPKI',
   'create complete response should include cross-platform authenticator attachment',
+  'get complete response RP ID mismatch',
   'get complete response should include cross-platform authenticator attachment',
   'create complete response should include normalized transport metadata',
   'create complete response should include requested credProps resident-key result'
 ], 'backend credProps extension result and complete-response metadata handling should be covered by tests');
 requireEvery('passkeyDesign', [
   'create-complete response also carries authenticator data, SPKI publicKey, the cross-platform authenticator attachment, normalized credential transports, public-key COSE storage metadata, and ES256 algorithm metadata',
-  'get-complete response carries cross-platform authenticator attachment metadata',
+  'get-complete response carries the RP ID echo and cross-platform authenticator attachment metadata',
   'authenticatorAttachment plus response.authenticatorData/transports/publicKey/publicKeyAlgorithm',
   'create response authenticatorData, transports',
   'create public-key SPKI',
@@ -465,9 +468,13 @@ requireEvery('passkeysProxyExperiment', [
   'assertRequiredCompleteFields',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'passkey proxy bridge helper should reject mismatched complete response bindings before browser completion');
+requireCountAtLeast('passkeysProxyExperiment', "assertCompleteFieldMatches(payload, complete, 'RpId')", 2,
+  'passkey proxy should verify RP ID binding for both create and get complete responses');
 requireEvery('passkeysProxyTests', [
   'get bridge helper should reject complete responses for a different selected credential',
+  'get bridge helper should reject complete responses for a different RP ID',
   'bridge helper must not return mismatched get complete responses',
+  'bridge helper must not return get complete responses with mismatched RP IDs',
   'Passkey complete response did not match the WebAuthn request.',
   'get success should fail closed when KeePass omits required assertion fields',
   'Passkey complete response was missing required WebAuthn fields.'

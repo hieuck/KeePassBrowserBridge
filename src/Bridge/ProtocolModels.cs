@@ -309,6 +309,7 @@ namespace KeePassBrowserBridge.Bridge
     public sealed class PasskeyGetCompleteResponsePayload
     {
         public string WebAuthnRequestId { get; set; }
+        public string RpId { get; set; }
         public string EntryId { get; set; }
         public string CredentialId { get; set; }
         public string AuthenticatorData { get; set; }

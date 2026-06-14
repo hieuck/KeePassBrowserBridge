@@ -668,6 +668,7 @@ const handlers = api.createBridgeRequestHandlers({
     if (method === 'passkeys.get.complete') {
       return {
         WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: payload.RpId,
         CredentialId: payload.CredentialId,
         AuthenticatorData: 'YXV0aC1kYXRh',
         ClientDataJson: 'Y2xpZW50LWdldA',
@@ -874,6 +875,7 @@ const mismatchedCompleteHandlers = api.createBridgeRequestHandlers({
     if (method === 'passkeys.get.complete') {
       return {
         WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: payload.RpId,
         CredentialId: 'Y3JlZC1ldmls',
         AuthenticatorData: 'YXV0aC1kYXRh',
         ClientDataJson: 'Y2xpZW50LWdldA',
@@ -908,6 +910,59 @@ assert.deepEqual(plain(mismatchedCompleteCalls.map(([method, payload]) => [metho
   ['passkeys.get.complete', '87', 'Y3JlZC0x'],
   ['passkeys.cancel', '87', '']
 ], 'bridge helper must not return mismatched get complete responses');
+
+const mismatchedCompleteRpCalls = [];
+const mismatchedCompleteRpHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    mismatchedCompleteRpCalls.push([method, payload]);
+    if (method === 'passkeys.get.begin') {
+      return {
+        WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: payload.RpId,
+        Origin: payload.Origin,
+        Credentials: [
+          { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' }
+        ]
+      };
+    }
+    if (method === 'passkeys.get.complete') {
+      return {
+        WebAuthnRequestId: payload.WebAuthnRequestId,
+        RpId: 'other.example.com',
+        CredentialId: payload.CredentialId,
+        AuthenticatorData: 'YXV0aC1kYXRh',
+        ClientDataJson: 'Y2xpZW50LWdldA',
+        Signature: 'c2lnbmF0dXJl',
+        UserHandle: 'dXNlcg'
+      };
+    }
+    if (method === 'passkeys.cancel') {
+      return { WebAuthnRequestId: payload.WebAuthnRequestId, Cancelled: true };
+    }
+    throw new Error(`unexpected method ${method}`);
+  },
+  chooseCredential: async ({ credentials }) => credentials[0]
+});
+await assert.rejects(
+  () => mismatchedCompleteRpHandlers.onGetRequest({
+    requestId: 88,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  (error) => error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey complete response did not match the WebAuthn request.',
+  'get bridge helper should reject complete responses for a different RP ID'
+);
+assert.deepEqual(plain(mismatchedCompleteRpCalls.map(([method, payload]) => [method, payload.WebAuthnRequestId, payload.CredentialId || ''])), [
+  ['passkeys.get.begin', '88', ''],
+  ['passkeys.get.complete', '88', 'Y3JlZC0x'],
+  ['passkeys.cancel', '88', '']
+], 'bridge helper must not return get complete responses with mismatched RP IDs');
 
 const bridgeCancelResponse = await handlers.onRequestCanceled('81', { kind: 'get' }, 'canceled');
 assert.equal(bridgeCancelResponse.Cancelled, true, 'cancel bridge helper should return cancel response');

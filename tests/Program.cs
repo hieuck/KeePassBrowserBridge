@@ -3238,6 +3238,7 @@ internal static class Program
         AssertTrue(completeResponse.Success, "enabled passkeys.get.complete should succeed: " + completeResponse.Error);
         AssertEqual(0, pending.Count, "passkeys.get.complete should consume the pending session");
         AssertEqual(1, saveCount, "passkeys.get.complete should save the database once");
+        AssertEqual("example.com", result.RpId, "get complete response RP ID mismatch");
         AssertEqual("cross-platform", result.AuthenticatorAttachment,
             "get complete response should include cross-platform authenticator attachment");
         AssertEqual((uint)1, result.SignCount, "get complete response sign count mismatch");

@@ -520,6 +520,7 @@
 
   function assertGetCompleteMatchesRequest(payload, complete) {
     assertCompleteFieldMatches(payload, complete, 'WebAuthnRequestId');
+    assertCompleteFieldMatches(payload, complete, 'RpId');
     assertCompleteFieldMatches(payload, complete, 'CredentialId');
   }
 

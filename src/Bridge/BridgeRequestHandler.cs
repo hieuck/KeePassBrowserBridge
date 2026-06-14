@@ -516,6 +516,7 @@ namespace KeePassBrowserBridge.Bridge
             return Success(request, BridgeJsonSerializer.Serialize(new PasskeyGetCompleteResponsePayload
             {
                 WebAuthnRequestId = pending.Session.WebAuthnRequestId,
+                RpId = pending.Session.RpId,
                 EntryId = selection.Entry.Uuid.ToHexString(),
                 CredentialId = assertion.Assertion.CredentialId,
                 AuthenticatorData = assertion.Assertion.AuthenticatorData,
