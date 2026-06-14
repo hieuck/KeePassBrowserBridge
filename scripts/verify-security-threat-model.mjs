@@ -343,10 +343,11 @@ requireEvery('testsProgram', [
   'create complete response should include requested credProps resident-key result'
 ], 'backend credProps extension result and complete-response metadata handling should be covered by tests');
 requireEvery('passkeyDesign', [
-  'create-complete response also carries the cross-platform authenticator attachment and normalized credential transports',
+  'create-complete response also carries the cross-platform authenticator attachment, normalized credential transports, public-key COSE, and ES256 algorithm metadata',
   'get-complete response carries cross-platform authenticator attachment metadata',
-  'authenticatorAttachment plus response.transports',
+  'authenticatorAttachment plus response.transports/publicKey/publicKeyAlgorithm',
   'create response transports',
+  'create public-key COSE',
   'create-complete authenticator attachment and transport metadata'
 ], 'passkey design should document complete-response authenticator attachment, transport metadata, and proxy serialization');
 requireEvery('passkeyService', [
@@ -489,17 +490,21 @@ requireEvery('passkeysProxyExperiment', [
   'unsupportedRequestedExtensionNames',
   'Passkey requested WebAuthn extension is not supported by this build.',
   'normalizeClientExtensionResults',
+  'PublicKeyCose',
+  'publicKeyAlgorithm: publicKey ? -7 : undefined',
   'credProps'
-], 'passkey proxy should map requested credProps and reject unsupported WebAuthn extensions');
+], 'passkey proxy should map requested credProps, serialize create public-key metadata, and reject unsupported WebAuthn extensions');
 requireEvery('passkeysProxyTests', [
   'RequestedExtensions: { CredProps: true }',
   'proxy experiment must reject create requests with unsupported WebAuthn extensions',
   'proxy experiment must reject get requests with unsupported WebAuthn extensions',
   'bridge helper must not call backend passkey methods when requested extensions are unsupported',
   'bridge helper must not call backend get passkey methods when requested extensions are unsupported',
+  "publicKey: 'cHVibGljLWtleS1jb3Nl'",
+  'publicKeyAlgorithm: -7',
   'credProps: {',
   'rk: true'
-], 'proxy WebAuthn extension handling should be covered by tests');
+], 'proxy WebAuthn extension and create public-key serialization handling should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'duplicatePendingRequestMessage',
   'pending.has(requestId)',

@@ -793,6 +793,14 @@
       response && response.id,
       response && response.rawId
     );
+    const publicKey = firstString(
+      response && response.PublicKeyCose,
+      response && response.publicKeyCose,
+      response && response.publicKey,
+      credential.PublicKeyCose,
+      credential.publicKeyCose,
+      credential.publicKey
+    );
 
     return JSON.stringify(compactObject({
       id: credentialId,
@@ -802,6 +810,8 @@
       response: compactObject({
         clientDataJSON: firstString(response && response.ClientDataJson, response && response.clientDataJSON),
         attestationObject: firstString(response && response.AttestationObject, response && response.attestationObject),
+        publicKey,
+        publicKeyAlgorithm: publicKey ? -7 : undefined,
         transports: normalizeStringArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
       }),
       clientExtensionResults: normalizeClientExtensionResults(

@@ -1087,6 +1087,7 @@ await api.completeCreateSuccess(chromeApi, 45, {
   Credential: { CredentialId: 'Y3JlZC00NQ' },
   ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
   AttestationObject: 'YXR0ZXN0YXRpb24',
+  PublicKeyCose: 'cHVibGljLWtleS1jb3Nl',
   AuthenticatorAttachment: 'cross-platform',
   ClientExtensionResults: {
     CredProps: {
@@ -1117,6 +1118,8 @@ assert.deepEqual(createSuccessJson, {
   response: {
     clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
     attestationObject: 'YXR0ZXN0YXRpb24',
+    publicKey: 'cHVibGljLWtleS1jb3Nl',
+    publicKeyAlgorithm: -7,
     transports: ['internal', 'usb']
   },
   clientExtensionResults: {
