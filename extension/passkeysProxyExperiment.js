@@ -8,6 +8,8 @@
     'A pending passkey request already exists for this WebAuthn request.';
   const requestTimeoutMessage =
     'Passkey WebAuthn request timed out.';
+  const requestCanceledMessage =
+    'Passkey WebAuthn request was canceled.';
   const unsupportedUserVerificationMessage =
     'Passkey user verification is not supported by this build.';
   const unsupportedAlgorithmMessage =
@@ -117,6 +119,7 @@
       for (const [requestId, request] of pendingRequests) {
         clearPendingTimer(request);
         await notifyCanceled(requestId, request, normalizedReason);
+        await completePendingErrorBestEffort(requestId, request, notAllowedError(requestCanceledMessage));
       }
       return {
         canceled: pendingRequests.length,
@@ -257,6 +260,18 @@
         return completeCreateError(chromeLike, key, error);
       }
       return completeGetError(chromeLike, key, error);
+    }
+
+    async function completePendingErrorBestEffort(requestId, request, error) {
+      if (!request) return undefined;
+      try {
+        if (request.kind === 'create') {
+          return await completeCreateError(chromeLike, requestId, error);
+        }
+        return await completeGetError(chromeLike, requestId, error);
+      } catch {
+        return undefined;
+      }
     }
 
     async function notifyCanceled(requestId, request, reason) {

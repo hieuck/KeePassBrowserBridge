@@ -515,6 +515,17 @@ requireEvery('passkeysProxyTests', [
   'timed-out WebAuthn requests must not complete success after the handler resolves'
 ], 'proxy WebAuthn timeout cleanup should be covered by lifecycle tests');
 requireEvery('passkeysProxyExperiment', [
+  'completePendingErrorBestEffort',
+  'Passkey WebAuthn request was canceled.',
+  'completeCreateError(chromeLike, requestId, error)',
+  'completeGetError(chromeLike, requestId, error)'
+], 'passkey proxy explicit cleanup should complete pending browser WebAuthn requests with an error');
+requireEvery('passkeysProxyTests', [
+  'explicit lifecycle cleanup should complete pending browser WebAuthn requests with an error',
+  'lock-canceled get request must not be completed after the handler resolves',
+  'Passkey WebAuthn request was canceled.'
+], 'proxy explicit cleanup error completion should be covered by lifecycle tests');
+requireEvery('passkeysProxyExperiment', [
   'normalizeRequestedExtensions',
   'assertNoUnsupportedGetExtensions',
   'unsupportedRequestedExtensionNames',

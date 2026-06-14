@@ -1398,6 +1398,9 @@ assert.deepEqual(plain(lockCancelResult), { canceled: 1, reason: 'lock' },
   'explicit lifecycle cleanup should report canceled pending WebAuthn requests');
 assert.deepEqual(canceled.at(-1), ['79', 'get', 'lock'],
   'explicit lifecycle cleanup should report lock as the cancellation reason');
+assert.deepEqual(plain(lifecycleCalls.filter((entry) => entry[0] === 'getComplete' && entry[1].requestId === 79)), [
+  ['getComplete', { requestId: 79, error: { name: 'NotAllowedError', message: 'Passkey WebAuthn request was canceled.' } }]
+], 'explicit lifecycle cleanup should complete pending browser WebAuthn requests with an error');
 releaseGetHandler({
   Assertion: {
     CredentialId: 'Y3JlZC03OQ',
@@ -1407,7 +1410,9 @@ releaseGetHandler({
   }
 });
 await lockDispatch;
-assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false,
+assert.deepEqual(plain(lifecycleCalls.filter((entry) => entry[0] === 'getComplete' && entry[1].requestId === 79)), [
+  ['getComplete', { requestId: 79, error: { name: 'NotAllowedError', message: 'Passkey WebAuthn request was canceled.' } }]
+],
   'lock-canceled get request must not be completed after the handler resolves');
 
 const timeoutDispatch = lifecycleGetEvent.dispatch({
