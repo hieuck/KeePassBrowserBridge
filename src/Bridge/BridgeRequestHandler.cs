@@ -442,6 +442,7 @@ namespace KeePassBrowserBridge.Bridge
                 ClientDataJson = registration.ClientDataJson,
                 AttestationObject = registration.AttestationObject,
                 PublicKeyCose = registration.Credential.PublicKeyCose,
+                Transports = registration.Credential.Transports,
                 ClientExtensionResults = CreateClientExtensionResults(pending.Session)
             }));
         }

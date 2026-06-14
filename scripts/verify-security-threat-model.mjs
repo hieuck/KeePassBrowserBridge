@@ -311,12 +311,23 @@ requireEvery('testsProgram', [
 requireEvery('bridgeRequestHandler', [
   'CreateClientExtensionResults',
   'PasskeyCredPropsExtensionResult',
+  'Transports = registration.Credential.Transports',
   'Rk = true'
-], 'passkey bridge should return requested credProps extension results for discoverable credentials');
+], 'passkey bridge should return requested credProps extension results and transport metadata for discoverable credentials');
+requireEvery('protocolModels', [
+  'PasskeyCreateCompleteResponsePayload',
+  'public string[] Transports { get; set; }'
+], 'passkey create-complete response contract should carry transport metadata to the proxy');
 requireEvery('testsProgram', [
   'pending create should retain requested credProps extension state',
+  'create complete response should include normalized transport metadata',
   'create complete response should include requested credProps resident-key result'
-], 'backend credProps extension result handling should be covered by tests');
+], 'backend credProps extension result and create-complete transport handling should be covered by tests');
+requireEvery('passkeyDesign', [
+  'create-complete response also carries normalized credential transports',
+  'create response transports',
+  'create-complete transport metadata'
+], 'passkey design should document create-complete transport metadata and proxy serialization');
 requireEvery('passkeyService', [
   'UnsupportedExtensionErrorCode',
   'HasUnsupportedRequestedExtensions',
