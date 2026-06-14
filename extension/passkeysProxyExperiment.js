@@ -10,6 +10,8 @@
     'Passkey WebAuthn request timed out.';
   const requestCanceledMessage =
     'Passkey WebAuthn request was canceled.';
+  const selectedCredentialNotReturnedMessage =
+    'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
     'Passkey user verification is not supported by this build.';
   const unsupportedAlgorithmMessage =
@@ -461,6 +463,9 @@
             selected && selected.rawId
           );
           if (!credentialId) throw notAllowedError('No matching passkey was selected.');
+          if (!credentials.some((credential) => credentialIdFromSummary(credential) === credentialId)) {
+            throw notAllowedError(selectedCredentialNotReturnedMessage);
+          }
 
           return bridgeCall('passkeys.get.complete', {
             WebAuthnRequestId: payload.WebAuthnRequestId,
@@ -478,6 +483,15 @@
         return cancelBridgeRequest(bridgeCall, requestId);
       }
     };
+  }
+
+  function credentialIdFromSummary(credential) {
+    return firstString(
+      credential && credential.CredentialId,
+      credential && credential.credentialId,
+      credential && credential.id,
+      credential && credential.rawId
+    );
   }
 
   function createTrustedOriginResolver(options = {}) {

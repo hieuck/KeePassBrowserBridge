@@ -711,6 +711,44 @@ assert.deepEqual(plain(bridgeCalls.slice(2, 4).map(([method, payload]) => [metho
   ['passkeys.get.complete', '81', 'example.com', 'https://example.com', 'Y3JlZC0y']
 ], 'get bridge helper should call begin then complete with the selected credential');
 
+const unlistedCredentialCalls = [];
+const unlistedCredentialHandlers = api.createBridgeRequestHandlers({
+  bridgeCall: async (method, payload) => {
+    unlistedCredentialCalls.push([method, payload]);
+    if (method === 'passkeys.get.begin') {
+      return {
+        Credentials: [
+          { CredentialId: 'Y3JlZC0x', UserName: 'alice@example.com' }
+        ]
+      };
+    }
+    if (method === 'passkeys.cancel') {
+      return { WebAuthnRequestId: payload.WebAuthnRequestId, Cancelled: true };
+    }
+    throw new Error(`unexpected method ${method}`);
+  },
+  chooseCredential: async () => ({ CredentialId: 'Y3JlZC1ldmls' })
+});
+await assert.rejects(
+  () => unlistedCredentialHandlers.onGetRequest({
+    requestId: 84,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  (error) => error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Selected passkey credential was not returned by KeePass.',
+  'get bridge helper should reject selected credentials that were not returned by KeePass'
+);
+assert.deepEqual(plain(unlistedCredentialCalls.map(([method, payload]) => [method, payload.WebAuthnRequestId, payload.CredentialId || ''])), [
+  ['passkeys.get.begin', '84', ''],
+  ['passkeys.cancel', '84', '']
+], 'bridge helper must not complete get requests for unlisted selected credentials');
+
 const bridgeCancelResponse = await handlers.onRequestCanceled('81', { kind: 'get' }, 'canceled');
 assert.equal(bridgeCancelResponse.Cancelled, true, 'cancel bridge helper should return cancel response');
 assert.deepEqual(plain(bridgeCalls[4]), [

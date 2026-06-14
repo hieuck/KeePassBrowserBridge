@@ -433,6 +433,16 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when allowCredentials descriptor type is unsupported'
 ], 'proxy invalid allowCredentials ID and descriptor type rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
+  'credentialIdFromSummary',
+  'Selected passkey credential was not returned by KeePass.',
+  'credentials.some((credential) => credentialIdFromSummary(credential) === credentialId)'
+], 'passkey proxy bridge helper should only complete get requests for credentials returned by KeePass');
+requireEvery('passkeysProxyTests', [
+  'get bridge helper should reject selected credentials that were not returned by KeePass',
+  'bridge helper must not complete get requests for unlisted selected credentials',
+  'Selected passkey credential was not returned by KeePass.'
+], 'proxy selected-credential allow-list enforcement should be covered by tests');
+requireEvery('passkeysProxyExperiment', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',
   'CredentialAlgorithms',
