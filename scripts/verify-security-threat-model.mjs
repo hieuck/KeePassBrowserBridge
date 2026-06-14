@@ -501,6 +501,20 @@ requireEvery('passkeysProxyTests', [
   "Hints: ['client-device', 'hybrid']"
 ], 'proxy timeout and WebAuthn hint mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
+  'requestTimeoutMs',
+  'scheduleRequestTimeout',
+  'handleTimedOut',
+  'clearPendingTimer',
+  'Passkey WebAuthn request timed out.',
+  "'timeout'"
+], 'passkey proxy lifecycle should fail closed and clean up pending requests when browser WebAuthn timeouts expire');
+requireEvery('passkeysProxyTests', [
+  'lifecycle should schedule pending cleanup from the WebAuthn request timeout',
+  'timeout cleanup should report timeout as the cancellation reason',
+  'lifecycle should complete timed-out WebAuthn requests with a WebAuthn error',
+  'timed-out WebAuthn requests must not complete success after the handler resolves'
+], 'proxy WebAuthn timeout cleanup should be covered by lifecycle tests');
+requireEvery('passkeysProxyExperiment', [
   'normalizeRequestedExtensions',
   'assertNoUnsupportedGetExtensions',
   'unsupportedRequestedExtensionNames',

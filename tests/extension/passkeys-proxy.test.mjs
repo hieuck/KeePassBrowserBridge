@@ -1305,6 +1305,7 @@ const lifecycleCreateEvent = makeEvent();
 const lifecycleGetEvent = makeEvent();
 const lifecycleIsUvpaaEvent = makeEvent();
 const lifecycleCancelEvent = makeEvent();
+const lifecycleTimers = makeTimerApi();
 const lifecycleChrome = {
   webAuthenticationProxy: {
     attach: async () => lifecycleCalls.push(['attach']),
@@ -1323,6 +1324,8 @@ let lifecycleGetHandlerCalls = 0;
 const canceled = [];
 const lifecycle = api.createLifecycle({
   chromeLike: lifecycleChrome,
+  setTimeout: lifecycleTimers.setTimeout,
+  clearTimeout: lifecycleTimers.clearTimeout,
   resolveTrustedOrigin: async (requestInfo, context) => {
     assert.equal(typeof requestInfo.requestId, 'number', 'resolver should receive Chrome request info');
     assert.equal(['create', 'get'].includes(context.kind), true, 'resolver should receive request kind');
@@ -1407,6 +1410,37 @@ await lockDispatch;
 assert.equal(lifecycleCalls.some((entry) => entry[0] === 'getComplete'), false,
   'lock-canceled get request must not be completed after the handler resolves');
 
+const timeoutDispatch = lifecycleGetEvent.dispatch({
+  requestId: 90,
+  requestDetailsJson: JSON.stringify({
+    rpId: 'example.com',
+    challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+    timeout: 5
+  })
+});
+await flushPromises();
+assert.equal(lifecycle.pendingCount(), 1, 'in-flight get request should be tracked before timeout cleanup');
+assert.equal(lifecycleTimers.lastDelay(), 5, 'lifecycle should schedule pending cleanup from the WebAuthn request timeout');
+await lifecycleTimers.fireLast();
+assert.equal(lifecycle.pendingCount(), 0, 'timed-out get request should be removed from pending state');
+assert.deepEqual(canceled.at(-1), ['90', 'get', 'timeout'],
+  'timeout cleanup should report timeout as the cancellation reason');
+assert.deepEqual(plain(lifecycleCalls.filter((entry) => entry[0] === 'getComplete' && entry[1].requestId === 90)), [
+  ['getComplete', { requestId: 90, error: { name: 'NotAllowedError', message: 'Passkey WebAuthn request timed out.' } }]
+], 'lifecycle should complete timed-out WebAuthn requests with a WebAuthn error');
+releaseGetHandler({
+  Assertion: {
+    CredentialId: 'Y3JlZC05MA',
+    AuthenticatorData: 'YXV0aA',
+    ClientDataJson: 'Y2xpZW50',
+    Signature: 'c2ln'
+  }
+});
+await timeoutDispatch;
+assert.deepEqual(plain(lifecycleCalls.filter((entry) => entry[0] === 'getComplete' && entry[1].requestId === 90)), [
+  ['getComplete', { requestId: 90, error: { name: 'NotAllowedError', message: 'Passkey WebAuthn request timed out.' } }]
+], 'timed-out WebAuthn requests must not complete success after the handler resolves');
+
 const duplicateDispatch = lifecycleGetEvent.dispatch({
   requestId: 80,
   requestDetailsJson: JSON.stringify({ rpId: 'example.com', challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' })
@@ -1460,6 +1494,32 @@ function createOptions(options) {
 
 function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function makeTimerApi() {
+  const timers = [];
+  return {
+    setTimeout(callback, delay) {
+      const timer = { callback, delay, cleared: false };
+      timers.push(timer);
+      return timer;
+    },
+    clearTimeout(timer) {
+      if (timer) timer.cleared = true;
+    },
+    lastDelay() {
+      return timers.length ? timers[timers.length - 1].delay : undefined;
+    },
+    async fireLast() {
+      const timer = timers[timers.length - 1];
+      assert.ok(timer, 'expected a pending timer');
+      if (!timer.cleared) {
+        timer.cleared = true;
+        timer.callback();
+        await flushPromises();
+      }
+    }
+  };
 }
 
 function isUnsupportedUserVerificationError(error) {

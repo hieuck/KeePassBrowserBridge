@@ -6,6 +6,8 @@
     'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
   const duplicatePendingRequestMessage =
     'A pending passkey request already exists for this WebAuthn request.';
+  const requestTimeoutMessage =
+    'Passkey WebAuthn request timed out.';
   const unsupportedUserVerificationMessage =
     'Passkey user verification is not supported by this build.';
   const unsupportedAlgorithmMessage =
@@ -65,6 +67,12 @@
 
   function createLifecycle(options = {}) {
     const chromeLike = options.chromeLike || globalScope.chrome;
+    const setTimer = typeof options.setTimeout === 'function'
+      ? options.setTimeout
+      : (typeof globalScope.setTimeout === 'function' ? globalScope.setTimeout.bind(globalScope) : null);
+    const clearTimer = typeof options.clearTimeout === 'function'
+      ? options.clearTimeout
+      : (typeof globalScope.clearTimeout === 'function' ? globalScope.clearTimeout.bind(globalScope) : null);
     const pending = new Map();
     const state = {
       attached: false,
@@ -107,6 +115,7 @@
       const pendingRequests = Array.from(pending.entries());
       pending.clear();
       for (const [requestId, request] of pendingRequests) {
+        clearPendingTimer(request);
         await notifyCanceled(requestId, request, normalizedReason);
       }
       return {
@@ -147,7 +156,9 @@
         return;
       }
 
-      pending.set(requestId, { kind, requestInfo });
+      const pendingRequest = { kind, requestInfo, timeoutId: null };
+      pending.set(requestId, pendingRequest);
+      scheduleRequestTimeout(requestId, pendingRequest);
       const context = requestContext(kind, requestId);
 
       try {
@@ -179,6 +190,7 @@
     async function rejectDuplicateRequest(kind, requestId) {
       const existing = pending.get(requestId);
       pending.delete(requestId);
+      clearPendingTimer(existing);
       await notifyCanceled(requestId, existing, 'duplicate');
 
       const completionKind = existing && existing.kind ? existing.kind : kind;
@@ -213,7 +225,38 @@
       const key = String(requestId);
       const request = pending.get(key);
       pending.delete(key);
+      clearPendingTimer(request);
       await notifyCanceled(key, request, 'canceled');
+    }
+
+    function scheduleRequestTimeout(requestId, request) {
+      if (!setTimer) return;
+      const timeoutMs = requestTimeoutMs(request && request.requestInfo);
+      if (timeoutMs <= 0) return;
+      request.timeoutId = setTimer(() => {
+        handleTimedOut(requestId).catch(() => {});
+      }, timeoutMs);
+    }
+
+    function clearPendingTimer(request) {
+      if (!request || request.timeoutId === null || request.timeoutId === undefined || !clearTimer) return;
+      clearTimer(request.timeoutId);
+      request.timeoutId = null;
+    }
+
+    async function handleTimedOut(requestId) {
+      const key = String(requestId);
+      const request = pending.get(key);
+      if (!request) return undefined;
+      pending.delete(key);
+      clearPendingTimer(request);
+      await notifyCanceled(key, request, 'timeout');
+
+      const error = notAllowedError(requestTimeoutMessage);
+      if (request.kind === 'create') {
+        return completeCreateError(chromeLike, key, error);
+      }
+      return completeGetError(chromeLike, key, error);
     }
 
     async function notifyCanceled(requestId, request, reason) {
@@ -233,16 +276,20 @@
           return pending.has(requestId);
         },
         async completeSuccess(response) {
-          if (!pending.has(requestId)) return undefined;
+          const request = pending.get(requestId);
+          if (!request) return undefined;
           pending.delete(requestId);
+          clearPendingTimer(request);
           if (kind === 'create') {
             return completeCreateSuccess(chromeLike, requestId, response);
           }
           return completeGetSuccess(chromeLike, requestId, response);
         },
         async completeError(error) {
-          if (!pending.has(requestId)) return undefined;
+          const request = pending.get(requestId);
+          if (!request) return undefined;
           pending.delete(requestId);
+          clearPendingTimer(request);
           if (kind === 'create') {
             return completeCreateError(chromeLike, requestId, error);
           }
@@ -282,6 +329,15 @@
       requestId: String(requestInfo.requestId),
       details
     };
+  }
+
+  function requestTimeoutMs(requestInfo) {
+    try {
+      const parsed = parseRequestDetails(requestInfo);
+      return normalizeTimeoutMs(parsed.details && parsed.details.timeout);
+    } catch {
+      return 0;
+    }
   }
 
   function normalizeCreateRequest(requestInfo, context = {}) {
