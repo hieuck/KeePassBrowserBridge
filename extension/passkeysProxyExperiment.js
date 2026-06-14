@@ -810,6 +810,11 @@
       response: compactObject({
         clientDataJSON: firstString(response && response.ClientDataJson, response && response.clientDataJSON),
         attestationObject: firstString(response && response.AttestationObject, response && response.attestationObject),
+        authenticatorData: firstString(
+          response && response.AuthenticatorData,
+          response && response.authenticatorData,
+          credential.AuthenticatorData,
+          credential.authenticatorData),
         publicKey,
         publicKeyAlgorithm: publicKey ? -7 : undefined,
         transports: normalizeStringArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))

@@ -321,35 +321,39 @@ requireEvery('testsProgram', [
 requireEvery('bridgeRequestHandler', [
   'CreateClientExtensionResults',
   'PasskeyCredPropsExtensionResult',
+  'AuthenticatorData = registration.AuthenticatorData',
   'AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment',
   'Transports = registration.Credential.Transports',
   'Rk = true'
-], 'passkey bridge should return requested credProps extension results, authenticator attachment, and transport metadata for discoverable credentials');
+], 'passkey bridge should return requested credProps extension results, authenticator data, authenticator attachment, and transport metadata for discoverable credentials');
 requireCountAtLeast('bridgeRequestHandler', 'AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment', 2,
   'passkey bridge should return authenticator attachment metadata for create and get completion responses');
 requireEvery('protocolModels', [
   'PasskeyCreateCompleteResponsePayload',
   'PasskeyGetCompleteResponsePayload',
+  'public string AuthenticatorData { get; set; }',
   'public string AuthenticatorAttachment { get; set; }',
   'public string[] Transports { get; set; }'
-], 'passkey complete response contracts should carry authenticator attachment metadata to the proxy');
+], 'passkey complete response contracts should carry authenticator data and attachment metadata to the proxy');
 requireCountAtLeast('protocolModels', 'public string AuthenticatorAttachment { get; set; }', 2,
   'passkey create/get complete response contracts should each carry authenticator attachment metadata');
 requireEvery('testsProgram', [
   'pending create should retain requested credProps extension state',
+  'create complete response should include authenticatorData',
+  'create complete response authenticatorData mismatch',
   'create complete response should include cross-platform authenticator attachment',
   'get complete response should include cross-platform authenticator attachment',
   'create complete response should include normalized transport metadata',
   'create complete response should include requested credProps resident-key result'
 ], 'backend credProps extension result and complete-response metadata handling should be covered by tests');
 requireEvery('passkeyDesign', [
-  'create-complete response also carries the cross-platform authenticator attachment, normalized credential transports, public-key COSE, and ES256 algorithm metadata',
+  'create-complete response also carries authenticator data, the cross-platform authenticator attachment, normalized credential transports, public-key COSE, and ES256 algorithm metadata',
   'get-complete response carries cross-platform authenticator attachment metadata',
-  'authenticatorAttachment plus response.transports/publicKey/publicKeyAlgorithm',
-  'create response transports',
+  'authenticatorAttachment plus response.authenticatorData/transports/publicKey/publicKeyAlgorithm',
+  'create response authenticatorData, transports',
   'create public-key COSE',
-  'create-complete authenticator attachment and transport metadata'
-], 'passkey design should document complete-response authenticator attachment, transport metadata, and proxy serialization');
+  'create-complete authenticatorData, authenticator attachment, and transport metadata'
+], 'passkey design should document complete-response authenticator data, authenticator attachment, transport metadata, and proxy serialization');
 requireEvery('passkeyService', [
   'UnsupportedExtensionErrorCode',
   'HasUnsupportedRequestedExtensions',
@@ -490,16 +494,18 @@ requireEvery('passkeysProxyExperiment', [
   'unsupportedRequestedExtensionNames',
   'Passkey requested WebAuthn extension is not supported by this build.',
   'normalizeClientExtensionResults',
+  'authenticatorData: firstString',
   'PublicKeyCose',
   'publicKeyAlgorithm: publicKey ? -7 : undefined',
   'credProps'
-], 'passkey proxy should map requested credProps, serialize create public-key metadata, and reject unsupported WebAuthn extensions');
+], 'passkey proxy should map requested credProps, serialize create authenticator/public-key metadata, and reject unsupported WebAuthn extensions');
 requireEvery('passkeysProxyTests', [
   'RequestedExtensions: { CredProps: true }',
   'proxy experiment must reject create requests with unsupported WebAuthn extensions',
   'proxy experiment must reject get requests with unsupported WebAuthn extensions',
   'bridge helper must not call backend passkey methods when requested extensions are unsupported',
   'bridge helper must not call backend get passkey methods when requested extensions are unsupported',
+  "authenticatorData: 'YXV0aC1jcmVhdGU'",
   "publicKey: 'cHVibGljLWtleS1jb3Nl'",
   'publicKeyAlgorithm: -7',
   'credProps: {',

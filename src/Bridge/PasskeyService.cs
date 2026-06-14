@@ -53,7 +53,8 @@ namespace KeePassBrowserBridge.Bridge
             EccKeyBlob key = EccKeyBlob.Create();
             byte[] publicKeyCose = CoseKey.EncodeEs256PublicKey(key.PublicX, key.PublicY);
             byte[] clientDataJson = WebAuthnClientDataJson.Create("webauthn.create", canonicalChallenge, canonicalOrigin);
-            byte[] attestationObject = WebAuthnAttestationObject.CreateNone(request.RpId, credentialId, publicKeyCose);
+            byte[] authenticatorData;
+            byte[] attestationObject = WebAuthnAttestationObject.CreateNone(request.RpId, credentialId, publicKeyCose, out authenticatorData);
 
             return PasskeyRegistrationResult.Ok(new PasskeyCredentialMaterial
             {
@@ -69,7 +70,7 @@ namespace KeePassBrowserBridge.Bridge
                 PublicKeyCose = Base64Url.Encode(publicKeyCose),
                 PrivateKey = Base64Url.Encode(key.PrivateBlob),
                 SignCount = 0
-            }, Base64Url.Encode(clientDataJson), Base64Url.Encode(attestationObject));
+            }, Base64Url.Encode(clientDataJson), Base64Url.Encode(attestationObject), Base64Url.Encode(authenticatorData));
         }
 
         public PasskeyAssertionResult CreateAssertion(PasskeyCredentialMaterial credential, PasskeyAssertionRequest request)
@@ -1058,15 +1059,17 @@ namespace KeePassBrowserBridge.Bridge
         public PasskeyCredentialMaterial Credential { get; set; }
         public string ClientDataJson { get; set; }
         public string AttestationObject { get; set; }
+        public string AuthenticatorData { get; set; }
 
-        public static PasskeyRegistrationResult Ok(PasskeyCredentialMaterial credential, string clientDataJson, string attestationObject)
+        public static PasskeyRegistrationResult Ok(PasskeyCredentialMaterial credential, string clientDataJson, string attestationObject, string authenticatorData)
         {
             return new PasskeyRegistrationResult
             {
                 Success = true,
                 Credential = credential,
                 ClientDataJson = clientDataJson,
-                AttestationObject = attestationObject
+                AttestationObject = attestationObject,
+                AuthenticatorData = authenticatorData
             };
         }
 
@@ -1443,9 +1446,9 @@ namespace KeePassBrowserBridge.Bridge
 
     internal static class WebAuthnAttestationObject
     {
-        public static byte[] CreateNone(string rpId, byte[] credentialId, byte[] publicKeyCose)
+        public static byte[] CreateNone(string rpId, byte[] credentialId, byte[] publicKeyCose, out byte[] authData)
         {
-            byte[] authData = WebAuthnAuthenticatorData.CreateAttestationData(rpId, credentialId, publicKeyCose);
+            authData = WebAuthnAuthenticatorData.CreateAttestationData(rpId, credentialId, publicKeyCose);
             CborWriter writer = new CborWriter();
             writer.WriteMap(3);
             writer.WriteTextString("fmt");

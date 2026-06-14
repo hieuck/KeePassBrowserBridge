@@ -441,6 +441,7 @@ namespace KeePassBrowserBridge.Bridge
                 RpId = registration.Credential.RpId,
                 ClientDataJson = registration.ClientDataJson,
                 AttestationObject = registration.AttestationObject,
+                AuthenticatorData = registration.AuthenticatorData,
                 PublicKeyCose = registration.Credential.PublicKeyCose,
                 AuthenticatorAttachment = PasskeyService.CrossPlatformAuthenticatorAttachment,
                 Transports = registration.Credential.Transports,

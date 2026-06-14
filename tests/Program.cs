@@ -3164,6 +3164,15 @@ internal static class Program
         AssertTrue(!string.IsNullOrWhiteSpace(result.CredentialId), "create complete response should include credential ID");
         AssertTrue(!string.IsNullOrWhiteSpace(result.ClientDataJson), "create complete response should include clientDataJSON");
         AssertTrue(!string.IsNullOrWhiteSpace(result.AttestationObject), "create complete response should include attestationObject");
+        AssertTrue(!string.IsNullOrWhiteSpace(result.AuthenticatorData), "create complete response should include authenticatorData");
+        byte[] responseAttestationObject;
+        byte[] responseAuthenticatorData;
+        AssertTrue(Base64Url.TryDecode(result.AttestationObject, out responseAttestationObject),
+            "create complete response attestationObject should be base64url encoded");
+        AssertTrue(Base64Url.TryDecode(result.AuthenticatorData, out responseAuthenticatorData),
+            "create complete response authenticatorData should be base64url encoded");
+        AssertByteArrayEqual(ReadNoneAttestationAuthData(responseAttestationObject), responseAuthenticatorData,
+            "create complete response authenticatorData mismatch");
         AssertEqual("cross-platform", result.AuthenticatorAttachment,
             "create complete response should include cross-platform authenticator attachment");
         AssertEqual(1, result.Transports.Length, "create complete response should include normalized transport metadata");
