@@ -1253,6 +1253,15 @@
     return unsupported;
   }
 
+  function unsupportedCredPropsResultNames(credProps) {
+    const unsupported = [];
+    for (const [name, value] of Object.entries(credProps || {})) {
+      if (name === 'rk' || name === 'Rk' || name === 'residentKey' || name === 'ResidentKey') continue;
+      if (isRequestedExtensionValue(value)) unsupported.push(name);
+    }
+    return unsupported;
+  }
+
   function normalizeClientExtensionResults(results) {
     if (results === undefined || results === null || results === false) return {};
     if (typeof results !== 'object' || Array.isArray(results)) {
@@ -1268,6 +1277,9 @@
       throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
     }
     if (credProps && typeof credProps === 'object') {
+      if (unsupportedCredPropsResultNames(credProps).length > 0) {
+        throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+      }
       const rk = firstDefined(credProps.rk, credProps.Rk, credProps.residentKey, credProps.ResidentKey);
       if (rk !== undefined) {
         if (typeof rk !== 'boolean') {

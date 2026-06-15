@@ -1810,6 +1810,64 @@ await api.completeGetSuccess(chromeApi, 77, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 78, {
+  Credential: { CredentialId: 'Y3JlZC03OA' },
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24',
+  ClientExtensionResults: {
+    CredProps: {
+      Rk: true,
+      Unexpected: true
+    }
+  }
+});
+await api.completeGetSuccess(chromeApi, 79, {
+  Assertion: {
+    CredentialId: 'Y3JlZC03OQ',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl'
+  },
+  ClientExtensionResults: {
+    CredProps: {
+      Rk: true,
+      Unexpected: true
+    }
+  }
+});
+await api.completeCreateSuccess(chromeApi, 80, JSON.stringify({
+  id: 'Y3JlZC04MA',
+  rawId: 'Y3JlZC04MA',
+  type: 'public-key',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24'
+  },
+  clientExtensionResults: {
+    credProps: {
+      rk: true,
+      unexpected: true
+    }
+  }
+}));
+await api.completeGetSuccess(chromeApi, 81, {
+  responseJson: JSON.stringify({
+    id: 'Y3JlZC04MQ',
+    rawId: 'Y3JlZC04MQ',
+    type: 'public-key',
+    response: {
+      authenticatorData: 'YXV0aC1kYXRh',
+      clientDataJSON: 'Y2xpZW50LWdldA',
+      signature: 'c2lnbmF0dXJl'
+    },
+    clientExtensionResults: {
+      credProps: {
+        rk: true,
+        unexpected: true
+      }
+    }
+  })
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -2145,6 +2203,46 @@ assert.deepEqual(plain(calls[34]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson has unsupported client extension results');
+assert.deepEqual(plain(calls[35]), [
+  'create',
+  {
+    requestId: 78,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'create success should fail closed when object complete response has unsupported credProps result fields');
+assert.deepEqual(plain(calls[36]), [
+  'get',
+  {
+    requestId: 79,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'get success should fail closed when object complete response has unsupported credProps result fields');
+assert.deepEqual(plain(calls[37]), [
+  'create',
+  {
+    requestId: 80,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson has unsupported credProps result fields');
+assert.deepEqual(plain(calls[38]), [
+  'get',
+  {
+    requestId: 81,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'get success should fail closed when pre-serialized responseJson has unsupported credProps result fields');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
