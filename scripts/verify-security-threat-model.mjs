@@ -525,6 +525,8 @@ requireEvery('passkeysProxyTests', [
   'get success should fail closed when pre-serialized responseJson has mismatched id and rawId',
   'create success should fail closed when pre-serialized responseJson has an unsupported credential type',
   'get success should fail closed when pre-serialized responseJson has an unsupported credential type',
+  'create success should fail closed when pre-serialized responseJson has a non-exact credential type',
+  'get success should fail closed when pre-serialized responseJson has a non-exact credential type',
   'create success should fail closed when pre-serialized responseJson has invalid base64url credential IDs',
   'get success should fail closed when pre-serialized responseJson has invalid base64url assertion fields',
   'Passkey complete response credential ID fields did not match.',

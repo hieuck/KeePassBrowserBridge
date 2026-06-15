@@ -1590,6 +1590,27 @@ await api.completeGetSuccess(chromeApi, 56, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 57, JSON.stringify({
+  id: 'Y3JlZC01Nw',
+  rawId: 'Y3JlZC01Nw',
+  type: ' public-key ',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24'
+  }
+}));
+await api.completeGetSuccess(chromeApi, 58, {
+  responseJson: JSON.stringify({
+    id: 'Y3JlZC01OA',
+    rawId: 'Y3JlZC01OA',
+    type: ' public-key ',
+    response: {
+      authenticatorData: 'YXV0aC1kYXRh',
+      clientDataJSON: 'Y2xpZW50LWdldA',
+      signature: 'c2lnbmF0dXJl'
+    }
+  })
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -1715,6 +1736,26 @@ assert.deepEqual(plain(calls[13]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson has invalid base64url assertion fields');
+assert.deepEqual(plain(calls[14]), [
+  'create',
+  {
+    requestId: 57,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response credential type was not public-key.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson has a non-exact credential type');
+assert.deepEqual(plain(calls[15]), [
+  'get',
+  {
+    requestId: 58,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response credential type was not public-key.'
+    }
+  }
+], 'get success should fail closed when pre-serialized responseJson has a non-exact credential type');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],

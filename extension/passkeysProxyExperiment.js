@@ -1096,7 +1096,7 @@
   }
 
   function assertSerializedCredentialType(parsed) {
-    if (stringValue(parsed && parsed.type).trim() !== 'public-key') {
+    if (stringValue(parsed && parsed.type) !== 'public-key') {
       throw notAllowedError(credentialTypeMismatchMessage);
     }
   }
