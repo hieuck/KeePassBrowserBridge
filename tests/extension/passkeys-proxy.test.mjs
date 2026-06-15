@@ -1378,6 +1378,26 @@ await api.completeGetSuccess(chromeApi, 48, {
     ClientDataJson: 'Y2xpZW50LWdldA'
   }
 });
+await api.completeCreateSuccess(chromeApi, 49, JSON.stringify({
+  id: 'Y3JlZC00OQ',
+  rawId: 'Y3JlZC00OQ',
+  type: 'public-key',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    authenticatorData: 'YXV0aC1jcmVhdGU'
+  }
+}));
+await api.completeGetSuccess(chromeApi, 50, {
+  responseJson: JSON.stringify({
+    id: 'Y3JlZC01MA',
+    rawId: 'Y3JlZC01MA',
+    type: 'public-key',
+    response: {
+      authenticatorData: 'YXV0aC1kYXRh',
+      clientDataJSON: 'Y2xpZW50LWdldA'
+    }
+  })
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -1423,6 +1443,26 @@ assert.deepEqual(plain(calls[5]), [
     }
   }
 ], 'get success should fail closed when KeePass omits required assertion fields');
+assert.deepEqual(plain(calls[6]), [
+  'create',
+  {
+    requestId: 49,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response was missing required WebAuthn fields.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson omits required attestation fields');
+assert.deepEqual(plain(calls[7]), [
+  'get',
+  {
+    requestId: 50,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response was missing required WebAuthn fields.'
+    }
+  }
+], 'get success should fail closed when pre-serialized responseJson omits required assertion fields');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],

@@ -939,8 +939,8 @@
   }
 
   function createResponseJson(response) {
-    if (typeof response === 'string') return response;
-    if (response && typeof response.responseJson === 'string') return response.responseJson;
+    const responseJson = responseJsonString(response);
+    if (responseJson) return validatedSerializedCreateResponseJson(responseJson);
 
     const credential = (response && (response.Credential || response.credential)) || {};
     const credentialId = firstString(
@@ -993,8 +993,8 @@
   }
 
   function getResponseJson(response) {
-    if (typeof response === 'string') return response;
-    if (response && typeof response.responseJson === 'string') return response.responseJson;
+    const responseJson = responseJsonString(response);
+    if (responseJson) return validatedSerializedGetResponseJson(responseJson);
 
     const assertion = response && (response.Assertion || response.assertion) || response || {};
     const credentialId = firstString(
@@ -1024,6 +1024,51 @@
       clientExtensionResults: normalizeClientExtensionResults(
         response && (response.ClientExtensionResults || response.clientExtensionResults))
     }));
+  }
+
+  function responseJsonString(response) {
+    if (typeof response === 'string') return response;
+    if (response && typeof response.responseJson === 'string') return response.responseJson;
+    return '';
+  }
+
+  function validatedSerializedCreateResponseJson(responseJson) {
+    const parsed = parseSerializedResponseJson(responseJson);
+    const response = (parsed && parsed.response) || {};
+    assertRequiredCompleteFields(
+      firstString(parsed && parsed.id, parsed && parsed.rawId),
+      firstString(response.clientDataJSON, response.ClientDataJson),
+      firstString(response.attestationObject, response.AttestationObject)
+    );
+    return responseJson;
+  }
+
+  function validatedSerializedGetResponseJson(responseJson) {
+    const parsed = parseSerializedResponseJson(responseJson);
+    const response = (parsed && parsed.response) || {};
+    assertRequiredCompleteFields(
+      firstString(parsed && parsed.id, parsed && parsed.rawId),
+      firstString(response.authenticatorData, response.AuthenticatorData),
+      firstString(response.clientDataJSON, response.ClientDataJson),
+      firstString(response.signature, response.Signature)
+    );
+    return responseJson;
+  }
+
+  function parseSerializedResponseJson(responseJson) {
+    const text = stringValue(responseJson).trim();
+    if (!text) throw notAllowedError(missingCompleteResponseFieldsMessage);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw notAllowedError(missingCompleteResponseFieldsMessage);
+    }
+    if (!parsed || typeof parsed !== 'object') {
+      throw notAllowedError(missingCompleteResponseFieldsMessage);
+    }
+    return parsed;
   }
 
   function assertRequiredCompleteFields(...values) {

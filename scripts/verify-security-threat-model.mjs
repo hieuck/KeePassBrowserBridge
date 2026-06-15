@@ -465,6 +465,9 @@ requireEvery('passkeysProxyExperiment', [
   'assertGetCompleteMatchesRequest',
   "assertCompleteFieldMatches(payload, complete, 'CredentialId')",
   'Passkey complete response did not match the WebAuthn request.',
+  'validatedSerializedCreateResponseJson',
+  'validatedSerializedGetResponseJson',
+  'parseSerializedResponseJson',
   'assertRequiredCompleteFields',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'passkey proxy bridge helper should reject mismatched complete response bindings before browser completion');
@@ -477,6 +480,8 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not return get complete responses with mismatched RP IDs',
   'Passkey complete response did not match the WebAuthn request.',
   'get success should fail closed when KeePass omits required assertion fields',
+  'create success should fail closed when pre-serialized responseJson omits required attestation fields',
+  'get success should fail closed when pre-serialized responseJson omits required assertion fields',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'proxy complete-response WebAuthn request, RP ID, credential, and required-field binding should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
