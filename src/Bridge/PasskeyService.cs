@@ -1933,15 +1933,20 @@ namespace KeePassBrowserBridge.Bridge
 
             string normalized = text.Trim();
             int paddingStart = normalized.IndexOf('=');
-            if (paddingStart >= 0 && paddingStart < normalized.Length - 2) return false;
+            if (paddingStart >= 0)
+            {
+                int paddingLength = normalized.Length - paddingStart;
+                if (normalized.Length % 4 != 0 || paddingLength < 1 || paddingLength > 2) return false;
+            }
             for (int i = 0; i < normalized.Length; ++i)
             {
                 char ch = normalized[i];
                 if (ch == '=')
                 {
-                    if (i < paddingStart || i >= paddingStart + 2) return false;
+                    if (i < paddingStart) return false;
                     continue;
                 }
+                if (paddingStart >= 0 && i > paddingStart) return false;
                 bool allowed = (ch >= 'A' && ch <= 'Z') ||
                     (ch >= 'a' && ch <= 'z') ||
                     (ch >= '0' && ch <= '9') ||

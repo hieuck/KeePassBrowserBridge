@@ -29,6 +29,7 @@ internal static class Program
         PasskeyRpIdValidationAllowsMatchingOriginAndSubdomain();
         PasskeyRpIdValidationRejectsMismatchedOrigin();
         PasskeyBase64UrlRejectsStandardBase64Alphabet();
+        PasskeyBase64UrlRejectsMalformedPadding();
         PasskeyRegistrationCreatesCredentialAndAttestation();
         PasskeyRegistrationRejectsRequiredUserVerification();
         PasskeyRegistrationRejectsUnknownUserVerification();
@@ -296,6 +297,22 @@ internal static class Program
             "passkey base64url decoder must reject standard base64 slash characters");
         AssertTrue(Base64Url.TryDecode("-_8", out bytes),
             "passkey base64url decoder should accept URL-safe alphabet characters");
+    }
+
+    private static void PasskeyBase64UrlRejectsMalformedPadding()
+    {
+        byte[] bytes;
+
+        AssertFalse(Base64Url.TryDecode("AA=", out bytes),
+            "passkey base64url decoder must reject short malformed padding");
+        AssertFalse(Base64Url.TryDecode("AAA==", out bytes),
+            "passkey base64url decoder must reject overpadded values");
+        AssertFalse(Base64Url.TryDecode("AA=A", out bytes),
+            "passkey base64url decoder must reject data after padding");
+        AssertTrue(Base64Url.TryDecode("AA==", out bytes),
+            "passkey base64url decoder should accept valid double padding");
+        AssertTrue(Base64Url.TryDecode("AAA=", out bytes),
+            "passkey base64url decoder should accept valid single padding");
     }
 
     private static void PasskeyRegistrationCreatesCredentialAndAttestation()

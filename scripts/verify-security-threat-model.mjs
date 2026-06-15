@@ -132,16 +132,25 @@ requireEvery('passkeyService', [
   "ch == '-'",
   "ch == '_'",
   'if (!allowed) return false;',
+  'normalized.Length % 4 != 0',
+  'paddingLength < 1 || paddingLength > 2',
+  'paddingStart >= 0 && i > paddingStart',
   'string canonicalChallenge = Base64Url.Encode(challenge);',
   'string canonicalOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(request.Origin);',
   'GetLeftPart(UriPartial.Authority)',
   'CrossOrigin = false'
-], 'passkey backend should produce structured WebAuthn clientDataJSON with canonical challenges and origins from strict base64url input');
+], 'passkey backend should produce structured WebAuthn clientDataJSON with canonical challenges and origins from strict base64url alphabet and padding input');
 requireEvery('testsProgram', [
   'PasskeyBase64UrlRejectsStandardBase64Alphabet',
+  'PasskeyBase64UrlRejectsMalformedPadding',
   'passkey base64url decoder must reject standard base64 plus characters',
   'passkey base64url decoder must reject standard base64 slash characters',
   'passkey base64url decoder should accept URL-safe alphabet characters',
+  'passkey base64url decoder must reject short malformed padding',
+  'passkey base64url decoder must reject overpadded values',
+  'passkey base64url decoder must reject data after padding',
+  'passkey base64url decoder should accept valid double padding',
+  'passkey base64url decoder should accept valid single padding',
   'AssertWebAuthnClientData',
   'registration clientDataJSON',
   'assertion clientDataJSON',
@@ -737,8 +746,11 @@ requireEvery('passkeyDesign', [
   'Passkeys are not implemented as a browser-facing feature',
   'No passkey support in public store listings',
   'webAuthenticationProxy',
+  'malformed padding',
   'browser-facing WebAuthn packaging remains future work'
 ], 'future WebAuthn permissions should stay routed through the passkey design');
+requireIncludes('securityThreatModel', 'strict base64url alphabet/padding validation',
+  'security threat model should track strict passkey base64url decoding');
 requireNotIncludes('manifest', 'webAuthenticationProxy',
   'Chrome manifest should not request WebAuthn proxy permission before review');
 requireNotIncludes('firefoxManifest', 'webAuthenticationProxy',
