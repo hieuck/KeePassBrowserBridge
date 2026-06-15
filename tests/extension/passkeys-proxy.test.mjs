@@ -1918,6 +1918,48 @@ await api.completeGetSuccess(chromeApi, 85, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 86, {
+  Credential: { CredentialId: 'Y3JlZC04Ng' },
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24',
+  AuthenticatorAttachment: 'cross-platform',
+  authenticatorAttachment: 'platform'
+});
+await api.completeGetSuccess(chromeApi, 87, {
+  AuthenticatorAttachment: 'cross-platform',
+  authenticatorAttachment: 'platform',
+  Assertion: {
+    CredentialId: 'Y3JlZC04Nw',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl'
+  }
+});
+await api.completeCreateSuccess(chromeApi, 88, JSON.stringify({
+  id: 'Y3JlZC04OA',
+  rawId: 'Y3JlZC04OA',
+  type: 'public-key',
+  authenticatorAttachment: 'cross-platform',
+  AuthenticatorAttachment: 'platform',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24'
+  }
+}));
+await api.completeGetSuccess(chromeApi, 89, {
+  responseJson: JSON.stringify({
+    id: 'Y3JlZC04OQ',
+    rawId: 'Y3JlZC04OQ',
+    type: 'public-key',
+    authenticatorAttachment: 'cross-platform',
+    AuthenticatorAttachment: 'platform',
+    response: {
+      authenticatorData: 'YXV0aC1kYXRh',
+      clientDataJSON: 'Y2xpZW50LWdldA',
+      signature: 'c2lnbmF0dXJl'
+    }
+  })
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -2333,6 +2375,46 @@ assert.deepEqual(plain(calls[42]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson has conflicting client extension result aliases');
+assert.deepEqual(plain(calls[43]), [
+  'create',
+  {
+    requestId: 86,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response authenticator attachment was not cross-platform.'
+    }
+  }
+], 'create success should fail closed when object complete response has conflicting authenticator attachment aliases');
+assert.deepEqual(plain(calls[44]), [
+  'get',
+  {
+    requestId: 87,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response authenticator attachment was not cross-platform.'
+    }
+  }
+], 'get success should fail closed when object complete response has conflicting authenticator attachment aliases');
+assert.deepEqual(plain(calls[45]), [
+  'create',
+  {
+    requestId: 88,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response authenticator attachment was not cross-platform.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson has conflicting authenticator attachment aliases');
+assert.deepEqual(plain(calls[46]), [
+  'get',
+  {
+    requestId: 89,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response authenticator attachment was not cross-platform.'
+    }
+  }
+], 'get success should fail closed when pre-serialized responseJson has conflicting authenticator attachment aliases');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
