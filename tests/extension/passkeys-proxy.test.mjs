@@ -1486,7 +1486,7 @@ await api.completeCreateSuccess(chromeApi, 45, {
       Rk: true
     }
   },
-  Transports: ['internal', 'usb']
+  Transports: ['Internal', 'usb', 'usb', 'invalid value', 'hybrid', '']
 });
 await api.completeGetSuccess(chromeApi, 46, {
   AuthenticatorAttachment: 'cross-platform',
@@ -1662,6 +1662,16 @@ await api.completeGetSuccess(chromeApi, 64, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 65, JSON.stringify({
+  id: 'Y3JlZC02NQ',
+  rawId: 'Y3JlZC02NQ',
+  type: 'public-key',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24',
+    transports: ['internal', 'invalid value']
+  }
+}));
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -1676,7 +1686,7 @@ assert.deepEqual(createSuccessJson, {
     authenticatorData: 'YXV0aC1jcmVhdGU',
     publicKey: 'c3BraS1wdWJsaWMta2V5',
     publicKeyAlgorithm: -7,
-    transports: ['internal', 'usb']
+    transports: ['internal', 'usb', 'hybrid']
   },
   clientExtensionResults: {
     credProps: {
@@ -1867,6 +1877,16 @@ assert.deepEqual(plain(calls[21]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson has invalid optional base64url fields');
+assert.deepEqual(plain(calls[22]), [
+  'create',
+  {
+    requestId: 65,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid transport metadata.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson has invalid transport metadata');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],

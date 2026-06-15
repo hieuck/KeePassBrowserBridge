@@ -22,6 +22,8 @@
     'Passkey complete response credential type was not public-key.';
   const invalidCompleteResponseBase64UrlMessage =
     'Passkey complete response contained invalid base64url WebAuthn fields.';
+  const invalidCompleteResponseTransportMessage =
+    'Passkey complete response contained invalid transport metadata.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -999,7 +1001,7 @@
         authenticatorData,
         publicKey,
         publicKeyAlgorithm: publicKey ? -7 : undefined,
-        transports: normalizeStringArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
+        transports: normalizeTransportArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
       }),
       clientExtensionResults: normalizeClientExtensionResults(
         response && (response.ClientExtensionResults || response.clientExtensionResults))
@@ -1057,10 +1059,12 @@
     const attestationObject = firstString(response.attestationObject, response.AttestationObject);
     const authenticatorData = firstString(response.authenticatorData, response.AuthenticatorData);
     const publicKey = firstString(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
+    const transports = firstDefined(response.transports, response.Transports);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
+    assertSerializedTransportMetadata(transports);
     return responseJson;
   }
 
@@ -1123,6 +1127,23 @@
       return text && base64UrlByteLength(text) < 1;
     })) {
       throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
+    }
+  }
+
+  function assertSerializedTransportMetadata(transports) {
+    if (transports === undefined || transports === null) return;
+    if (!Array.isArray(transports)) {
+      throw notAllowedError(invalidCompleteResponseTransportMessage);
+    }
+
+    const normalized = normalizeTransportArray(transports) || [];
+    if (normalized.length !== transports.length) {
+      throw notAllowedError(invalidCompleteResponseTransportMessage);
+    }
+    for (let i = 0; i < transports.length; i++) {
+      if (typeof transports[i] !== 'string' || transports[i] !== normalized[i]) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
     }
   }
 
@@ -1231,10 +1252,22 @@
     return undefined;
   }
 
-  function normalizeStringArray(value) {
+  function normalizeTransportArray(value) {
     if (!Array.isArray(value)) return undefined;
-    const normalized = value.map((item) => stringValue(item)).filter(Boolean);
+    const normalized = [];
+    for (const item of value) {
+      if (typeof item !== 'string') continue;
+      const transport = normalizeTransportToken(item);
+      if (!transport || normalized.includes(transport)) continue;
+      normalized.push(transport);
+    }
     return normalized.length ? normalized : undefined;
+  }
+
+  function normalizeTransportToken(value) {
+    const transport = value.trim().toLowerCase();
+    if (!transport || transport.length > 32) return '';
+    return /^[a-z0-9-]+$/.test(transport) ? transport : '';
   }
 
   function compactObject(value) {
