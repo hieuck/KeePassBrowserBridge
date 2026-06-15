@@ -18,6 +18,8 @@
     'Passkey complete response was missing required WebAuthn fields.';
   const credentialIdFieldsMismatchMessage =
     'Passkey complete response credential ID fields did not match.';
+  const credentialTypeMismatchMessage =
+    'Passkey complete response credential type was not public-key.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -1037,6 +1039,7 @@
   function validatedSerializedCreateResponseJson(responseJson) {
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
+    assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(
       serializedCredentialId(parsed),
       firstString(response.clientDataJSON, response.ClientDataJson),
@@ -1048,6 +1051,7 @@
   function validatedSerializedGetResponseJson(responseJson) {
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
+    assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(
       serializedCredentialId(parsed),
       firstString(response.authenticatorData, response.AuthenticatorData),
@@ -1081,6 +1085,12 @@
       throw notAllowedError(credentialIdFieldsMismatchMessage);
     }
     return id;
+  }
+
+  function assertSerializedCredentialType(parsed) {
+    if (stringValue(parsed && parsed.type).trim() !== 'public-key') {
+      throw notAllowedError(credentialTypeMismatchMessage);
+    }
   }
 
   function assertRequiredCompleteFields(...values) {
