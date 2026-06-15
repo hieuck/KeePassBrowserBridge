@@ -1398,6 +1398,28 @@ await api.completeGetSuccess(chromeApi, 50, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 51, JSON.stringify({
+  id: 'Y3JlZC01MQ',
+  rawId: 'Y3JlZC1ldmls',
+  type: 'public-key',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24',
+    authenticatorData: 'YXV0aC1jcmVhdGU'
+  }
+}));
+await api.completeGetSuccess(chromeApi, 52, {
+  responseJson: JSON.stringify({
+    id: 'Y3JlZC01Mg',
+    rawId: 'Y3JlZC1ldmls',
+    type: 'public-key',
+    response: {
+      authenticatorData: 'YXV0aC1kYXRh',
+      clientDataJSON: 'Y2xpZW50LWdldA',
+      signature: 'c2lnbmF0dXJl'
+    }
+  })
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -1463,6 +1485,26 @@ assert.deepEqual(plain(calls[7]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson omits required assertion fields');
+assert.deepEqual(plain(calls[8]), [
+  'create',
+  {
+    requestId: 51,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response credential ID fields did not match.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson has mismatched id and rawId');
+assert.deepEqual(plain(calls[9]), [
+  'get',
+  {
+    requestId: 52,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response credential ID fields did not match.'
+    }
+  }
+], 'get success should fail closed when pre-serialized responseJson has mismatched id and rawId');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],

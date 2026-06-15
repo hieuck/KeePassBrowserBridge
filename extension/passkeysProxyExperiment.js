@@ -16,6 +16,8 @@
     'Passkey complete response did not match the WebAuthn request.';
   const missingCompleteResponseFieldsMessage =
     'Passkey complete response was missing required WebAuthn fields.';
+  const credentialIdFieldsMismatchMessage =
+    'Passkey complete response credential ID fields did not match.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -1036,7 +1038,7 @@
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
     assertRequiredCompleteFields(
-      firstString(parsed && parsed.id, parsed && parsed.rawId),
+      serializedCredentialId(parsed),
       firstString(response.clientDataJSON, response.ClientDataJson),
       firstString(response.attestationObject, response.AttestationObject)
     );
@@ -1047,7 +1049,7 @@
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
     assertRequiredCompleteFields(
-      firstString(parsed && parsed.id, parsed && parsed.rawId),
+      serializedCredentialId(parsed),
       firstString(response.authenticatorData, response.AuthenticatorData),
       firstString(response.clientDataJSON, response.ClientDataJson),
       firstString(response.signature, response.Signature)
@@ -1069,6 +1071,16 @@
       throw notAllowedError(missingCompleteResponseFieldsMessage);
     }
     return parsed;
+  }
+
+  function serializedCredentialId(parsed) {
+    const id = stringValue(parsed && parsed.id).trim();
+    const rawId = stringValue(parsed && parsed.rawId).trim();
+    assertRequiredCompleteFields(id, rawId);
+    if (id !== rawId) {
+      throw notAllowedError(credentialIdFieldsMismatchMessage);
+    }
+    return id;
   }
 
   function assertRequiredCompleteFields(...values) {
