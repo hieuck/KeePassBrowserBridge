@@ -20,6 +20,8 @@
     'Passkey complete response credential ID fields did not match.';
   const credentialTypeMismatchMessage =
     'Passkey complete response credential type was not public-key.';
+  const invalidCompleteResponseBase64UrlMessage =
+    'Passkey complete response contained invalid base64url WebAuthn fields.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -1045,25 +1047,25 @@
   function validatedSerializedCreateResponseJson(responseJson) {
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
+    const credentialId = serializedCredentialId(parsed);
+    const clientDataJson = firstString(response.clientDataJSON, response.ClientDataJson);
+    const attestationObject = firstString(response.attestationObject, response.AttestationObject);
     assertSerializedCredentialType(parsed);
-    assertRequiredCompleteFields(
-      serializedCredentialId(parsed),
-      firstString(response.clientDataJSON, response.ClientDataJson),
-      firstString(response.attestationObject, response.AttestationObject)
-    );
+    assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     return responseJson;
   }
 
   function validatedSerializedGetResponseJson(responseJson) {
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
+    const credentialId = serializedCredentialId(parsed);
+    const authenticatorData = firstString(response.authenticatorData, response.AuthenticatorData);
+    const clientDataJson = firstString(response.clientDataJSON, response.ClientDataJson);
+    const signature = firstString(response.signature, response.Signature);
     assertSerializedCredentialType(parsed);
-    assertRequiredCompleteFields(
-      serializedCredentialId(parsed),
-      firstString(response.authenticatorData, response.AuthenticatorData),
-      firstString(response.clientDataJSON, response.ClientDataJson),
-      firstString(response.signature, response.Signature)
-    );
+    assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     return responseJson;
   }
 
@@ -1084,8 +1086,8 @@
   }
 
   function serializedCredentialId(parsed) {
-    const id = stringValue(parsed && parsed.id).trim();
-    const rawId = stringValue(parsed && parsed.rawId).trim();
+    const id = stringValue(parsed && parsed.id);
+    const rawId = stringValue(parsed && parsed.rawId);
     assertRequiredCompleteFields(id, rawId);
     if (id !== rawId) {
       throw notAllowedError(credentialIdFieldsMismatchMessage);
@@ -1096,6 +1098,12 @@
   function assertSerializedCredentialType(parsed) {
     if (stringValue(parsed && parsed.type).trim() !== 'public-key') {
       throw notAllowedError(credentialTypeMismatchMessage);
+    }
+  }
+
+  function assertBase64UrlCompleteFields(...values) {
+    if (values.some((value) => base64UrlByteLength(value) < 1)) {
+      throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
     }
   }
 
