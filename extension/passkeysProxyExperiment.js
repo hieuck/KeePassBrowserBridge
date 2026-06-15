@@ -24,6 +24,8 @@
     'Passkey complete response contained invalid base64url WebAuthn fields.';
   const invalidCompleteResponseTransportMessage =
     'Passkey complete response contained invalid transport metadata.';
+  const invalidCompleteResponseAuthenticatorAttachmentMessage =
+    'Passkey complete response authenticator attachment was not cross-platform.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -989,12 +991,14 @@
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
+    const authenticatorAttachment = firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment);
+    assertCompleteAuthenticatorAttachment(authenticatorAttachment);
 
     return JSON.stringify(compactObject({
       id: credentialId,
       rawId: credentialId,
       type: 'public-key',
-      authenticatorAttachment: firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment),
+      authenticatorAttachment,
       response: compactObject({
         clientDataJSON: clientDataJson,
         attestationObject,
@@ -1028,12 +1032,14 @@
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertOptionalBase64UrlCompleteFields(userHandle);
+    const authenticatorAttachment = firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment);
+    assertCompleteAuthenticatorAttachment(authenticatorAttachment);
 
     return JSON.stringify(compactObject({
       id: credentialId,
       rawId: credentialId,
       type: 'public-key',
-      authenticatorAttachment: firstString(response && response.AuthenticatorAttachment, response && response.authenticatorAttachment),
+      authenticatorAttachment,
       response: compactObject({
         authenticatorData,
         clientDataJSON: clientDataJson,
@@ -1060,11 +1066,13 @@
     const authenticatorData = firstString(response.authenticatorData, response.AuthenticatorData);
     const publicKey = firstString(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
     const transports = firstDefined(response.transports, response.Transports);
+    const authenticatorAttachment = firstString(parsed.authenticatorAttachment, parsed.AuthenticatorAttachment);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
     assertSerializedTransportMetadata(transports);
+    assertCompleteAuthenticatorAttachment(authenticatorAttachment);
     return responseJson;
   }
 
@@ -1076,10 +1084,12 @@
     const clientDataJson = firstString(response.clientDataJSON, response.ClientDataJson);
     const signature = firstString(response.signature, response.Signature);
     const userHandle = firstString(response.userHandle, response.UserHandle);
+    const authenticatorAttachment = firstString(parsed.authenticatorAttachment, parsed.AuthenticatorAttachment);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertOptionalBase64UrlCompleteFields(userHandle);
+    assertCompleteAuthenticatorAttachment(authenticatorAttachment);
     return responseJson;
   }
 
@@ -1145,6 +1155,11 @@
         throw notAllowedError(invalidCompleteResponseTransportMessage);
       }
     }
+  }
+
+  function assertCompleteAuthenticatorAttachment(authenticatorAttachment) {
+    if (!authenticatorAttachment || authenticatorAttachment === 'cross-platform') return;
+    throw notAllowedError(invalidCompleteResponseAuthenticatorAttachmentMessage);
   }
 
   function assertRequiredCompleteFields(...values) {
