@@ -28,6 +28,7 @@ internal static class Program
         TotpGeneratorParsesOtpAuthUri();
         PasskeyRpIdValidationAllowsMatchingOriginAndSubdomain();
         PasskeyRpIdValidationRejectsMismatchedOrigin();
+        PasskeyBase64UrlRejectsStandardBase64Alphabet();
         PasskeyRegistrationCreatesCredentialAndAttestation();
         PasskeyRegistrationRejectsRequiredUserVerification();
         PasskeyRegistrationRejectsUnknownUserVerification();
@@ -283,6 +284,18 @@ internal static class Program
             "passkey RP ID validation must reject non-local HTTP origins");
         AssertFalse(PasskeyRelyingPartyValidator.IsRpIdAllowedForOrigin("127.0.0.1", "https://127.0.0.1/login"),
             "passkey RP ID validation must reject IP-address RP IDs");
+    }
+
+    private static void PasskeyBase64UrlRejectsStandardBase64Alphabet()
+    {
+        byte[] bytes;
+
+        AssertFalse(Base64Url.TryDecode("+w", out bytes),
+            "passkey base64url decoder must reject standard base64 plus characters");
+        AssertFalse(Base64Url.TryDecode("_/8", out bytes),
+            "passkey base64url decoder must reject standard base64 slash characters");
+        AssertTrue(Base64Url.TryDecode("-_8", out bytes),
+            "passkey base64url decoder should accept URL-safe alphabet characters");
     }
 
     private static void PasskeyRegistrationCreatesCredentialAndAttestation()

@@ -112,10 +112,10 @@ Fallback:
 ## Security Requirements
 
 - Validate RP ID against the caller origin before creating or using a passkey.
-- Reject create/get requests with invalid base64url challenges or challenges shorter than 16 bytes before bridge dispatch; backend begin paths repeat challenge validation as the authority.
-- Reject create requests with invalid base64url user handles or user handles outside 1-64 bytes before KeePass approval.
-- Reject create requests with invalid base64url `excludeCredentials` credential IDs or unsupported credential descriptor types before KeePass approval.
-- Reject list/get requests with invalid base64url `allowCredentials` credential IDs or unsupported credential descriptor types.
+- Reject create/get requests with invalid base64url challenges, standard base64 alphabet characters, or challenges shorter than 16 bytes before bridge dispatch; backend begin paths repeat challenge validation as the authority.
+- Reject create requests with invalid base64url user handles, standard base64 alphabet characters, or user handles outside 1-64 bytes before KeePass approval.
+- Reject create requests with invalid base64url `excludeCredentials` credential IDs, standard base64 alphabet characters, or unsupported credential descriptor types before KeePass approval.
+- Reject list/get requests with invalid base64url `allowCredentials` credential IDs, standard base64 alphabet characters, or unsupported credential descriptor types.
 - Reject create requests whose `pubKeyCredParams`/bridge `CredentialAlgorithms` do not allow ES256 (`alg: -7`) public-key credentials while the prototype only generates ES256 keys.
 - Reject unknown non-empty WebAuthn enum values for user verification, resident-key requirement, attestation conveyance, and authenticator attachment instead of treating them as omitted defaults.
 - Normalize WebAuthn Level 3 user-agent hints (`security-key`, `client-device`, `hybrid`) into create/get pending sessions as non-binding UX metadata, preserving order and dropping unknown or duplicate hints.
@@ -141,7 +141,7 @@ Fallback:
 Backend:
 
 - RP ID validation, including subdomain and mismatch cases. Covered by backend tests.
-- Create/get `clientDataJSON` type, canonical base64url challenge, canonical WebAuthn origin, and `crossOrigin=false` fields. Covered by backend tests.
+- Strict base64url alphabet rejection for passkey challenge, credential ID, and user-handle inputs, plus create/get `clientDataJSON` type, canonical base64url challenge, canonical WebAuthn origin, and `crossOrigin=false` fields. Covered by backend tests.
 - None-attestation authenticator-data structure, including canonical RP ID hash, user-present and attested-credential flags, zero sign count, zero AAGUID, credential ID length, credential ID, and public key COSE bytes. Covered by backend tests.
 - Assertion authenticator-data structure, including canonical RP ID hash, exact 37-byte length, user-present-only flags, and big-endian sign count. Covered by backend tests.
 - Browser-proxy and backend create algorithm gating for ES256 (`alg: -7`) public-key credentials. Covered by non-packaged proxy JS tests before bridge dispatch and backend bridge tests after protocol deserialization.

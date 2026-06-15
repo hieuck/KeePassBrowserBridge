@@ -129,12 +129,19 @@ requireEvery('passkeyService', [
   'WebAuthnClientDataJson',
   'webauthn.create',
   'webauthn.get',
+  "ch == '-'",
+  "ch == '_'",
+  'if (!allowed) return false;',
   'string canonicalChallenge = Base64Url.Encode(challenge);',
   'string canonicalOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(request.Origin);',
   'GetLeftPart(UriPartial.Authority)',
   'CrossOrigin = false'
-], 'passkey backend should produce structured WebAuthn clientDataJSON with canonical challenges and origins');
+], 'passkey backend should produce structured WebAuthn clientDataJSON with canonical challenges and origins from strict base64url input');
 requireEvery('testsProgram', [
+  'PasskeyBase64UrlRejectsStandardBase64Alphabet',
+  'passkey base64url decoder must reject standard base64 plus characters',
+  'passkey base64url decoder must reject standard base64 slash characters',
+  'passkey base64url decoder should accept URL-safe alphabet characters',
   'AssertWebAuthnClientData',
   'registration clientDataJSON',
   'assertion clientDataJSON',

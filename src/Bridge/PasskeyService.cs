@@ -1931,7 +1931,26 @@ namespace KeePassBrowserBridge.Bridge
             bytes = null;
             if (string.IsNullOrWhiteSpace(text)) return false;
 
-            string value = text.Trim().Replace('-', '+').Replace('_', '/');
+            string normalized = text.Trim();
+            int paddingStart = normalized.IndexOf('=');
+            if (paddingStart >= 0 && paddingStart < normalized.Length - 2) return false;
+            for (int i = 0; i < normalized.Length; ++i)
+            {
+                char ch = normalized[i];
+                if (ch == '=')
+                {
+                    if (i < paddingStart || i >= paddingStart + 2) return false;
+                    continue;
+                }
+                bool allowed = (ch >= 'A' && ch <= 'Z') ||
+                    (ch >= 'a' && ch <= 'z') ||
+                    (ch >= '0' && ch <= '9') ||
+                    ch == '-' ||
+                    ch == '_';
+                if (!allowed) return false;
+            }
+
+            string value = normalized.Replace('-', '+').Replace('_', '/');
             int padding = value.Length % 4;
             if (padding == 2) value += "==";
             else if (padding == 3) value += "=";
