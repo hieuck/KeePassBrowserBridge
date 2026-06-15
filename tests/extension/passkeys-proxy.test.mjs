@@ -1611,6 +1611,19 @@ await api.completeGetSuccess(chromeApi, 58, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 59, {
+  Credential: { CredentialId: 'not@base64url' },
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24'
+});
+await api.completeGetSuccess(chromeApi, 60, {
+  Assertion: {
+    CredentialId: 'Y3JlZC02MA',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'not@base64url'
+  }
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -1756,6 +1769,26 @@ assert.deepEqual(plain(calls[15]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson has a non-exact credential type');
+assert.deepEqual(plain(calls[16]), [
+  'create',
+  {
+    requestId: 59,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'create success should fail closed when object complete response has invalid base64url credential IDs');
+assert.deepEqual(plain(calls[17]), [
+  'get',
+  {
+    requestId: 60,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'get success should fail closed when object complete response has invalid base64url assertion fields');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],

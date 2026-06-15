@@ -510,6 +510,8 @@ requireEvery('passkeysProxyExperiment', [
   'assertRequiredCompleteFields',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'passkey proxy bridge helper should reject mismatched complete response bindings before browser completion');
+requireCountAtLeast('passkeysProxyExperiment', 'assertBase64UrlCompleteFields(', 5,
+  'passkey proxy should validate both object and serialized complete response base64url fields');
 requireCountAtLeast('passkeysProxyExperiment', "assertCompleteFieldMatches(payload, complete, 'RpId')", 2,
   'passkey proxy should verify RP ID binding for both create and get complete responses');
 requireEvery('passkeysProxyTests', [
@@ -529,6 +531,8 @@ requireEvery('passkeysProxyTests', [
   'get success should fail closed when pre-serialized responseJson has a non-exact credential type',
   'create success should fail closed when pre-serialized responseJson has invalid base64url credential IDs',
   'get success should fail closed when pre-serialized responseJson has invalid base64url assertion fields',
+  'create success should fail closed when object complete response has invalid base64url credential IDs',
+  'get success should fail closed when object complete response has invalid base64url assertion fields',
   'Passkey complete response credential ID fields did not match.',
   'Passkey complete response credential type was not public-key.',
   'Passkey complete response contained invalid base64url WebAuthn fields.',

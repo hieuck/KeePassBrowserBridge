@@ -985,6 +985,7 @@
       credential.AuthenticatorData,
       credential.authenticatorData);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
 
     return JSON.stringify(compactObject({
       id: credentialId,
@@ -1021,6 +1022,7 @@
     const clientDataJson = firstString(assertion.ClientDataJson, assertion.clientDataJSON);
     const signature = firstString(assertion.Signature, assertion.signature);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
 
     return JSON.stringify(compactObject({
       id: credentialId,
