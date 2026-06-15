@@ -1929,9 +1929,10 @@ namespace KeePassBrowserBridge.Bridge
         public static bool TryDecode(string text, out byte[] bytes)
         {
             bytes = null;
-            if (string.IsNullOrWhiteSpace(text)) return false;
+            if (string.IsNullOrEmpty(text)) return false;
 
-            string normalized = text.Trim();
+            string normalized = text;
+            if (normalized.Length != normalized.Trim().Length) return false;
             int paddingStart = normalized.IndexOf('=');
             if (paddingStart >= 0)
             {

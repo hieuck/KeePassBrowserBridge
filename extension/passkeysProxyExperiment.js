@@ -705,7 +705,7 @@
   }
 
   function normalizeUserHandle(value) {
-    const text = stringValue(value).trim();
+    const text = stringValue(value);
     const byteLength = base64UrlByteLength(text);
     if (byteLength < 1 || byteLength > 64) {
       throw notAllowedError(invalidUserHandleMessage);
@@ -714,7 +714,7 @@
   }
 
   function normalizeChallenge(value) {
-    const text = stringValue(value).trim();
+    const text = stringValue(value);
     if (base64UrlByteLength(text) < 16) {
       throw notAllowedError(invalidChallengeMessage);
     }
@@ -722,7 +722,8 @@
   }
 
   function base64UrlByteLength(value) {
-    const text = stringValue(value).trim();
+    const text = stringValue(value);
+    if (!text || text !== text.trim()) return -1;
     if (!/^[A-Za-z0-9_-]+={0,2}$/.test(text)) return -1;
     const paddingStart = text.indexOf('=');
     if (paddingStart >= 0) {
@@ -804,7 +805,7 @@
   }
 
   function normalizeCredentialId(value) {
-    const text = stringValue(value).trim();
+    const text = stringValue(value);
     if (base64UrlByteLength(text) < 1) return '';
     return text.replace(/=+$/g, '');
   }

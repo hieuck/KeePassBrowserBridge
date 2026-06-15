@@ -30,6 +30,7 @@ internal static class Program
         PasskeyRpIdValidationRejectsMismatchedOrigin();
         PasskeyBase64UrlRejectsStandardBase64Alphabet();
         PasskeyBase64UrlRejectsMalformedPadding();
+        PasskeyBase64UrlRejectsWhitespace();
         PasskeyRegistrationCreatesCredentialAndAttestation();
         PasskeyRegistrationRejectsRequiredUserVerification();
         PasskeyRegistrationRejectsUnknownUserVerification();
@@ -313,6 +314,18 @@ internal static class Program
             "passkey base64url decoder should accept valid double padding");
         AssertTrue(Base64Url.TryDecode("AAA=", out bytes),
             "passkey base64url decoder should accept valid single padding");
+    }
+
+    private static void PasskeyBase64UrlRejectsWhitespace()
+    {
+        byte[] bytes;
+
+        AssertFalse(Base64Url.TryDecode(" YQ==", out bytes),
+            "passkey base64url decoder must reject leading whitespace");
+        AssertFalse(Base64Url.TryDecode("YQ== ", out bytes),
+            "passkey base64url decoder must reject trailing whitespace");
+        AssertFalse(Base64Url.TryDecode("Y Q==", out bytes),
+            "passkey base64url decoder must reject embedded whitespace");
     }
 
     private static void PasskeyRegistrationCreatesCredentialAndAttestation()

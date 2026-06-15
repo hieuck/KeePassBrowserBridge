@@ -447,6 +447,21 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeCreateRequest({
+    requestId: 64,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: ' YQ==', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidUserHandleError,
+  'proxy experiment must reject create requests with whitespace-padded user handles'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
     requestId: 52,
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
@@ -472,6 +487,20 @@ assert.throws(
   }),
   isInvalidChallengeError,
   'proxy experiment must reject get requests with malformed-padded challenges'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 65,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg '
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidChallengeError,
+  'proxy experiment must reject get requests with whitespace-padded challenges'
 );
 
 assert.throws(
@@ -509,6 +538,24 @@ assert.throws(
   }),
   isInvalidExcludeCredentialError,
   'proxy experiment must reject create requests with malformed-padded excludeCredentials'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 66,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      excludeCredentials: [
+        { id: 'YQ== ', type: 'public-key' }
+      ]
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidExcludeCredentialError,
+  'proxy experiment must reject create requests with whitespace-padded excludeCredentials'
 );
 
 assert.throws(
@@ -576,6 +623,23 @@ assert.throws(
   }),
   isInvalidAllowCredentialError,
   'proxy experiment must reject get requests with malformed-padded allowCredentials'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 67,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      allowCredentials: [
+        { id: ' YQ==', type: 'public-key' }
+      ]
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidAllowCredentialError,
+  'proxy experiment must reject get requests with whitespace-padded allowCredentials'
 );
 
 assert.throws(

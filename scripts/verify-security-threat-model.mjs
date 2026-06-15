@@ -132,6 +132,7 @@ requireEvery('passkeyService', [
   "ch == '-'",
   "ch == '_'",
   'if (!allowed) return false;',
+  'normalized.Length != normalized.Trim().Length',
   'normalized.Length % 4 != 0',
   'paddingLength < 1 || paddingLength > 2',
   'paddingStart >= 0 && i > paddingStart',
@@ -139,10 +140,11 @@ requireEvery('passkeyService', [
   'string canonicalOrigin = PasskeyRelyingPartyValidator.NormalizeOrigin(request.Origin);',
   'GetLeftPart(UriPartial.Authority)',
   'CrossOrigin = false'
-], 'passkey backend should produce structured WebAuthn clientDataJSON with canonical challenges and origins from strict base64url alphabet and padding input');
+], 'passkey backend should produce structured WebAuthn clientDataJSON with canonical challenges and origins from strict base64url alphabet, padding, and whitespace input');
 requireEvery('testsProgram', [
   'PasskeyBase64UrlRejectsStandardBase64Alphabet',
   'PasskeyBase64UrlRejectsMalformedPadding',
+  'PasskeyBase64UrlRejectsWhitespace',
   'passkey base64url decoder must reject standard base64 plus characters',
   'passkey base64url decoder must reject standard base64 slash characters',
   'passkey base64url decoder should accept URL-safe alphabet characters',
@@ -151,6 +153,9 @@ requireEvery('testsProgram', [
   'passkey base64url decoder must reject data after padding',
   'passkey base64url decoder should accept valid double padding',
   'passkey base64url decoder should accept valid single padding',
+  'passkey base64url decoder must reject leading whitespace',
+  'passkey base64url decoder must reject trailing whitespace',
+  'passkey base64url decoder must reject embedded whitespace',
   'AssertWebAuthnClientData',
   'registration clientDataJSON',
   'assertion clientDataJSON',
@@ -414,12 +419,14 @@ requireEvery('passkeysProxyExperiment', [
   'base64UrlByteLength',
   'invalidUserHandleMessage',
   'paddingStart',
+  'text !== text.trim()',
   'text.length % 4 !== 0',
   'paddingLength < 1 || paddingLength > 2'
-], 'passkey proxy should reject invalid user handles and malformed base64url padding before bridge calls');
+], 'passkey proxy should reject invalid user handles and malformed base64url padding or whitespace before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with invalid user handles',
   'proxy experiment must reject create requests with malformed-padded user handles',
+  'proxy experiment must reject create requests with whitespace-padded user handles',
   'bridge helper must not call backend passkey methods when user handle is invalid'
 ], 'proxy invalid user handle rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
@@ -431,6 +438,7 @@ requireEvery('passkeysProxyExperiment', [
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with invalid excludeCredentials',
   'proxy experiment must reject create requests with malformed-padded excludeCredentials',
+  'proxy experiment must reject create requests with whitespace-padded excludeCredentials',
   'proxy experiment must reject create requests with unsupported excludeCredentials descriptor types',
   'bridge helper must not call backend passkey methods when excludeCredentials is invalid',
   'bridge helper must not call backend passkey methods when excludeCredentials descriptor type is unsupported'
@@ -444,6 +452,7 @@ requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with short challenges',
   'proxy experiment must reject get requests with invalid challenges',
   'proxy experiment must reject get requests with malformed-padded challenges',
+  'proxy experiment must reject get requests with whitespace-padded challenges',
   'bridge helper must not call backend passkey methods when challenge is invalid'
 ], 'proxy invalid challenge rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
@@ -455,6 +464,7 @@ requireEvery('passkeysProxyExperiment', [
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject get requests with invalid allowCredentials',
   'proxy experiment must reject get requests with malformed-padded allowCredentials',
+  'proxy experiment must reject get requests with whitespace-padded allowCredentials',
   'proxy experiment must reject get requests with unsupported allowCredentials descriptor types',
   'bridge helper must not call backend passkey methods when allowCredentials is invalid',
   'bridge helper must not call backend passkey methods when allowCredentials descriptor type is unsupported'
@@ -756,7 +766,7 @@ requireEvery('passkeyDesign', [
   'malformed padding',
   'browser-facing WebAuthn packaging remains future work'
 ], 'future WebAuthn permissions should stay routed through the passkey design');
-requireIncludes('securityThreatModel', 'strict base64url alphabet/padding validation',
+requireIncludes('securityThreatModel', 'strict base64url alphabet/padding/whitespace validation',
   'security threat model should track strict passkey base64url decoding');
 requireNotIncludes('manifest', 'webAuthenticationProxy',
   'Chrome manifest should not request WebAuthn proxy permission before review');
