@@ -515,6 +515,7 @@ requireEvery('passkeysProxyExperiment', [
   'assertCompleteAuthenticatorAttachment',
   'Passkey complete response authenticator attachment was not cross-platform.',
   'assertSerializedClientExtensionResults',
+  'unsupportedClientExtensionResultNames',
   'Passkey complete response contained invalid client extension results.',
   'assertRequiredCompleteFields',
   'Passkey complete response was missing required WebAuthn fields.'
@@ -555,6 +556,10 @@ requireEvery('passkeysProxyTests', [
   'get success should fail closed when object complete response has invalid client extension results',
   'create success should fail closed when pre-serialized responseJson has invalid client extension results',
   'get success should fail closed when pre-serialized responseJson has invalid client extension results',
+  'create success should fail closed when object complete response has unsupported client extension results',
+  'get success should fail closed when object complete response has unsupported client extension results',
+  'create success should fail closed when pre-serialized responseJson has unsupported client extension results',
+  'get success should fail closed when pre-serialized responseJson has unsupported client extension results',
   "Transports: ['Internal', 'usb', 'usb', 'invalid value', 'hybrid', '']",
   "transports: ['internal', 'usb', 'hybrid']",
   'Passkey complete response credential ID fields did not match.',
@@ -675,6 +680,7 @@ requireEvery('passkeysProxyExperiment', [
   'unsupportedRequestedExtensionNames',
   'Passkey requested WebAuthn extension is not supported by this build.',
   'normalizeClientExtensionResults',
+  'unsupportedClientExtensionResultNames',
   'const authenticatorData = firstString',
   'assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject)',
   'response && response.PublicKey',
@@ -693,7 +699,8 @@ requireEvery('passkeysProxyTests', [
   "publicKey: 'c3BraS1wdWJsaWMta2V5'",
   'publicKeyAlgorithm: -7',
   'credProps: {',
-  'rk: true'
+  'rk: true',
+  'appid: true'
 ], 'proxy WebAuthn extension and create public-key serialization handling should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'duplicatePendingRequestMessage',

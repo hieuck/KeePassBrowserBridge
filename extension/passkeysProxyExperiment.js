@@ -1244,10 +1244,29 @@
     return Boolean(value);
   }
 
+  function unsupportedClientExtensionResultNames(results) {
+    const unsupported = [];
+    for (const [name, value] of Object.entries(results || {})) {
+      if (name === 'credProps' || name === 'CredProps') continue;
+      if (isRequestedExtensionValue(value)) unsupported.push(name);
+    }
+    return unsupported;
+  }
+
   function normalizeClientExtensionResults(results) {
-    if (!results || typeof results !== 'object') return {};
+    if (results === undefined || results === null || results === false) return {};
+    if (typeof results !== 'object' || Array.isArray(results)) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    if (unsupportedClientExtensionResultNames(results).length > 0) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
     const normalized = {};
     const credProps = results.credProps || results.CredProps;
+    if (credProps !== undefined && credProps !== null && credProps !== false &&
+        (typeof credProps !== 'object' || Array.isArray(credProps))) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
     if (credProps && typeof credProps === 'object') {
       const rk = firstDefined(credProps.rk, credProps.Rk, credProps.residentKey, credProps.ResidentKey);
       if (rk !== undefined) {
