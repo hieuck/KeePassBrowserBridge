@@ -514,6 +514,8 @@ requireEvery('passkeysProxyExperiment', [
   'Passkey complete response contained invalid transport metadata.',
   'assertCompleteAuthenticatorAttachment',
   'Passkey complete response authenticator attachment was not cross-platform.',
+  'assertSerializedClientExtensionResults',
+  'Passkey complete response contained invalid client extension results.',
   'assertRequiredCompleteFields',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'passkey proxy bridge helper should reject mismatched complete response bindings before browser completion');
@@ -549,6 +551,10 @@ requireEvery('passkeysProxyTests', [
   'get success should fail closed when object complete response has unsupported authenticator attachment',
   'create success should fail closed when pre-serialized responseJson has unsupported authenticator attachment',
   'get success should fail closed when pre-serialized responseJson has unsupported authenticator attachment',
+  'create success should fail closed when object complete response has invalid client extension results',
+  'get success should fail closed when object complete response has invalid client extension results',
+  'create success should fail closed when pre-serialized responseJson has invalid client extension results',
+  'get success should fail closed when pre-serialized responseJson has invalid client extension results',
   "Transports: ['Internal', 'usb', 'usb', 'invalid value', 'hybrid', '']",
   "transports: ['internal', 'usb', 'hybrid']",
   'Passkey complete response credential ID fields did not match.',
@@ -556,6 +562,7 @@ requireEvery('passkeysProxyTests', [
   'Passkey complete response contained invalid base64url WebAuthn fields.',
   'Passkey complete response contained invalid transport metadata.',
   'Passkey complete response authenticator attachment was not cross-platform.',
+  'Passkey complete response contained invalid client extension results.',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'proxy complete-response WebAuthn request, RP ID, credential, and required-field binding should be covered by tests');
 requireEvery('passkeysProxyExperiment', [

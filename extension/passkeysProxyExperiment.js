@@ -26,6 +26,8 @@
     'Passkey complete response contained invalid transport metadata.';
   const invalidCompleteResponseAuthenticatorAttachmentMessage =
     'Passkey complete response authenticator attachment was not cross-platform.';
+  const invalidCompleteResponseClientExtensionResultsMessage =
+    'Passkey complete response contained invalid client extension results.';
   const selectedCredentialNotReturnedMessage =
     'Selected passkey credential was not returned by KeePass.';
   const unsupportedUserVerificationMessage =
@@ -1067,12 +1069,14 @@
     const publicKey = firstString(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
     const transports = firstDefined(response.transports, response.Transports);
     const authenticatorAttachment = firstString(parsed.authenticatorAttachment, parsed.AuthenticatorAttachment);
+    const clientExtensionResults = firstDefined(parsed.clientExtensionResults, parsed.ClientExtensionResults);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
     assertSerializedTransportMetadata(transports);
     assertCompleteAuthenticatorAttachment(authenticatorAttachment);
+    assertSerializedClientExtensionResults(clientExtensionResults);
     return responseJson;
   }
 
@@ -1085,11 +1089,13 @@
     const signature = firstString(response.signature, response.Signature);
     const userHandle = firstString(response.userHandle, response.UserHandle);
     const authenticatorAttachment = firstString(parsed.authenticatorAttachment, parsed.AuthenticatorAttachment);
+    const clientExtensionResults = firstDefined(parsed.clientExtensionResults, parsed.ClientExtensionResults);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertOptionalBase64UrlCompleteFields(userHandle);
     assertCompleteAuthenticatorAttachment(authenticatorAttachment);
+    assertSerializedClientExtensionResults(clientExtensionResults);
     return responseJson;
   }
 
@@ -1160,6 +1166,14 @@
   function assertCompleteAuthenticatorAttachment(authenticatorAttachment) {
     if (!authenticatorAttachment || authenticatorAttachment === 'cross-platform') return;
     throw notAllowedError(invalidCompleteResponseAuthenticatorAttachmentMessage);
+  }
+
+  function assertSerializedClientExtensionResults(results) {
+    if (results === undefined || results === null) return;
+    if (typeof results !== 'object' || Array.isArray(results)) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    normalizeClientExtensionResults(results);
   }
 
   function assertRequiredCompleteFields(...values) {
@@ -1237,7 +1251,10 @@
     if (credProps && typeof credProps === 'object') {
       const rk = firstDefined(credProps.rk, credProps.Rk, credProps.residentKey, credProps.ResidentKey);
       if (rk !== undefined) {
-        normalized.credProps = { rk: Boolean(rk) };
+        if (typeof rk !== 'boolean') {
+          throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+        }
+        normalized.credProps = { rk };
       }
     }
     return normalized;
