@@ -1009,8 +1009,7 @@
         publicKeyAlgorithm: publicKey ? -7 : undefined,
         transports: normalizeTransportArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
       }),
-      clientExtensionResults: normalizeClientExtensionResults(
-        response && (response.ClientExtensionResults || response.clientExtensionResults))
+      clientExtensionResults: normalizeCompleteClientExtensionResults(response)
     }));
   }
 
@@ -1048,8 +1047,7 @@
         signature,
         userHandle
       }),
-      clientExtensionResults: normalizeClientExtensionResults(
-        response && (response.ClientExtensionResults || response.clientExtensionResults))
+      clientExtensionResults: normalizeCompleteClientExtensionResults(response)
     }));
   }
 
@@ -1069,14 +1067,13 @@
     const publicKey = firstString(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
     const transports = firstDefined(response.transports, response.Transports);
     const authenticatorAttachment = firstString(parsed.authenticatorAttachment, parsed.AuthenticatorAttachment);
-    const clientExtensionResults = firstDefined(parsed.clientExtensionResults, parsed.ClientExtensionResults);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
     assertSerializedTransportMetadata(transports);
     assertCompleteAuthenticatorAttachment(authenticatorAttachment);
-    assertSerializedClientExtensionResults(clientExtensionResults);
+    assertCompleteClientExtensionResultAliases(parsed);
     return responseJson;
   }
 
@@ -1089,13 +1086,12 @@
     const signature = firstString(response.signature, response.Signature);
     const userHandle = firstString(response.userHandle, response.UserHandle);
     const authenticatorAttachment = firstString(parsed.authenticatorAttachment, parsed.AuthenticatorAttachment);
-    const clientExtensionResults = firstDefined(parsed.clientExtensionResults, parsed.ClientExtensionResults);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertOptionalBase64UrlCompleteFields(userHandle);
     assertCompleteAuthenticatorAttachment(authenticatorAttachment);
-    assertSerializedClientExtensionResults(clientExtensionResults);
+    assertCompleteClientExtensionResultAliases(parsed);
     return responseJson;
   }
 
@@ -1174,6 +1170,18 @@
       throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
     }
     normalizeClientExtensionResults(results);
+  }
+
+  function assertCompleteClientExtensionResultAliases(source) {
+    if (!source || typeof source !== 'object') return;
+    assertSerializedClientExtensionResults(source.ClientExtensionResults);
+    assertSerializedClientExtensionResults(source.clientExtensionResults);
+  }
+
+  function normalizeCompleteClientExtensionResults(source) {
+    if (!source || typeof source !== 'object') return {};
+    assertCompleteClientExtensionResultAliases(source);
+    return normalizeClientExtensionResults(firstDefined(source.ClientExtensionResults, source.clientExtensionResults));
   }
 
   function assertRequiredCompleteFields(...values) {

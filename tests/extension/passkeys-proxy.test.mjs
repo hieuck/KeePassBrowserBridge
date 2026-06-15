@@ -1868,6 +1868,56 @@ await api.completeGetSuccess(chromeApi, 81, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 82, {
+  Credential: { CredentialId: 'Y3JlZC04Mg' },
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24',
+  ClientExtensionResults: {},
+  clientExtensionResults: {
+    appid: true
+  }
+});
+await api.completeGetSuccess(chromeApi, 83, {
+  Assertion: {
+    CredentialId: 'Y3JlZC04Mw',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl'
+  },
+  ClientExtensionResults: {},
+  clientExtensionResults: {
+    appid: true
+  }
+});
+await api.completeCreateSuccess(chromeApi, 84, JSON.stringify({
+  id: 'Y3JlZC04NA',
+  rawId: 'Y3JlZC04NA',
+  type: 'public-key',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24'
+  },
+  clientExtensionResults: {},
+  ClientExtensionResults: {
+    AppId: true
+  }
+}));
+await api.completeGetSuccess(chromeApi, 85, {
+  responseJson: JSON.stringify({
+    id: 'Y3JlZC04NQ',
+    rawId: 'Y3JlZC04NQ',
+    type: 'public-key',
+    response: {
+      authenticatorData: 'YXV0aC1kYXRh',
+      clientDataJSON: 'Y2xpZW50LWdldA',
+      signature: 'c2lnbmF0dXJl'
+    },
+    clientExtensionResults: {},
+    ClientExtensionResults: {
+      AppId: true
+    }
+  })
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -2243,6 +2293,46 @@ assert.deepEqual(plain(calls[38]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson has unsupported credProps result fields');
+assert.deepEqual(plain(calls[39]), [
+  'create',
+  {
+    requestId: 82,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'create success should fail closed when object complete response has conflicting client extension result aliases');
+assert.deepEqual(plain(calls[40]), [
+  'get',
+  {
+    requestId: 83,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'get success should fail closed when object complete response has conflicting client extension result aliases');
+assert.deepEqual(plain(calls[41]), [
+  'create',
+  {
+    requestId: 84,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson has conflicting client extension result aliases');
+assert.deepEqual(plain(calls[42]), [
+  'get',
+  {
+    requestId: 85,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'get success should fail closed when pre-serialized responseJson has conflicting client extension result aliases');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
