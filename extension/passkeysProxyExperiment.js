@@ -986,6 +986,7 @@
       credential.authenticatorData);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
 
     return JSON.stringify(compactObject({
       id: credentialId,
@@ -1021,8 +1022,10 @@
     const authenticatorData = firstString(assertion.AuthenticatorData, assertion.authenticatorData);
     const clientDataJson = firstString(assertion.ClientDataJson, assertion.clientDataJSON);
     const signature = firstString(assertion.Signature, assertion.signature);
+    const userHandle = firstString(assertion.UserHandle, assertion.userHandle);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertOptionalBase64UrlCompleteFields(userHandle);
 
     return JSON.stringify(compactObject({
       id: credentialId,
@@ -1033,7 +1036,7 @@
         authenticatorData,
         clientDataJSON: clientDataJson,
         signature,
-        userHandle: firstString(assertion.UserHandle, assertion.userHandle)
+        userHandle
       }),
       clientExtensionResults: normalizeClientExtensionResults(
         response && (response.ClientExtensionResults || response.clientExtensionResults))
@@ -1052,9 +1055,12 @@
     const credentialId = serializedCredentialId(parsed);
     const clientDataJson = firstString(response.clientDataJSON, response.ClientDataJson);
     const attestationObject = firstString(response.attestationObject, response.AttestationObject);
+    const authenticatorData = firstString(response.authenticatorData, response.AuthenticatorData);
+    const publicKey = firstString(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
     return responseJson;
   }
 
@@ -1065,9 +1071,11 @@
     const authenticatorData = firstString(response.authenticatorData, response.AuthenticatorData);
     const clientDataJson = firstString(response.clientDataJSON, response.ClientDataJson);
     const signature = firstString(response.signature, response.Signature);
+    const userHandle = firstString(response.userHandle, response.UserHandle);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertOptionalBase64UrlCompleteFields(userHandle);
     return responseJson;
   }
 
@@ -1105,6 +1113,15 @@
 
   function assertBase64UrlCompleteFields(...values) {
     if (values.some((value) => base64UrlByteLength(value) < 1)) {
+      throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
+    }
+  }
+
+  function assertOptionalBase64UrlCompleteFields(...values) {
+    if (values.some((value) => {
+      const text = stringValue(value);
+      return text && base64UrlByteLength(text) < 1;
+    })) {
       throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
     }
   }

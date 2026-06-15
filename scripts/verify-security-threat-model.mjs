@@ -506,6 +506,7 @@ requireEvery('passkeysProxyExperiment', [
   'assertSerializedCredentialType',
   'Passkey complete response credential type was not public-key.',
   'assertBase64UrlCompleteFields',
+  'assertOptionalBase64UrlCompleteFields',
   'Passkey complete response contained invalid base64url WebAuthn fields.',
   'assertRequiredCompleteFields',
   'Passkey complete response was missing required WebAuthn fields.'
@@ -533,6 +534,10 @@ requireEvery('passkeysProxyTests', [
   'get success should fail closed when pre-serialized responseJson has invalid base64url assertion fields',
   'create success should fail closed when object complete response has invalid base64url credential IDs',
   'get success should fail closed when object complete response has invalid base64url assertion fields',
+  'create success should fail closed when object complete response has invalid optional base64url fields',
+  'get success should fail closed when object complete response has invalid optional base64url fields',
+  'create success should fail closed when pre-serialized responseJson has invalid optional base64url fields',
+  'get success should fail closed when pre-serialized responseJson has invalid optional base64url fields',
   'Passkey complete response credential ID fields did not match.',
   'Passkey complete response credential type was not public-key.',
   'Passkey complete response contained invalid base64url WebAuthn fields.',

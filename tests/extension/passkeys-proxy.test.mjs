@@ -1624,6 +1624,44 @@ await api.completeGetSuccess(chromeApi, 60, {
     Signature: 'not@base64url'
   }
 });
+await api.completeCreateSuccess(chromeApi, 61, {
+  Credential: { CredentialId: 'Y3JlZC02MQ' },
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24',
+  AuthenticatorData: 'not@base64url'
+});
+await api.completeGetSuccess(chromeApi, 62, {
+  Assertion: {
+    CredentialId: 'Y3JlZC02Mg',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl',
+    UserHandle: 'not@base64url'
+  }
+});
+await api.completeCreateSuccess(chromeApi, 63, JSON.stringify({
+  id: 'Y3JlZC02Mw',
+  rawId: 'Y3JlZC02Mw',
+  type: 'public-key',
+  response: {
+    clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+    attestationObject: 'YXR0ZXN0YXRpb24',
+    publicKey: 'not@base64url'
+  }
+}));
+await api.completeGetSuccess(chromeApi, 64, {
+  responseJson: JSON.stringify({
+    id: 'Y3JlZC02NA',
+    rawId: 'Y3JlZC02NA',
+    type: 'public-key',
+    response: {
+      authenticatorData: 'YXV0aC1kYXRh',
+      clientDataJSON: 'Y2xpZW50LWdldA',
+      signature: 'c2lnbmF0dXJl',
+      userHandle: 'not@base64url'
+    }
+  })
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -1789,6 +1827,46 @@ assert.deepEqual(plain(calls[17]), [
     }
   }
 ], 'get success should fail closed when object complete response has invalid base64url assertion fields');
+assert.deepEqual(plain(calls[18]), [
+  'create',
+  {
+    requestId: 61,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'create success should fail closed when object complete response has invalid optional base64url fields');
+assert.deepEqual(plain(calls[19]), [
+  'get',
+  {
+    requestId: 62,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'get success should fail closed when object complete response has invalid optional base64url fields');
+assert.deepEqual(plain(calls[20]), [
+  'create',
+  {
+    requestId: 63,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'create success should fail closed when pre-serialized responseJson has invalid optional base64url fields');
+assert.deepEqual(plain(calls[21]), [
+  'get',
+  {
+    requestId: 64,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'get success should fail closed when pre-serialized responseJson has invalid optional base64url fields');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
