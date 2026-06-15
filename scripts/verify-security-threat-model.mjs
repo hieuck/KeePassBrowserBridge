@@ -412,10 +412,14 @@ requireEvery('passkeysProxyTests', [
 requireEvery('passkeysProxyExperiment', [
   'normalizeUserHandle',
   'base64UrlByteLength',
-  'invalidUserHandleMessage'
-], 'passkey proxy should reject invalid user handles before bridge calls');
+  'invalidUserHandleMessage',
+  'paddingStart',
+  'text.length % 4 !== 0',
+  'paddingLength < 1 || paddingLength > 2'
+], 'passkey proxy should reject invalid user handles and malformed base64url padding before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with invalid user handles',
+  'proxy experiment must reject create requests with malformed-padded user handles',
   'bridge helper must not call backend passkey methods when user handle is invalid'
 ], 'proxy invalid user handle rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
@@ -426,6 +430,7 @@ requireEvery('passkeysProxyExperiment', [
 ], 'passkey proxy should reject invalid create excludeCredentials IDs and descriptor types before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with invalid excludeCredentials',
+  'proxy experiment must reject create requests with malformed-padded excludeCredentials',
   'proxy experiment must reject create requests with unsupported excludeCredentials descriptor types',
   'bridge helper must not call backend passkey methods when excludeCredentials is invalid',
   'bridge helper must not call backend passkey methods when excludeCredentials descriptor type is unsupported'
@@ -438,6 +443,7 @@ requireEvery('passkeysProxyExperiment', [
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with short challenges',
   'proxy experiment must reject get requests with invalid challenges',
+  'proxy experiment must reject get requests with malformed-padded challenges',
   'bridge helper must not call backend passkey methods when challenge is invalid'
 ], 'proxy invalid challenge rejection should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
@@ -448,6 +454,7 @@ requireEvery('passkeysProxyExperiment', [
 ], 'passkey proxy should reject invalid get allowCredentials IDs and descriptor types before bridge calls');
 requireEvery('passkeysProxyTests', [
   'proxy experiment must reject get requests with invalid allowCredentials',
+  'proxy experiment must reject get requests with malformed-padded allowCredentials',
   'proxy experiment must reject get requests with unsupported allowCredentials descriptor types',
   'bridge helper must not call backend passkey methods when allowCredentials is invalid',
   'bridge helper must not call backend passkey methods when allowCredentials descriptor type is unsupported'
@@ -564,7 +571,7 @@ requireEvery('passkeysProxyExperiment', [
   'ExcludeCredentialIds'
 ], 'passkey proxy should forward create excludeCredentials to the backend');
 requireEvery('passkeysProxyTests', [
-  "ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y']"
+  "ExcludeCredentialIds: ['YQ', 'ZXhjbHVkZS0y']"
 ], 'proxy excludeCredentials mapping should be covered by tests');
 requireEvery('passkeysProxyExperiment', [
   'normalizeTimeoutMs',

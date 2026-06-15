@@ -70,8 +70,8 @@ const createPayload = api.normalizeCreateRequest({
       { type: 'password', alg: -8 }
     ],
     excludeCredentials: [
-      { type: 'public-key', id: 'ZXhjbHVkZS0x==' },
-      { type: 'PUBLIC-KEY', id: 'ZXhjbHVkZS0x' },
+      { type: 'public-key', id: 'YQ==' },
+      { type: 'PUBLIC-KEY', id: 'YQ' },
       { id: 'ZXhjbHVkZS0y' }
     ]
   }))
@@ -94,7 +94,7 @@ assert.deepEqual(plain(createPayload), {
   AuthenticatorAttachment: 'cross-platform',
   ResidentKey: 'preferred',
   CredentialAlgorithms: [-257, -7],
-  ExcludeCredentialIds: ['ZXhjbHVkZS0x', 'ZXhjbHVkZS0y'],
+  ExcludeCredentialIds: ['YQ', 'ZXhjbHVkZS0y'],
   RequestedExtensions: { CredProps: true },
   Transports: []
 }, 'create request should map Chrome JSON options to bridge payload fields');
@@ -163,7 +163,7 @@ const getPayload = api.normalizeGetRequest({
     hints: ['client-device', 'hybrid', 'unknown-hint'],
     userVerification: 'discouraged',
     allowCredentials: [
-      { id: 'Y3JlZC0x==', type: 'public-key' },
+      { id: 'YQ==', type: 'public-key' },
       { id: 'Y3JlZC0y', type: 'public-key' }
     ]
   })
@@ -176,7 +176,7 @@ assert.deepEqual(plain(getPayload), {
   RpId: 'example.com',
   Origin: 'https://accounts.example.com',
   Challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
-  AllowCredentialIds: ['Y3JlZC0x', 'Y3JlZC0y'],
+  AllowCredentialIds: ['YQ', 'Y3JlZC0y'],
   UserVerification: 'discouraged',
   TimeoutMs: 12000,
   Hints: ['client-device', 'hybrid']
@@ -432,6 +432,21 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeCreateRequest({
+    requestId: 58,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YQ=', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidUserHandleError,
+  'proxy experiment must reject create requests with malformed-padded user handles'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
     requestId: 52,
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
@@ -443,6 +458,20 @@ assert.throws(
   }),
   isInvalidChallengeError,
   'proxy experiment must reject create requests with short challenges'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 59,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg='
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidChallengeError,
+  'proxy experiment must reject get requests with malformed-padded challenges'
 );
 
 assert.throws(
@@ -462,6 +491,24 @@ assert.throws(
   }),
   isInvalidExcludeCredentialError,
   'proxy experiment must reject create requests with invalid excludeCredentials'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 60,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      excludeCredentials: [
+        { id: 'YQ=', type: 'public-key' }
+      ]
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidExcludeCredentialError,
+  'proxy experiment must reject create requests with malformed-padded excludeCredentials'
 );
 
 assert.throws(
@@ -512,6 +559,23 @@ assert.throws(
   }),
   isInvalidAllowCredentialError,
   'proxy experiment must reject get requests with invalid allowCredentials'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 61,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      allowCredentials: [
+        { id: 'YQ=', type: 'public-key' }
+      ]
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidAllowCredentialError,
+  'proxy experiment must reject get requests with malformed-padded allowCredentials'
 );
 
 assert.throws(

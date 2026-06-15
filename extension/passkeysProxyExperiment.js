@@ -724,6 +724,11 @@
   function base64UrlByteLength(value) {
     const text = stringValue(value).trim();
     if (!/^[A-Za-z0-9_-]+={0,2}$/.test(text)) return -1;
+    const paddingStart = text.indexOf('=');
+    if (paddingStart >= 0) {
+      const paddingLength = text.length - paddingStart;
+      if (text.length % 4 !== 0 || paddingLength < 1 || paddingLength > 2) return -1;
+    }
     const unpadded = text.replace(/=+$/g, '');
     if (unpadded.length === 0 || unpadded.length % 4 === 1) return -1;
     const paddedLength = unpadded.length + ((4 - (unpadded.length % 4)) % 4);
