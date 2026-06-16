@@ -144,7 +144,12 @@ function saveSettings() {
       theme: elements.theme.value,
       autoFillEnabled: elements.autoFillEnabled.checked,
       autoSubmitEnabled: elements.autoSubmitEnabled.checked,
-      autoFillDelay: parseInt(elements.autoFillDelay.value, 10),
+      autoFillDelay: normalizeIntegerSetting(
+        elements.autoFillDelay.value,
+        0,
+        5000,
+        'Auto-fill delay must be between 0 and 5000 milliseconds.'
+      ),
       strictUrlMatching: elements.strictUrlMatching.checked,
       regexUrlMatching: elements.regexUrlMatching.checked,
       showPasswordsInPopup: elements.showPasswordsInPopup.checked,

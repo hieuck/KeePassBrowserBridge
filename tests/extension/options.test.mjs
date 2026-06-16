@@ -64,6 +64,7 @@ const ids = [
 ];
 
 const elements = Object.fromEntries(ids.map((id) => [id, new Element(id)]));
+const storageSetCalls = [];
 const sandbox = {
   console,
   setTimeout() {},
@@ -92,7 +93,8 @@ const sandbox = {
         get(_keys, callback) {
           if (callback) callback({});
         },
-        set(_values, callback) {
+        set(values, callback) {
+          storageSetCalls.push(values);
           if (callback) callback();
         }
       }
@@ -106,6 +108,29 @@ sandbox.globalThis = sandbox;
 const source = fs.readFileSync(new URL('../../extension/options.js', import.meta.url), 'utf8');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'options.js' });
+
+function fillRequiredSettingsForm(overrides = {}) {
+  elements.bridgeEndpoint.value = 'http://127.0.0.1:19455/bridge';
+  elements.theme.value = 'system';
+  elements.autoFillEnabled.checked = true;
+  elements.autoSubmitEnabled.checked = false;
+  elements.autoFillDelay.value = '1200';
+  elements.strictUrlMatching.checked = false;
+  elements.regexUrlMatching.checked = false;
+  elements.showPasswordsInPopup.checked = false;
+  elements.notificationsEnabled.checked = true;
+  elements.autoLockTimeoutMinutes.value = '0';
+  elements.clipboardClearDelay.value = '30';
+  elements.debugMode.checked = false;
+  elements.autoFillDelay.value = overrides.autoFillDelay ?? elements.autoFillDelay.value;
+}
+
+fillRequiredSettingsForm({ autoFillDelay: '-100' });
+storageSetCalls.length = 0;
+sandbox.saveSettings();
+assert.equal(storageSetCalls.length, 0, 'settings save should not persist an invalid negative auto-fill delay');
+assert.equal(elements.message.textContent, 'Auto-fill delay must be between 0 and 5000 milliseconds.',
+  'settings save should explain invalid auto-fill delay values');
 
 const portable = sandbox.sanitizePortableSettings({
   endpoint: 'http://127.0.0.1:19455/bridge',
