@@ -577,6 +577,11 @@ await sandbox.handleMessage({ type: 'KBB_COPY_TO_CLIPBOARD', text: 'newer-clipbo
 assert.equal(clipboardWrites.at(-1), 'newer-clipboard-secret', 'second copy should replace the clipboard content');
 assert.equal(timerCalls.length, 2, 'second copy should schedule a fresh delayed clipboard clearing');
 assert.equal(timerCalls[0].cleared, true, 'second copy should cancel older delayed clipboard clearing');
+await sandbox.handleMessage({ type: 'KBB_COPY_TO_CLIPBOARD', text: 'oversized-clear-secret', clearAfterMs: 999000 });
+assert.equal(clipboardWrites.at(-1), 'oversized-clear-secret', 'copy with an oversized clear delay should still write the requested secret');
+assert.equal(timerCalls.length, 3, 'copy with an oversized clear delay should schedule delayed clipboard clearing');
+assert.equal(timerCalls[1].cleared, true, 'copy with an oversized clear delay should cancel the previous delayed clipboard clearing');
+assert.equal(timerCalls[2].delay, 30000, 'out-of-range clipboard clear delay should fall back to the default clear timeout');
 extensionSessionStorage.kbbPendingMultiStepCredential = {
   origin: 'https://example.com',
   credential: {
@@ -599,7 +604,7 @@ lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: true }
 assert.equal(lockState.locked, true, 'lock message should set lock state');
 assert.equal(storage.locked, true, 'lock message should persist lock state');
 assert.equal(clipboardWrites.at(-1), '', 'lock message should clear copied clipboard secrets immediately');
-assert.equal(timerCalls[1].cleared, true, 'lock message should cancel the active delayed clipboard clear timer');
+assert.equal(timerCalls[2].cleared, true, 'lock message should cancel the active delayed clipboard clear timer');
 assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'lock message should clear pending multi-step credentials');
 assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'lock message should clear pending submitted credentials');
 assert.equal(passkeyCleanupCalls.at(-1), 'lock', 'lock message should cancel pending passkey proxy requests');

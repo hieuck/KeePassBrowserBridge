@@ -8,6 +8,8 @@ const RELEASES_URL = REPOSITORY_URL + '/releases';
 const LATEST_RELEASE_API_URL = 'https://api.github.com/repos/hieuck/KeePassBrowserBridge/releases/latest';
 const AUTO_FILL_DEBOUNCE_MS = 1200;
 const AUTO_FILL_MAX_DELAY_MS = 5000;
+const DEFAULT_CLIPBOARD_CLEAR_DELAY_MS = 30000;
+const MAX_CLIPBOARD_CLEAR_DELAY_MS = 300000;
 const PAIRING_SESSION_MAX_AGE_MS = 5 * 60 * 1000;
 const PENDING_MULTI_STEP_MAX_AGE_MS = 10 * 60 * 1000;
 const PENDING_MULTI_STEP_KEY = 'kbbPendingMultiStepCredential';
@@ -737,12 +739,13 @@ async function copyToClipboard(text, clearAfterMs) {
     await rememberCredentialActivity();
     cancelClipboardClearTimers();
     await navigator.clipboard.writeText(text);
-    
-    if (clearAfterMs && clearAfterMs > 0) {
+
+    const normalizedClearAfterMs = normalizeClipboardClearDelayMs(clearAfterMs);
+    if (normalizedClearAfterMs > 0) {
       const timerId = setTimeout(() => {
         navigator.clipboard.writeText('').catch(() => {});
         clipboardTimers.delete(timerId);
-      }, clearAfterMs);
+      }, normalizedClearAfterMs);
       clipboardTimers.set(timerId, true);
     }
     
@@ -750,6 +753,15 @@ async function copyToClipboard(text, clearAfterMs) {
   } catch (error) {
     throw new Error('Failed to copy to clipboard: ' + error.message);
   }
+}
+
+function normalizeClipboardClearDelayMs(value) {
+  const delay = Number(value);
+  if (Number.isFinite(delay) && delay >= 0 && delay <= MAX_CLIPBOARD_CLEAR_DELAY_MS) {
+    return delay;
+  }
+
+  return DEFAULT_CLIPBOARD_CLEAR_DELAY_MS;
 }
 
 function cancelClipboardClearTimers() {
