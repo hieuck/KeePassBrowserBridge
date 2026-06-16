@@ -315,17 +315,17 @@ async function saveEndpoint(endpoint) {
 }
 
 async function setAutoFill(enabled) {
-  await chrome.storage.local.set({ autoFillEnabled: Boolean(enabled) });
+  await chrome.storage.local.set({ autoFillEnabled: enabled === true });
   return getState();
 }
 
 async function setAutoSubmit(enabled) {
-  await chrome.storage.local.set({ autoSubmitEnabled: Boolean(enabled) });
+  await chrome.storage.local.set({ autoSubmitEnabled: enabled === true });
   return getState();
 }
 
 async function setLocked(locked) {
-  const values = { locked: Boolean(locked) };
+  const values = { locked: locked === true };
   if (!values.locked) {
     values.lastCredentialActivityAt = Date.now();
   }

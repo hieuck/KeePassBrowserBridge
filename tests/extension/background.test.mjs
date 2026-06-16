@@ -573,6 +573,15 @@ assert.equal(clipboardWrites.length, 0, 'locked extension should not write copie
 let lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: false });
 assert.equal(lockState.locked, false, 'unlock message should clear lock state');
 assert.equal(storage.locked, false, 'unlock message should persist lock state');
+const malformedAutoFillState = await sandbox.handleMessage({ type: 'KBB_SET_AUTO_FILL', enabled: 'false' });
+assert.equal(malformedAutoFillState.autoFillEnabled, false, 'string false should not enable auto-fill');
+assert.equal(storage.autoFillEnabled, false, 'string false should persist auto-fill as disabled');
+const malformedAutoSubmitState = await sandbox.handleMessage({ type: 'KBB_SET_AUTO_SUBMIT', enabled: 'false' });
+assert.equal(malformedAutoSubmitState.autoSubmitEnabled, false, 'string false should not enable auto-submit');
+assert.equal(storage.autoSubmitEnabled, false, 'string false should persist auto-submit as disabled');
+lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: 'false' });
+assert.equal(lockState.locked, false, 'string false should not lock the bridge');
+assert.equal(storage.locked, false, 'string false should persist lock state as unlocked');
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
 clipboardWrites.length = 0;
