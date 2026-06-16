@@ -19,6 +19,7 @@ const HTTP_AUTH_MAX_ATTEMPTS = 2;
 const DEFAULT_AUTO_FILL_ENABLED = true;
 const DEFAULT_AUTO_SUBMIT_ENABLED = false;
 const DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES = 0;
+const MAX_AUTO_LOCK_TIMEOUT_MINUTES = 1440;
 const autoFillTimers = new Map();
 const clipboardTimers = new Map();
 const httpAuthAttempts = new Map();
@@ -263,7 +264,7 @@ async function getState() {
     pairingExpiresAt: pairingActive && pairingStartedAt ? pairingStartedAt + PAIRING_SESSION_MAX_AGE_MS : 0,
     autoFillEnabled: booleanSetting(state.autoFillEnabled, DEFAULT_AUTO_FILL_ENABLED),
     autoSubmitEnabled: booleanSetting(state.autoSubmitEnabled, DEFAULT_AUTO_SUBMIT_ENABLED),
-    autoLockTimeoutMinutes: numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES),
+    autoLockTimeoutMinutes: numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES, MAX_AUTO_LOCK_TIMEOUT_MINUTES),
     locked: state.locked === true
   };
 }
@@ -272,9 +273,11 @@ function booleanSetting(value, defaultValue) {
   return typeof value === 'boolean' ? value : defaultValue;
 }
 
-function numberSetting(value, defaultValue) {
+function numberSetting(value, defaultValue, maxValue) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue;
+  return Number.isFinite(parsed) && parsed >= 0 && (maxValue === undefined || parsed <= maxValue)
+    ? parsed
+    : defaultValue;
 }
 
 async function applyAutoLock(state) {
@@ -282,7 +285,7 @@ async function applyAutoLock(state) {
     return;
   }
 
-  const timeoutMinutes = numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES);
+  const timeoutMinutes = numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES, MAX_AUTO_LOCK_TIMEOUT_MINUTES);
   const lastActivityAt = Number(state.lastCredentialActivityAt || 0);
   if (timeoutMinutes <= 0 || lastActivityAt <= 0) {
     return;

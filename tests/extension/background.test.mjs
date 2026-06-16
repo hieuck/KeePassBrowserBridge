@@ -641,6 +641,11 @@ storage.locked = false;
 storage.lastCredentialActivityAt = now - (2 * 60 * 1000);
 const activeLockState = await sandbox.getState();
 assert.equal(activeLockState.locked, false, 'state should remain unlocked before the inactivity timeout');
+storage.autoLockTimeoutMinutes = 1441;
+storage.lastCredentialActivityAt = now - (60 * 1000);
+const outOfRangeAutoLockState = await sandbox.getState();
+assert.equal(outOfRangeAutoLockState.locked, false, 'out-of-range auto-lock timeout should not lock using a corrupt stored value');
+assert.equal(outOfRangeAutoLockState.autoLockTimeoutMinutes, 0, 'out-of-range auto-lock timeout should fall back to the default setting');
 storage.autoLockTimeoutMinutes = 0;
 storage.lastCredentialActivityAt = 0;
 
