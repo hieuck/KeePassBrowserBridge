@@ -1998,6 +1998,36 @@ await api.completeGetSuccess(chromeApi, 93, {
     }
   })
 });
+await api.completeCreateSuccess(chromeApi, 94, {
+  CredentialId: 'Y3JlZC05NA',
+  credentialId: 'not@base64url',
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24'
+});
+await api.completeGetSuccess(chromeApi, 95, {
+  Assertion: {
+    CredentialId: 'Y3JlZC05NQ',
+    credentialId: 'not@base64url',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl'
+  }
+});
+await api.completeCreateSuccess(chromeApi, 96, {
+  CredentialId: 'Y3JlZC05Ng',
+  rawId: 'Y3JlZC1ldmls',
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24'
+});
+await api.completeGetSuccess(chromeApi, 97, {
+  rawId: 'Y3JlZC1ldmls',
+  Assertion: {
+    CredentialId: 'Y3JlZC05Nw',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl'
+  }
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -2493,6 +2523,46 @@ assert.deepEqual(plain(calls[50]), [
     }
   }
 ], 'get success should fail closed when pre-serialized responseJson has invalid base64url field aliases');
+assert.deepEqual(plain(calls[51]), [
+  'create',
+  {
+    requestId: 94,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'create success should fail closed when object complete response has invalid credential ID aliases');
+assert.deepEqual(plain(calls[52]), [
+  'get',
+  {
+    requestId: 95,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid base64url WebAuthn fields.'
+    }
+  }
+], 'get success should fail closed when object complete response has invalid credential ID aliases');
+assert.deepEqual(plain(calls[53]), [
+  'create',
+  {
+    requestId: 96,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response credential ID fields did not match.'
+    }
+  }
+], 'create success should fail closed when object complete response has mismatched credential ID aliases');
+assert.deepEqual(plain(calls[54]), [
+  'get',
+  {
+    requestId: 97,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response credential ID fields did not match.'
+    }
+  }
+], 'get success should fail closed when object complete response has mismatched credential ID aliases');
 
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],

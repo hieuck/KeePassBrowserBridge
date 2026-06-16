@@ -961,7 +961,7 @@
     if (responseJson) return validatedSerializedCreateResponseJson(responseJson);
 
     const credential = (response && (response.Credential || response.credential)) || {};
-    const credentialId = firstString(
+    const credentialId = completeCredentialId(
       response && response.CredentialId,
       response && response.credentialId,
       credential.CredentialId,
@@ -1017,7 +1017,7 @@
     if (responseJson) return validatedSerializedGetResponseJson(responseJson);
 
     const assertion = response && (response.Assertion || response.assertion) || response || {};
-    const credentialId = firstString(
+    const credentialId = completeCredentialId(
       response && response.CredentialId,
       response && response.credentialId,
       assertion.CredentialId,
@@ -1141,6 +1141,17 @@
   function completeBase64UrlField(...values) {
     assertOptionalBase64UrlCompleteFields(...values);
     return firstString(...values);
+  }
+
+  function completeCredentialId(...values) {
+    const credentialId = completeBase64UrlField(...values);
+    for (const value of values) {
+      const candidate = stringValue(value);
+      if (candidate && candidate !== credentialId) {
+        throw notAllowedError(credentialIdFieldsMismatchMessage);
+      }
+    }
+    return credentialId;
   }
 
   function assertSerializedTransportMetadata(transports) {
