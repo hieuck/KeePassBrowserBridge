@@ -50,6 +50,7 @@ try {
     Invoke-NativeChecked "node" @("--check", "extension\popup.js")
     Invoke-NativeChecked "node" @("tests\extension\manifest.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\background.test.mjs")
+    Invoke-NativeChecked "node" @("tests\extension\options.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\protocol.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\http-auth.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\custom-fields.test.mjs")

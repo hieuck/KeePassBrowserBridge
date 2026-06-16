@@ -20,6 +20,7 @@ const sources = {
   formDetectionTests: read('tests/e2e/form-detection.spec.js'),
   extensionLoadTests: read('tests/e2e/extension-load.spec.js'),
   optionsPageTests: read('tests/e2e/options-page.spec.js'),
+  optionsTests: read('tests/extension/options.test.mjs'),
   realSiteValidation: read('docs/real-site-validation.md'),
   bridgeMethodPolicy: read('src/Bridge/BridgeMethodPolicy.cs'),
   bridgeRequestHandler: read('src/Bridge/BridgeRequestHandler.cs'),
@@ -757,14 +758,22 @@ requireEvery('popup', [
   'return fields.filter((field) => field && !field.IsProtected'
 ], 'popup should hide protected custom field values from display, search, copy, and fill actions');
 requireEvery('options', [
-  'SENSITIVE_SETTING_KEYS',
-  "'clientId'",
-  "'sharedSecret'",
-  "'pairingSessionId'",
-  "'locked'",
-  "'lastCredentialActivityAt'",
-  'sanitizePortableSettings'
-], 'settings import/export should exclude pairing secrets and runtime lock state');
+  'PORTABLE_SETTING_DEFAULTS',
+  'PORTABLE_SETTING_KEYS',
+  'chrome.storage.local.get(PORTABLE_SETTING_DEFAULTS',
+  'Object.prototype.hasOwnProperty.call(source, key)',
+  'sanitizePortableSettings',
+  'normalizeSiteOverrides'
+], 'settings import/export should use a portable allowlist instead of exporting extension runtime state');
+requireEvery('optionsTests', [
+  'portable settings should contain only allowlisted user configuration keys',
+  'unknownRuntimeState',
+  'client-secret-id',
+  'pairing-secret',
+  'portable settings should normalize site overrides and drop duplicates before export or import',
+  'portable settings should preserve disabled auto-lock',
+  'portable settings import should reject non-loopback bridge endpoints'
+], 'settings import/export allowlist minimization should be covered by fast options tests');
 requireEvery('optionsPageTests', [
   "expect(exported).not.toHaveProperty('clientId')",
   "expect(exported).not.toHaveProperty('sharedSecret')",

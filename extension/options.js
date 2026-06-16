@@ -17,14 +17,11 @@ const DEFAULT_SETTINGS = {
 
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 
-const SENSITIVE_SETTING_KEYS = [
-  'clientId',
-  'sharedSecret',
-  'pairingSessionId',
-  'pairingStartedAt',
-  'locked',
-  'lastCredentialActivityAt'
-];
+const PORTABLE_SETTING_DEFAULTS = {
+  endpoint: DEFAULT_ENDPOINT,
+  ...DEFAULT_SETTINGS
+};
+const PORTABLE_SETTING_KEYS = Object.keys(PORTABLE_SETTING_DEFAULTS);
 
 let siteOverrides = [];
 let trustedBrowserClients = [];
@@ -196,7 +193,7 @@ function normalizeBridgeEndpoint(endpoint) {
 }
 
 function normalizeIntegerSetting(value, min, max, errorMessage) {
-  const trimmed = String(value || '').trim();
+  const trimmed = String(value ?? '').trim();
   if (!/^\d+$/.test(trimmed)) {
     throw new Error(errorMessage);
   }
@@ -509,7 +506,7 @@ function formatDate(ms) {
 }
 
 function exportSettings() {
-  chrome.storage.local.get(null, (allSettings) => {
+  chrome.storage.local.get(PORTABLE_SETTING_DEFAULTS, (allSettings) => {
     const dataStr = JSON.stringify(sanitizePortableSettings(allSettings), null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -545,13 +542,38 @@ function importSettings(event) {
 }
 
 function sanitizePortableSettings(settings, options = {}) {
-  const sanitized = { ...(settings || {}) };
-  for (const key of SENSITIVE_SETTING_KEYS) {
-    delete sanitized[key];
+  const source = settings && typeof settings === 'object' ? settings : {};
+  const sanitized = {};
+  for (const key of PORTABLE_SETTING_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      sanitized[key] = source[key];
+    }
   }
 
-  if (options.validateEndpoint && Object.prototype.hasOwnProperty.call(sanitized, 'endpoint')) {
-    sanitized.endpoint = normalizeBridgeEndpoint(sanitized.endpoint);
+  if (Object.prototype.hasOwnProperty.call(sanitized, 'endpoint')) {
+    sanitized.endpoint = options.validateEndpoint
+      ? normalizeBridgeEndpoint(sanitized.endpoint)
+      : String(sanitized.endpoint || '').trim() || DEFAULT_ENDPOINT;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(sanitized, 'theme')) {
+    const theme = String(sanitized.theme || DEFAULT_SETTINGS.theme);
+    sanitized.theme = ['system', 'light', 'dark'].includes(theme) ? theme : DEFAULT_SETTINGS.theme;
+  }
+
+  for (const key of ['autoFillEnabled', 'autoSubmitEnabled', 'strictUrlMatching', 'regexUrlMatching', 'showPasswordsInPopup', 'notificationsEnabled', 'debugMode']) {
+    if (Object.prototype.hasOwnProperty.call(sanitized, key)) {
+      sanitized[key] = typeof sanitized[key] === 'boolean' ? sanitized[key] : DEFAULT_SETTINGS[key];
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(sanitized, 'autoFillDelay')) {
+    sanitized.autoFillDelay = normalizeIntegerSetting(
+      sanitized.autoFillDelay,
+      0,
+      5000,
+      'Auto-fill delay must be between 0 and 5000 milliseconds.'
+    );
   }
 
   if (Object.prototype.hasOwnProperty.call(sanitized, 'autoLockTimeoutMinutes')) {
@@ -570,6 +592,10 @@ function sanitizePortableSettings(settings, options = {}) {
       300,
       'Clipboard clear delay must be between 0 and 300 seconds.'
     );
+  }
+
+  if (Object.prototype.hasOwnProperty.call(sanitized, 'siteOverrides')) {
+    sanitized.siteOverrides = normalizeSiteOverrides(sanitized.siteOverrides);
   }
 
   return sanitized;
