@@ -969,7 +969,7 @@
       response && response.id,
       response && response.rawId
     );
-    const publicKey = firstString(
+    const publicKey = completeBase64UrlField(
       response && response.PublicKey,
       response && response.publicKey,
       response && response.PublicKeySpki,
@@ -983,9 +983,9 @@
       credential.PublicKeyCose,
       credential.publicKeyCose
     );
-    const clientDataJson = firstString(response && response.ClientDataJson, response && response.clientDataJSON);
-    const attestationObject = firstString(response && response.AttestationObject, response && response.attestationObject);
-    const authenticatorData = firstString(
+    const clientDataJson = completeBase64UrlField(response && response.ClientDataJson, response && response.clientDataJSON);
+    const attestationObject = completeBase64UrlField(response && response.AttestationObject, response && response.attestationObject);
+    const authenticatorData = completeBase64UrlField(
       response && response.AuthenticatorData,
       response && response.authenticatorData,
       credential.AuthenticatorData,
@@ -1025,10 +1025,10 @@
       response && response.id,
       response && response.rawId
     );
-    const authenticatorData = firstString(assertion.AuthenticatorData, assertion.authenticatorData);
-    const clientDataJson = firstString(assertion.ClientDataJson, assertion.clientDataJSON);
-    const signature = firstString(assertion.Signature, assertion.signature);
-    const userHandle = firstString(assertion.UserHandle, assertion.userHandle);
+    const authenticatorData = completeBase64UrlField(assertion.AuthenticatorData, assertion.authenticatorData);
+    const clientDataJson = completeBase64UrlField(assertion.ClientDataJson, assertion.clientDataJSON);
+    const signature = completeBase64UrlField(assertion.Signature, assertion.signature);
+    const userHandle = completeBase64UrlField(assertion.UserHandle, assertion.userHandle);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertOptionalBase64UrlCompleteFields(userHandle);
@@ -1059,10 +1059,10 @@
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
     const credentialId = serializedCredentialId(parsed);
-    const clientDataJson = firstString(response.clientDataJSON, response.ClientDataJson);
-    const attestationObject = firstString(response.attestationObject, response.AttestationObject);
-    const authenticatorData = firstString(response.authenticatorData, response.AuthenticatorData);
-    const publicKey = firstString(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
+    const clientDataJson = completeBase64UrlField(response.clientDataJSON, response.ClientDataJson);
+    const attestationObject = completeBase64UrlField(response.attestationObject, response.AttestationObject);
+    const authenticatorData = completeBase64UrlField(response.authenticatorData, response.AuthenticatorData);
+    const publicKey = completeBase64UrlField(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
     const transports = firstDefined(response.transports, response.Transports);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
@@ -1078,10 +1078,10 @@
     const parsed = parseSerializedResponseJson(responseJson);
     const response = (parsed && parsed.response) || {};
     const credentialId = serializedCredentialId(parsed);
-    const authenticatorData = firstString(response.authenticatorData, response.AuthenticatorData);
-    const clientDataJson = firstString(response.clientDataJSON, response.ClientDataJson);
-    const signature = firstString(response.signature, response.Signature);
-    const userHandle = firstString(response.userHandle, response.UserHandle);
+    const authenticatorData = completeBase64UrlField(response.authenticatorData, response.AuthenticatorData);
+    const clientDataJson = completeBase64UrlField(response.clientDataJSON, response.ClientDataJson);
+    const signature = completeBase64UrlField(response.signature, response.Signature);
+    const userHandle = completeBase64UrlField(response.userHandle, response.UserHandle);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
     assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
@@ -1136,6 +1136,11 @@
     })) {
       throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
     }
+  }
+
+  function completeBase64UrlField(...values) {
+    assertOptionalBase64UrlCompleteFields(...values);
+    return firstString(...values);
   }
 
   function assertSerializedTransportMetadata(transports) {
