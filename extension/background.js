@@ -890,7 +890,19 @@ async function getSiteOverride(url) {
 
   const state = await storageGet(['siteOverrides']);
   const rules = Array.isArray(state.siteOverrides) ? state.siteOverrides : [];
-  return rules.find((rule) => hostMatchesSiteOverride(host, rule && rule.host)) || null;
+  let bestRule = null;
+  let bestRuleHostLength = -1;
+  for (const rule of rules) {
+    const ruleHost = normalizeHost(rule && rule.host);
+    if (!hostMatchesSiteOverride(host, ruleHost) || ruleHost.length <= bestRuleHostLength) {
+      continue;
+    }
+
+    bestRule = rule;
+    bestRuleHostLength = ruleHost.length;
+  }
+
+  return bestRule;
 }
 
 function normalizeHostFromUrl(url) {

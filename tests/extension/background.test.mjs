@@ -889,6 +889,19 @@ assert.equal(requests.some((request) => request.Method === 'logins.query'), true
 
 requests.length = 0;
 badgeCalls.length = 0;
+autofillMessage = null;
+storage.siteOverrides = [
+  { host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: false },
+  { host: 'login.example.com', autoFillEnabled: true, autoSubmitEnabled: true }
+];
+storage.autoSubmitEnabled = false;
+await sandbox.autoFillTab(105, 'https://login.example.com/login');
+assert.equal(requests.some((request) => request.Method === 'logins.query'), true, 'exact site override should win over parent-domain override before querying KeePass');
+assert.equal(autofillMessage.type, 'KBB_FILL', 'exact enabled site override should allow fill when parent override disables auto-fill');
+assert.equal(autofillMessage.autoSubmit, true, 'exact site override should control auto-submit when it wins over a parent override');
+
+requests.length = 0;
+badgeCalls.length = 0;
 storage.siteOverrides = [{ host: 'example.com', autoFillEnabled: true, autoSubmitEnabled: true }];
 storage.autoSubmitEnabled = false;
 storage.autoLockTimeoutMinutes = 5;
