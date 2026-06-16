@@ -382,6 +382,7 @@ function findSubmittedPasswordInput(scope) {
     );
   const changedPasswordInput = findChangedPasswordInput(passwordInputs);
   if (changedPasswordInput) return changedPasswordInput;
+  if (isChangePasswordForm(passwordInputs)) return null;
 
   return (
     passwordInputs
@@ -402,6 +403,10 @@ function findChangedPasswordInput(passwordInputs) {
   }
 
   return newPasswordInputs[0];
+}
+function isChangePasswordForm(passwordInputs) {
+  return passwordInputs.some((input) => isCurrentPasswordInput(input)) &&
+    passwordInputs.some((input) => isNewPasswordInput(input));
 }
 function isCurrentPasswordInput(input) {
   const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();

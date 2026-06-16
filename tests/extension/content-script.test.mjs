@@ -123,6 +123,30 @@ const newPasswordInput = new MockInput(6, {
   labelText: 'New password'
 }, '');
 
+const currentChangePasswordInput = new MockInput(7, {
+  id: 'current-password',
+  name: 'currentPassword',
+  type: 'password',
+  autocomplete: 'current-password',
+  labelText: 'Current password'
+}, 'old-secret');
+
+const newChangePasswordInput = new MockInput(8, {
+  id: 'new-password',
+  name: 'newPassword',
+  type: 'password',
+  autocomplete: 'new-password',
+  labelText: 'New password'
+}, 'new-secret');
+
+const confirmChangePasswordInput = new MockInput(9, {
+  id: 'confirm-password',
+  name: 'confirmPassword',
+  type: 'password',
+  autocomplete: 'new-password',
+  labelText: 'Confirm password'
+}, 'different-secret');
+
 const focusedStepEmail = new MockInput(4, {
   id: 'signin-email',
   name: 'email',
@@ -214,6 +238,11 @@ const passwordResetEmailInput = new MockInput(37, {
 
 const unrelatedForm = new MockRoot([unrelatedUser]);
 const targetForm = new MockRoot([targetUser, targetPassword]);
+const mismatchedChangePasswordForm = new MockRoot([
+  currentChangePasswordInput,
+  newChangePasswordInput,
+  confirmChangePasswordInput
+]);
 const documentRoot = new MockRoot([
   unrelatedUser,
   targetUser,
@@ -357,6 +386,11 @@ const credential = sandbox.collectCredentialFromForm(targetForm);
 assert.equal(credential.userName, 'right@example.com');
 assert.equal(credential.password, 'secret');
 assert.equal(sandbox.collectCredentialFromForm(unrelatedForm).userName, 'wrong@example.com');
+assert.equal(
+  sandbox.collectCredentialFromForm(mismatchedChangePasswordForm),
+  null,
+  'mismatched change-password forms should not collect the current password as an updated login'
+);
 
 sandbox.window.__keepassBrowserBridgeLastMultiStepCredential = { UserName: 'step@example.com' };
 targetUser.disabled = true;
