@@ -491,12 +491,38 @@ function normalizeHost(value) {
     return '';
   }
 
+  let host;
   try {
     const parsed = trimmed.includes('://') ? new URL(trimmed) : new URL(`https://${trimmed}`);
-    return parsed.hostname.replace(/^\.+|\.+$/g, '');
+    host = parsed.hostname;
   } catch (error) {
-    return trimmed.replace(/^\.+|\.+$/g, '');
+    host = trimmed;
   }
+
+  host = host.replace(/^\.+|\.+$/g, '');
+  return isValidSiteOverrideHost(host) ? host : '';
+}
+
+function isValidSiteOverrideHost(host) {
+  if (!host) {
+    return false;
+  }
+
+  if (host === 'localhost') {
+    return true;
+  }
+
+  const octets = host.split('.');
+  if (octets.length === 4 && octets.every((part) => /^\d+$/.test(part))) {
+    return octets.every((part) => {
+      const value = Number.parseInt(part, 10);
+      return value >= 0 && value <= 255 && String(value) === part;
+    });
+  }
+
+  return octets.every((label) =>
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)
+  );
 }
 
 function formatDate(ms) {

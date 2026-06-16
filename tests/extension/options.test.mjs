@@ -123,6 +123,10 @@ const portable = sandbox.sanitizePortableSettings({
   siteOverrides: [
     { host: 'https://Example.com/login', autoFillEnabled: false, autoSubmitEnabled: true },
     { host: 'example.com', autoFillEnabled: true, autoSubmitEnabled: false },
+    { host: 'http://localhost:3000/admin', autoFillEnabled: true, autoSubmitEnabled: false },
+    { host: 'bad host', autoFillEnabled: false, autoSubmitEnabled: true },
+    { host: '*.example.com', autoFillEnabled: false, autoSubmitEnabled: true },
+    { host: 'tenant_name.example.com', autoFillEnabled: false, autoSubmitEnabled: true },
     { host: '   ', autoFillEnabled: true, autoSubmitEnabled: true }
   ],
   clientId: 'client-secret-id',
@@ -156,8 +160,11 @@ assert.deepEqual(
 );
 assert.equal(
   JSON.stringify(portable.siteOverrides),
-  JSON.stringify([{ host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true }]),
-  'portable settings should normalize site overrides and drop duplicates before export or import'
+  JSON.stringify([
+    { host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true },
+    { host: 'localhost', autoFillEnabled: true, autoSubmitEnabled: false }
+  ]),
+  'portable settings should normalize site overrides and drop invalid or duplicate hosts before export or import'
 );
 assert.equal(Object.values(portable).some((value) => JSON.stringify(value).includes('secret')), false,
   'portable settings should not include pairing or credential runtime secrets');

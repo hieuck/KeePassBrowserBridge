@@ -763,14 +763,18 @@ requireEvery('options', [
   'chrome.storage.local.get(PORTABLE_SETTING_DEFAULTS',
   'Object.prototype.hasOwnProperty.call(source, key)',
   'sanitizePortableSettings',
-  'normalizeSiteOverrides'
+  'normalizeSiteOverrides',
+  'isValidSiteOverrideHost'
 ], 'settings import/export should use a portable allowlist instead of exporting extension runtime state');
 requireEvery('optionsTests', [
   'portable settings should contain only allowlisted user configuration keys',
   'unknownRuntimeState',
   'client-secret-id',
   'pairing-secret',
-  'portable settings should normalize site overrides and drop duplicates before export or import',
+  'bad host',
+  '*.example.com',
+  'tenant_name.example.com',
+  'portable settings should normalize site overrides and drop invalid or duplicate hosts before export or import',
   'portable settings should preserve disabled auto-lock',
   'portable settings import should reject non-loopback bridge endpoints'
 ], 'settings import/export allowlist minimization should be covered by fast options tests');
