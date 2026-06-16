@@ -425,11 +425,25 @@ async function collectPageCredential() {
 async function toggleSiteAutoFill() {
   ensureCredentialActionsEnabled();
   const context = await getCurrentSiteOverrideContext();
-  const { host, overrides, existingIndex, existing } = context;
-  const isDisabled = existing && existing.autoFillEnabled === false;
+  const { host, overrides, exactIndex, effective, inherited } = context;
+  const isDisabled = effective && effective.autoFillEnabled === false;
 
   if (isDisabled) {
-    overrides.splice(existingIndex, 1);
+    const inheritedKeepsDisabled = inherited && inherited.autoFillEnabled === false;
+    if (exactIndex >= 0 && !inheritedKeepsDisabled) {
+      overrides.splice(exactIndex, 1);
+    } else {
+      const nextRule = {
+        host,
+        autoFillEnabled: true,
+        autoSubmitEnabled: Boolean(effective && effective.autoSubmitEnabled === true)
+      };
+      if (exactIndex >= 0) {
+        overrides[exactIndex] = nextRule;
+      } else {
+        overrides.push(nextRule);
+      }
+    }
     await chrome.storage.local.set({ siteOverrides: overrides });
     setMessage(`Auto-fill enabled for ${host}.`);
     return;
@@ -438,10 +452,10 @@ async function toggleSiteAutoFill() {
   const nextRule = {
     host,
     autoFillEnabled: false,
-    autoSubmitEnabled: Boolean(existing && existing.autoSubmitEnabled === true)
+    autoSubmitEnabled: Boolean(effective && effective.autoSubmitEnabled === true)
   };
-  if (existingIndex >= 0) {
-    overrides[existingIndex] = nextRule;
+  if (exactIndex >= 0) {
+    overrides[exactIndex] = nextRule;
   } else {
     overrides.push(nextRule);
   }
@@ -453,18 +467,32 @@ async function toggleSiteAutoFill() {
 async function toggleSiteAutoSubmit() {
   ensureCredentialActionsEnabled();
   const context = await getCurrentSiteOverrideContext();
-  const { host, overrides, existingIndex, existing } = context;
-  const isEnabled = existing && existing.autoSubmitEnabled === true;
+  const { host, overrides, exactIndex, exact, effective, inherited } = context;
+  const isEnabled = effective && effective.autoSubmitEnabled === true;
 
   if (isEnabled) {
-    if (existing.autoFillEnabled === false) {
-      overrides[existingIndex] = {
+    const inheritedKeepsEnabled = inherited && inherited.autoSubmitEnabled === true;
+    if (exactIndex >= 0 && !inheritedKeepsEnabled) {
+      if (exact.autoFillEnabled === false) {
+        overrides[exactIndex] = {
+          host,
+          autoFillEnabled: false,
+          autoSubmitEnabled: false
+        };
+      } else {
+        overrides.splice(exactIndex, 1);
+      }
+    } else {
+      const nextRule = {
         host,
-        autoFillEnabled: false,
+        autoFillEnabled: effective && effective.autoFillEnabled === false ? false : true,
         autoSubmitEnabled: false
       };
-    } else {
-      overrides.splice(existingIndex, 1);
+      if (exactIndex >= 0) {
+        overrides[exactIndex] = nextRule;
+      } else {
+        overrides.push(nextRule);
+      }
     }
     await chrome.storage.local.set({ siteOverrides: overrides });
     setMessage(`Auto-submit disabled for ${host}.`);
@@ -473,11 +501,11 @@ async function toggleSiteAutoSubmit() {
 
   const nextRule = {
     host,
-    autoFillEnabled: existing && existing.autoFillEnabled === false ? false : true,
+    autoFillEnabled: effective && effective.autoFillEnabled === false ? false : true,
     autoSubmitEnabled: true
   };
-  if (existingIndex >= 0) {
-    overrides[existingIndex] = nextRule;
+  if (exactIndex >= 0) {
+    overrides[exactIndex] = nextRule;
   } else {
     overrides.push(nextRule);
   }
@@ -499,9 +527,11 @@ async function getCurrentSiteOverrideContext() {
 
   const settings = await chrome.storage.local.get(['siteOverrides']);
   const overrides = normalizeSiteOverrides(settings.siteOverrides);
-  const existingIndex = overrides.findIndex((rule) => rule.host === host);
-  const existing = existingIndex >= 0 ? overrides[existingIndex] : null;
-  return { host, overrides, existingIndex, existing };
+  const exactIndex = overrides.findIndex((rule) => rule.host === host);
+  const exact = exactIndex >= 0 ? overrides[exactIndex] : null;
+  const effective = findBestSiteOverride(overrides, host);
+  const inherited = findBestSiteOverride(overrides, host, exactIndex);
+  return { host, overrides, exactIndex, exact, effective, inherited };
 }
 
 async function fillLogin(credential, fieldRole, customFieldName) {
@@ -1288,11 +1318,46 @@ function normalizeSiteOverrides(value) {
 
   return value
     .map((rule) => ({
-      host: String(rule && rule.host ? rule.host : '').trim().toLowerCase(),
+      host: normalizeOverrideHost(rule && rule.host),
       autoFillEnabled: rule ? rule.autoFillEnabled : undefined,
       autoSubmitEnabled: rule ? rule.autoSubmitEnabled : undefined
     }))
     .filter((rule) => rule.host);
+}
+
+function findBestSiteOverride(overrides, host, ignoredIndex) {
+  let bestRule = null;
+  let bestRuleHostLength = -1;
+  for (let index = 0; index < overrides.length; index += 1) {
+    if (index === ignoredIndex) {
+      continue;
+    }
+
+    const rule = overrides[index];
+    const ruleHost = normalizeOverrideHost(rule && rule.host);
+    if (!hostMatchesSiteOverride(host, ruleHost) || ruleHost.length <= bestRuleHostLength) {
+      continue;
+    }
+
+    bestRule = rule;
+    bestRuleHostLength = ruleHost.length;
+  }
+
+  return bestRule;
+}
+
+function hostMatchesSiteOverride(host, ruleHost) {
+  const normalizedHost = normalizeOverrideHost(host);
+  const normalizedRuleHost = normalizeOverrideHost(ruleHost);
+  if (!normalizedHost || !normalizedRuleHost) {
+    return false;
+  }
+
+  return normalizedHost === normalizedRuleHost || normalizedHost.endsWith(`.${normalizedRuleHost}`);
+}
+
+function normalizeOverrideHost(value) {
+  return String(value || '').trim().toLowerCase().replace(/^\.+|\.+$/g, '');
 }
 
 function showEditForm(item, entry) {

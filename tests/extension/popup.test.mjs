@@ -138,6 +138,31 @@ const timerCalls = [];
 const intervalCalls = [];
 let fakeNow = 1779990000000;
 let clipboardText = 'code: 955-963';
+let queryLoginsResponse = { url: '', entries: [] };
+const storageState = {};
+
+function pickStorageValues(keys) {
+  if (Array.isArray(keys)) {
+    return Object.fromEntries(keys.map((key) => [key, storageState[key]]));
+  }
+
+  if (typeof keys === 'string') {
+    return { [keys]: storageState[keys] };
+  }
+
+  if (keys && typeof keys === 'object') {
+    return Object.fromEntries(Object.entries(keys).map(([key, fallback]) => [
+      key,
+      Object.prototype.hasOwnProperty.call(storageState, key) ? storageState[key] : fallback
+    ]));
+  }
+
+  return { ...storageState };
+}
+
+function plainJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 
 const fakeDocument = {
   activeElement: null,
@@ -179,6 +204,7 @@ const sandbox = {
   clearInterval(interval) {
     if (interval) interval.cleared = true;
   },
+  URL,
   Date: class extends Date {
     constructor(...args) {
       super(...(args.length ? args : [fakeNow]));
@@ -248,20 +274,27 @@ const sandbox = {
           };
         }
 
+        if (message.type === 'KBB_QUERY_LOGINS') {
+          return { ok: true, response: queryLoginsResponse };
+        }
+
         return { ok: true, response: {} };
       }
     },
     storage: {
       local: {
         get(keys, callback) {
+          const values = pickStorageValues(keys);
           if (callback) {
-            callback({});
+            callback(values);
             return undefined;
           }
-          return Promise.resolve({});
+          return Promise.resolve(values);
         },
         set(values, callback) {
+          Object.assign(storageState, values);
           if (callback) callback();
+          return Promise.resolve();
         }
       }
     }
@@ -430,6 +463,31 @@ assert.equal(elements.queryLogins.disabled, false, 'paired state should enable c
 assert.equal(elements.newLogin.disabled, false, 'paired state should enable create action');
 assert.equal(elements.toggleSiteAutoFill.disabled, false, 'paired state should enable site auto-fill action');
 assert.equal(elements.toggleSiteAutoSubmit.disabled, false, 'paired state should enable site auto-submit action');
+
+queryLoginsResponse = { url: 'https://login.example.com/signin', entries: [] };
+storageState.siteOverrides = [{ host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true }];
+await sandbox.toggleSiteAutoFill();
+assert.deepEqual(
+  plainJson(storageState.siteOverrides),
+  [
+    { host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true },
+    { host: 'login.example.com', autoFillEnabled: true, autoSubmitEnabled: true }
+  ],
+  'site auto-fill toggle should add an exact-host enable rule without removing the inherited parent-domain disable rule'
+);
+assert.equal(elements.message.textContent, 'Auto-fill enabled for login.example.com.', 'site auto-fill toggle should report the exact current host');
+
+storageState.siteOverrides = [{ host: 'example.com', autoFillEnabled: true, autoSubmitEnabled: true }];
+await sandbox.toggleSiteAutoSubmit();
+assert.deepEqual(
+  plainJson(storageState.siteOverrides),
+  [
+    { host: 'example.com', autoFillEnabled: true, autoSubmitEnabled: true },
+    { host: 'login.example.com', autoFillEnabled: true, autoSubmitEnabled: false }
+  ],
+  'site auto-submit toggle should add an exact-host disable rule without removing the inherited parent-domain enable rule'
+);
+assert.equal(elements.message.textContent, 'Auto-submit disabled for login.example.com.', 'site auto-submit toggle should report the exact current host');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
