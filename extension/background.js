@@ -245,12 +245,12 @@ async function getState() {
     state.pairingStartedAt = 0;
   }
 
-  const pairingStartedAt = Number(state.pairingStartedAt || 0);
-  if (!paired && state.pairingSessionId && pairingStartedAt &&
-      Date.now() - pairingStartedAt > PAIRING_SESSION_MAX_AGE_MS) {
+  let pairingStartedAt = Number(state.pairingStartedAt || 0);
+  if (!paired && state.pairingSessionId && !isActivePairingTimestamp(pairingStartedAt)) {
     await clearPairingSession();
     state.pairingSessionId = '';
     state.pairingStartedAt = 0;
+    pairingStartedAt = 0;
   }
 
   await applyAutoLock(state);
@@ -278,6 +278,14 @@ function numberSetting(value, defaultValue, maxValue) {
   return Number.isFinite(parsed) && parsed >= 0 && (maxValue === undefined || parsed <= maxValue)
     ? parsed
     : defaultValue;
+}
+
+function isActivePairingTimestamp(value) {
+  if (!Number.isFinite(value) || value <= 0 || value > Date.now()) {
+    return false;
+  }
+
+  return Date.now() - value <= PAIRING_SESSION_MAX_AGE_MS;
 }
 
 async function applyAutoLock(state) {

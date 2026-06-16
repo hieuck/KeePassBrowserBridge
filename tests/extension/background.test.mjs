@@ -413,6 +413,13 @@ assert.equal(activePairingState.pairingExpiresAt, 301000, 'state should expose p
 assert.equal(activePairingState.autoFillEnabled, true, 'first-run state should default auto-fill to enabled like the options page');
 assert.equal(activePairingState.autoSubmitEnabled, false, 'first-run state should default auto-submit to disabled like the options page');
 
+storage.pairingSessionId = 'future-session';
+storage.pairingStartedAt = 999000;
+now = 2000;
+const futurePairingState = await sandbox.getState();
+assert.equal(futurePairingState.pairingSessionId, '', 'future-dated pairing session should be cleared');
+assert.equal(storage.pairingStartedAt, 0, 'future-dated pairing timestamp should be cleared');
+
 storage.pairingSessionId = 'expired-session';
 storage.pairingStartedAt = 1000;
 now = 302000;
