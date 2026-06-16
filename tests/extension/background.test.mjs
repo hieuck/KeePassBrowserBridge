@@ -877,6 +877,18 @@ assert.equal(badgeTextCall.details.text, '', 'disabled site override should clea
 
 requests.length = 0;
 badgeCalls.length = 0;
+autofillMessage = null;
+await sandbox.autoFillTab(103, 'https://login.example.com/login');
+assert.equal(requests.some((request) => request.Method === 'logins.query'), false, 'parent-domain site override should disable auto-fill for subdomains before querying KeePass');
+assert.equal(autofillMessage, null, 'parent-domain site override should not send a fill message for subdomains');
+
+requests.length = 0;
+badgeCalls.length = 0;
+await sandbox.autoFillTab(104, 'https://evil-example.com/login');
+assert.equal(requests.some((request) => request.Method === 'logins.query'), true, 'parent-domain site override should not match unrelated hosts with the same suffix');
+
+requests.length = 0;
+badgeCalls.length = 0;
 storage.siteOverrides = [{ host: 'example.com', autoFillEnabled: true, autoSubmitEnabled: true }];
 storage.autoSubmitEnabled = false;
 storage.autoLockTimeoutMinutes = 5;

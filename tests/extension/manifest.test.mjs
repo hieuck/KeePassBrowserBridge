@@ -19,6 +19,7 @@ const passkeyServiceSource = fs.readFileSync(new URL('../../src/Bridge/PasskeySe
 const pluginExt = fs.readFileSync(new URL('../../src/KeePassBrowserBridgeExt.cs', import.meta.url), 'utf8');
 const backgroundSource = fs.readFileSync(new URL('../../extension/background.js', import.meta.url), 'utf8');
 const passkeysProxyExperiment = fs.readFileSync(new URL('../../extension/passkeysProxyExperiment.js', import.meta.url), 'utf8');
+const optionsMarkup = fs.readFileSync(new URL('../../extension/options.html', import.meta.url), 'utf8');
 const popupSource = fs.readFileSync(new URL('../../extension/popup.js', import.meta.url), 'utf8');
 const optionsSource = fs.readFileSync(new URL('../../extension/options.js', import.meta.url), 'utf8');
 const updateInfo = fs.readFileSync(new URL('../../update/versioninfo.txt', import.meta.url), 'utf8');
@@ -84,6 +85,7 @@ assert.equal(packageJson.scripts['build:release'].includes('scripts/build-releas
 assert.equal(packageJson.scripts['build:extension'].includes('build:release'), true, 'package.json build:extension should delegate to release packaging');
 assert.equal(JSON.stringify(packageJson.scripts).includes('dist/kbb-extension.zip'), false, 'package.json scripts should not create ad hoc extension ZIPs');
 assert.equal(JSON.stringify(packageJson.scripts).includes('zip -r'), false, 'package.json scripts should not zip the raw extension source tree');
+assert.equal(optionsMarkup.includes('Override auto-fill behavior for a host and its subdomains.'), true, 'settings UI should explain that site overrides apply to subdomains');
 assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.all_frames === true), true, 'Firefox content scripts should run in iframes for embedded login widgets');
 assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.match_about_blank === true), true, 'Firefox content scripts should run in about:blank child frames when the parent URL matches');
 assert.equal(releaseScript.includes('manifest.firefox.json'), true, 'release script should package a Firefox extension with the Firefox manifest');
