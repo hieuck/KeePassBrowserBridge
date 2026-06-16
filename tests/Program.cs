@@ -187,6 +187,7 @@ internal static class Program
         LoopbackBridgeServerAllowsExtensionPreflightOrigin();
         LoopbackBridgeServerRejectsExtensionPreflightForWrongPath();
         LoopbackBridgeServerRejectsUnsupportedPreflightMethod();
+        LoopbackBridgeServerRejectsUnsupportedPreflightHeaders();
         LoopbackBridgeServerRejectsWebPostOriginBeforeHandling();
         LoopbackBridgeServerRejectsNonJsonPostBeforeHandling();
         LoopbackBridgeServerRejectsOversizedPostBeforeHandling();
@@ -3879,6 +3880,29 @@ internal static class Program
             AssertEqual(405, response.StatusCode, "extension preflight should reject unsupported requested methods");
             AssertFalse(response.Headers.ContainsKey("Access-Control-Allow-Origin"),
                 "unsupported preflight method should not include an allow-origin header");
+        }
+    }
+
+    private static void LoopbackBridgeServerRejectsUnsupportedPreflightHeaders()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            RawHttpResponse response = SendRawHttp(port,
+                "OPTIONS /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Access-Control-Request-Method: POST\r\n" +
+                "Access-Control-Request-Headers: Content-Type, X-Debug\r\n" +
+                "Connection: close\r\n\r\n");
+
+            AssertEqual(400, response.StatusCode, "extension preflight should reject unsupported requested headers");
+            AssertFalse(response.Headers.ContainsKey("Access-Control-Allow-Origin"),
+                "unsupported preflight headers should not include an allow-origin header");
         }
     }
 

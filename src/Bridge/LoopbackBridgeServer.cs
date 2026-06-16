@@ -132,6 +132,12 @@ namespace KeePassBrowserBridge.Bridge
                 context.Response.Close();
                 return;
             }
+            if (context.Request.HttpMethod == "OPTIONS" && !IsAllowedPreflightHeaders(context.Request))
+            {
+                context.Response.StatusCode = 400;
+                context.Response.Close();
+                return;
+            }
 
             if (!AddCorsHeadersForAllowedOrigin(context.Request, context.Response))
             {
@@ -224,6 +230,21 @@ namespace KeePassBrowserBridge.Bridge
         {
             string method = request.Headers["Access-Control-Request-Method"];
             return string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsAllowedPreflightHeaders(HttpListenerRequest request)
+        {
+            string headers = request.Headers["Access-Control-Request-Headers"];
+            if (string.IsNullOrWhiteSpace(headers)) return true;
+
+            string[] values = headers.Split(',');
+            foreach (string value in values)
+            {
+                if (!string.Equals(value.Trim(), "Content-Type", StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            return true;
         }
 
         private static string ReadRequestBody(HttpListenerRequest request)
