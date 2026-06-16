@@ -519,6 +519,11 @@ async function queryLoginsForUrl(url) {
 }
 
 async function queryHttpAuth(url) {
+  const siteOverride = await getSiteOverride(url);
+  if (siteOverride && siteOverride.autoFillEnabled === false) {
+    return null;
+  }
+
   const result = await queryLoginsForUrl(url);
   const entry = result.entries.find((candidate) => candidate.UserName && candidate.Password);
   if (!entry) {

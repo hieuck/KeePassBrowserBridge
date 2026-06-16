@@ -950,6 +950,17 @@ assert.ok(httpAuthFillAckRequest, 'HTTP auth query should acknowledge the filled
 assert.ok(sandbox.httpAuthRequiredHandler, 'background should register an HTTP auth handler');
 assert.equal(sandbox.httpAuthFilter.urls.join(','), 'http://*/*,https://*/*', 'HTTP auth listener should cover HTTP and HTTPS pages');
 assert.equal(sandbox.httpAuthExtraInfoSpec.join(','), 'asyncBlocking', 'HTTP auth listener should use asyncBlocking');
+
+requests.length = 0;
+storage.siteOverrides = [{ host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true }];
+const disabledHttpAuthResult = await sandbox.handleMessage({
+  type: 'KBB_QUERY_HTTP_AUTH',
+  url: 'https://login.example.com/private'
+});
+assert.equal(disabledHttpAuthResult, null, 'HTTP auth query should respect disabled parent-domain site overrides');
+assert.equal(requests.some((request) => request.Method === 'logins.query'), false, 'disabled HTTP auth site override should skip KeePass queries');
+storage.siteOverrides = [];
+
 const httpAuthChallengeResult = await new Promise((resolve) => {
   sandbox.httpAuthRequiredHandler({
     requestId: 'request-1',
