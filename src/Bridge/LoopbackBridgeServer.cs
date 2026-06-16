@@ -118,6 +118,14 @@ namespace KeePassBrowserBridge.Bridge
 
         private void ProcessContext(HttpListenerContext context)
         {
+            if (context.Request.Url == null ||
+                !string.Equals(context.Request.Url.AbsolutePath, "/bridge", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.StatusCode = 404;
+                context.Response.Close();
+                return;
+            }
+
             if (!AddCorsHeadersForAllowedOrigin(context.Request, context.Response))
             {
                 context.Response.StatusCode = 403;
@@ -132,8 +140,7 @@ namespace KeePassBrowserBridge.Bridge
                 return;
             }
 
-            if (context.Request.HttpMethod != "POST" || context.Request.Url == null ||
-                !string.Equals(context.Request.Url.AbsolutePath, "/bridge", StringComparison.OrdinalIgnoreCase))
+            if (context.Request.HttpMethod != "POST")
             {
                 context.Response.StatusCode = 404;
                 context.Response.Close();

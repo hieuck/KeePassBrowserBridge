@@ -185,6 +185,7 @@ internal static class Program
         LoopbackBridgeServerRespondsToHello();
         LoopbackBridgeServerRejectsWebPreflightOrigin();
         LoopbackBridgeServerAllowsExtensionPreflightOrigin();
+        LoopbackBridgeServerRejectsExtensionPreflightForWrongPath();
         LoopbackBridgeServerRejectsWebPostOriginBeforeHandling();
         LoopbackBridgeServerRejectsNonJsonPostBeforeHandling();
         LoopbackBridgeServerRejectsOversizedPostBeforeHandling();
@@ -3833,6 +3834,28 @@ internal static class Program
             AssertEqual(204, response.StatusCode, "extension preflight should be allowed");
             AssertEqual(origin, response.Headers["Access-Control-Allow-Origin"],
                 "extension preflight should echo the extension origin");
+        }
+    }
+
+    private static void LoopbackBridgeServerRejectsExtensionPreflightForWrongPath()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            RawHttpResponse response = SendRawHttp(port,
+                "OPTIONS /not-bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Access-Control-Request-Method: POST\r\n" +
+                "Connection: close\r\n\r\n");
+
+            AssertEqual(404, response.StatusCode, "extension preflight should be scoped to /bridge");
+            AssertFalse(response.Headers.ContainsKey("Access-Control-Allow-Origin"),
+                "wrong-path extension preflight should not include an allow-origin header");
         }
     }
 
