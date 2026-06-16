@@ -41,13 +41,19 @@ namespace KeePassBrowserBridge.Bridge
 
         public static bool IsAllowedExtensionOrigin(string origin)
         {
+            string trimmed = origin == null ? string.Empty : origin.Trim();
+            if (!string.Equals(origin, trimmed, StringComparison.Ordinal)) return false;
+
             Uri uri;
-            if (!Uri.TryCreate(origin.Trim(), UriKind.Absolute, out uri)) return false;
+            if (!Uri.TryCreate(trimmed, UriKind.Absolute, out uri)) return false;
             if (!string.IsNullOrEmpty(uri.UserInfo)) return false;
             if (!uri.IsDefaultPort) return false;
             if (!string.IsNullOrEmpty(uri.AbsolutePath) && uri.AbsolutePath != "/") return false;
             if (!string.IsNullOrEmpty(uri.Query)) return false;
             if (!string.IsNullOrEmpty(uri.Fragment)) return false;
+
+            string canonicalOrigin = uri.Scheme + "://" + uri.Host;
+            if (!string.Equals(trimmed, canonicalOrigin, StringComparison.Ordinal)) return false;
 
             if (string.Equals(uri.Scheme, "chrome-extension", StringComparison.OrdinalIgnoreCase))
                 return IsChromeExtensionId(uri.Host);

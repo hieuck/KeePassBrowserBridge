@@ -1319,10 +1319,16 @@ internal static class Program
     {
         string[] origins = new[]
         {
+            " CHROME-EXTENSION://abcdefghijklmnopabcdefghijklmnop",
+            "CHROME-EXTENSION://abcdefghijklmnopabcdefghijklmnop",
+            "chrome-extension://ABCDEFGHIJKLMNOPABCDEFGHIJKLMNOP",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop/",
             "chrome-extension://user@abcdefghijklmnopabcdefghijklmnop",
             "chrome-extension://abcdefghijklmnopabcdefghijklmnop:443",
             "chrome-extension://abcdefghijklmnopabcdefghijklmnop?query=1",
             "chrome-extension://abcdefghijklmnopabcdefghijklmnop#fragment",
+            "moz-extension://12345678-90AB-CDEF-1234-567890ABCDEF",
+            "moz-extension://12345678-90ab-cdef-1234-567890abcdef/",
             "moz-extension://12345678-90ab-cdef-1234-567890abcdef?query=1"
         };
 
