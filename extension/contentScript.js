@@ -926,7 +926,7 @@ async function fillFromInlineButton(button) {
         : [];
     if (entries.length === 0) {
       const credential = collectCredentialFromForm(document);
-      if (credential && credential.password) {
+      if (credential && credential.password && await canMutateKeePassEntries()) {
         showSaveLoginPrompt(credential);
       } else {
         showInlineEmptyPicker(button);

@@ -384,6 +384,39 @@ test.describe('content script form detection', () => {
     expect(createMessage).toBeUndefined();
   });
 
+  test('does not show inline save prompt when browser has read-only permission', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read'] } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('#username').fill('readonly-inline@example.com');
+    await page.locator('#password').fill('secret');
+    await page.locator('.kbb-inline-button[aria-label="Fill password from KeePass"]').click();
+
+    await expect(page.locator('.kbb-save-prompt')).toHaveCount(0);
+    const statusMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_STATUS'));
+    expect(statusMessage).toBeDefined();
+    const createMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_CREATE_LOGIN'));
+    expect(createMessage).toBeUndefined();
+  });
+
   test('restores save prompt after form submit navigates to another page', async ({ page }) => {
     let pendingSubmittedCredential = null;
     let resolveRememberedCredential;
