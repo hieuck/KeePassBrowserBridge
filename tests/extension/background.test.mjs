@@ -408,6 +408,22 @@ await assert.rejects(
 assert.equal(requests.length, 0, 'background should not send bridge requests to credentialed loopback endpoints');
 storage.endpoint = 'http://127.0.0.1:19455/bridge';
 
+for (const endpoint of [
+  'http://127.0.0.1:19455/not-bridge',
+  'http://127.0.0.1:19455/bridge?debug=1',
+  'http://127.0.0.1:19455/bridge#fragment'
+]) {
+  requests.length = 0;
+  storage.endpoint = endpoint;
+  await assert.rejects(
+    () => sandbox.handleMessage({ type: 'KBB_HELLO' }),
+    /\/bridge/i,
+    'background should reject non-canonical bridge endpoints loaded from storage before network access'
+  );
+  assert.equal(requests.length, 0, 'background should not send bridge requests to non-canonical bridge endpoints');
+}
+storage.endpoint = 'http://127.0.0.1:19455/bridge';
+
 requests.length = 0;
 sandbox.chrome.runtime.getURL = () => 'moz-extension://12345678-90ab-cdef-1234-567890abcdef/';
 await sandbox.handleMessage({ type: 'KBB_HELLO' });

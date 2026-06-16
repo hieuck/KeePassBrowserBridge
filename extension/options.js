@@ -196,6 +196,9 @@ function normalizeBridgeEndpoint(endpoint) {
   if (url.username || url.password) {
     throw new Error('Bridge endpoint must not include credentials.');
   }
+  if (url.pathname !== '/bridge' || url.search || url.hash) {
+    throw new Error('Bridge endpoint must be an http://127.0.0.1 /bridge URL without query or fragment.');
+  }
 
   return url.toString();
 }
