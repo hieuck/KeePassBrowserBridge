@@ -464,6 +464,17 @@ assert.equal(elements.newLogin.disabled, false, 'paired state should enable crea
 assert.equal(elements.toggleSiteAutoFill.disabled, false, 'paired state should enable site auto-fill action');
 assert.equal(elements.toggleSiteAutoSubmit.disabled, false, 'paired state should enable site auto-submit action');
 
+storageState.clipboardClearDelay = 999;
+sentMessages.length = 0;
+await sandbox.copyToClipboard('Password', 'clipboard-secret');
+assert.equal(
+  sentMessages.at(-1).clearAfterMs,
+  30000,
+  'out-of-range clipboard clear delay should fall back to the default clear timeout'
+);
+assert.equal(elements.message.textContent, 'Copied Password to clipboard.', 'copy action should confirm the copied label');
+delete storageState.clipboardClearDelay;
+
 queryLoginsResponse = { url: 'https://login.example.com/signin', entries: [] };
 storageState.siteOverrides = [{ host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true }];
 await sandbox.toggleSiteAutoFill();

@@ -1,5 +1,8 @@
 'use strict';
 
+const DEFAULT_CLIPBOARD_CLEAR_DELAY_SECONDS = 30;
+const MAX_CLIPBOARD_CLEAR_DELAY_SECONDS = 300;
+
 const elements = {
   themeToggle: document.getElementById('themeToggle'),
   statusBadge: document.getElementById('statusBadge'),
@@ -579,11 +582,11 @@ async function copyToClipboard(label, text) {
 async function getClipboardClearDelayMs() {
   const settings = await chrome.storage.local.get(['clipboardClearDelay']);
   const seconds = Number(settings.clipboardClearDelay);
-  if (Number.isFinite(seconds) && seconds >= 0) {
+  if (Number.isFinite(seconds) && seconds >= 0 && seconds <= MAX_CLIPBOARD_CLEAR_DELAY_SECONDS) {
     return seconds * 1000;
   }
 
-  return 30000;
+  return DEFAULT_CLIPBOARD_CLEAR_DELAY_SECONDS * 1000;
 }
 
 async function updateLogin(entry, form) {
