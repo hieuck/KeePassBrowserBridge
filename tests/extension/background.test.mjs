@@ -262,12 +262,20 @@ const sandbox = {
     },
     storage: {
       local: {
-        get: async (keys) => {
+        get: (keys, callback) => {
+          let values;
           if (Array.isArray(keys)) {
-            return Object.fromEntries(keys.map((key) => [key, storage[key]]));
+            values = Object.fromEntries(keys.map((key) => [key, storage[key]]));
+          } else {
+            values = { ...storage };
           }
 
-          return { ...storage };
+          if (callback) {
+            callback(values);
+            return undefined;
+          }
+
+          return Promise.resolve(values);
         },
         set: async (values) => {
           Object.assign(storage, values);
@@ -853,6 +861,14 @@ sandbox.tabsUpdatedHandler(44, { status: 'complete' }, { id: 44, url: 'chrome://
 await Promise.resolve();
 let badgeTextCall = badgeCalls.find((call) => call.method === 'setBadgeText' && call.details.tabId === 44);
 assert.equal(badgeTextCall.details.text, '', 'navigating to a non-fillable URL should clear stale badge text');
+
+timerCalls.length = 0;
+storage.autoFillDelay = 0;
+sandbox.tabsUpdatedHandler(45, { status: 'complete' }, { id: 45, url: 'https://example.com/login' });
+await Promise.resolve();
+assert.equal(timerCalls.length, 1, 'fillable navigation should schedule auto-fill after reading settings');
+assert.equal(timerCalls[0].delay, 0, 'zero auto-fill delay should be honored instead of falling back to the default debounce');
+delete storage.autoFillDelay;
 
 requests.length = 0;
 loginEntries = [{

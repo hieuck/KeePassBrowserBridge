@@ -1068,7 +1068,10 @@ function scheduleAutoFill(tabId, url) {
   }
 
   chrome.storage.local.get(['autoFillDelay'], (result) => {
-    const delay = result.autoFillDelay || AUTO_FILL_DEBOUNCE_MS;
+    const configuredDelay = Number(result && result.autoFillDelay);
+    const delay = Number.isFinite(configuredDelay) && configuredDelay >= 0
+      ? configuredDelay
+      : AUTO_FILL_DEBOUNCE_MS;
     const timerId = setTimeout(() => {
       autoFillTimers.delete(tabId);
       autoFillTab(tabId, url).catch(() => {});
