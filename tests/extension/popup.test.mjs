@@ -464,6 +464,27 @@ assert.equal(elements.newLogin.disabled, false, 'paired state should enable crea
 assert.equal(elements.toggleSiteAutoFill.disabled, false, 'paired state should enable site auto-fill action');
 assert.equal(elements.toggleSiteAutoSubmit.disabled, false, 'paired state should enable site auto-submit action');
 
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  permissions: ['read', 'write'],
+  autoFillEnabled: false
+});
+assert.equal(elements.listClients.disabled, true, 'paired state without manage permission should disable trusted browser management');
+sentMessages.length = 0;
+await assert.rejects(
+  () => sandbox.listClients(),
+  /Manage browser permission/,
+  'trusted browser management should require manageClients permission before sending a background request'
+);
+assert.deepEqual(sentMessages, [], 'trusted browser management should not contact the background without manageClients permission');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  autoFillEnabled: false
+});
+
 storageState.clipboardClearDelay = 999;
 sentMessages.length = 0;
 await sandbox.copyToClipboard('Password', 'clipboard-secret');

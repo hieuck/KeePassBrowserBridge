@@ -265,6 +265,7 @@ async function toggleLocked() {
 }
 
 async function listClients() {
+  ensureManageClientActionsEnabled();
   await refreshAboutMetadata();
   const result = await send({ type: 'KBB_LIST_CLIENTS' });
   trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
@@ -276,6 +277,7 @@ async function listClients() {
 }
 
 async function revokeClient(client) {
+  ensureManageClientActionsEnabled();
   const clientName = client && client.ClientName ? client.ClientName : 'Browser';
   const confirmed = window.confirm(
     `Revoke browser "${clientName}"?\n\nIt will need to pair again before accessing KeePass.`
@@ -303,6 +305,7 @@ async function revokeClient(client) {
 }
 
 async function updateClientPermissions(client, permission, enabled) {
+  ensureManageClientActionsEnabled();
   const clientId = client && client.ClientId ? client.ClientId : '';
   const nextPermissions = normalizeClientPermissions(client && client.Permissions);
   const existingIndex = nextPermissions.indexOf(permission);
@@ -840,10 +843,15 @@ function syncCredentialActionAvailability() {
   elements.newLogin.disabled = !enabled || !hasClientPermission('write');
   elements.toggleSiteAutoFill.disabled = !enabled;
   elements.toggleSiteAutoSubmit.disabled = !enabled;
+  elements.listClients.disabled = !manageClientActionsEnabled();
 }
 
 function credentialActionsEnabled() {
   return Boolean(currentState && currentState.paired && !currentState.locked);
+}
+
+function manageClientActionsEnabled() {
+  return credentialActionsEnabled() && hasClientPermission('manageClients');
 }
 
 function ensureCredentialActionsEnabled() {
@@ -855,6 +863,12 @@ function ensureCredentialActionsEnabled() {
 function ensureWriteActionsEnabled() {
   if (!hasClientPermission('write')) {
     throw new Error('This browser is read-only. Enable Write permission to create or update KeePass entries.');
+  }
+}
+
+function ensureManageClientActionsEnabled() {
+  if (!manageClientActionsEnabled()) {
+    throw new Error('Manage browser permission is required to manage trusted browsers.');
   }
 }
 
@@ -1102,6 +1116,7 @@ function renderClients(clients) {
     revoke.type = 'button';
     revoke.className = 'secondary';
     revoke.textContent = client.Current ? '✕ Revoke This Browser' : '✕ Revoke';
+    revoke.disabled = !manageClientActionsEnabled();
     revoke.addEventListener('click', () => runAction(() => revokeClient(client)));
 
     item.append(name, meta, permissions, revoke);
@@ -1128,7 +1143,7 @@ function createClientPermissionControls(client) {
     checkbox.type = 'checkbox';
     checkbox.dataset.permission = definition.value;
     checkbox.checked = normalizeClientPermissions(client.Permissions).includes(definition.value);
-    checkbox.disabled = definition.value === 'read';
+    checkbox.disabled = definition.value === 'read' || !manageClientActionsEnabled();
     checkbox.addEventListener('change', () => runAction(() =>
       updateClientPermissions(client, definition.value, checkbox.checked)
     ));
