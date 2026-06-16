@@ -43,7 +43,11 @@ namespace KeePassBrowserBridge.Bridge
         {
             Uri uri;
             if (!Uri.TryCreate(origin.Trim(), UriKind.Absolute, out uri)) return false;
+            if (!string.IsNullOrEmpty(uri.UserInfo)) return false;
+            if (!uri.IsDefaultPort) return false;
             if (!string.IsNullOrEmpty(uri.AbsolutePath) && uri.AbsolutePath != "/") return false;
+            if (!string.IsNullOrEmpty(uri.Query)) return false;
+            if (!string.IsNullOrEmpty(uri.Fragment)) return false;
 
             if (string.Equals(uri.Scheme, "chrome-extension", StringComparison.OrdinalIgnoreCase))
                 return IsChromeExtensionId(uri.Host);

@@ -70,6 +70,7 @@ internal static class Program
         WebPageOriginFailsValidation();
         FirefoxExtensionOriginPassesValidation();
         MalformedExtensionOriginFailsValidation();
+        NonCanonicalExtensionOriginFailsValidation();
         StaleTimestampFailsValidation();
         WrongProtocolVersionFailsValidation();
         PasskeyMethodPassesProtocolValidation();
@@ -1312,6 +1313,29 @@ internal static class Program
 
         AssertFalse(result.IsValid, "malformed extension origin should fail validation");
         AssertEqual("invalid_origin", result.ErrorCode, "malformed extension origin error code mismatch");
+    }
+
+    private static void NonCanonicalExtensionOriginFailsValidation()
+    {
+        string[] origins = new[]
+        {
+            "chrome-extension://user@abcdefghijklmnopabcdefghijklmnop",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop:443",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop?query=1",
+            "chrome-extension://abcdefghijklmnopabcdefghijklmnop#fragment",
+            "moz-extension://12345678-90ab-cdef-1234-567890abcdef?query=1"
+        };
+
+        foreach (string origin in origins)
+        {
+            BridgeRequest request = CreateValidRequest(BridgeMethods.Hello);
+            request.Origin = origin;
+
+            ProtocolValidationResult result = ProtocolValidator.Validate(request, NowMs());
+
+            AssertFalse(result.IsValid, "non-canonical extension origin should fail validation: " + origin);
+            AssertEqual("invalid_origin", result.ErrorCode, "non-canonical extension origin error code mismatch");
+        }
     }
 
     private static void StaleTimestampFailsValidation()
