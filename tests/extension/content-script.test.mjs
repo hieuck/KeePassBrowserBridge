@@ -509,4 +509,18 @@ assert.equal(collectedCredentialResponse.collected, true, 'content script should
 assert.equal(collectedCredentialResponse.credential.userName, 'u', 'collected credential should include current username field value');
 assert.equal(collectedCredentialResponse.credential.password, 'p', 'collected credential should include current password field value');
 
+sandbox.chrome.storage = {
+  local: {
+    get(_keys, callback) {
+      callback({ clipboardClearDelay: 999 });
+    }
+  }
+};
+assert.equal(
+  await sandbox.getInlineClipboardClearDelayMs(),
+  30000,
+  'inline clipboard clear delay should fall back when the stored delay is out of range'
+);
+delete sandbox.chrome.storage;
+
 console.log('Content script tests passed.');

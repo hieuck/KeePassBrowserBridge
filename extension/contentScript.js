@@ -1383,10 +1383,15 @@ function copyTextToClipboard(value) {
   }
 }
 function getInlineClipboardClearDelayMs() {
+  const defaultDelaySeconds = 30;
+  const maxDelaySeconds = 300;
+
   return new Promise((resolve) => {
     const finish = (settings) => {
       const seconds = Number(settings && settings.clipboardClearDelay);
-      resolve(Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : 30000);
+      resolve(Number.isFinite(seconds) && seconds >= 0 && seconds <= maxDelaySeconds
+        ? seconds * 1000
+        : defaultDelaySeconds * 1000);
     };
 
     try {
