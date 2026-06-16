@@ -872,6 +872,17 @@ assert.deepEqual(JSON.parse(queryRequest.Payload), {
   RegexUrlMatching: false
 }, 'logins.query should include URL matching settings');
 
+requests.length = 0;
+storage.strictUrlMatching = 'false';
+storage.regexUrlMatching = 'true';
+await sandbox.queryLoginsForUrl('https://example.com/login');
+const corruptedQueryRequest = requests.find((request) => request.Method === 'logins.query');
+assert.deepEqual(JSON.parse(corruptedQueryRequest.Payload), {
+  Url: 'https://example.com/login',
+  StrictUrlMatching: false,
+  RegexUrlMatching: false
+}, 'logins.query should ignore corrupt URL matching settings');
+
 badgeCalls.length = 0;
 assert.ok(sandbox.tabsUpdatedHandler, 'background should register a tab update listener');
 sandbox.tabsUpdatedHandler(44, { status: 'complete' }, { id: 44, url: 'chrome://extensions/' });

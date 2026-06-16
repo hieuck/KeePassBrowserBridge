@@ -19,6 +19,8 @@ const HTTP_AUTH_MAX_ATTEMPTS = 2;
 const DEFAULT_AUTO_FILL_ENABLED = true;
 const DEFAULT_AUTO_SUBMIT_ENABLED = false;
 const DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES = 0;
+const DEFAULT_STRICT_URL_MATCHING = false;
+const DEFAULT_REGEX_URL_MATCHING = false;
 const MAX_AUTO_LOCK_TIMEOUT_MINUTES = 1440;
 const autoFillTimers = new Map();
 const clipboardTimers = new Map();
@@ -893,8 +895,8 @@ async function buildLoginsQueryPayload(url) {
   const state = await storageGet(['strictUrlMatching', 'regexUrlMatching']);
   return {
     Url: url,
-    StrictUrlMatching: Boolean(state.strictUrlMatching),
-    RegexUrlMatching: Boolean(state.regexUrlMatching)
+    StrictUrlMatching: booleanSetting(state.strictUrlMatching, DEFAULT_STRICT_URL_MATCHING),
+    RegexUrlMatching: booleanSetting(state.regexUrlMatching, DEFAULT_REGEX_URL_MATCHING)
   };
 }
 
