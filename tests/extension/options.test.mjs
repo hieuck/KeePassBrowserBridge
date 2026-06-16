@@ -209,4 +209,10 @@ assert.throws(
   'portable settings import should reject non-loopback bridge endpoints'
 );
 
+assert.throws(
+  () => sandbox.sanitizePortableSettings({ endpoint: 'http://evil.example@127.0.0.1:19455/bridge' }, { validateEndpoint: true }),
+  /credentials/i,
+  'portable settings import should reject credentialed loopback bridge endpoints'
+);
+
 console.log('Options tests passed.');

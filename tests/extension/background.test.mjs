@@ -399,6 +399,16 @@ assert.equal(requests.length, 0, 'background should not send bridge requests to 
 storage.endpoint = 'http://127.0.0.1:19455/bridge';
 
 requests.length = 0;
+storage.endpoint = 'http://evil.example@127.0.0.1:19455/bridge';
+await assert.rejects(
+  () => sandbox.handleMessage({ type: 'KBB_HELLO' }),
+  /credentials/i,
+  'background should reject credentialed loopback endpoints loaded from storage before network access'
+);
+assert.equal(requests.length, 0, 'background should not send bridge requests to credentialed loopback endpoints');
+storage.endpoint = 'http://127.0.0.1:19455/bridge';
+
+requests.length = 0;
 sandbox.chrome.runtime.getURL = () => 'moz-extension://12345678-90ab-cdef-1234-567890abcdef/';
 await sandbox.handleMessage({ type: 'KBB_HELLO' });
 assert.equal(requests[0].Origin, 'moz-extension://12345678-90ab-cdef-1234-567890abcdef', 'background should derive request origin from runtime URL for Firefox');

@@ -193,6 +193,9 @@ function normalizeBridgeEndpoint(endpoint) {
   if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1') {
     throw new Error('Bridge endpoint must be an http://127.0.0.1 URL.');
   }
+  if (url.username || url.password) {
+    throw new Error('Bridge endpoint must not include credentials.');
+  }
 
   return url.toString();
 }

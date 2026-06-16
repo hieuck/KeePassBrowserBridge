@@ -1079,6 +1079,9 @@ function normalizeEndpoint(endpoint) {
   if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1') {
     throw new Error('Endpoint must be an http://127.0.0.1 URL.');
   }
+  if (url.username || url.password) {
+    throw new Error('Endpoint must not include credentials.');
+  }
 
   return url.toString();
 }
