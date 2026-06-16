@@ -126,6 +126,13 @@ namespace KeePassBrowserBridge.Bridge
                 return;
             }
 
+            if (context.Request.HttpMethod == "OPTIONS" && !IsAllowedPreflightMethod(context.Request))
+            {
+                context.Response.StatusCode = 405;
+                context.Response.Close();
+                return;
+            }
+
             if (!AddCorsHeadersForAllowedOrigin(context.Request, context.Response))
             {
                 context.Response.StatusCode = 403;
@@ -211,6 +218,12 @@ namespace KeePassBrowserBridge.Bridge
             int parametersStart = contentType.IndexOf(';');
             string mediaType = parametersStart >= 0 ? contentType.Substring(0, parametersStart) : contentType;
             return string.Equals(mediaType.Trim(), "application/json", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsAllowedPreflightMethod(HttpListenerRequest request)
+        {
+            string method = request.Headers["Access-Control-Request-Method"];
+            return string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReadRequestBody(HttpListenerRequest request)
