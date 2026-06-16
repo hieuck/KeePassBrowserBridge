@@ -870,6 +870,14 @@ assert.equal(timerCalls.length, 1, 'fillable navigation should schedule auto-fil
 assert.equal(timerCalls[0].delay, 0, 'zero auto-fill delay should be honored instead of falling back to the default debounce');
 delete storage.autoFillDelay;
 
+timerCalls.length = 0;
+storage.autoFillDelay = 6000;
+sandbox.tabsUpdatedHandler(46, { status: 'complete' }, { id: 46, url: 'https://example.com/login' });
+await Promise.resolve();
+assert.equal(timerCalls.length, 1, 'fillable navigation should still schedule auto-fill when stored delay is invalid');
+assert.equal(timerCalls[0].delay, 1200, 'out-of-range auto-fill delay should fall back to the default debounce');
+delete storage.autoFillDelay;
+
 requests.length = 0;
 loginEntries = [{
   EntryId: 'entry-1',

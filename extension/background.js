@@ -7,6 +7,7 @@ const REPOSITORY_URL = 'https://github.com/hieuck/KeePassBrowserBridge';
 const RELEASES_URL = REPOSITORY_URL + '/releases';
 const LATEST_RELEASE_API_URL = 'https://api.github.com/repos/hieuck/KeePassBrowserBridge/releases/latest';
 const AUTO_FILL_DEBOUNCE_MS = 1200;
+const AUTO_FILL_MAX_DELAY_MS = 5000;
 const PAIRING_SESSION_MAX_AGE_MS = 5 * 60 * 1000;
 const PENDING_MULTI_STEP_MAX_AGE_MS = 10 * 60 * 1000;
 const PENDING_MULTI_STEP_KEY = 'kbbPendingMultiStepCredential';
@@ -1069,7 +1070,7 @@ function scheduleAutoFill(tabId, url) {
 
   chrome.storage.local.get(['autoFillDelay'], (result) => {
     const configuredDelay = Number(result && result.autoFillDelay);
-    const delay = Number.isFinite(configuredDelay) && configuredDelay >= 0
+    const delay = Number.isFinite(configuredDelay) && configuredDelay >= 0 && configuredDelay <= AUTO_FILL_MAX_DELAY_MS
       ? configuredDelay
       : AUTO_FILL_DEBOUNCE_MS;
     const timerId = setTimeout(() => {
