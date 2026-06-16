@@ -52,6 +52,7 @@ const releaseIntegrity = fs.readFileSync(new URL('../../docs/release-integrity.m
 const releaseNotesTemplate = fs.readFileSync(new URL('../../docs/release-notes-template.md', import.meta.url), 'utf8');
 const extensionRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'extension');
 const scripts = manifest.content_scripts.flatMap((entry) => entry.js || []);
+const firefoxScripts = firefoxManifest.content_scripts.flatMap((entry) => entry.js || []);
 const contentScriptEntries = manifest.content_scripts || [];
 const assemblyVersion = `${manifest.version}.0`;
 
@@ -65,6 +66,7 @@ assert.equal(scripts.includes('enhancedSecurity_part1.js'), false, 'production m
 assert.equal(scripts.includes('enhancedSecurity_part2.js'), false, 'production manifest must not inject screenshot or clipboard helpers into web pages');
 assert.equal(scripts.includes('groupOrganization.js'), false, 'production manifest must not inject popup search helpers into web pages');
 assert.equal(scripts.includes('passwordQuality.js'), false, 'production manifest must not inject password quality helpers into web pages');
+assert.equal(firefoxScripts.includes('passwordQuality.js'), false, 'Firefox production manifest must not inject unused password quality helpers into web pages');
 assert.equal(scripts.includes('passkeysProxyExperiment.js'), false, 'production manifest must not inject passkey proxy experiment into web pages');
 assert.equal(manifest.background?.service_worker === 'passkeysProxyExperiment.js', false, 'production manifest must not use passkey proxy experiment as service worker');
 assert.equal(manifest.permissions.includes('notifications'), true, 'manifest should request notifications for save/update/fill feedback');
@@ -146,6 +148,7 @@ assert.equal(updateInfo.replace(/\r\n/g, '\n'), `:\nKeePass Browser Bridge:${man
 assert.equal(releaseScript.includes('versioninfo.txt'), true, 'release script should emit the KeePass update info artifact');
 assert.equal(releaseScript.includes('$commonExtensionFiles'), true, 'release script should package extension files from an explicit production allowlist');
 assert.equal(releaseScript.includes('quick-test.js'), false, 'release script should not package development test helpers');
+assert.equal(releaseScript.includes('passwordQuality.js'), false, 'release script should not package unused password quality helpers');
 assert.equal(releaseScript.includes('passkeysProxyExperiment.js'), false, 'release script should not package passkey proxy experiment before store review');
 assert.equal(releaseScript.includes('SHA256SUMS.txt'), true, 'release script should emit checksums for release artifacts');
 assert.equal(releaseScript.includes('release-manifest.json'), true, 'release script should emit structured release provenance manifest');
@@ -161,10 +164,11 @@ assert.equal(releaseScript.includes('Release build requires a clean source tree'
 assert.equal(releaseScript.includes('[switch] $SignArtifacts'), true, 'release script should support optional detached signature generation');
 assert.equal(releaseScript.includes('Invoke-GpgDetachedSignature'), true, 'release script should create GPG detached signatures when signing is enabled');
 assert.equal(artifactVerifyScript.includes('quick-test.js'), true, 'artifact verifier should reject development test helpers in extension ZIPs');
+assert.equal(artifactVerifyScript.includes('passwordQuality.js'), true, 'artifact verifier should reject unused password quality helpers in extension ZIPs');
 assert.equal(artifactVerifyScript.includes('passkeysProxyExperiment.js'), true, 'artifact verifier should reject non-packaged passkey proxy experiments in extension ZIPs');
 assert.equal(artifactVerifyScript.includes('KeePassBrowserBridge-chrome-extension-$Version.zip'), true, 'artifact verifier should inspect Chrome extension ZIP');
 assert.equal(artifactVerifyScript.includes('KeePassBrowserBridge-firefox-extension-$Version.zip'), true, 'artifact verifier should inspect Firefox extension ZIP');
-assert.equal(artifactVerifyScript.includes('Firefox extension package is missing passwordQuality.js.'), true, 'artifact verifier should validate the Firefox-specific packaged script');
+assert.equal(artifactVerifyScript.includes('Firefox extension package is missing passwordQuality.js.'), false, 'artifact verifier should not require unused Firefox password quality helpers');
 assert.equal(artifactVerifyScript.includes('Read-ChecksumFile'), true, 'artifact verifier should parse SHA256SUMS.txt');
 assert.equal(artifactVerifyScript.includes('Assert-ReleaseManifest'), true, 'artifact verifier should validate release manifest metadata');
 assert.equal(artifactVerifyScript.includes('Get-FileHash'), true, 'artifact verifier should verify release checksums');

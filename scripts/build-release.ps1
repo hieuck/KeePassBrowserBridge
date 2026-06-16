@@ -391,9 +391,7 @@ $chromeExtensionFiles = $commonExtensionFiles + @(
     "compat.js",
     "manifest.json"
 )
-$firefoxExtensionFiles = $commonExtensionFiles + @(
-    "passwordQuality.js"
-)
+$firefoxExtensionFiles = @($commonExtensionFiles)
 
 New-ExtensionPackage -StagingDir $chromeStagingDir -DestinationPath $chromeExtensionTarget -PackageFiles $chromeExtensionFiles
 New-ExtensionPackage -StagingDir $firefoxStagingDir -DestinationPath $firefoxExtensionTarget -PackageFiles $firefoxExtensionFiles -ManifestOverride $firefoxManifestPath

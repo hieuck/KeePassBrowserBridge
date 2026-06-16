@@ -129,7 +129,6 @@ function Assert-ExtensionZip {
         if ($Browser -eq "chrome") {
             $expectedEntryNames += "compat.js"
         } elseif ($Browser -eq "firefox") {
-            $expectedEntryNames += "passwordQuality.js"
         } else {
             throw "Unknown browser package type: $Browser"
         }
@@ -148,6 +147,7 @@ function Assert-ExtensionZip {
             "enhancedSecurity_part1.js",
             "enhancedSecurity_part2.js",
             "generator.js",
+            "passwordQuality.js",
             "passkeysProxyExperiment.js"
         )
 
@@ -177,9 +177,6 @@ function Assert-ExtensionZip {
             if ($entryNames -notcontains "compat.js") {
                 throw "Chrome extension package is missing compat.js."
             }
-            if ($entryNames -contains "passwordQuality.js") {
-                throw "Chrome extension package should not contain Firefox-only passwordQuality.js."
-            }
             if (-not $manifest.background.service_worker) {
                 throw "Chrome extension manifest must use a service worker background."
             }
@@ -187,9 +184,6 @@ function Assert-ExtensionZip {
                 throw "Chrome extension package should not contain Firefox browser_specific_settings."
             }
         } elseif ($Browser -eq "firefox") {
-            if ($entryNames -notcontains "passwordQuality.js") {
-                throw "Firefox extension package is missing passwordQuality.js."
-            }
             if ($entryNames -contains "compat.js") {
                 throw "Firefox extension package should not contain Chrome-only compat.js."
             }
