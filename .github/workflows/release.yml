@@ -66,20 +66,23 @@ jobs:
           $ErrorActionPreference = "Stop"
           $keepassVersion = "${{ inputs.keepass_version }}"
           $url = "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$keepassVersion/KeePass-$keepassVersion.zip"
-          New-Item -ItemType Directory -Force -Path tools | Out-Null
-          curl.exe --location --fail --retry 5 --retry-delay 5 --output tools\KeePass.zip $url
+          $keepassRoot = Join-Path $env:RUNNER_TEMP "KeePassBrowserBridge-KeePass"
+          $zipPath = Join-Path $keepassRoot "KeePass.zip"
+          $extractPath = Join-Path $keepassRoot "KeePass"
+          New-Item -ItemType Directory -Force -Path $keepassRoot | Out-Null
+          curl.exe --location --fail --retry 5 --retry-delay 5 --output $zipPath $url
           if ($LASTEXITCODE -ne 0) {
             throw "KeePass download failed with exit code $LASTEXITCODE."
           }
-          $header = [System.IO.File]::ReadAllBytes((Resolve-Path tools\KeePass.zip))[0..1]
+          $header = [System.IO.File]::ReadAllBytes((Resolve-Path $zipPath))[0..1]
           if ($header[0] -ne 0x50 -or $header[1] -ne 0x4B) {
             throw "Downloaded KeePass file is not a ZIP archive."
           }
-          Expand-Archive -Path tools\KeePass.zip -DestinationPath tools\KeePass -Force
+          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
 
       - name: Verify
         shell: pwsh
-        run: .\scripts\verify.ps1 -KeePassExe "${{ github.workspace }}\tools\KeePass\KeePass.exe" -E2EProjects chromium,firefox
+        run: .\scripts\verify.ps1 -KeePassExe "$env:RUNNER_TEMP\KeePassBrowserBridge-KeePass\KeePass\KeePass.exe" -E2EProjects chromium,firefox
 
       - name: Import GPG signing key
         if: ${{ inputs.sign_release }}
@@ -99,7 +102,7 @@ jobs:
         shell: pwsh
         run: |
           $buildArgs = @(
-            "-KeePassExe", "${{ github.workspace }}\tools\KeePass\KeePass.exe",
+            "-KeePassExe", "$env:RUNNER_TEMP\KeePassBrowserBridge-KeePass\KeePass\KeePass.exe",
             "-ArtifactsDir", "${{ github.workspace }}\artifacts",
             "-RequireCleanSource"
           )

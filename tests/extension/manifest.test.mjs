@@ -95,10 +95,12 @@ assert.equal(ciWorkflow.includes('npm ci'), true, 'CI workflow should install pi
 assert.equal(ciWorkflow.includes('npx playwright install chromium'), true, 'CI workflow should install the Chromium browser used by E2E verification');
 assert.equal(ciWorkflow.includes('.\\scripts\\verify.ps1'), true, 'CI workflow should run the same full verifier used locally');
 assert.equal(ciWorkflow.includes('.\\scripts\\build-release.ps1'), true, 'CI workflow should build release artifacts with the release packaging script');
+assert.equal(ciWorkflow.includes('-RequireCleanSource'), true, 'CI workflow should exercise the clean-source release gate');
 assert.equal(ciWorkflow.includes('.\\scripts\\verify-release-artifacts.ps1'), true, 'CI workflow should verify release artifacts with the release artifact verifier');
 assert.equal(ciWorkflow.includes('actions/upload-artifact@v4'), true, 'CI workflow should upload the verified release artifact bundle');
 assert.equal(ciWorkflow.includes('Package browser extensions'), false, 'CI workflow should not use the obsolete manual extension packaging step');
 assert.equal(ciWorkflow.includes('KeePassBrowserBridge-chrome-extension-ci.zip'), false, 'CI workflow should not create ad hoc CI-only extension ZIP names');
+assert.equal(ciWorkflow.includes('${{ github.workspace }}\\tools'), false, 'CI workflow should keep downloaded KeePass outside the source tree before clean-source release builds');
 assert.equal(releaseWorkflow.includes('npm ci'), true, 'release workflow should install pinned Node dependencies before verifier tests');
 assert.equal(releaseWorkflow.includes('npx playwright install chromium firefox'), true, 'release workflow should install browser engines used by release-candidate E2E verification');
 assert.equal(releaseWorkflow.includes('.\\scripts\\verify.ps1'), true, 'release workflow should run the same full verifier before packaging');
@@ -116,6 +118,7 @@ assert.equal(releaseWorkflow.includes('KBB_GPG_PRIVATE_KEY'), true, 'release wor
 assert.equal(releaseWorkflow.includes('-SignArtifacts'), true, 'release workflow should sign artifacts when signing is requested');
 assert.equal(releaseWorkflow.includes('-RequireSignatures'), true, 'release workflow should verify signatures when signing is requested');
 assert.equal(releaseWorkflow.includes('-RequireCleanSource'), true, 'release workflow should require a clean source tree before publishing release artifacts');
+assert.equal(releaseWorkflow.includes('${{ github.workspace }}\\tools'), false, 'release workflow should keep downloaded KeePass outside the source tree before clean-source release builds');
 assert.equal(releaseWorkflow.includes('expected_gpg_fingerprint'), true, 'release workflow should accept an expected signing fingerprint');
 assert.equal(releaseWorkflow.includes('-ExpectedSignerFingerprint'), true, 'release workflow should pass expected signing fingerprint to artifact verifier');
 assert.equal(releaseWorkflow.includes('artifacts/*.asc'), true, 'release workflow should attach detached signatures when present');
