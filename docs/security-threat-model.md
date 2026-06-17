@@ -7,7 +7,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 | Boundary | Trusted side | Untrusted side | Current controls |
 | --- | --- | --- | --- |
 | KeePass database access | KeePass plugin process | Browser extension and web pages | Only the plugin reads/writes KeePass databases. The extension never reads `.kdbx` files or stores the master key. |
-| Local bridge | `127.0.0.1` HTTP listener | Any local process or web page able to attempt requests | Listener binds to `http://127.0.0.1:<port>/`; web origins are rejected by CORS/origin validation; bridge POSTs must be JSON and stay under the request-size cap. |
+| Local bridge | `127.0.0.1` HTTP listener | Any local process or web page able to attempt requests | Listener binds to `http://127.0.0.1:<port>/`; web origins are rejected by CORS/origin validation; bridge POSTs must be JSON, reject malformed JSON as a client error, and stay under the request-size cap. |
 | Browser client | Paired extension origin and client ID | Unpaired extensions, malicious pages, replayed requests | Pairing, origin-bound trusted clients, HMAC-SHA256, timestamp window, replayed request cache. |
 | Credential mutation | Trusted clients with write permission | Read-only or revoked clients | Permission checks for read, write, and manage-clients methods. |
 | Browser page DOM | User-selected fill target | Decoy, hidden, search, checkout, profile, reset, and sign-up fields | Form detection fixtures and E2E regression tests guard false-positive fill and save prompts. |
@@ -48,7 +48,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 - HTTP web origins are rejected before request handling.
 - CORS headers are only returned for allowed extension origins.
 - The bridge accepts only `POST /bridge` and extension-origin preflight requests.
-- `POST /bridge` requires `Content-Type: application/json` and rejects request bodies larger than 256 KiB before dispatching to pairing or credential handlers.
+- `POST /bridge` requires `Content-Type: application/json`, rejects malformed JSON with `invalid_request`, and rejects request bodies larger than 256 KiB before dispatching to pairing or credential handlers.
 - When the browser supplies an HTTP `Origin` header, that header must match the protocol request `Origin`.
 
 ### Permissions
@@ -99,7 +99,7 @@ Before public replacement release:
 1. Run `scripts/verify-security-threat-model.mjs` through `.\scripts\verify.ps1` so implemented security claims stay tied to test, source, and release-script evidence.
 2. Review bridge methods and confirm every method has the minimum required permission; keep `BridgeMethodPolicyCoversEveryBridgeMethod` and `BridgeMethodPolicyAssignsExpectedPermissions` passing.
 3. Confirm web-origin preflight and POST requests never reach pairing or credential handlers.
-4. Confirm non-JSON, oversized, and mismatched-origin bridge POSTs are rejected before request handlers run.
+4. Confirm non-JSON, malformed JSON, oversized, and mismatched-origin bridge POSTs are rejected before request handlers run.
 5. Confirm request replay tests cover authenticated methods.
 6. Confirm protected custom fields cannot appear in popup search, copy actions, focused-field fill, settings export, or logs.
 7. Confirm save/update prompts never capture sign-up, reset, profile, payment, search, or API-token forms.
