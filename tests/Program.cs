@@ -190,6 +190,7 @@ internal static class Program
         LoopbackBridgeServerRejectsUnsupportedPreflightHeaders();
         LoopbackBridgeServerRejectsWebPostOriginBeforeHandling();
         LoopbackBridgeServerRejectsNonJsonPostBeforeHandling();
+        LoopbackBridgeServerRejectsMalformedJsonBeforeHandling();
         LoopbackBridgeServerRejectsOversizedPostBeforeHandling();
         LoopbackBridgeServerRejectsMismatchedHeaderAndRequestOriginBeforeHandling();
         LoopbackBridgeServerTryStartReportsPortConflict();
@@ -3983,6 +3984,41 @@ internal static class Program
         }
     }
 
+    private static void LoopbackBridgeServerRejectsMalformedJsonBeforeHandling()
+    {
+        int port = FindFreePort();
+        int pairingPromptCount = 0;
+        BridgeRequestHandler handler = new BridgeRequestHandler(
+            new PairingService(new DeterministicSecretGenerator("123456", "shared-secret")),
+            new TrustedClientStore(),
+            new CredentialQueryService(),
+            new CredentialMutationService(),
+            delegate { return (PwDatabase)null; },
+            delegate(PairingSession session) { pairingPromptCount += 1; },
+            delegate(PwDatabase changedDatabase) { });
+
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+            byte[] bodyBytes = Encoding.UTF8.GetBytes("{");
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Content-Type: application/json\r\n" +
+                "Content-Length: " + bodyBytes.Length + "\r\n" +
+                "Connection: close\r\n\r\n",
+                bodyBytes);
+            BridgeResponse payload = BridgeJsonSerializer.Deserialize<BridgeResponse>(ExtractRawHttpBody(response.Raw));
+
+            AssertEqual(400, response.StatusCode, "malformed bridge JSON should return a client error");
+            AssertFalse(payload.Success, "malformed bridge JSON should return a failed bridge response");
+            AssertEqual("invalid_request", payload.ErrorCode, "malformed bridge JSON error code mismatch");
+            AssertEqual(0, pairingPromptCount, "malformed bridge JSON should not reach pair.begin handler");
+        }
+    }
+
     private static void LoopbackBridgeServerRejectsOversizedPostBeforeHandling()
     {
         int port = FindFreePort();
@@ -4327,7 +4363,11 @@ internal static class Program
             "Content-Length: " + bodyBytes.Length + "\r\n" +
             "Connection: close\r\n\r\n";
 
-        string raw = SendRawHttp(port, header, bodyBytes).Raw;
+        return ExtractRawHttpBody(SendRawHttp(port, header, bodyBytes).Raw);
+    }
+
+    private static string ExtractRawHttpBody(string raw)
+    {
         int bodyStart = raw.IndexOf("\r\n\r\n", StringComparison.Ordinal);
         if (bodyStart < 0) throw new Exception("HTTP response did not contain a body separator.");
         return raw.Substring(bodyStart + 4);

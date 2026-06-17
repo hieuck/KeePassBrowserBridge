@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace KeePassBrowserBridge.Bridge
@@ -195,6 +196,17 @@ namespace KeePassBrowserBridge.Bridge
                 context.Response.StatusCode = 413;
                 context.Response.Close();
                 return;
+            }
+            catch (SerializationException)
+            {
+                response = new BridgeResponse
+                {
+                    ProtocolVersion = ProtocolValidator.ProtocolVersion,
+                    Success = false,
+                    ErrorCode = "invalid_request",
+                    Error = "Bridge request JSON is invalid."
+                };
+                context.Response.StatusCode = 400;
             }
             catch (Exception ex)
             {
