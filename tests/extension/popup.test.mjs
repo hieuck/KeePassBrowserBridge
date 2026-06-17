@@ -497,6 +497,15 @@ assert.equal(elements.message.textContent, 'Copied Password to clipboard.', 'cop
 delete storageState.clipboardClearDelay;
 
 queryLoginsResponse = { url: 'https://login.example.com/signin', entries: [] };
+storageState.siteOverrides = [{ host: 'https://login.example.com/signin', autoFillEnabled: false, autoSubmitEnabled: true }];
+await sandbox.toggleSiteAutoFill();
+assert.deepEqual(
+  plainJson(storageState.siteOverrides),
+  [],
+  'URL-shaped exact site auto-fill override should normalize before toggling the current host'
+);
+assert.equal(elements.message.textContent, 'Auto-fill enabled for login.example.com.', 'URL-shaped exact site override should report the normalized current host');
+
 storageState.siteOverrides = [{ host: 'example.com', autoFillEnabled: false, autoSubmitEnabled: true }];
 await sandbox.toggleSiteAutoFill();
 assert.deepEqual(

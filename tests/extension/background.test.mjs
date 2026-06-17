@@ -971,6 +971,14 @@ assert.equal(autofillMessage, null, 'parent-domain site override should not send
 
 requests.length = 0;
 badgeCalls.length = 0;
+autofillMessage = null;
+storage.siteOverrides = [{ host: 'https://Example.com/login', autoFillEnabled: false, autoSubmitEnabled: true }];
+await sandbox.autoFillTab(106, 'https://example.com/login');
+assert.equal(requests.some((request) => request.Method === 'logins.query'), false, 'URL-shaped site override should disable auto-fill after normalizing host');
+assert.equal(autofillMessage, null, 'URL-shaped site override should not send a fill message');
+
+requests.length = 0;
+badgeCalls.length = 0;
 await sandbox.autoFillTab(104, 'https://evil-example.com/login');
 assert.equal(requests.some((request) => request.Method === 'logins.query'), true, 'parent-domain site override should not match unrelated hosts with the same suffix');
 

@@ -940,7 +940,21 @@ function normalizeHostFromUrl(url) {
 }
 
 function normalizeHost(host) {
-  return String(host || '').trim().toLowerCase().replace(/^\.+|\.+$/g, '');
+  const trimmed = String(host || '').trim().toLowerCase();
+  if (!trimmed) {
+    return '';
+  }
+
+  let normalizedHost;
+  try {
+    const parsed = trimmed.includes('://') ? new URL(trimmed) : new URL(`https://${trimmed}`);
+    normalizedHost = parsed.hostname;
+  } catch (error) {
+    normalizedHost = trimmed;
+  }
+
+  normalizedHost = normalizedHost.replace(/^\.+|\.+$/g, '');
+  return isValidSiteOverrideHost(normalizedHost) ? normalizedHost : '';
 }
 
 function hostMatchesSiteOverride(host, ruleHost) {
@@ -951,6 +965,28 @@ function hostMatchesSiteOverride(host, ruleHost) {
   }
 
   return normalizedHost === normalizedRuleHost || normalizedHost.endsWith(`.${normalizedRuleHost}`);
+}
+
+function isValidSiteOverrideHost(host) {
+  if (!host) {
+    return false;
+  }
+
+  if (host === 'localhost') {
+    return true;
+  }
+
+  const octets = host.split('.');
+  if (octets.length === 4 && octets.every((part) => /^\d+$/.test(part))) {
+    return octets.every((part) => {
+      const value = Number.parseInt(part, 10);
+      return value >= 0 && value <= 255 && String(value) === part;
+    });
+  }
+
+  return octets.every((label) =>
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)
+  );
 }
 
 function normalizeWebOrigin(origin) {
