@@ -105,6 +105,10 @@ assert.equal(releaseWorkflow.includes('npm ci'), true, 'release workflow should 
 assert.equal(releaseWorkflow.includes('npx playwright install chromium firefox'), true, 'release workflow should install browser engines used by release-candidate E2E verification');
 assert.equal(releaseWorkflow.includes('.\\scripts\\verify.ps1'), true, 'release workflow should run the same full verifier before packaging');
 assert.equal(releaseWorkflow.includes('-E2EProjects chromium,firefox'), true, 'release workflow should run Chromium and Firefox E2E verification before packaging');
+assert.equal(releaseWorkflow.includes('Validate release version'), true, 'release workflow should validate the requested release version before packaging');
+assert.equal(releaseWorkflow.includes('extension\\manifest.json'), true, 'release workflow should compare the requested release version with the source manifest version');
+assert.equal(releaseWorkflow.includes('Release version must use x.y.z format.'), true, 'release workflow should reject malformed release version inputs before publishing');
+assert.equal(releaseWorkflow.includes('does not match extension/manifest.json'), true, 'release workflow should reject version inputs that do not match source metadata');
 assert.equal(releaseWorkflow.includes('contents: write'), true, 'release workflow should be allowed to publish GitHub Releases');
 assert.equal(releaseWorkflow.includes('softprops/action-gh-release@v2'), true, 'release workflow should publish a GitHub Release for plugin auto-update');
 assert.equal(releaseWorkflow.includes('verify-release-artifacts.ps1'), true, 'release workflow should verify release artifacts before publishing');
