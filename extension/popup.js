@@ -645,16 +645,22 @@ async function createLogin(form) {
     throw new Error(result && result.Error ? result.Error : 'KeePass entry could not be created.');
   }
 
-  const entry = result.Entry || {
-    Title: login.title,
-    Group: login.group,
-    Url: login.url,
-    UserName: login.userName,
-    Password: login.password
-  };
+  const entry = mergeCreatedEntry(login, result.Entry);
   currentEntries = sortCredentialEntries([entry].concat(currentEntries || []));
   await renderResults(currentEntries);
   setMessage('Entry created.');
+}
+
+function mergeCreatedEntry(login, resultEntry) {
+  const entry = resultEntry || {};
+  return Object.assign({}, entry, {
+    Title: entry.Title || login.title,
+    Group: entry.Group || login.group,
+    Url: entry.Url || login.url,
+    UserName: entry.UserName || login.userName,
+    Password: login.password,
+    CustomFields: entry.CustomFields || []
+  });
 }
 
 function addOptionalSecret(payload, name, value) {

@@ -109,10 +109,13 @@ requireEvery('loopbackServer', [
   'MaxRequestBodyBytes',
   'Access-Control-Allow-Origin'
 ], 'loopback bridge should enforce JSON, request size, and extension CORS controls');
-requireIncludes('testsProgram', 'CredentialMutationFillAckDoesNotReturnPassword',
-  'fill acknowledgements should have backend coverage for password minimization');
-requireIncludes('securityThreatModel', 'Fill acknowledgements return metadata without passwords',
-  'security threat model should document fill acknowledgement password minimization');
+requireEvery('testsProgram', [
+  'CredentialMutationCreateDoesNotReturnPassword',
+  'CredentialMutationUpdateDoesNotReturnPassword',
+  'CredentialMutationFillAckDoesNotReturnPassword'
+], 'mutation acknowledgements should have backend coverage for password minimization');
+requireIncludes('securityThreatModel', 'Create, update, and fill acknowledgements return metadata without passwords',
+  'security threat model should document mutation acknowledgement password minimization');
 
 requireEvery('testsProgram', [
   'BridgeHandlerRejectsReplayedAuthenticatedRequestId',

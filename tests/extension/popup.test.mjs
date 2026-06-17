@@ -496,6 +496,28 @@ assert.equal(
 assert.equal(elements.message.textContent, 'Copied Password to clipboard.', 'copy action should confirm the copied label');
 delete storageState.clipboardClearDelay;
 
+const createdEntryWithoutReturnedPassword = sandbox.mergeCreatedEntry({
+  title: 'Form Title',
+  group: 'Accounts/Work',
+  url: 'https://example.com/login',
+  userName: 'form-user',
+  password: 'local-secret'
+}, {
+  EntryId: 'entry-created',
+  Title: 'Created Title',
+  Group: 'Accounts/Work',
+  Url: 'https://example.com/login',
+  UserName: 'created-user',
+  CustomFields: []
+});
+assert.equal(
+  createdEntryWithoutReturnedPassword.Password,
+  'local-secret',
+  'created popup entry should keep the local password when bridge acknowledgement omits it'
+);
+assert.equal(createdEntryWithoutReturnedPassword.EntryId, 'entry-created', 'created popup entry should keep bridge metadata');
+assert.equal(createdEntryWithoutReturnedPassword.UserName, 'created-user', 'created popup entry should prefer bridge metadata');
+
 queryLoginsResponse = { url: 'https://login.example.com/signin', entries: [] };
 storageState.siteOverrides = [{ host: 'https://login.example.com/signin', autoFillEnabled: false, autoSubmitEnabled: true }];
 await sandbox.toggleSiteAutoFill();

@@ -112,10 +112,12 @@ internal static class Program
         CredentialQueryRejectsUnrelatedDomain();
         CredentialQueryRejectsClosedDatabase();
         CredentialMutationCreatesEntryInDatabase();
+        CredentialMutationCreateDoesNotReturnPassword();
         CredentialMutationCreatesEntryInRequestedGroup();
         CredentialMutationCreatesEntryWithTotpSecret();
         CredentialMutationCreatesEntryWithCustomField();
         CredentialMutationUpdatesExistingEntryPassword();
+        CredentialMutationUpdateDoesNotReturnPassword();
         CredentialMutationAcceptsPageUrlFromAdditionalUrlField();
         CredentialMutationUpdatesExistingEntryFields();
         CredentialMutationUpdatesExistingEntryCustomField();
@@ -1984,9 +1986,27 @@ internal static class Program
         AssertTrue(result.Success, "credential create should succeed: " + result.Error);
         AssertTrue(database.Modified, "database should be marked modified after create");
         AssertEqual(1, (int)database.RootGroup.Entries.UCount, "root group should contain created entry");
+        PwEntry entry = database.RootGroup.Entries.GetAt(0);
+        AssertEqual("secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "created entry password should be stored");
         AssertEqual("example.com", result.Entry.Title, "default title should use host");
         AssertEqual("alice", result.Entry.UserName, "created username mismatch");
-        AssertEqual("secret", result.Entry.Password, "created password mismatch");
+    }
+
+    private static void CredentialMutationCreateDoesNotReturnPassword()
+    {
+        PwDatabase database = CreateDatabase();
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Create(database, new CreateLoginPayload
+        {
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "secret"
+        });
+
+        AssertTrue(result.Success, "credential create should succeed: " + result.Error);
+        AssertTrue(result.Entry != null, "create acknowledgement should return entry metadata");
+        AssertEqual(string.Empty, result.Entry.Password ?? string.Empty, "create acknowledgement should not return entry password");
     }
 
     private static void CredentialMutationCreatesEntryInRequestedGroup()
@@ -2077,7 +2097,25 @@ internal static class Program
         AssertTrue(database.Modified, "database should be marked modified after update");
         AssertEqual(1, (int)database.RootGroup.Entries.UCount, "update should not create a new entry");
         AssertEqual("new-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "entry password should be updated");
-        AssertEqual("new-secret", result.Entry.Password, "updated result password mismatch");
+    }
+
+    private static void CredentialMutationUpdateDoesNotReturnPassword()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.Update(database, new UpdateLoginPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Url = "https://example.com/login",
+            UserName = "alice",
+            Password = "new-secret"
+        });
+
+        AssertTrue(result.Success, "credential update should succeed: " + result.Error);
+        AssertTrue(result.Entry != null, "update acknowledgement should return entry metadata");
+        AssertEqual(string.Empty, result.Entry.Password ?? string.Empty, "update acknowledgement should not return entry password");
     }
 
     private static void CredentialMutationAcceptsPageUrlFromAdditionalUrlField()

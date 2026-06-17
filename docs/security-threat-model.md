@@ -66,7 +66,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 
 - The bridge returns matching entries, not the whole database.
 - Protected custom field values are redacted before being exposed to popup search, copy, or focused-field fill.
-- Fill acknowledgements return metadata without passwords after updating usage timestamps.
+- Create, update, and fill acknowledgements return metadata without passwords after mutating or touching entries.
 - Settings export excludes client IDs, shared secrets, and pairing sessions.
 - Additional URL fields are used for matching but are not exposed as custom fields.
 

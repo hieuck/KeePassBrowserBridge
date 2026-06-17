@@ -43,7 +43,6 @@ namespace KeePassBrowserBridge.Bridge
                 UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
                 Url = entry.Strings.ReadSafe(PwDefs.UrlField),
                 Group = groupPath,
-                Password = payload.Password ?? string.Empty,
                 CustomFields = ExtractResultCustomFields(payload.CustomFields)
             });
         }
@@ -124,7 +123,6 @@ namespace KeePassBrowserBridge.Bridge
                 UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
                 Url = entry.Strings.ReadSafe(PwDefs.UrlField),
                 Group = groupPath,
-                Password = entry.Strings.ReadSafe(PwDefs.PasswordField),
                 CustomFields = ExtractResultCustomFields(payload.CustomFields)
             });
         }
