@@ -288,6 +288,10 @@ namespace KeePassBrowserBridge.Bridge
         private static bool AddCorsHeadersForAllowedOrigin(HttpListenerRequest request, HttpListenerResponse response)
         {
             string origin = request.Headers["Origin"];
+            if (string.IsNullOrWhiteSpace(origin) &&
+                string.Equals(request.HttpMethod, "OPTIONS", StringComparison.OrdinalIgnoreCase))
+                return false;
+
             if (!string.IsNullOrWhiteSpace(origin))
             {
                 if (!ProtocolValidator.IsAllowedExtensionOrigin(origin)) return false;

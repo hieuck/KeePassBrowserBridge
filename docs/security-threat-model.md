@@ -48,6 +48,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 - HTTP web origins are rejected before request handling.
 - CORS headers are only returned for allowed extension origins.
 - The bridge accepts only `POST /bridge` and extension-origin preflight requests.
+- CORS preflight requests must include a valid extension `Origin`; missing-origin preflights are rejected before CORS headers are added.
 - `POST /bridge` requires `Content-Type: application/json`, rejects malformed JSON with `invalid_request`, and rejects request bodies larger than 256 KiB before dispatching to pairing or credential handlers.
 - When the browser supplies an HTTP `Origin` header, that header must match the protocol request `Origin`.
 
@@ -98,7 +99,7 @@ Before public replacement release:
 
 1. Run `scripts/verify-security-threat-model.mjs` through `.\scripts\verify.ps1` so implemented security claims stay tied to test, source, and release-script evidence.
 2. Review bridge methods and confirm every method has the minimum required permission; keep `BridgeMethodPolicyCoversEveryBridgeMethod` and `BridgeMethodPolicyAssignsExpectedPermissions` passing.
-3. Confirm web-origin preflight and POST requests never reach pairing or credential handlers.
+3. Confirm web-origin, missing-origin preflight, and web-origin POST requests never reach pairing or credential handlers.
 4. Confirm non-JSON, malformed JSON, oversized, and mismatched-origin bridge POSTs are rejected before request handlers run.
 5. Confirm request replay tests cover authenticated methods.
 6. Confirm protected custom fields cannot appear in popup search, copy actions, focused-field fill, settings export, or logs.

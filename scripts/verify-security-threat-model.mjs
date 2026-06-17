@@ -92,6 +92,7 @@ requireEvery('bridgeMethodPolicy', [
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',
+  'LoopbackBridgeServerRejectsPreflightWithoutOrigin',
   'LoopbackBridgeServerRejectsWebPostOriginBeforeHandling',
   'LoopbackBridgeServerRejectsNonJsonPostBeforeHandling',
   'LoopbackBridgeServerRejectsMalformedJsonBeforeHandling',
@@ -100,6 +101,8 @@ requireEvery('testsProgram', [
 ], 'loopback bridge rejection paths should be covered by backend tests');
 requireIncludes('securityThreatModel', 'malformed JSON',
   'security threat model should document malformed bridge JSON rejection');
+requireIncludes('securityThreatModel', 'missing-origin preflights',
+  'security threat model should document originless preflight rejection');
 requireEvery('loopbackServer', [
   'Content-Type',
   'application/json',

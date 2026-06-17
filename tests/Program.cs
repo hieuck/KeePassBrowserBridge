@@ -184,6 +184,7 @@ internal static class Program
         BridgeHandlerUpdatesUsageAfterFillAck();
         LoopbackBridgeServerRespondsToHello();
         LoopbackBridgeServerRejectsWebPreflightOrigin();
+        LoopbackBridgeServerRejectsPreflightWithoutOrigin();
         LoopbackBridgeServerAllowsExtensionPreflightOrigin();
         LoopbackBridgeServerRejectsExtensionPreflightForWrongPath();
         LoopbackBridgeServerRejectsUnsupportedPreflightMethod();
@@ -3815,6 +3816,26 @@ internal static class Program
             AssertEqual(403, response.StatusCode, "web preflight should be rejected");
             AssertFalse(response.Headers.ContainsKey("Access-Control-Allow-Origin"),
                 "rejected web preflight should not include an allow-origin header");
+        }
+    }
+
+    private static void LoopbackBridgeServerRejectsPreflightWithoutOrigin()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+
+            RawHttpResponse response = SendRawHttp(port,
+                "OPTIONS /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Access-Control-Request-Method: POST\r\n" +
+                "Connection: close\r\n\r\n");
+
+            AssertEqual(403, response.StatusCode, "preflight without Origin should be rejected");
+            AssertFalse(response.Headers.ContainsKey("Access-Control-Allow-Origin"),
+                "preflight without Origin should not include an allow-origin header");
         }
     }
 
