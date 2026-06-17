@@ -155,8 +155,7 @@ namespace KeePassBrowserBridge.Bridge
                 EntryId = entry.Uuid.ToHexString(),
                 Title = entry.Strings.ReadSafe(PwDefs.TitleField),
                 UserName = entry.Strings.ReadSafe(PwDefs.UserNameField),
-                Url = entry.Strings.ReadSafe(PwDefs.UrlField),
-                Password = entry.Strings.ReadSafe(PwDefs.PasswordField)
+                Url = entry.Strings.ReadSafe(PwDefs.UrlField)
             });
         }
 

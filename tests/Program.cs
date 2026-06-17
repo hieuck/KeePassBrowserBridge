@@ -124,6 +124,7 @@ internal static class Program
         CredentialMutationMovesExistingEntryToRootWhenGroupIsBlank();
         CredentialMutationUpdatesExistingEntryTotpSecret();
         CredentialMutationClearsExistingEntryTotpSecret();
+        CredentialMutationFillAckDoesNotReturnPassword();
         BridgeHandlerHelloDoesNotRequireAuthentication();
         BridgeHandlerRejectsBadHmacForTrustedMethod();
         BridgeHandlerAcceptsValidHmacForClientStatus();
@@ -2249,6 +2250,24 @@ internal static class Program
 
         AssertTrue(result.Success, "credential update should clear TOTP secret: " + result.Error);
         AssertEqual(string.Empty, entry.Strings.ReadSafe("otp"), "updated entry should remove TOTP secret");
+    }
+
+    private static void CredentialMutationFillAckDoesNotReturnPassword()
+    {
+        PwEntry entry = CreateEntry("Example", "alice", "old-secret", "https://example.com/login");
+        PwDatabase database = CreateDatabase(entry);
+        CredentialMutationService service = new CredentialMutationService();
+
+        CredentialMutationResult result = service.AcknowledgeFill(database, new FillAckPayload
+        {
+            EntryId = entry.Uuid.ToHexString(),
+            Url = "https://example.com/login"
+        });
+
+        AssertTrue(result.Success, "fill acknowledgement should succeed: " + result.Error);
+        AssertTrue(result.Entry != null, "fill acknowledgement should return entry metadata");
+        AssertEqual("old-secret", entry.Strings.ReadSafe(PwDefs.PasswordField), "fill acknowledgement should not mutate the stored password");
+        AssertEqual(string.Empty, result.Entry.Password ?? string.Empty, "fill acknowledgement should not return entry password");
     }
 
     private static void BridgeHandlerHelloDoesNotRequireAuthentication()
