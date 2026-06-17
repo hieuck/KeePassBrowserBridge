@@ -783,6 +783,9 @@ function renderState(state) {
   renderStateNotice(state, pairingActive);
   syncCredentialActionAvailability();
   syncPairingCodeState();
+  if (!credentialActionsEnabled()) {
+    clearRenderedCredentials();
+  }
   if (pairingActive) {
     elements.pairingCode.focus();
   }
@@ -876,6 +879,14 @@ function ensureManageClientActionsEnabled() {
   if (!manageClientActionsEnabled()) {
     throw new Error('Manage browser permission is required to manage trusted browsers.');
   }
+}
+
+function clearRenderedCredentials() {
+  currentEntries = [];
+  visibleEntries = [];
+  elements.loginSearch.value = '';
+  elements.loginSearch.classList.add('hidden');
+  elements.results.textContent = '';
 }
 
 function hasClientPermission(permission) {

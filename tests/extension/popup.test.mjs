@@ -35,12 +35,23 @@ class Element {
     this.value = '';
     this.checked = false;
     this.disabled = false;
-    this.textContent = '';
+    this._textContent = '';
     this.href = '';
     this.children = [];
     this.innerHTML = '';
     this.classList = new ClassList();
     this.listeners = new Map();
+  }
+
+  get textContent() {
+    return this._textContent;
+  }
+
+  set textContent(value) {
+    this._textContent = String(value ?? '');
+    if (this._textContent === '') {
+      this.children = [];
+    }
   }
 
   addEventListener(type, handler) {
@@ -596,10 +607,8 @@ assert.equal(lockedEnterEvent.defaultPrevented, false, 'locked popup should not 
 assert.equal(sentMessages.some((message) => message.type === 'KBB_FILL_LOGIN'), false, 'locked popup should not fill stale rendered results from keyboard shortcuts');
 
 const staleFillButton = findChildByText(elements.results, '✓ Fill');
-assert.notEqual(staleFillButton, null, 'test should find the stale rendered fill button');
+assert.equal(staleFillButton, null, 'locked popup should clear stale rendered fill buttons');
 sentMessages.length = 0;
-staleFillButton.click();
-await flushAsync();
 assert.equal(sentMessages.some((message) => message.type === 'KBB_FILL_LOGIN'), false, 'locked popup should not fill stale rendered results from old buttons');
 
 console.log('Popup tests passed.');

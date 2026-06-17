@@ -21,6 +21,7 @@ const sources = {
   extensionLoadTests: read('tests/e2e/extension-load.spec.js'),
   optionsPageTests: read('tests/e2e/options-page.spec.js'),
   optionsTests: read('tests/extension/options.test.mjs'),
+  popupTests: read('tests/extension/popup.test.mjs'),
   realSiteValidation: read('docs/real-site-validation.md'),
   bridgeMethodPolicy: read('src/Bridge/BridgeMethodPolicy.cs'),
   bridgeRequestHandler: read('src/Bridge/BridgeRequestHandler.cs'),
@@ -127,6 +128,14 @@ requireEvery('backgroundTests', [
 ], 'background tests should cover locked and unpaired runtime-secret cleanup');
 requireIncludes('securityThreatModel', 'Locked or unpaired credential access clears pending runtime credentials',
   'security threat model should document locked and unpaired runtime-secret cleanup');
+requireEvery('popup', [
+  'clearRenderedCredentials',
+  'if (!credentialActionsEnabled())'
+], 'popup should clear rendered credentials when credential access is unavailable');
+requireIncludes('popupTests', 'locked popup should clear stale rendered fill buttons',
+  'popup tests should cover clearing stale rendered credential actions after lock');
+requireIncludes('securityThreatModel', 'The popup clears rendered credential results when credential access becomes locked or unpaired',
+  'security threat model should document stale popup credential cleanup');
 
 requireEvery('testsProgram', [
   'BridgeHandlerRejectsReplayedAuthenticatedRequestId',
