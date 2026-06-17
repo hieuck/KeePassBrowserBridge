@@ -116,6 +116,17 @@ requireEvery('testsProgram', [
 ], 'mutation acknowledgements should have backend coverage for password minimization');
 requireIncludes('securityThreatModel', 'Create, update, and fill acknowledgements return metadata without passwords',
   'security threat model should document mutation acknowledgement password minimization');
+requireEvery('background', [
+  "clearSensitiveRuntimeState('locked-access')",
+  "clearSensitiveRuntimeState('unpaired-access')"
+], 'background guard should clear sensitive runtime state before locked or unpaired denials');
+requireEvery('backgroundTests', [
+  'locked pending consume should clear stale multi-step credentials',
+  'unpaired submitted consume should clear stale submitted credentials',
+  'locked extension should clear clipboard state before rejecting credential access'
+], 'background tests should cover locked and unpaired runtime-secret cleanup');
+requireIncludes('securityThreatModel', 'Locked or unpaired credential access clears pending runtime credentials',
+  'security threat model should document locked and unpaired runtime-secret cleanup');
 
 requireEvery('testsProgram', [
   'BridgeHandlerRejectsReplayedAuthenticatedRequestId',

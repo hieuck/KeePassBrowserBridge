@@ -828,6 +828,7 @@ async function assertUnlocked() {
   const state = await storageGet(['locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
   await applyAutoLock(state);
   if (state.locked === true) {
+    await clearSensitiveRuntimeState('locked-access');
     throw new Error('KeePass Bridge is locked.');
   }
 }
@@ -836,6 +837,7 @@ async function assertCanAccessCredentials() {
   await assertUnlocked();
   const state = await storageGet(['clientId', 'sharedSecret']);
   if (!state.clientId || !state.sharedSecret) {
+    await clearSensitiveRuntimeState('unpaired-access');
     throw new Error('Pair this browser with KeePass first.');
   }
 }

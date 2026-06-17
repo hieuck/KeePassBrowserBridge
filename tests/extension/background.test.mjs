@@ -595,7 +595,8 @@ await assert.rejects(
   /locked/i,
   'locked extension should reject direct clipboard copy requests'
 );
-assert.equal(clipboardWrites.length, 0, 'locked extension should not write copied secrets to the clipboard');
+assert.equal(clipboardWrites.includes('locked-copy-secret'), false, 'locked extension should not write copied secrets to the clipboard');
+assert.equal(clipboardWrites.at(-1), '', 'locked extension should clear clipboard state before rejecting credential access');
 let lockState = await sandbox.handleMessage({ type: 'KBB_SET_LOCKED', locked: false });
 assert.equal(lockState.locked, false, 'unlock message should clear lock state');
 assert.equal(storage.locked, false, 'unlock message should persist lock state');
@@ -739,6 +740,15 @@ extensionSessionStorage.kbbPendingMultiStepCredential = {
   },
   savedAt: now
 };
+extensionSessionStorage.kbbPendingSubmittedCredential = {
+  origin: 'https://example.com',
+  credential: {
+    url: 'https://example.com/login',
+    userName: 'locked-submitted-consume@example.com',
+    password: 'locked-submitted-consume-secret'
+  },
+  savedAt: now
+};
 await assert.rejects(
   () => sandbox.handleMessage({
     type: 'KBB_CONSUME_PENDING_CREDENTIAL',
@@ -747,12 +757,8 @@ await assert.rejects(
   /locked/i,
   'locked extension should reject pending credential consume'
 );
-assert.equal(
-  extensionSessionStorage.kbbPendingMultiStepCredential.credential.Password,
-  'locked-consume-secret',
-  'locked pending consume should not remove the stored credential'
-);
-delete extensionSessionStorage.kbbPendingMultiStepCredential;
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'locked pending consume should clear stale multi-step credentials');
+assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'locked pending consume should clear stale submitted credentials');
 
 storage.locked = false;
 delete storage.clientId;
@@ -788,12 +794,7 @@ await assert.rejects(
   /Pair this browser with KeePass first\./,
   'unpaired extension should reject submitted credential consume'
 );
-assert.equal(
-  extensionSessionStorage.kbbPendingSubmittedCredential.credential.password,
-  'unpaired-consume-secret',
-  'unpaired submitted consume should not remove the stored credential'
-);
-delete extensionSessionStorage.kbbPendingSubmittedCredential;
+assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'unpaired submitted consume should clear stale submitted credentials');
 
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
