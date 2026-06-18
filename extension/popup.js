@@ -266,14 +266,19 @@ async function toggleLocked() {
 
 async function listClients() {
   ensureManageClientActionsEnabled();
-  await refreshAboutMetadata();
-  const result = await send({ type: 'KBB_LIST_CLIENTS' });
-  trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
-  renderClients(trustedBrowserClients);
-  elements.clientsPanel.classList.remove('hidden');
-  setMessage(result.Clients && result.Clients.length
-    ? `${result.Clients.length} trusted browser(s).`
-    : 'No trusted browsers found.');
+  try {
+    await refreshAboutMetadata();
+    const result = await send({ type: 'KBB_LIST_CLIENTS' });
+    trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
+    renderClients(trustedBrowserClients);
+    elements.clientsPanel.classList.remove('hidden');
+    setMessage(result.Clients && result.Clients.length
+      ? `${result.Clients.length} trusted browser(s).`
+      : 'No trusted browsers found.');
+  } catch (error) {
+    await failClosedManageClientAccess(error);
+    throw error;
+  }
 }
 
 async function revokeClient(client) {
@@ -894,6 +899,21 @@ function ensureManageClientActionsEnabled() {
   if (!manageClientActionsEnabled()) {
     throw new Error('Manage browser permission is required to manage trusted browsers.');
   }
+}
+
+async function failClosedManageClientAccess(error) {
+  const message = error && error.message ? error.message : String(error || '');
+  if (!/permission|not allowed/i.test(message)) {
+    return;
+  }
+
+  const hydrated = await hydrateStatePermissions(currentState);
+  const permissions = normalizeClientPermissions(hydrated && hydrated.permissions)
+    .filter((permission) => permission !== 'manageClients');
+  renderState({
+    ...hydrated,
+    permissions
+  });
 }
 
 function clearRenderedCredentials() {

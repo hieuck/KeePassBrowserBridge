@@ -167,6 +167,7 @@ let saveEndpointResponse = null;
 let setLockedResponse = null;
 let pairCancelResponse = null;
 let trustedClientsResponse = [];
+let listClientsError = null;
 const storageState = {};
 
 function pickStorageValues(keys) {
@@ -285,6 +286,9 @@ const sandbox = {
         }
 
         if (message.type === 'KBB_LIST_CLIENTS') {
+          if (listClientsError) {
+            return { ok: false, error: listClientsError };
+          }
           return { ok: true, response: { Clients: trustedClientsResponse } };
         }
 
@@ -649,6 +653,42 @@ assert.equal(popupWritePermissionCheckbox.disabled, true, 'self-removing manage 
 assert.equal(popupRevokeCurrentButton.disabled, true, 'self-removing manage permission should disable popup revoke controls');
 assert.equal(elements.message.textContent, 'Browser permissions updated. Manage browsers permission was removed for this browser.',
   'self-removing manage permission should explain popup management is no longer available');
+listClientsError = null;
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  permissions: ['read', 'write', 'manageClients'],
+  autoFillEnabled: false
+});
+trustedClientsResponse = [{
+  ClientId: 'client-stale',
+  ClientName: 'Stale Browser',
+  ExtensionOrigin: 'chrome-extension://stale',
+  Current: false,
+  CreatedUtcMs: fakeNow,
+  LastUsedUtcMs: fakeNow,
+  Permissions: ['read']
+}];
+await sandbox.listClients();
+assert.equal(elements.clientsPanel.classList.contains('hidden'), false, 'test should leave stale trusted browser rows visible before permission loss');
+statusResponse = { Trusted: true, Permissions: ['read', 'write'] };
+listClientsError = 'Trusted browser is not allowed to perform this action.';
+sentMessages.length = 0;
+await assert.rejects(
+  () => sandbox.listClients(),
+  /not allowed/,
+  'trusted browser list should surface backend permission failures'
+);
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_GET_ABOUT', 'KBB_LIST_CLIENTS', 'KBB_STATUS'],
+  'permission-denied trusted browser list should refresh current permissions'
+);
+assert.equal(elements.listClients.disabled, true, 'permission-denied trusted browser list should disable management');
+assert.equal(elements.clientsPanel.classList.contains('hidden'), true, 'permission-denied trusted browser list should hide stale clients');
+assert.equal(elements.clientsPanel.children.length, 0, 'permission-denied trusted browser list should clear stale client rows');
+listClientsError = null;
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',

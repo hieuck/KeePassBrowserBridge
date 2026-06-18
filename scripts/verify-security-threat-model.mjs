@@ -124,6 +124,8 @@ requireIncludes('securityThreatModel', 'Popup state-changing refreshes hydrate t
   'security threat model should document permission hydration before popup state rendering');
 requireEvery('popup', [
   'currentClientLostManage',
+  'failClosedManageClientAccess',
+  '/permission|not allowed/i.test(message)',
   "stored.Current",
   "currentClientLostManage = !stored.Permissions.includes('manageClients')",
   'Manage browsers permission was removed for this browser'
@@ -131,7 +133,9 @@ requireEvery('popup', [
 requireEvery('popupTests', [
   'self-removing manage permission should disable popup permission controls',
   'self-removing manage permission should disable popup revoke controls',
-  'self-removing manage permission should explain popup management is no longer available'
+  'self-removing manage permission should explain popup management is no longer available',
+  'permission-denied trusted browser list should refresh current permissions',
+  'permission-denied trusted browser list should clear stale client rows'
 ], 'popup tests should cover self-removing manage permission UI lockout');
 requireEvery('options', [
   'trustedBrowserManagementEnabled',
@@ -150,6 +154,8 @@ requireEvery('optionsTests', [
 ], 'options tests should cover self-removing manage permission UI lockout');
 requireIncludes('securityThreatModel', 'Popup and Options trusted-browser controls disable themselves',
   'security threat model should document manage-permission UI lockout');
+requireIncludes('securityThreatModel', 'Popup trusted-browser management fails closed on backend permission-denied responses',
+  'security threat model should document popup backend permission-denied lockout');
 requireIncludes('securityThreatModel', 'The Options page clears trusted-browser rows locally after revoking the current browser',
   'security threat model should document options current-client revoke cleanup');
 
