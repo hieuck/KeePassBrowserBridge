@@ -97,6 +97,8 @@ requireEvery('popup', [
   'const hydratedState = await hydrateStatePermissions(state)',
   'renderState(hydratedState)'
 ], 'popup write actions should be guarded by trusted-client write permission');
+requireCountAtLeast('popup', 'renderState(await hydrateStatePermissions(state))', 5,
+  'popup state-changing actions should hydrate trusted-client permissions before rendering controls');
 requireEvery('popupTests', [
   'read-only state should disable create action',
   'read-only rendered entries should disable edit buttons',
@@ -108,11 +110,15 @@ requireEvery('popupTests', [
   'auto-fill toggle should hydrate permissions before rendering read-only controls',
   'read-only auto-fill toggle should keep create action disabled',
   'auto-submit toggle should hydrate permissions before rendering read-only controls',
-  'read-only auto-submit toggle should keep trusted browser management disabled'
+  'read-only auto-submit toggle should keep trusted browser management disabled',
+  'endpoint save should hydrate permissions before rendering read-only controls',
+  'read-only endpoint save should keep create action disabled',
+  'unlock should hydrate permissions before rendering read-only controls',
+  'read-only unlock should keep trusted browser management disabled'
 ], 'popup tests should cover read-only create and edit restrictions');
 requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/edit controls',
   'security threat model should document read-only popup write restrictions');
-requireIncludes('securityThreatModel', 'Popup credential query and preference-toggle refreshes hydrate trusted-client permissions',
+requireIncludes('securityThreatModel', 'Popup state-changing refreshes hydrate trusted-client permissions',
   'security threat model should document permission hydration before popup state rendering');
 
 requireEvery('testsProgram', [

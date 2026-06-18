@@ -163,6 +163,8 @@ let clipboardText = 'code: 955-963';
 let queryLoginsResponse = { url: '', entries: [] };
 let getStateResponse = {};
 let statusResponse = { Trusted: true, Permissions: ['read', 'write', 'manageClients'] };
+let saveEndpointResponse = null;
+let setLockedResponse = null;
 const storageState = {};
 
 function pickStorageValues(keys) {
@@ -309,9 +311,23 @@ const sandbox = {
         if (message.type === 'KBB_SAVE_ENDPOINT') {
           return {
             ok: true,
-            response: {
+            response: saveEndpointResponse || {
               endpoint: message.endpoint,
               paired: false,
+              pairingSessionId: '',
+              pairingExpiresAt: 0,
+              autoFillEnabled: false
+            }
+          };
+        }
+
+        if (message.type === 'KBB_SET_LOCKED') {
+          return {
+            ok: true,
+            response: setLockedResponse || {
+              endpoint: 'http://127.0.0.1:19455/bridge',
+              paired: true,
+              locked: message.locked === true,
               pairingSessionId: '',
               pairingExpiresAt: 0,
               autoFillEnabled: false
@@ -641,6 +657,51 @@ assert.deepEqual(
 );
 assert.equal(elements.newLogin.disabled, true, 'read-only auto-submit toggle should keep create action disabled');
 assert.equal(elements.listClients.disabled, true, 'read-only auto-submit toggle should keep trusted browser management disabled');
+
+saveEndpointResponse = {
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  locked: false,
+  pairingSessionId: '',
+  pairingExpiresAt: 0,
+  autoFillEnabled: false
+};
+elements.endpoint.value = 'http://127.0.0.1:19455/bridge';
+sentMessages.length = 0;
+await sandbox.saveEndpoint();
+assert.deepEqual(
+  sentMessages.map((message) => message.type).slice(0, 2),
+  ['KBB_SAVE_ENDPOINT', 'KBB_STATUS'],
+  'endpoint save should hydrate permissions before rendering read-only controls'
+);
+assert.equal(elements.newLogin.disabled, true, 'read-only endpoint save should keep create action disabled');
+assert.equal(elements.listClients.disabled, true, 'read-only endpoint save should keep trusted browser management disabled');
+saveEndpointResponse = null;
+
+setLockedResponse = {
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  locked: false,
+  pairingSessionId: '',
+  pairingExpiresAt: 0,
+  autoFillEnabled: false
+};
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  locked: true,
+  autoFillEnabled: false
+});
+sentMessages.length = 0;
+await sandbox.toggleLocked();
+assert.deepEqual(
+  sentMessages.map((message) => message.type).slice(0, 2),
+  ['KBB_SET_LOCKED', 'KBB_STATUS'],
+  'unlock should hydrate permissions before rendering read-only controls'
+);
+assert.equal(elements.newLogin.disabled, true, 'read-only unlock should keep create action disabled');
+assert.equal(elements.listClients.disabled, true, 'read-only unlock should keep trusted browser management disabled');
+setLockedResponse = null;
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',

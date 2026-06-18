@@ -201,7 +201,7 @@ function toggleTheme() {
 
 async function saveEndpoint() {
   const state = await send({ type: 'KBB_SAVE_ENDPOINT', endpoint: elements.endpoint.value });
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   setMessage('Endpoint saved.');
 }
 
@@ -260,7 +260,7 @@ async function setAutoSubmit() {
 
 async function toggleLocked() {
   const state = await send({ type: 'KBB_SET_LOCKED', locked: elements.lockBridge.textContent !== 'Unlock' });
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   setMessage(state.locked ? 'KeePass Bridge is locked.' : 'KeePass Bridge is unlocked.');
 }
 
