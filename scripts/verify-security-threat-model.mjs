@@ -33,6 +33,7 @@ const sources = {
   options: read('extension/options.js'),
   background: read('extension/background.js'),
   backgroundTests: read('tests/extension/background.test.mjs'),
+  contentScriptTests: read('tests/extension/content-script.test.mjs'),
   passkeysProxyExperiment: read('extension/passkeysProxyExperiment.js'),
   manifest: read('extension/manifest.json'),
   firefoxManifest: read('extension/manifest.firefox.json'),
@@ -230,6 +231,16 @@ requireIncludes('securityThreatModel', 'Successful pairing clears pending runtim
   'security threat model should document pair-complete runtime-secret cleanup');
 requireIncludes('securityThreatModel', 'Extension-triggered fill acknowledgements are best-effort',
   'security threat model should document best-effort fill acknowledgements');
+requireEvery('contentScript', [
+  'canMutateKeePassEntries',
+  'if (!result || !result.ok || !result.response) return false;',
+  'if (!Array.isArray(result.response.Permissions)) return false;',
+  'result.response.Permissions.includes("write")'
+], 'content script save/update prompts should require confirmed write permission');
+requireIncludes('contentScriptTests', 'save/update prompts should fail closed when permission status cannot be confirmed',
+  'content script tests should cover fail-closed mutation prompts when status cannot be confirmed');
+requireIncludes('securityThreatModel', 'Content-script save/update prompts fail closed unless `client.status` confirms write permission',
+  'security threat model should document fail-closed content-script mutation prompts');
 requireEvery('popup', [
   'clearRenderedCredentials',
   'clearRenderedClients',

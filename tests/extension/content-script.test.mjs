@@ -6,6 +6,7 @@ const DOCUMENT_POSITION_FOLLOWING = 4;
 let activeDocument = null;
 const sessionValues = new Map();
 const runtimeMessages = [];
+let statusResponse = null;
 
 class MockInput {
   constructor(order, attrs, value = '') {
@@ -272,6 +273,9 @@ const sandbox = {
       onMessage: { addListener(fn) { sandbox.onMessageListener = fn; } },
       sendMessage: async (message) => {
         runtimeMessages.push(message);
+        if (message.type === 'KBB_STATUS') {
+          return statusResponse || { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+        }
         if (message.type === 'KBB_CONSUME_PENDING_CREDENTIAL') {
           return {
             ok: true,
@@ -521,6 +525,14 @@ const customFieldResult = sandbox.fillLogin({
 assert.equal(customFieldResult.customFieldsFilled, 1, 'fillLogin should delegate custom fields to the custom field module');
 assert.equal(sandbox.window.__kbbCustomFields.lastFields.length, 1, 'fillLogin should not delegate protected custom fields to page autofill');
 assert.equal(sandbox.window.__kbbCustomFields.lastFields[0].Name, 'Tenant');
+
+statusResponse = { ok: false, error: 'KeePass Bridge is locked.' };
+assert.equal(
+  await sandbox.canMutateKeePassEntries(),
+  false,
+  'save/update prompts should fail closed when permission status cannot be confirmed'
+);
+statusResponse = null;
 
 // Test auto-submit
 targetPassword.disabled = false;

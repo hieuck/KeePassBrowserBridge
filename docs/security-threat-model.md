@@ -57,6 +57,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 - `client.status` and `logins.query` require read permission.
 - `logins.create`, `logins.update`, and `logins.fillAck` require write permission.
 - Extension-triggered fill acknowledgements are best-effort so read-only clients can still fill credentials even when usage timestamp updates are denied.
+- Content-script save/update prompts fail closed unless `client.status` confirms write permission, so submitted passwords are not rendered in mutation prompts when pairing or permission state cannot be confirmed.
 - `clients.list`, `clients.revoke`, and `clients.updatePermissions` require manage-clients permission.
 - Reserved passkey read methods require `passkeyRead`, and reserved passkey create/revoke methods require `passkeyWrite`; the feature gate still returns `feature_disabled` after authentication and permission checks.
 - `BridgeMethodPolicy` centralizes supported bridge methods, authentication requirements, and required permissions. Backend tests reflect over every `BridgeMethods` constant so newly added methods must be assigned an explicit policy before verification passes.

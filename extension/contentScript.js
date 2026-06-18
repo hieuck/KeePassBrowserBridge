@@ -492,12 +492,12 @@ async function canMutateKeePassEntries() {
 
   try {
     const result = await chrome.runtime.sendMessage({ type: "KBB_STATUS" });
-    if (!result || !result.ok || !result.response) return true;
+    if (!result || !result.ok || !result.response) return false;
     if (result.response.Trusted === false) return false;
-    if (!Array.isArray(result.response.Permissions)) return true;
+    if (!Array.isArray(result.response.Permissions)) return false;
     return result.response.Permissions.includes("write");
   } catch (error) {
-    return true;
+    return false;
   }
 }
 function storePendingCredential(credential) {
