@@ -134,6 +134,7 @@ requireEvery('background', [
   "clearSensitiveRuntimeState('locked-access')",
   "clearSensitiveRuntimeState('unpaired-access')",
   "clearSensitiveRuntimeState('partial-pairing')",
+  "clearSensitiveRuntimeState('endpoint-change')",
   'hasPartialPairingCredentials'
 ], 'background guard should clear sensitive runtime state before locked or unpaired denials');
 requireIncludes('background', 'tryAcknowledgeFill',
@@ -146,6 +147,9 @@ requireEvery('backgroundTests', [
   'locked extension should clear clipboard state before rejecting credential access',
   'partial pairing state should remove the stale client id',
   'partial pairing state should clear pending credentials',
+  'endpoint change should unpair the browser',
+  'endpoint change should remove stale shared secret',
+  'endpoint change should clear pending credentials',
   'read-only popup fill should return the content script result when usage acknowledgement is denied',
   'read-only popup fill should still attempt best-effort usage acknowledgement'
 ], 'background tests should cover locked/unpaired cleanup and best-effort acknowledgement behavior');
@@ -153,6 +157,8 @@ requireIncludes('securityThreatModel', 'Locked or unpaired credential access cle
   'security threat model should document locked and unpaired runtime-secret cleanup');
 requireIncludes('securityThreatModel', 'Partial pairing credentials are treated as unpaired state',
   'security threat model should document partial pairing cleanup');
+requireIncludes('securityThreatModel', 'Changing the bridge endpoint clears pairing credentials',
+  'security threat model should document endpoint-change pairing cleanup');
 requireIncludes('securityThreatModel', 'Extension-triggered fill acknowledgements are best-effort',
   'security threat model should document best-effort fill acknowledgements');
 requireEvery('popup', [

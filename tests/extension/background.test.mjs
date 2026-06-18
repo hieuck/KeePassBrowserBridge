@@ -438,6 +438,33 @@ for (const endpoint of [
 }
 storage.endpoint = 'http://127.0.0.1:19455/bridge';
 
+storage.clientId = 'client-1';
+storage.sharedSecret = 'secret';
+storage.pairingSessionId = 'endpoint-stale-session';
+storage.pairingStartedAt = now;
+extensionSessionStorage.kbbPendingMultiStepCredential = {
+  origin: 'https://example.com',
+  credential: {
+    EntryId: 'entry-endpoint-change',
+    UserName: 'endpoint@example.com',
+    Password: 'endpoint-secret'
+  },
+  savedAt: now
+};
+const endpointChangeState = await sandbox.handleMessage({
+  type: 'KBB_SAVE_ENDPOINT',
+  endpoint: 'http://127.0.0.1:19456/bridge'
+});
+assert.equal(endpointChangeState.endpoint, 'http://127.0.0.1:19456/bridge', 'endpoint change should return the new bridge endpoint');
+assert.equal(endpointChangeState.paired, false, 'endpoint change should unpair the browser');
+assert.equal(endpointChangeState.clientId, '', 'endpoint change should not expose stale client id');
+assert.equal(storage.clientId, undefined, 'endpoint change should remove stale client id');
+assert.equal(storage.sharedSecret, undefined, 'endpoint change should remove stale shared secret');
+assert.equal(storage.pairingSessionId, '', 'endpoint change should clear stale pairing session state');
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'endpoint change should clear pending credentials');
+assert.equal(passkeyCleanupCalls.at(-1), 'endpoint-change', 'endpoint change should cancel pending passkey proxy requests');
+storage.endpoint = 'http://127.0.0.1:19455/bridge';
+
 requests.length = 0;
 sandbox.chrome.runtime.getURL = () => 'moz-extension://12345678-90ab-cdef-1234-567890abcdef/';
 await sandbox.handleMessage({ type: 'KBB_HELLO' });

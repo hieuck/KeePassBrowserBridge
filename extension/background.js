@@ -321,7 +321,14 @@ async function applyAutoLock(state) {
 
 async function saveEndpoint(endpoint) {
   const normalized = normalizeEndpoint(endpoint);
+  const state = await storageGet(['endpoint']);
+  const previous = normalizeEndpoint(state.endpoint || DEFAULT_ENDPOINT);
   await chrome.storage.local.set({ endpoint: normalized });
+  if (normalized !== previous) {
+    await chrome.storage.local.remove(['clientId', 'sharedSecret']);
+    await clearPairingSession();
+    await clearSensitiveRuntimeState('endpoint-change');
+  }
   return getState();
 }
 
