@@ -336,8 +336,16 @@ async function revokeTrustedBrowser(client) {
     throw new Error('Browser was not revoked.');
   }
 
+  if (client && client.Current) {
+    trustedBrowserClients = [];
+    trustedBrowserManagementEnabled = false;
+    renderTrustedBrowsers(trustedBrowserClients);
+    showMessage('This browser was revoked. Pair again to use KeePass.', 'success');
+    return;
+  }
+
   await listTrustedBrowsers();
-  showMessage(client && client.Current ? 'This browser was revoked. Pair again to use KeePass.' : 'Browser revoked.', 'success');
+  showMessage('Browser revoked.', 'success');
 }
 
 async function updateTrustedBrowserPermissions(client, permission, enabled) {

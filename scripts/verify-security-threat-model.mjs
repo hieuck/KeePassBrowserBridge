@@ -136,16 +136,22 @@ requireEvery('popupTests', [
 requireEvery('options', [
   'trustedBrowserManagementEnabled',
   "stored.Current && !stored.Permissions.includes('manageClients')",
+  'if (client && client.Current)',
+  'trustedBrowserClients = []',
   'revoke.disabled = !trustedBrowserManagementEnabled',
   "checkbox.disabled = definition.value === 'read' || !trustedBrowserManagementEnabled"
 ], 'options trusted-browser controls should fail closed when current browser loses manage permission');
 requireEvery('optionsTests', [
   'self-removing manage permission should disable permission controls',
   'self-removing manage permission should disable revoke controls',
-  'Manage browsers permission was removed for this browser'
+  'Manage browsers permission was removed for this browser',
+  'current browser revoke should not refresh trusted browsers after local pairing credentials are removed',
+  'current browser revoke should clear stale trusted browser rows'
 ], 'options tests should cover self-removing manage permission UI lockout');
 requireIncludes('securityThreatModel', 'Popup and Options trusted-browser controls disable themselves',
   'security threat model should document manage-permission UI lockout');
+requireIncludes('securityThreatModel', 'The Options page clears trusted-browser rows locally after revoking the current browser',
+  'security threat model should document options current-client revoke cleanup');
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',

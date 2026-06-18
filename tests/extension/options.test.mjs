@@ -114,6 +114,7 @@ function findChildByPredicate(root, predicate) {
 const sandbox = {
   console,
   setTimeout() {},
+  confirm: () => true,
   document: {
     documentElement: {
       setAttribute() {},
@@ -156,6 +157,16 @@ const sandbox = {
               Updated: true,
               ClientId: message.clientId,
               Permissions: message.permissions
+            }
+          };
+        }
+
+        if (message.type === 'KBB_REVOKE_CLIENT') {
+          return {
+            ok: true,
+            response: {
+              Revoked: true,
+              ClientId: message.clientId
             }
           };
         }
@@ -326,5 +337,19 @@ assert.equal(writePermissionCheckbox.disabled, true, 'self-removing manage permi
 assert.equal(revokeCurrentButton.disabled, true, 'self-removing manage permission should disable revoke controls');
 assert.equal(elements.message.textContent, 'Browser permissions updated. Manage browsers permission was removed for this browser.',
   'self-removing manage permission should explain that management is no longer available');
+
+trustedClient.Permissions = ['read', 'write', 'manageClients'];
+await sandbox.listTrustedBrowsers();
+sentMessages.length = 0;
+await sandbox.revokeTrustedBrowser(trustedClient);
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_REVOKE_CLIENT'],
+  'current browser revoke should not refresh trusted browsers after local pairing credentials are removed'
+);
+assert.equal(elements.trustedBrowserList.children.length, 1, 'current browser revoke should replace trusted browser rows with an empty state');
+assert.equal(elements.trustedBrowserList.children[0].textContent, 'No trusted browsers.', 'current browser revoke should clear stale trusted browser rows');
+assert.equal(elements.message.textContent, 'This browser was revoked. Pair again to use KeePass.',
+  'current browser revoke should explain that pairing is required again');
 
 console.log('Options tests passed.');
