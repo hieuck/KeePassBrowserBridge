@@ -932,7 +932,7 @@ function clearRenderedClients() {
 
 function hasClientPermission(permission) {
   if (!currentState || !Array.isArray(currentState.permissions) || !currentState.permissions.length) {
-    return true;
+    return false;
   }
 
   return currentState.permissions.includes(permission);

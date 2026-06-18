@@ -95,6 +95,8 @@ requireEvery('popup', [
   'ensureWriteActionsEnabled',
   'showEditForm',
   "if (!hasClientPermission('write'))",
+  'if (!currentState || !Array.isArray(currentState.permissions) || !currentState.permissions.length)',
+  'return false;',
   'const hydratedState = await hydrateStatePermissions(state)',
   'renderState(hydratedState)'
 ], 'popup write actions should be guarded by trusted-client write permission');
@@ -102,6 +104,8 @@ requireCountAtLeast('popup', 'renderState(await hydrateStatePermissions(state))'
   'popup state-changing actions should hydrate trusted-client permissions before rendering controls');
 requireEvery('popupTests', [
   'read-only state should disable create action',
+  'paired state without confirmed permissions should disable create action',
+  'paired state without confirmed permissions should disable trusted browser management',
   'read-only rendered entries should disable edit buttons',
   'read-only edit action should not open an edit form',
   'read-only edit action should not send update requests',
@@ -123,6 +127,8 @@ requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/
   'security threat model should document read-only popup write restrictions');
 requireIncludes('securityThreatModel', 'Popup state-changing refreshes hydrate trusted-client permissions',
   'security threat model should document permission hydration before popup state rendering');
+requireIncludes('securityThreatModel', 'Missing popup permission state is treated as no write/manage permission',
+  'security threat model should document missing popup permission fail-closed behavior');
 requireEvery('popup', [
   'currentClientLostManage',
   'failClosedManageClientAccess',

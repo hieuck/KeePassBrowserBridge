@@ -559,6 +559,7 @@ assert.equal(elements.message.textContent, 'Pairing code expired. Start pairing 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: true,
+  permissions: ['read', 'write', 'manageClients'],
   pairingSessionId: 'stale-session',
   pairingExpiresAt: fakeNow + 125000,
   autoFillEnabled: false
@@ -571,6 +572,16 @@ assert.equal(elements.queryLogins.disabled, false, 'paired state should enable c
 assert.equal(elements.newLogin.disabled, false, 'paired state should enable create action');
 assert.equal(elements.toggleSiteAutoFill.disabled, false, 'paired state should enable site auto-fill action');
 assert.equal(elements.toggleSiteAutoSubmit.disabled, false, 'paired state should enable site auto-submit action');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  autoFillEnabled: false
+});
+assert.equal(elements.stateNotice.textContent, 'Read-only access: this browser can find logins, but cannot create or update KeePass entries.',
+  'paired state without confirmed permissions should explain write restrictions');
+assert.equal(elements.newLogin.disabled, true, 'paired state without confirmed permissions should disable create action');
+assert.equal(elements.listClients.disabled, true, 'paired state without confirmed permissions should disable trusted browser management');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
