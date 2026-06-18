@@ -101,6 +101,18 @@ const trustedClient = {
   LastUsedUtcMs: 1779990000000,
   Permissions: ['read', 'write', 'manageClients']
 };
+let nextTimeoutId = 1;
+const pendingTimeouts = new Map();
+
+function runTimeout(timeoutId) {
+  const callback = pendingTimeouts.get(timeoutId);
+  if (!callback) {
+    return;
+  }
+
+  pendingTimeouts.delete(timeoutId);
+  callback();
+}
 
 function findChildByPredicate(root, predicate) {
   if (!root) return null;
@@ -114,7 +126,14 @@ function findChildByPredicate(root, predicate) {
 
 const sandbox = {
   console,
-  setTimeout() {},
+  setTimeout(callback) {
+    const timeoutId = nextTimeoutId++;
+    pendingTimeouts.set(timeoutId, callback);
+    return timeoutId;
+  },
+  clearTimeout(timeoutId) {
+    pendingTimeouts.delete(timeoutId);
+  },
   confirm: () => true,
   document: {
     documentElement: {
@@ -198,6 +217,19 @@ sandbox.globalThis = sandbox;
 const source = fs.readFileSync(new URL('../../extension/options.js', import.meta.url), 'utf8');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'options.js' });
+
+pendingTimeouts.clear();
+sandbox.showMessage('First status', 'success');
+const firstMessageTimer = nextTimeoutId - 1;
+sandbox.showMessage('Second status', 'error');
+const secondMessageTimer = nextTimeoutId - 1;
+runTimeout(firstMessageTimer);
+assert.equal(elements.message.textContent, 'Second status',
+  'stale options message timers should not clear newer messages');
+assert.equal(elements.message.className, 'message error',
+  'stale options message timers should not reset newer message styling');
+runTimeout(secondMessageTimer);
+assert.equal(elements.message.textContent, '', 'latest options message timer should clear the message');
 
 function fillRequiredSettingsForm(overrides = {}) {
   elements.bridgeEndpoint.value = 'http://127.0.0.1:19455/bridge';

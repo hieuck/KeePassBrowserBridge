@@ -27,6 +27,7 @@ let siteOverrides = [];
 let trustedBrowserClients = [];
 let trustedBrowserManagementEnabled = true;
 let bridgePasskeysEnabled = false;
+let messageClearTimer = null;
 
 const elements = {
   themeToggle: document.getElementById('themeToggle'),
@@ -736,9 +737,14 @@ function send(message) {
 function showMessage(text, type) {
   elements.message.textContent = text;
   elements.message.className = `message ${type}`;
-  
-  setTimeout(() => {
+
+  if (messageClearTimer) {
+    clearTimeout(messageClearTimer);
+  }
+
+  messageClearTimer = setTimeout(() => {
     elements.message.textContent = '';
     elements.message.className = 'message';
+    messageClearTimer = null;
   }, 3000);
 }
