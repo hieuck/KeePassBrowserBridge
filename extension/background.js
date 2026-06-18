@@ -471,6 +471,7 @@ async function pairComplete(pairingCode) {
     sharedSecret: payload.SharedSecret
   });
   await clearPairingSession();
+  await clearSensitiveRuntimeState('pair-complete');
   return getState();
 }
 

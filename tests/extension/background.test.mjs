@@ -130,6 +130,21 @@ const sandbox = {
       };
     }
 
+    if (request.Method === 'pair.complete') {
+      const payload = JSON.parse(request.Payload || '{}');
+      if (payload.PairingSessionId === 'success-session' && payload.PairingCode === '654321') {
+        return {
+          ok: true,
+          json: async () => ({
+            ProtocolVersion: 1,
+            RequestId: request.RequestId,
+            Success: true,
+            Payload: '{"ClientId":"client-new","SharedSecret":"secret-new"}'
+          })
+        };
+      }
+    }
+
     if (request.Method === 'logins.query') {
       return {
         ok: true,
@@ -517,6 +532,35 @@ await assert.rejects(
 
 assert.equal(storage.pairingSessionId, '', 'expired pairing failure should clear the stored pairing session');
 assert.equal(storage.pairingStartedAt, 0, 'expired pairing failure should clear the stored pairing timestamp');
+
+storage.pairingSessionId = 'success-session';
+storage.pairingStartedAt = now;
+extensionSessionStorage.kbbPendingMultiStepCredential = {
+  origin: 'https://example.com',
+  credential: {
+    EntryId: 'entry-pair-complete',
+    UserName: 'pair-complete@example.com',
+    Password: 'pair-complete-secret'
+  },
+  savedAt: now
+};
+extensionSessionStorage.kbbPendingSubmittedCredential = {
+  origin: 'https://example.com',
+  credential: {
+    url: 'https://example.com/login',
+    userName: 'pair-complete-submitted@example.com',
+    password: 'submitted-secret'
+  },
+  savedAt: now
+};
+const completedPairingState = await sandbox.pairComplete('654321');
+assert.equal(completedPairingState.paired, true, 'successful pairing should return paired state');
+assert.equal(storage.clientId, 'client-new', 'successful pairing should store the new client id');
+assert.equal(storage.sharedSecret, 'secret-new', 'successful pairing should store the new shared secret');
+assert.equal(storage.pairingSessionId, '', 'successful pairing should clear the stored pairing session');
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'successful pairing should clear pending multi-step credentials');
+assert.equal(extensionSessionStorage.kbbPendingSubmittedCredential, undefined, 'successful pairing should clear pending submitted credentials');
+assert.equal(passkeyCleanupCalls.at(-1), 'pair-complete', 'successful pairing should cancel pending passkey proxy requests');
 
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
