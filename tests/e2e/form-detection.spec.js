@@ -20,6 +20,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
               sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
                 origin: message.origin,
@@ -81,6 +84,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
               sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
                 origin: message.origin,
@@ -164,6 +170,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
               sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
                 origin: message.origin,
@@ -245,6 +254,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
               sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
                 origin: message.origin,
@@ -310,6 +322,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_CREATE_LOGIN') {
               return {
                 ok: false,
@@ -443,6 +458,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
               await window.__testKbbRememberSubmittedCredential({
                 origin: message.origin,
@@ -494,6 +512,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_QUERY_FOR_URL') {
               return {
                 ok: true,
@@ -554,6 +575,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_QUERY_FOR_URL') {
               return {
                 ok: true,
@@ -625,6 +649,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_QUERY_FOR_URL') {
               return {
                 ok: true,
@@ -685,6 +712,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_QUERY_FOR_URL') {
               return {
                 ok: true,
@@ -745,6 +775,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_FILL_ACK') {
               return { ok: true, response: { Success: true } };
             }
@@ -1293,6 +1326,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_FILL_ACK') {
               return { ok: true, response: { Success: true } };
             }
@@ -1362,6 +1398,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_FILL_ACK') {
               return { ok: true, response: { Success: true } };
             }
@@ -1867,6 +1906,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
               return { ok: true, response: { remembered: true } };
             }
@@ -2604,6 +2646,9 @@ test.describe('content script form detection', () => {
           onMessage: { addListener() {} },
           sendMessage: async (message) => {
             window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
             if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
               return { ok: true, response: { remembered: true } };
             }
