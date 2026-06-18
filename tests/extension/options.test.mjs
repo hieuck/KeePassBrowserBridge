@@ -7,6 +7,11 @@ class Element {
     this.id = id;
     this.value = '';
     this.checked = false;
+    this.disabled = false;
+    this.type = '';
+    this.dataset = {};
+    this.children = [];
+    this._textContent = '';
     this.textContent = '';
     this.href = '';
     this.className = '';
@@ -17,7 +22,27 @@ class Element {
     };
   }
 
+  get textContent() {
+    return this._textContent;
+  }
+
+  set textContent(value) {
+    this._textContent = String(value ?? '');
+    if (this._textContent === '') {
+      this.children = [];
+    }
+  }
+
   addEventListener() {}
+
+  append(...children) {
+    this.children.push(...children);
+  }
+
+  appendChild(child) {
+    this.children.push(child);
+    return child;
+  }
 
   focus() {}
 
@@ -65,6 +90,27 @@ const ids = [
 
 const elements = Object.fromEntries(ids.map((id) => [id, new Element(id)]));
 const storageSetCalls = [];
+const sentMessages = [];
+const trustedClient = {
+  ClientId: 'client-current',
+  ClientName: 'Current Browser',
+  Current: true,
+  ExtensionOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+  CreatedUtcMs: 1779990000000,
+  LastUsedUtcMs: 1779990000000,
+  Permissions: ['read', 'write', 'manageClients']
+};
+
+function findChildByPredicate(root, predicate) {
+  if (!root) return null;
+  if (predicate(root)) return root;
+  for (const child of root.children || []) {
+    const found = findChildByPredicate(child, predicate);
+    if (found) return found;
+  }
+  return null;
+}
+
 const sandbox = {
   console,
   setTimeout() {},
@@ -86,7 +132,36 @@ const sandbox = {
   },
   chrome: {
     runtime: {
-      sendMessage: async () => ({ ok: true, response: {} })
+      sendMessage: async (message) => {
+        sentMessages.push(message);
+        if (message.type === 'KBB_GET_ABOUT') {
+          return {
+            ok: true,
+            response: {
+              version: '0.9.0',
+              pluginVersion: '0.9.0',
+              browserId: 'abcdefghijklmnopabcdefghijklmnop'
+            }
+          };
+        }
+
+        if (message.type === 'KBB_LIST_CLIENTS') {
+          return { ok: true, response: { Clients: [trustedClient] } };
+        }
+
+        if (message.type === 'KBB_UPDATE_CLIENT_PERMISSIONS') {
+          return {
+            ok: true,
+            response: {
+              Updated: true,
+              ClientId: message.clientId,
+              Permissions: message.permissions
+            }
+          };
+        }
+
+        return { ok: true, response: {} };
+      }
     },
     storage: {
       local: {
@@ -226,5 +301,30 @@ for (const endpoint of [
     'portable settings import should reject non-canonical bridge endpoints'
   );
 }
+
+sentMessages.length = 0;
+await sandbox.listTrustedBrowsers();
+let writePermissionCheckbox = findChildByPredicate(elements.trustedBrowserList, (element) =>
+  element.type === 'checkbox' && element.dataset.permission === 'write'
+);
+let revokeCurrentButton = findChildByPredicate(elements.trustedBrowserList, (element) =>
+  element.dataset.action === 'revoke-client'
+);
+assert.notEqual(writePermissionCheckbox, null, 'test should render the write permission checkbox');
+assert.notEqual(revokeCurrentButton, null, 'test should render the current browser revoke button');
+assert.equal(writePermissionCheckbox.disabled, false, 'trusted-browser controls should be enabled before manage permission is removed');
+assert.equal(revokeCurrentButton.disabled, false, 'revoke should be enabled before manage permission is removed');
+
+await sandbox.updateTrustedBrowserPermissions(trustedClient, 'manageClients', false);
+writePermissionCheckbox = findChildByPredicate(elements.trustedBrowserList, (element) =>
+  element.type === 'checkbox' && element.dataset.permission === 'write'
+);
+revokeCurrentButton = findChildByPredicate(elements.trustedBrowserList, (element) =>
+  element.dataset.action === 'revoke-client'
+);
+assert.equal(writePermissionCheckbox.disabled, true, 'self-removing manage permission should disable permission controls');
+assert.equal(revokeCurrentButton.disabled, true, 'self-removing manage permission should disable revoke controls');
+assert.equal(elements.message.textContent, 'Browser permissions updated. Manage browsers permission was removed for this browser.',
+  'self-removing manage permission should explain that management is no longer available');
 
 console.log('Options tests passed.');

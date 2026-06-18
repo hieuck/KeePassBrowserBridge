@@ -64,6 +64,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 - Empty permission updates keep read-only access instead of restoring full default permissions.
 - Read-only popup sessions disable create/edit controls and defensively refuse direct edit-form opening before a write-capable browser can send update payloads.
 - Popup state-changing refreshes hydrate trusted-client permissions before rendering controls, so read-only sessions stay fail-closed after background state refreshes.
+- Options trusted-browser controls disable themselves when the current browser removes its own manage-browsers permission.
 
 ### Data Minimization
 

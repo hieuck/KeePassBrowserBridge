@@ -25,6 +25,7 @@ const PORTABLE_SETTING_KEYS = Object.keys(PORTABLE_SETTING_DEFAULTS);
 
 let siteOverrides = [];
 let trustedBrowserClients = [];
+let trustedBrowserManagementEnabled = true;
 let bridgePasskeysEnabled = false;
 
 const elements = {
@@ -312,6 +313,7 @@ async function listTrustedBrowsers() {
   await refreshAboutMetadata();
   const result = await send({ type: 'KBB_LIST_CLIENTS' });
   trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
+  trustedBrowserManagementEnabled = true;
   renderTrustedBrowsers(trustedBrowserClients);
   showMessage(result.Clients && result.Clients.length
     ? `${result.Clients.length} trusted browser(s).`
@@ -361,9 +363,14 @@ async function updateTrustedBrowserPermissions(client, permission, enabled) {
   const stored = trustedBrowserClients.find((candidate) => candidate.ClientId === clientId);
   if (stored) {
     stored.Permissions = normalizeClientPermissions(result.Permissions || normalized);
+    if (stored.Current && !stored.Permissions.includes('manageClients')) {
+      trustedBrowserManagementEnabled = false;
+    }
   }
   renderTrustedBrowsers(trustedBrowserClients);
-  showMessage('Browser permissions updated.', 'success');
+  showMessage(trustedBrowserManagementEnabled
+    ? 'Browser permissions updated.'
+    : 'Browser permissions updated. Manage browsers permission was removed for this browser.', 'success');
 }
 
 function renderTrustedBrowsers(clients) {
@@ -404,6 +411,7 @@ function renderTrustedBrowsers(clients) {
     revoke.className = 'secondary';
     revoke.dataset.action = 'revoke-client';
     revoke.textContent = client.Current ? 'Revoke This Browser' : 'Revoke';
+    revoke.disabled = !trustedBrowserManagementEnabled;
     revoke.addEventListener('click', () => runAction(() => revokeTrustedBrowser(client)));
 
     row.append(details, revoke);
@@ -423,7 +431,7 @@ function createPermissionControls(client) {
     checkbox.type = 'checkbox';
     checkbox.dataset.permission = definition.value;
     checkbox.checked = normalizeClientPermissions(client.Permissions).includes(definition.value);
-    checkbox.disabled = definition.value === 'read';
+    checkbox.disabled = definition.value === 'read' || !trustedBrowserManagementEnabled;
     checkbox.addEventListener('change', () => runAction(() =>
       updateTrustedBrowserPermissions(client, definition.value, checkbox.checked)
     ));

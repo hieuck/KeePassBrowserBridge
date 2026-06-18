@@ -122,6 +122,19 @@ requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/
   'security threat model should document read-only popup write restrictions');
 requireIncludes('securityThreatModel', 'Popup state-changing refreshes hydrate trusted-client permissions',
   'security threat model should document permission hydration before popup state rendering');
+requireEvery('options', [
+  'trustedBrowserManagementEnabled',
+  "stored.Current && !stored.Permissions.includes('manageClients')",
+  'revoke.disabled = !trustedBrowserManagementEnabled',
+  "checkbox.disabled = definition.value === 'read' || !trustedBrowserManagementEnabled"
+], 'options trusted-browser controls should fail closed when current browser loses manage permission');
+requireEvery('optionsTests', [
+  'self-removing manage permission should disable permission controls',
+  'self-removing manage permission should disable revoke controls',
+  'Manage browsers permission was removed for this browser'
+], 'options tests should cover self-removing manage permission UI lockout');
+requireIncludes('securityThreatModel', 'Options trusted-browser controls disable themselves',
+  'security threat model should document options manage-permission lockout');
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',
