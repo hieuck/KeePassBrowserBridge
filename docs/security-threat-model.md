@@ -74,6 +74,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 - Protected custom field values are redacted before being exposed to popup search, copy, or focused-field fill.
 - Create, update, and fill acknowledgements return metadata without passwords after mutating or touching entries.
 - Locked or unpaired credential access clears pending runtime credentials, passkey proxy state, and clipboard state before returning a denial.
+- The popup query action refreshes state and refuses locked or unpaired sessions before sending a credential query.
 - Partial pairing credentials are treated as unpaired state and cleared with pending runtime credentials before state is exposed to the popup.
 - Changing the bridge endpoint clears pairing credentials, active pairing sessions, and pending runtime credentials before using the new endpoint.
 - Successful pairing clears pending runtime credentials, passkey proxy state, and clipboard state before exposing the newly paired client.

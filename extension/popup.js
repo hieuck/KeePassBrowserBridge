@@ -405,6 +405,10 @@ async function queryLogins() {
     setMessage('Unlock KeePass Bridge before querying logins.', true);
     return;
   }
+  if (!credentialActionsEnabled()) {
+    setMessage('Pair this browser with KeePass before querying logins.', true);
+    return;
+  }
 
   const result = await send({ type: 'KBB_QUERY_LOGINS' });
   elements.currentUrl.textContent = result.url || '';

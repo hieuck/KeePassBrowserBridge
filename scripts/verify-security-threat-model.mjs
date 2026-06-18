@@ -251,16 +251,21 @@ requireEvery('popup', [
   'clearRenderedCredentials',
   'clearRenderedClients',
   'if (!manageClientActionsEnabled())',
-  'if (!credentialActionsEnabled())'
+  'if (!credentialActionsEnabled())',
+  'Pair this browser with KeePass before querying logins.'
 ], 'popup should clear rendered credentials when credential access is unavailable');
 requireIncludes('popupTests', 'locked popup should clear stale rendered fill buttons',
   'popup tests should cover clearing stale rendered credential actions after lock');
+requireIncludes('popupTests', 'unpaired query should not send credential requests after state refresh',
+  'popup tests should cover refusing unpaired credential queries after state refresh');
 requireIncludes('popupTests', 'endpoint save that unpairs should clear stale trusted browser rows',
   'popup tests should cover clearing stale trusted-browser management rows after unpair');
 requireIncludes('securityThreatModel', 'The popup clears trusted-browser management rows',
   'security threat model should document stale trusted-browser management cleanup');
 requireIncludes('securityThreatModel', 'The popup clears rendered credential results when credential access becomes locked or unpaired',
   'security threat model should document stale popup credential cleanup');
+requireIncludes('securityThreatModel', 'The popup query action refreshes state and refuses locked or unpaired sessions',
+  'security threat model should document popup query state refresh denial');
 
 requireEvery('testsProgram', [
   'BridgeHandlerRejectsReplayedAuthenticatedRequestId',

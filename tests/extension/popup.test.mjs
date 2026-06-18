@@ -459,6 +459,32 @@ assert.equal(elements.toggleSiteAutoSubmit.disabled, true, 'unpaired pairing sta
 assert.equal(fakeDocument.activeElement, elements.pairingCode, 'pairing code input should receive focus');
 assert.equal(elements.completePair.disabled, true, 'confirm should be disabled before a complete code is entered');
 
+getStateResponse = {
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: false,
+  locked: false,
+  pairingSessionId: '',
+  pairingExpiresAt: 0,
+  autoFillEnabled: false
+};
+sentMessages.length = 0;
+await sandbox.queryLogins();
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_GET_STATE'],
+  'unpaired query should not send credential requests after state refresh'
+);
+assert.equal(elements.message.textContent, 'Pair this browser with KeePass before querying logins.',
+  'unpaired query should explain that pairing is required');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: false,
+  pairingSessionId: 'session-1',
+  pairingExpiresAt: fakeNow + 125000,
+  autoFillEnabled: false
+});
+
 elements.pairingCode.value = '123';
 elements.pairingCode.dispatch('input');
 assert.equal(elements.completePair.disabled, true, 'confirm should stay disabled for short code');
