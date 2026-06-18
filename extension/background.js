@@ -547,7 +547,7 @@ async function queryHttpAuth(url) {
   }
 
   if (entry.EntryId) {
-    await acknowledgeFill(entry.EntryId, url);
+    await tryAcknowledgeFill(entry.EntryId, url);
   }
 
   return {
@@ -586,6 +586,14 @@ async function acknowledgeFill(entryId, url) {
 
   const response = await bridgeCall('logins.fillAck', { EntryId: entryId, Url: url || '' }, true);
   return parsePayload(response);
+}
+
+async function tryAcknowledgeFill(entryId, url) {
+  try {
+    return await acknowledgeFill(entryId, url);
+  } catch (_) {
+    return null;
+  }
 }
 
 async function rememberPendingCredential(origin, credential) {
@@ -707,7 +715,7 @@ async function fillLogin(credential, fieldRole, customFieldName) {
   });
 
   if (credential && credential.EntryId && (!result || result.filled !== false)) {
-    await acknowledgeFill(credential.EntryId, tab.url || '');
+    await tryAcknowledgeFill(credential.EntryId, tab.url || '');
     await notifyUser('Filled from KeePass', notificationCredentialMessage(credential, 'Login filled.'));
   }
 
@@ -816,7 +824,7 @@ async function autoFillTab(tabId, url) {
     });
 
     if (entry.EntryId && (!fillResult || fillResult.filled !== false)) {
-      await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);
+      await tryAcknowledgeFill(entry.EntryId, url || '');
     }
   } catch (error) {
     await updateBadgeCount(tabId, 0);
@@ -1246,7 +1254,7 @@ async function fillFromContextMenu(tabId, url, role) {
     });
     
     if (entry.EntryId && (!fillResult || fillResult.filled !== false)) {
-      await bridgeCall('logins.fillAck', { EntryId: entry.EntryId, Url: url || '' }, true);
+      await tryAcknowledgeFill(entry.EntryId, url || '');
     }
   } catch (error) {
     if (isExpectedAccessStateError(error)) return;

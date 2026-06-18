@@ -21,6 +21,7 @@ const passkeyCleanupCalls = [];
 let now = 10000;
 let loginEntries = [];
 let passkeysFeatureEnabled = false;
+let fillAckBridgeFailure = null;
 
 const sandbox = {
   console,
@@ -157,6 +158,19 @@ const sandbox = {
     }
 
     if (request.Method === 'logins.fillAck') {
+      if (fillAckBridgeFailure) {
+        return {
+          ok: true,
+          json: async () => ({
+            ProtocolVersion: 1,
+            RequestId: request.RequestId,
+            Success: false,
+            ErrorCode: fillAckBridgeFailure.ErrorCode,
+            Error: fillAckBridgeFailure.Error
+          })
+        };
+      }
+
       return {
         ok: true,
         json: async () => ({
@@ -1127,6 +1141,28 @@ const popupFillAckRequest = requests.find((request) => request.Method === 'login
 assert.ok(popupFillAckRequest, 'popup fill should acknowledge the filled entry for usage ranking');
 assert.ok(notifications.some((notification) => notification.options.title === 'Filled from KeePass'),
   'successful popup fill should show a desktop notification');
+
+sentMessage = null;
+requests.length = 0;
+notifications.length = 0;
+fillAckBridgeFailure = {
+  ErrorCode: 'permission_denied',
+  Error: 'Trusted browser is not allowed to perform this action.'
+};
+const readOnlyFillResult = await sandbox.handleMessage({
+  type: 'KBB_FILL_LOGIN',
+  credential: {
+    EntryId: 'entry-readonly',
+    Title: 'Read Only Example',
+    UserName: 'readonly',
+    Password: 'readonly-secret'
+  }
+});
+assert.equal(readOnlyFillResult.filled, true, 'read-only popup fill should return the content script result when usage acknowledgement is denied');
+assert.ok(requests.some((request) => request.Method === 'logins.fillAck'), 'read-only popup fill should still attempt best-effort usage acknowledgement');
+assert.ok(notifications.some((notification) => notification.options.title === 'Filled from KeePass'),
+  'read-only popup fill should still show fill feedback when acknowledgement is denied');
+fillAckBridgeFailure = null;
 
 sentMessage = null;
 await sandbox.handleMessage({

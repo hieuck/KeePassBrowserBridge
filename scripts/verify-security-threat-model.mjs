@@ -134,13 +134,21 @@ requireEvery('background', [
   "clearSensitiveRuntimeState('locked-access')",
   "clearSensitiveRuntimeState('unpaired-access')"
 ], 'background guard should clear sensitive runtime state before locked or unpaired denials');
+requireIncludes('background', 'tryAcknowledgeFill',
+  'background should keep automatic fill acknowledgements best-effort');
+requireCountAtLeast('background', 'tryAcknowledgeFill', 4,
+  'all automatic fill paths should use best-effort fill acknowledgement');
 requireEvery('backgroundTests', [
   'locked pending consume should clear stale multi-step credentials',
   'unpaired submitted consume should clear stale submitted credentials',
-  'locked extension should clear clipboard state before rejecting credential access'
-], 'background tests should cover locked and unpaired runtime-secret cleanup');
+  'locked extension should clear clipboard state before rejecting credential access',
+  'read-only popup fill should return the content script result when usage acknowledgement is denied',
+  'read-only popup fill should still attempt best-effort usage acknowledgement'
+], 'background tests should cover locked/unpaired cleanup and best-effort acknowledgement behavior');
 requireIncludes('securityThreatModel', 'Locked or unpaired credential access clears pending runtime credentials',
   'security threat model should document locked and unpaired runtime-secret cleanup');
+requireIncludes('securityThreatModel', 'Extension-triggered fill acknowledgements are best-effort',
+  'security threat model should document best-effort fill acknowledgements');
 requireEvery('popup', [
   'clearRenderedCredentials',
   'if (!credentialActionsEnabled())'
