@@ -240,6 +240,13 @@ function compareVersions(left, right) {
 
 async function getState() {
   const state = await storageGet(['endpoint', 'clientId', 'sharedSecret', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
+  if (hasPartialPairingCredentials(state)) {
+    await chrome.storage.local.remove(['clientId', 'sharedSecret']);
+    state.clientId = '';
+    state.sharedSecret = '';
+    await clearSensitiveRuntimeState('partial-pairing');
+  }
+
   const paired = Boolean(state.clientId && state.sharedSecret);
   if (paired && state.pairingSessionId) {
     await clearPairingSession();
@@ -269,6 +276,10 @@ async function getState() {
     autoLockTimeoutMinutes: numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES, MAX_AUTO_LOCK_TIMEOUT_MINUTES),
     locked: state.locked === true
   };
+}
+
+function hasPartialPairingCredentials(state) {
+  return Boolean(state && ((state.clientId && !state.sharedSecret) || (!state.clientId && state.sharedSecret)));
 }
 
 function booleanSetting(value, defaultValue) {

@@ -503,9 +503,23 @@ assert.equal(storage.pairingStartedAt, 0, 'paired state should clear stale pairi
 storage.clientId = 'client-without-secret';
 delete storage.sharedSecret;
 storage.pairingSessionId = '';
+extensionSessionStorage.kbbPendingMultiStepCredential = {
+  origin: 'https://example.com',
+  credential: {
+    EntryId: 'entry-partial-pairing',
+    UserName: 'partial@example.com',
+    Password: 'partial-secret'
+  },
+  savedAt: now
+};
 storage.pairingStartedAt = 0;
 const partialPairingState = await sandbox.getState();
 assert.equal(partialPairingState.paired, false, 'state should not report paired when the shared secret is missing');
+assert.equal(partialPairingState.clientId, '', 'partial pairing state should not expose a stale client id');
+assert.equal(storage.clientId, undefined, 'partial pairing state should remove the stale client id');
+assert.equal(storage.sharedSecret, undefined, 'partial pairing state should leave no shared secret');
+assert.equal(extensionSessionStorage.kbbPendingMultiStepCredential, undefined, 'partial pairing state should clear pending credentials');
+assert.equal(passkeyCleanupCalls.at(-1), 'partial-pairing', 'partial pairing state should cancel pending passkey proxy requests');
 
 storage.clientId = 'client-1';
 storage.sharedSecret = 'secret';
