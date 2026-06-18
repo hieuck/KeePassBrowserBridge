@@ -39,6 +39,7 @@ class Element {
     this.href = '';
     this.children = [];
     this.innerHTML = '';
+    this.dataset = {};
     this.classList = new ClassList();
     this.listeners = new Map();
   }
@@ -265,6 +266,19 @@ const sandbox = {
               latestVersion: '0.10.0',
               updateAvailable: true,
               releaseUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0'
+            }
+          };
+        }
+
+        if (message.type === 'KBB_SAVE_ENDPOINT') {
+          return {
+            ok: true,
+            response: {
+              endpoint: message.endpoint,
+              paired: false,
+              pairingSessionId: '',
+              pairingExpiresAt: 0,
+              autoFillEnabled: false
             }
           };
         }
@@ -499,6 +513,32 @@ await assert.rejects(
   'trusted browser management should require manageClients permission before sending a background request'
 );
 assert.deepEqual(sentMessages, [], 'trusted browser management should not contact the background without manageClients permission');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  permissions: ['read', 'write', 'manageClients'],
+  autoFillEnabled: false
+});
+sandbox.renderClients([
+  {
+    ClientId: 'old-client',
+    ClientName: 'Old Browser',
+    ExtensionOrigin: 'chrome-extension://old',
+    Current: false,
+    CreatedUtcMs: fakeNow,
+    LastUsedUtcMs: fakeNow,
+    Permissions: ['read']
+  }
+]);
+elements.clientsPanel.classList.remove('hidden');
+assert.equal(elements.clientsPanel.children.length, 1, 'test should render a stale trusted browser before endpoint save');
+elements.endpoint.value = 'http://127.0.0.1:19456/bridge';
+sentMessages.length = 0;
+await sandbox.saveEndpoint();
+assert.deepEqual(sentMessages.map((message) => message.type), ['KBB_SAVE_ENDPOINT'], 'saving endpoint should send the updated bridge endpoint');
+assert.equal(elements.clientsPanel.classList.contains('hidden'), true, 'endpoint save that unpairs should hide stale trusted browsers');
+assert.equal(elements.clientsPanel.children.length, 0, 'endpoint save that unpairs should clear stale trusted browser rows');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',

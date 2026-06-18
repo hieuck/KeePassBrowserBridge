@@ -74,6 +74,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 - Changing the bridge endpoint clears pairing credentials, active pairing sessions, and pending runtime credentials before using the new endpoint.
 - Successful pairing clears pending runtime credentials, passkey proxy state, and clipboard state before exposing the newly paired client.
 - The popup clears rendered credential results when credential access becomes locked or unpaired, so stale fill/copy controls and visible secrets do not remain on screen.
+- The popup clears trusted-browser management rows when manage access becomes unavailable, so stale client controls do not remain actionable after endpoint, lock, or permission changes.
 - Settings export excludes client IDs, shared secrets, and pairing sessions.
 - Additional URL fields are used for matching but are not exposed as custom fields.
 

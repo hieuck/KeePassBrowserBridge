@@ -786,6 +786,9 @@ function renderState(state) {
   if (!credentialActionsEnabled()) {
     clearRenderedCredentials();
   }
+  if (!manageClientActionsEnabled()) {
+    clearRenderedClients();
+  }
   if (pairingActive) {
     elements.pairingCode.focus();
   }
@@ -887,6 +890,12 @@ function clearRenderedCredentials() {
   elements.loginSearch.value = '';
   elements.loginSearch.classList.add('hidden');
   elements.results.textContent = '';
+}
+
+function clearRenderedClients() {
+  trustedBrowserClients = [];
+  elements.clientsPanel.classList.add('hidden');
+  elements.clientsPanel.textContent = '';
 }
 
 function hasClientPermission(permission) {

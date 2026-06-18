@@ -169,10 +169,16 @@ requireIncludes('securityThreatModel', 'Extension-triggered fill acknowledgement
   'security threat model should document best-effort fill acknowledgements');
 requireEvery('popup', [
   'clearRenderedCredentials',
+  'clearRenderedClients',
+  'if (!manageClientActionsEnabled())',
   'if (!credentialActionsEnabled())'
 ], 'popup should clear rendered credentials when credential access is unavailable');
 requireIncludes('popupTests', 'locked popup should clear stale rendered fill buttons',
   'popup tests should cover clearing stale rendered credential actions after lock');
+requireIncludes('popupTests', 'endpoint save that unpairs should clear stale trusted browser rows',
+  'popup tests should cover clearing stale trusted-browser management rows after unpair');
+requireIncludes('securityThreatModel', 'The popup clears trusted-browser management rows',
+  'security threat model should document stale trusted-browser management cleanup');
 requireIncludes('securityThreatModel', 'The popup clears rendered credential results when credential access becomes locked or unpaired',
   'security threat model should document stale popup credential cleanup');
 
