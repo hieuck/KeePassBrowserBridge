@@ -310,14 +310,30 @@ function renderSiteOverrides() {
 }
 
 async function listTrustedBrowsers() {
-  await refreshAboutMetadata();
-  const result = await send({ type: 'KBB_LIST_CLIENTS' });
-  trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
-  trustedBrowserManagementEnabled = true;
+  try {
+    await refreshAboutMetadata();
+    const result = await send({ type: 'KBB_LIST_CLIENTS' });
+    trustedBrowserClients = Array.isArray(result.Clients) ? result.Clients : [];
+    trustedBrowserManagementEnabled = true;
+    renderTrustedBrowsers(trustedBrowserClients);
+    showMessage(result.Clients && result.Clients.length
+      ? `${result.Clients.length} trusted browser(s).`
+      : 'No trusted browsers found.', 'success');
+  } catch (error) {
+    failClosedTrustedBrowserManagement(error);
+    throw error;
+  }
+}
+
+function failClosedTrustedBrowserManagement(error) {
+  const message = error && error.message ? error.message : String(error || '');
+  if (!/permission|not allowed/i.test(message)) {
+    return;
+  }
+
+  trustedBrowserClients = [];
+  trustedBrowserManagementEnabled = false;
   renderTrustedBrowsers(trustedBrowserClients);
-  showMessage(result.Clients && result.Clients.length
-    ? `${result.Clients.length} trusted browser(s).`
-    : 'No trusted browsers found.', 'success');
 }
 
 async function revokeTrustedBrowser(client) {

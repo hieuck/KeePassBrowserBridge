@@ -91,6 +91,7 @@ const ids = [
 const elements = Object.fromEntries(ids.map((id) => [id, new Element(id)]));
 const storageSetCalls = [];
 const sentMessages = [];
+let listClientsError = null;
 const trustedClient = {
   ClientId: 'client-current',
   ClientName: 'Current Browser',
@@ -147,6 +148,9 @@ const sandbox = {
         }
 
         if (message.type === 'KBB_LIST_CLIENTS') {
+          if (listClientsError) {
+            return { ok: false, error: listClientsError };
+          }
           return { ok: true, response: { Clients: [trustedClient] } };
         }
 
@@ -351,5 +355,26 @@ assert.equal(elements.trustedBrowserList.children.length, 1, 'current browser re
 assert.equal(elements.trustedBrowserList.children[0].textContent, 'No trusted browsers.', 'current browser revoke should clear stale trusted browser rows');
 assert.equal(elements.message.textContent, 'This browser was revoked. Pair again to use KeePass.',
   'current browser revoke should explain that pairing is required again');
+
+trustedClient.Permissions = ['read', 'write', 'manageClients'];
+listClientsError = null;
+await sandbox.listTrustedBrowsers();
+assert.equal(elements.trustedBrowserList.children.length > 0, true, 'test should render stale trusted browser rows before permission denial');
+sentMessages.length = 0;
+listClientsError = 'Trusted browser is not allowed to perform this action.';
+await assert.rejects(
+  () => sandbox.listTrustedBrowsers(),
+  /not allowed/,
+  'trusted browser refresh should surface backend permission failures'
+);
+assert.deepEqual(
+  sentMessages.map((message) => message.type),
+  ['KBB_GET_ABOUT', 'KBB_LIST_CLIENTS'],
+  'permission-denied trusted browser refresh should not keep retrying privileged requests'
+);
+assert.equal(elements.trustedBrowserList.children.length, 1, 'permission-denied trusted browser refresh should replace stale rows with an empty state');
+assert.equal(elements.trustedBrowserList.children[0].textContent, 'No trusted browsers.',
+  'permission-denied trusted browser refresh should clear stale trusted browser rows');
+listClientsError = null;
 
 console.log('Options tests passed.');

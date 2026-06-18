@@ -150,14 +150,22 @@ requireEvery('optionsTests', [
   'self-removing manage permission should disable revoke controls',
   'Manage browsers permission was removed for this browser',
   'current browser revoke should not refresh trusted browsers after local pairing credentials are removed',
-  'current browser revoke should clear stale trusted browser rows'
+  'current browser revoke should clear stale trusted browser rows',
+  'permission-denied trusted browser refresh should not keep retrying privileged requests',
+  'permission-denied trusted browser refresh should clear stale trusted browser rows'
 ], 'options tests should cover self-removing manage permission UI lockout');
+requireEvery('options', [
+  'failClosedTrustedBrowserManagement',
+  '/permission|not allowed/i.test(message)'
+], 'options trusted-browser management should fail closed on backend permission-denied responses');
 requireIncludes('securityThreatModel', 'Popup and Options trusted-browser controls disable themselves',
   'security threat model should document manage-permission UI lockout');
 requireIncludes('securityThreatModel', 'Popup trusted-browser management fails closed on backend permission-denied responses',
   'security threat model should document popup backend permission-denied lockout');
 requireIncludes('securityThreatModel', 'The Options page clears trusted-browser rows locally after revoking the current browser',
   'security threat model should document options current-client revoke cleanup');
+requireIncludes('securityThreatModel', 'It also clears stale trusted-browser rows on backend permission-denied refreshes',
+  'security threat model should document options backend permission-denied cleanup');
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',
