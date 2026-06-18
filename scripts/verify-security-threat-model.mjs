@@ -93,16 +93,23 @@ requireEvery('bridgeMethodPolicy', [
 requireEvery('popup', [
   'ensureWriteActionsEnabled',
   'showEditForm',
-  "if (!hasClientPermission('write'))"
+  "if (!hasClientPermission('write'))",
+  'const hydratedState = await hydrateStatePermissions(state)',
+  'renderState(hydratedState)'
 ], 'popup write actions should be guarded by trusted-client write permission');
 requireEvery('popupTests', [
   'read-only state should disable create action',
   'read-only rendered entries should disable edit buttons',
   'read-only edit action should not open an edit form',
-  'read-only edit action should not send update requests'
+  'read-only edit action should not send update requests',
+  'query refresh should hydrate permissions before rendering read-only controls',
+  'read-only query refresh should keep create action disabled',
+  'read-only query refresh should keep trusted browser management disabled'
 ], 'popup tests should cover read-only create and edit restrictions');
 requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/edit controls',
   'security threat model should document read-only popup write restrictions');
+requireIncludes('securityThreatModel', 'Popup credential query refreshes hydrate trusted-client permissions',
+  'security threat model should document permission hydration before popup query rendering');
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',

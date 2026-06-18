@@ -383,8 +383,9 @@ async function expirePairingSession() {
 
 async function queryLogins() {
   const state = await send({ type: 'KBB_GET_STATE' });
-  renderState(state);
-  if (state.locked) {
+  const hydratedState = await hydrateStatePermissions(state);
+  renderState(hydratedState);
+  if (hydratedState.locked) {
     setMessage('Unlock KeePass Bridge before querying logins.', true);
     return;
   }

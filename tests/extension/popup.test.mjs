@@ -161,6 +161,8 @@ const intervalCalls = [];
 let fakeNow = 1779990000000;
 let clipboardText = 'code: 955-963';
 let queryLoginsResponse = { url: '', entries: [] };
+let getStateResponse = {};
+let statusResponse = { Trusted: true, Permissions: ['read', 'write', 'manageClients'] };
 const storageState = {};
 
 function pickStorageValues(keys) {
@@ -268,6 +270,14 @@ const sandbox = {
               releaseUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0'
             }
           };
+        }
+
+        if (message.type === 'KBB_GET_STATE') {
+          return { ok: true, response: getStateResponse };
+        }
+
+        if (message.type === 'KBB_STATUS') {
+          return { ok: true, response: statusResponse };
         }
 
         if (message.type === 'KBB_SAVE_ENDPOINT') {
@@ -565,6 +575,24 @@ readOnlyEditButton.click();
 await flushAsync();
 assert.equal(findChildByPredicate(elements.results, (element) => element.className === 'edit-form'), null, 'read-only edit action should not open an edit form');
 assert.deepEqual(sentMessages, [], 'read-only edit action should not send update requests');
+
+getStateResponse = {
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  locked: false,
+  autoFillEnabled: false
+};
+statusResponse = { Trusted: true, Permissions: ['read'] };
+queryLoginsResponse = { url: 'https://example.com/login', entries: [] };
+sentMessages.length = 0;
+await sandbox.queryLogins();
+assert.deepEqual(
+  sentMessages.map((message) => message.type).slice(0, 3),
+  ['KBB_GET_STATE', 'KBB_STATUS', 'KBB_QUERY_LOGINS'],
+  'query refresh should hydrate permissions before rendering read-only controls'
+);
+assert.equal(elements.newLogin.disabled, true, 'read-only query refresh should keep create action disabled');
+assert.equal(elements.listClients.disabled, true, 'read-only query refresh should keep trusted browser management disabled');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
