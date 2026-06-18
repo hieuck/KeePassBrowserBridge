@@ -369,7 +369,7 @@ async function cancelPair() {
   clearPairingTimers();
   const state = await send({ type: 'KBB_PAIR_CANCEL' });
   elements.pairingCode.value = '';
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   setMessage(state.paired ? 'Ready to query KeePass.' : 'Pairing cancelled.');
 }
 
@@ -377,7 +377,7 @@ async function expirePairingSession() {
   clearPairingTimers();
   const state = await send({ type: 'KBB_PAIR_CANCEL' });
   elements.pairingCode.value = '';
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   setMessage('Pairing code expired. Start pairing again.');
 }
 

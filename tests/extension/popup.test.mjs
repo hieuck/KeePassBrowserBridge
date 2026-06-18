@@ -165,6 +165,7 @@ let getStateResponse = {};
 let statusResponse = { Trusted: true, Permissions: ['read', 'write', 'manageClients'] };
 let saveEndpointResponse = null;
 let setLockedResponse = null;
+let pairCancelResponse = null;
 const storageState = {};
 
 function pickStorageValues(keys) {
@@ -351,7 +352,7 @@ const sandbox = {
         if (message.type === 'KBB_PAIR_CANCEL') {
           return {
             ok: true,
-            response: {
+            response: pairCancelResponse || {
               endpoint: 'http://127.0.0.1:19455/bridge',
               paired: false,
               pairingSessionId: '',
@@ -702,6 +703,25 @@ assert.deepEqual(
 assert.equal(elements.newLogin.disabled, true, 'read-only unlock should keep create action disabled');
 assert.equal(elements.listClients.disabled, true, 'read-only unlock should keep trusted browser management disabled');
 setLockedResponse = null;
+
+pairCancelResponse = {
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  locked: false,
+  pairingSessionId: '',
+  pairingExpiresAt: 0,
+  autoFillEnabled: false
+};
+sentMessages.length = 0;
+await sandbox.cancelPair();
+assert.deepEqual(
+  sentMessages.map((message) => message.type).slice(0, 2),
+  ['KBB_PAIR_CANCEL', 'KBB_STATUS'],
+  'pair cancel should hydrate permissions before rendering paired read-only controls'
+);
+assert.equal(elements.newLogin.disabled, true, 'read-only pair cancel should keep create action disabled');
+assert.equal(elements.listClients.disabled, true, 'read-only pair cancel should keep trusted browser management disabled');
+pairCancelResponse = null;
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
