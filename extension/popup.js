@@ -326,12 +326,23 @@ async function updateClientPermissions(client, permission, enabled) {
   }
 
   const stored = trustedBrowserClients.find((candidate) => candidate.ClientId === clientId);
+  let currentClientLostManage = false;
   if (stored) {
     stored.Permissions = normalizeClientPermissions(result.Permissions || normalized);
+    if (stored.Current) {
+      currentState = {
+        ...currentState,
+        permissions: stored.Permissions
+      };
+      currentClientLostManage = !stored.Permissions.includes('manageClients');
+      syncCredentialActionAvailability();
+    }
   }
 
   renderClients(trustedBrowserClients);
-  setMessage('Browser permissions updated.');
+  setMessage(currentClientLostManage
+    ? 'Browser permissions updated. Manage browsers permission was removed for this browser.'
+    : 'Browser permissions updated.');
 }
 
 async function completePair() {

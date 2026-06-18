@@ -122,6 +122,17 @@ requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/
   'security threat model should document read-only popup write restrictions');
 requireIncludes('securityThreatModel', 'Popup state-changing refreshes hydrate trusted-client permissions',
   'security threat model should document permission hydration before popup state rendering');
+requireEvery('popup', [
+  'currentClientLostManage',
+  "stored.Current",
+  "currentClientLostManage = !stored.Permissions.includes('manageClients')",
+  'Manage browsers permission was removed for this browser'
+], 'popup trusted-browser controls should fail closed when current browser loses manage permission');
+requireEvery('popupTests', [
+  'self-removing manage permission should disable popup permission controls',
+  'self-removing manage permission should disable popup revoke controls',
+  'self-removing manage permission should explain popup management is no longer available'
+], 'popup tests should cover self-removing manage permission UI lockout');
 requireEvery('options', [
   'trustedBrowserManagementEnabled',
   "stored.Current && !stored.Permissions.includes('manageClients')",
@@ -133,8 +144,8 @@ requireEvery('optionsTests', [
   'self-removing manage permission should disable revoke controls',
   'Manage browsers permission was removed for this browser'
 ], 'options tests should cover self-removing manage permission UI lockout');
-requireIncludes('securityThreatModel', 'Options trusted-browser controls disable themselves',
-  'security threat model should document options manage-permission lockout');
+requireIncludes('securityThreatModel', 'Popup and Options trusted-browser controls disable themselves',
+  'security threat model should document manage-permission UI lockout');
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',

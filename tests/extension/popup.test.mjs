@@ -166,6 +166,7 @@ let statusResponse = { Trusted: true, Permissions: ['read', 'write', 'manageClie
 let saveEndpointResponse = null;
 let setLockedResponse = null;
 let pairCancelResponse = null;
+let trustedClientsResponse = [];
 const storageState = {};
 
 function pickStorageValues(keys) {
@@ -281,6 +282,21 @@ const sandbox = {
 
         if (message.type === 'KBB_STATUS') {
           return { ok: true, response: statusResponse };
+        }
+
+        if (message.type === 'KBB_LIST_CLIENTS') {
+          return { ok: true, response: { Clients: trustedClientsResponse } };
+        }
+
+        if (message.type === 'KBB_UPDATE_CLIENT_PERMISSIONS') {
+          return {
+            ok: true,
+            response: {
+              Updated: true,
+              ClientId: message.clientId,
+              Permissions: message.permissions
+            }
+          };
         }
 
         if (message.type === 'KBB_SET_AUTO_FILL') {
@@ -592,6 +608,47 @@ await sandbox.saveEndpoint();
 assert.deepEqual(sentMessages.map((message) => message.type), ['KBB_SAVE_ENDPOINT'], 'saving endpoint should send the updated bridge endpoint');
 assert.equal(elements.clientsPanel.classList.contains('hidden'), true, 'endpoint save that unpairs should hide stale trusted browsers');
 assert.equal(elements.clientsPanel.children.length, 0, 'endpoint save that unpairs should clear stale trusted browser rows');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  permissions: ['read', 'write', 'manageClients'],
+  autoFillEnabled: false
+});
+const currentTrustedClient = {
+  ClientId: 'client-current',
+  ClientName: 'Current Browser',
+  ExtensionOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+  Current: true,
+  CreatedUtcMs: fakeNow,
+  LastUsedUtcMs: fakeNow,
+  Permissions: ['read', 'write', 'manageClients']
+};
+trustedClientsResponse = [currentTrustedClient];
+sentMessages.length = 0;
+await sandbox.listClients();
+let popupWritePermissionCheckbox = findChildByPredicate(elements.clientsPanel, (element) =>
+  element.type === 'checkbox' && element.dataset.permission === 'write'
+);
+let popupRevokeCurrentButton = findChildByPredicate(elements.clientsPanel, (element) =>
+  element.textContent.includes('Revoke This Browser')
+);
+assert.notEqual(popupWritePermissionCheckbox, null, 'test should render popup write permission checkbox');
+assert.notEqual(popupRevokeCurrentButton, null, 'test should render popup current-browser revoke button');
+assert.equal(popupWritePermissionCheckbox.disabled, false, 'popup trusted-browser controls should be enabled before manage permission is removed');
+assert.equal(popupRevokeCurrentButton.disabled, false, 'popup revoke should be enabled before manage permission is removed');
+
+await sandbox.updateClientPermissions(currentTrustedClient, 'manageClients', false);
+popupWritePermissionCheckbox = findChildByPredicate(elements.clientsPanel, (element) =>
+  element.type === 'checkbox' && element.dataset.permission === 'write'
+);
+popupRevokeCurrentButton = findChildByPredicate(elements.clientsPanel, (element) =>
+  element.textContent.includes('Revoke This Browser')
+);
+assert.equal(popupWritePermissionCheckbox.disabled, true, 'self-removing manage permission should disable popup permission controls');
+assert.equal(popupRevokeCurrentButton.disabled, true, 'self-removing manage permission should disable popup revoke controls');
+assert.equal(elements.message.textContent, 'Browser permissions updated. Manage browsers permission was removed for this browser.',
+  'self-removing manage permission should explain popup management is no longer available');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
