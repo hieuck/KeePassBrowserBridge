@@ -90,6 +90,19 @@ requireEvery('bridgeMethodPolicy', [
   'RequiredPermission',
   'AllMethods'
 ], 'bridge method policy should centralize authentication and permissions');
+requireEvery('popup', [
+  'ensureWriteActionsEnabled',
+  'showEditForm',
+  "if (!hasClientPermission('write'))"
+], 'popup write actions should be guarded by trusted-client write permission');
+requireEvery('popupTests', [
+  'read-only state should disable create action',
+  'read-only rendered entries should disable edit buttons',
+  'read-only edit action should not open an edit form',
+  'read-only edit action should not send update requests'
+], 'popup tests should cover read-only create and edit restrictions');
+requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/edit controls',
+  'security threat model should document read-only popup write restrictions');
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',

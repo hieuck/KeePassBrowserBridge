@@ -1432,6 +1432,11 @@ function isValidSiteOverrideHost(host) {
 }
 
 function showEditForm(item, entry) {
+  if (!hasClientPermission('write')) {
+    setMessage('This browser is read-only. Enable Write permission to create or update KeePass entries.', true);
+    return;
+  }
+
   const existing = item.querySelector('.edit-form');
   if (existing) {
     existing.remove();

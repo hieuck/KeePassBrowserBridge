@@ -145,6 +145,16 @@ function findChildByText(root, text) {
   }
   return null;
 }
+
+function findChildByPredicate(root, predicate) {
+  if (!root) return null;
+  if (predicate(root)) return root;
+  for (const child of root.children || []) {
+    const found = findChildByPredicate(child, predicate);
+    if (found) return found;
+  }
+  return null;
+}
 const timerCalls = [];
 const intervalCalls = [];
 let fakeNow = 1779990000000;
@@ -493,6 +503,33 @@ assert.deepEqual(sentMessages, [], 'trusted browser management should not contac
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',
   paired: true,
+  permissions: ['read'],
+  autoFillEnabled: false
+});
+assert.equal(elements.stateNotice.textContent, 'Read-only access: this browser can find logins, but cannot create or update KeePass entries.', 'read-only state should explain write restrictions');
+assert.equal(elements.newLogin.disabled, true, 'read-only state should disable create action');
+await sandbox.renderResults([
+  {
+    EntryId: 'entry-readonly',
+    Title: 'Read Only Entry',
+    UserName: 'readonly@example.com',
+    Password: 'readonly-secret',
+    Url: 'https://example.com/login'
+  }
+]);
+const readOnlyEditButton = findChildByPredicate(elements.results, (element) => element.textContent.includes('Edit'));
+assert.notEqual(readOnlyEditButton, null, 'test should find the read-only edit button');
+assert.equal(readOnlyEditButton.disabled, true, 'read-only rendered entries should disable edit buttons');
+sentMessages.length = 0;
+readOnlyEditButton.click();
+await flushAsync();
+assert.equal(findChildByPredicate(elements.results, (element) => element.className === 'edit-form'), null, 'read-only edit action should not open an edit form');
+assert.deepEqual(sentMessages, [], 'read-only edit action should not send update requests');
+
+sandbox.renderState({
+  endpoint: 'http://127.0.0.1:19455/bridge',
+  paired: true,
+  permissions: ['read', 'write'],
   autoFillEnabled: false
 });
 
