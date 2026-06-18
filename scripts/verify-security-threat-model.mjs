@@ -104,12 +104,16 @@ requireEvery('popupTests', [
   'read-only edit action should not send update requests',
   'query refresh should hydrate permissions before rendering read-only controls',
   'read-only query refresh should keep create action disabled',
-  'read-only query refresh should keep trusted browser management disabled'
+  'read-only query refresh should keep trusted browser management disabled',
+  'auto-fill toggle should hydrate permissions before rendering read-only controls',
+  'read-only auto-fill toggle should keep create action disabled',
+  'auto-submit toggle should hydrate permissions before rendering read-only controls',
+  'read-only auto-submit toggle should keep trusted browser management disabled'
 ], 'popup tests should cover read-only create and edit restrictions');
 requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/edit controls',
   'security threat model should document read-only popup write restrictions');
-requireIncludes('securityThreatModel', 'Popup credential query refreshes hydrate trusted-client permissions',
-  'security threat model should document permission hydration before popup query rendering');
+requireIncludes('securityThreatModel', 'Popup credential query and preference-toggle refreshes hydrate trusted-client permissions',
+  'security threat model should document permission hydration before popup state rendering');
 
 requireEvery('testsProgram', [
   'LoopbackBridgeServerRejectsWebPreflightOrigin',

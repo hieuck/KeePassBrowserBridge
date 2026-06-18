@@ -63,7 +63,7 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 - Authenticated requests update the trusted client's local last-used timestamp, and trusted-browser management surfaces client origin, permissions, created time, and last-used time for auditability.
 - Empty permission updates keep read-only access instead of restoring full default permissions.
 - Read-only popup sessions disable create/edit controls and defensively refuse direct edit-form opening before a write-capable browser can send update payloads.
-- Popup credential query refreshes hydrate trusted-client permissions before rendering controls, so read-only sessions stay fail-closed after background state refreshes.
+- Popup credential query and preference-toggle refreshes hydrate trusted-client permissions before rendering controls, so read-only sessions stay fail-closed after background state refreshes.
 
 ### Data Minimization
 

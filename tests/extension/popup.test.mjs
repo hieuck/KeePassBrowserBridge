@@ -280,6 +280,32 @@ const sandbox = {
           return { ok: true, response: statusResponse };
         }
 
+        if (message.type === 'KBB_SET_AUTO_FILL') {
+          return {
+            ok: true,
+            response: {
+              endpoint: 'http://127.0.0.1:19455/bridge',
+              paired: true,
+              locked: false,
+              autoFillEnabled: message.enabled,
+              autoSubmitEnabled: false
+            }
+          };
+        }
+
+        if (message.type === 'KBB_SET_AUTO_SUBMIT') {
+          return {
+            ok: true,
+            response: {
+              endpoint: 'http://127.0.0.1:19455/bridge',
+              paired: true,
+              locked: false,
+              autoFillEnabled: false,
+              autoSubmitEnabled: message.enabled
+            }
+          };
+        }
+
         if (message.type === 'KBB_SAVE_ENDPOINT') {
           return {
             ok: true,
@@ -593,6 +619,28 @@ assert.deepEqual(
 );
 assert.equal(elements.newLogin.disabled, true, 'read-only query refresh should keep create action disabled');
 assert.equal(elements.listClients.disabled, true, 'read-only query refresh should keep trusted browser management disabled');
+
+elements.autoFill.checked = true;
+sentMessages.length = 0;
+await sandbox.setAutoFill();
+assert.deepEqual(
+  sentMessages.map((message) => message.type).slice(0, 2),
+  ['KBB_SET_AUTO_FILL', 'KBB_STATUS'],
+  'auto-fill toggle should hydrate permissions before rendering read-only controls'
+);
+assert.equal(elements.newLogin.disabled, true, 'read-only auto-fill toggle should keep create action disabled');
+assert.equal(elements.listClients.disabled, true, 'read-only auto-fill toggle should keep trusted browser management disabled');
+
+elements.autoSubmit.checked = true;
+sentMessages.length = 0;
+await sandbox.setAutoSubmit();
+assert.deepEqual(
+  sentMessages.map((message) => message.type).slice(0, 2),
+  ['KBB_SET_AUTO_SUBMIT', 'KBB_STATUS'],
+  'auto-submit toggle should hydrate permissions before rendering read-only controls'
+);
+assert.equal(elements.newLogin.disabled, true, 'read-only auto-submit toggle should keep create action disabled');
+assert.equal(elements.listClients.disabled, true, 'read-only auto-submit toggle should keep trusted browser management disabled');
 
 sandbox.renderState({
   endpoint: 'http://127.0.0.1:19455/bridge',

@@ -241,7 +241,7 @@ async function setAutoFill() {
     type: 'KBB_SET_AUTO_FILL',
     enabled: elements.autoFill.checked
   });
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   setMessage(state.autoFillEnabled
     ? 'Auto-fill enabled for single matching logins.'
     : 'Auto-fill disabled.');
@@ -252,7 +252,7 @@ async function setAutoSubmit() {
     type: 'KBB_SET_AUTO_SUBMIT',
     enabled: elements.autoSubmit.checked
   });
-  renderState(state);
+  renderState(await hydrateStatePermissions(state));
   setMessage(state.autoSubmitEnabled
     ? 'Auto-submit form after filling enabled.'
     : 'Auto-submit disabled.');
