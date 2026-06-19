@@ -82,6 +82,22 @@ After restarting KeePass:
 
 Use a throwaway KeePass database and disposable browser profile. Record the release-candidate evidence in `docs/manual-smoke-evidence.md`; do not publish credentials, recovery codes, cookies, session tokens, or KeePass master keys.
 
+Create a per-release-candidate evidence file from the template after the release artifacts are built:
+
+```powershell
+.\scripts\new-manual-smoke-evidence.ps1 `
+  -ArtifactsDir "$env:TEMP\KeePassBrowserBridge-artifacts" `
+  -Tester "<name-or-handle>" `
+  -WindowsVersion "<Windows version>" `
+  -Browser "<Chromium / Chrome / Edge / Firefox>" `
+  -BrowserVersion "<browser version>" `
+  -DatabaseAlias "<throwaway database label>" `
+  -BrowserProfile "<disposable profile label>" `
+  -FixtureAlias "<fixture host or disposable account alias>"
+```
+
+The generated file is saved as `docs/manual-smoke-evidence-<version>-<date>.md` by default, does not overwrite existing evidence unless `-Force` is passed, and leaves automated/manual results as `Pending` until the tester records fresh command output and smoke results.
+
 1. Pair a fresh browser profile with KeePass.
 2. Query and fill a simple login fixture.
 3. Fill a page with multiple matching entries and choose a non-first entry.
