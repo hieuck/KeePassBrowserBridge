@@ -146,6 +146,17 @@ assert.throws(
   'proxy experiment must reject malformed create requestDetailsJson with a stable WebAuthn error'
 );
 
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 68,
+    requestDetailsJson: '[]'
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidRequestDetailsError,
+  'proxy experiment must reject non-object create requestDetailsJson with a stable WebAuthn error'
+);
+
 const createWithoutRpId = api.normalizeCreateRequest({
   requestId: 42,
   requestDetailsJson: JSON.stringify(createOptions({
@@ -2784,6 +2795,49 @@ assert.deepEqual(plain(missingDetailsCalls.find((entry) => entry[0] === 'getComp
   { requestId: 75, error: { name: 'NotAllowedError', message: 'WebAuthn proxy request details must be valid JSON.' } }
 ], 'lifecycle should complete missing WebAuthn request details with a stable WebAuthn error');
 await missingDetailsLifecycle.detach();
+
+const nonObjectDetailsCalls = [];
+const nonObjectDetailsGetEvent = makeEvent();
+let nonObjectDetailsResolverCalled = false;
+let nonObjectDetailsHandlerCalled = false;
+const nonObjectDetailsLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => nonObjectDetailsCalls.push(['attach']),
+      detach: async () => nonObjectDetailsCalls.push(['detach']),
+      completeCreateRequest: async (details) => nonObjectDetailsCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => nonObjectDetailsCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => nonObjectDetailsCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: makeEvent(),
+      onGetRequest: nonObjectDetailsGetEvent,
+      onIsUvpaaRequest: makeEvent(),
+      onRequestCanceled: makeEvent()
+    }
+  },
+  resolveTrustedOrigin: async () => {
+    nonObjectDetailsResolverCalled = true;
+    return 'https://example.com';
+  },
+  onGetRequest: async () => {
+    nonObjectDetailsHandlerCalled = true;
+  }
+});
+await nonObjectDetailsLifecycle.attach();
+await nonObjectDetailsGetEvent.dispatch({
+  requestId: 76,
+  requestDetailsJson: 'null'
+});
+assert.equal(nonObjectDetailsResolverCalled, false,
+  'lifecycle should not resolve origin for non-object WebAuthn request details');
+assert.equal(nonObjectDetailsHandlerCalled, false,
+  'lifecycle should not call get handlers for non-object WebAuthn request details');
+assert.equal(nonObjectDetailsLifecycle.pendingCount(), 0,
+  'lifecycle should not track non-object WebAuthn request details as pending');
+assert.deepEqual(plain(nonObjectDetailsCalls.find((entry) => entry[0] === 'getComplete')), [
+  'getComplete',
+  { requestId: 76, error: { name: 'NotAllowedError', message: 'WebAuthn proxy request details must be valid JSON.' } }
+], 'lifecycle should complete non-object WebAuthn request details with a stable WebAuthn error');
+await nonObjectDetailsLifecycle.detach();
 
 const invalidRpCalls = [];
 const invalidRpCreateEvent = makeEvent();

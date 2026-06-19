@@ -385,6 +385,9 @@
     } catch {
       throw notAllowedError(invalidRequestDetailsMessage);
     }
+    if (!details || typeof details !== 'object' || Array.isArray(details)) {
+      throw notAllowedError(invalidRequestDetailsMessage);
+    }
     return {
       requestId,
       details
