@@ -371,7 +371,7 @@
 
   function parseRequestDetails(requestInfo) {
     if (!requestInfo || typeof requestInfo.requestDetailsJson !== 'string') {
-      throw new Error('WebAuthn proxy request is missing requestDetailsJson.');
+      throw notAllowedError(invalidRequestDetailsMessage);
     }
 
     const requestId = normalizeRequestId(requestInfo.requestId);

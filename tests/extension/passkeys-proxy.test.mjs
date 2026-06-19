@@ -237,6 +237,16 @@ assert.throws(
 );
 
 assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 69
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidRequestDetailsError,
+  'proxy experiment must reject get requests without requestDetailsJson with a stable WebAuthn error'
+);
+
+assert.throws(
   () => api.normalizeCreateRequest({
     requestId: 46,
     requestDetailsJson: JSON.stringify(createOptions({
@@ -2732,6 +2742,48 @@ assert.deepEqual(plain(malformedDetailsCalls.find((entry) => entry[0] === 'creat
   { requestId: 74, error: { name: 'NotAllowedError', message: 'WebAuthn proxy request details must be valid JSON.' } }
 ], 'lifecycle should complete malformed WebAuthn request details with a stable WebAuthn error');
 await malformedDetailsLifecycle.detach();
+
+const missingDetailsCalls = [];
+const missingDetailsGetEvent = makeEvent();
+let missingDetailsResolverCalled = false;
+let missingDetailsHandlerCalled = false;
+const missingDetailsLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => missingDetailsCalls.push(['attach']),
+      detach: async () => missingDetailsCalls.push(['detach']),
+      completeCreateRequest: async (details) => missingDetailsCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => missingDetailsCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => missingDetailsCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: makeEvent(),
+      onGetRequest: missingDetailsGetEvent,
+      onIsUvpaaRequest: makeEvent(),
+      onRequestCanceled: makeEvent()
+    }
+  },
+  resolveTrustedOrigin: async () => {
+    missingDetailsResolverCalled = true;
+    return 'https://example.com';
+  },
+  onGetRequest: async () => {
+    missingDetailsHandlerCalled = true;
+  }
+});
+await missingDetailsLifecycle.attach();
+await missingDetailsGetEvent.dispatch({
+  requestId: 75
+});
+assert.equal(missingDetailsResolverCalled, false,
+  'lifecycle should not resolve origin for WebAuthn requests without requestDetailsJson');
+assert.equal(missingDetailsHandlerCalled, false,
+  'lifecycle should not call get handlers for WebAuthn requests without requestDetailsJson');
+assert.equal(missingDetailsLifecycle.pendingCount(), 0,
+  'lifecycle should not track WebAuthn requests without requestDetailsJson as pending');
+assert.deepEqual(plain(missingDetailsCalls.find((entry) => entry[0] === 'getComplete')), [
+  'getComplete',
+  { requestId: 75, error: { name: 'NotAllowedError', message: 'WebAuthn proxy request details must be valid JSON.' } }
+], 'lifecycle should complete missing WebAuthn request details with a stable WebAuthn error');
+await missingDetailsLifecycle.detach();
 
 const invalidRpCalls = [];
 const invalidRpCreateEvent = makeEvent();
