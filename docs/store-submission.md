@@ -83,6 +83,8 @@ Include this in certification notes where a reviewer needs setup context:
 
 KeePass Browser Bridge requires the matching KeePass 2.x plugin from the same release. Install exactly one plugin artifact, start KeePass with a throwaway database, then load the browser extension package and pair it with the code shown by KeePass. The extension communicates only with `http://127.0.0.1:<port>/bridge`; it does not connect to a hosted credential service.
 
+The content script runs in child frames, including about:blank/srcdoc frames, because many sites embed hosted login widgets. It uses the top-page URL for those embedded widgets so KeePass matching stays tied to the page the user is visiting.
+
 ## Store-Specific Checks
 
 Chrome Web Store:

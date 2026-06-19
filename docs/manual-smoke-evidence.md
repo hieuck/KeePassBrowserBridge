@@ -46,6 +46,7 @@ Use this template for each release candidate after automated verification passes
 | Multiple Matches | Account picker can choose a non-first matching KeePass entry and fill that entry. |  |  |
 | Focused-Field Fill | Manual username, password, OTP, and custom-field actions fill only the focused or selected field. |  |  |
 | Username-First Flow | Username-first or same-page reveal login keeps selected entry and fills the later password step. |  |  |
+| Embedded Login Widget | Inline picker in an embedded about:blank/srcdoc login widget matches the top-page URL and fills the selected credential. |  |  |
 | Save New Login | New disposable login submission offers save, writes the entry, and persists after database save/reopen. |  |  |
 | Update Existing Password | Changed password submission offers update and preserves username/URL metadata. |  |  |
 | Change-Password Form | Current-password plus new-password flow updates to the new password, not the old one. |  |  |

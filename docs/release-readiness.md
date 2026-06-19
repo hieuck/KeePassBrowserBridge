@@ -88,12 +88,13 @@ Use a throwaway KeePass database and disposable browser profile. Record the rele
 4. Save a new login after submit.
 5. Update an existing password after submit.
 6. Fill username-first and same-page reveal flows.
-7. Fill TOTP, including split OTP inputs.
-8. Fill HTTP Basic Auth with a disposable credential.
-9. Confirm protected custom fields are not exposed by popup, fill, settings export, or content-script results.
-10. Confirm passkeys/WebAuthn stay unsupported in the public build and store/release copy.
-11. Review `docs/migration-guide.md` against the release package and remove any stale migration notes.
-12. Revoke the browser in KeePass and confirm the extension stops querying until re-paired.
+7. Fill an embedded about:blank/srcdoc login widget and confirm matching uses the top-page URL.
+8. Fill TOTP, including split OTP inputs.
+9. Fill HTTP Basic Auth with a disposable credential.
+10. Confirm protected custom fields are not exposed by popup, fill, settings export, or content-script results.
+11. Confirm passkeys/WebAuthn stay unsupported in the public build and store/release copy.
+12. Review `docs/migration-guide.md` against the release package and remove any stale migration notes.
+13. Revoke the browser in KeePass and confirm the extension stops querying until re-paired.
 
 The detailed fixture matrix is in `docs/real-site-validation.md`.
 

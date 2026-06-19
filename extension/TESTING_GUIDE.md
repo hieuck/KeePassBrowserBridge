@@ -194,8 +194,8 @@ Use `docs/real-site-validation.md` as the source of truth for site-inspired
 coverage. It maps Dropbox-style username-first login, ChatGPT/OpenAI additional
 URLs, Google OTP, viotp/DataTables search, fill.dev-style profile/payment forms,
 phone-number login identifiers, multi-form pages, Shadow DOM, save prompts,
-change-password updates, and update prompts to deterministic fixtures and
-automated tests.
+embedded about:blank/srcdoc login widgets, change-password updates, and update
+prompts to deterministic fixtures and automated tests.
 
 ---
 
