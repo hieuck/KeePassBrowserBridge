@@ -39,6 +39,7 @@ internal static class Program
         PasskeyAssertionSignsChallengeAndIncrementsCounter();
         PasskeyAssertionRejectsNonEs256PublicKeyCose();
         PasskeyAssertionRejectsNonCanonicalPublicKeyCose();
+        PasskeyDerSignatureRejectsNonCanonicalIntegers();
         PasskeyAssertionRejectsRequiredUserVerification();
         PasskeyAssertionRejectsUnknownUserVerification();
         PasskeyEntryStoreProtectsPrivateKeyMaterial();
@@ -585,6 +586,32 @@ internal static class Program
             "passkey public key COSE parser must reject non-canonical integer encodings");
         AssertFalse(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion),
             "passkey assertion verification must reject non-canonical public key COSE encodings");
+    }
+
+    private static void PasskeyDerSignatureRejectsNonCanonicalIntegers()
+    {
+        byte[] p1363 = new byte[64];
+        p1363[31] = 0x01;
+        p1363[63] = 0x02;
+
+        byte[] canonicalDer = EcdsaSignatureDer.EncodeFromP1363(p1363, 32);
+        byte[] decoded;
+        AssertTrue(EcdsaSignatureDer.TryDecodeToP1363(canonicalDer, 32, out decoded),
+            "passkey DER signature decoder should accept canonical signatures");
+        AssertByteArrayEqual(p1363, decoded, "passkey DER signature decoder canonical round-trip mismatch");
+
+        byte[] unnecessaryLeadingZero = AddUnnecessaryLeadingZeroToFirstDerInteger(canonicalDer);
+        AssertFalse(EcdsaSignatureDer.TryDecodeToP1363(unnecessaryLeadingZero, 32, out decoded),
+            "passkey DER signature decoder must reject non-canonical integer leading zeros");
+
+        byte[] negativeInteger = new byte[]
+        {
+            0x30, 0x06,
+            0x02, 0x01, 0x80,
+            0x02, 0x01, 0x01
+        };
+        AssertFalse(EcdsaSignatureDer.TryDecodeToP1363(negativeInteger, 32, out decoded),
+            "passkey DER signature decoder must reject negative DER integers");
     }
 
     private static void PasskeyAssertionRejectsRequiredUserVerification()
@@ -4741,6 +4768,21 @@ internal static class Program
         byte[] bytes;
         AssertTrue(Base64Url.TryDecode(value, out bytes), "test value should be base64url encoded");
         return bytes;
+    }
+
+    private static byte[] AddUnnecessaryLeadingZeroToFirstDerInteger(byte[] der)
+    {
+        if (der == null || der.Length < 8 || der[0] != 0x30 || der[2] != 0x02)
+            throw new Exception("test DER signature shape is invalid.");
+
+        byte[] mutated = new byte[der.Length + 1];
+        mutated[0] = der[0];
+        mutated[1] = (byte)(der[1] + 1);
+        mutated[2] = der[2];
+        mutated[3] = (byte)(der[3] + 1);
+        mutated[4] = 0x00;
+        Buffer.BlockCopy(der, 4, mutated, 5, der.Length - 4);
+        return mutated;
     }
 
     private static void AssertP256SubjectPublicKeyInfo(byte[] spki, byte[] publicKeyCose, string label)

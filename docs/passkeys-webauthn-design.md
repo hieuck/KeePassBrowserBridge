@@ -6,6 +6,8 @@ Current backend status: `src/Bridge/PasskeyService.cs` implements the first isol
 
 WebAuthn Level 3 user-agent hints (`security-key`, `client-device`, `hybrid`) are normalized for create/get request payloads as non-binding UX metadata. Known hints are retained in caller preference order, while duplicate or unknown values are dropped before pending session storage.
 
+Stored assertion signatures must decode as strict positive DER integers with minimal encoding. The backend rejects unnecessary leading zeros and negative integer encodings before verifying a passkey assertion signature.
+
 Reference standards and platform notes checked on 2026-06-14:
 
 - W3C Web Authentication Level 3 candidate recommendation.
@@ -159,7 +161,7 @@ Backend:
 - Bridge-level feature discovery plus list/create/get/cancel/revoke routing behind an injectable enabled gate, including authenticated request handling, permission checks, disabled `prototype_disabled` status metadata, KeePass approval grant/deny handling, pending-session creation/cancellation, lookup summary response, KeePass passkey entry creation/deletion, assertion signing, sign-count persistence, database save callbacks, and trusted-client revoke cleanup. Covered by backend tests; production default remains `feature_disabled`.
 - KeePass-side passkey approval prompt wiring that shows RP ID, caller origin, extension origin, account metadata, and matching credentials before allowing feature-gated create/get begin requests. Compiled through plugin build verification; full UI automation remains future work.
 - Feature-gated trusted-browser permission controls for `passkeyRead` and `passkeyWrite` in popup and settings UI. Covered by E2E tests; production `hello` keeps the controls hidden while passkeys are disabled.
-- Assertion signature verification against generated public keys, with authenticatorData RP ID hash, exact length, and user-present-only flags, `clientDataJSON` origin and expected challenge, assertion credential ID, user handle, sign-count metadata, and stored public-key COSE metadata required to match the expected canonical CBOR EC2/P-256/ES256 credential. Covered by backend tests, including non-canonical COSE integer encoding rejection.
+- Assertion signature verification against generated public keys, with authenticatorData RP ID hash, exact length, and user-present-only flags, `clientDataJSON` origin and expected challenge, assertion credential ID, user handle, sign-count metadata, stored public-key COSE metadata required to match the expected canonical CBOR EC2/P-256/ES256 credential, and strict positive/minimal DER signature decoding. Covered by backend tests, including non-canonical COSE integer encoding and non-canonical DER integer rejection.
 - Signature counter increment and persistence in credential material and KeePass entry storage across repeated bridge assertion sessions. Covered by backend tests.
 - Replay rejection for create and get completion requests. Covered by backend bridge tests that replay the authenticated completion `RequestId` and assert no duplicate entry, save, or sign-count update occurs.
 - Permission denial for clients without `passkeyRead` or `passkeyWrite`. Covered by disabled-gate backend tests.

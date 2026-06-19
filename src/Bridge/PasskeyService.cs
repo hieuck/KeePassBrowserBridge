@@ -1845,12 +1845,18 @@ namespace KeePassBrowserBridge.Bridge
             offset += length;
             if (length > coordinateLength + 1) return false;
 
-            if (length == coordinateLength + 1)
+            if (der[start] == 0)
             {
-                if (der[start] != 0) return false;
+                if (length == 1 || (der[start + 1] & 0x80) == 0) return false;
                 ++start;
                 --length;
             }
+            else if ((der[start] & 0x80) != 0)
+            {
+                return false;
+            }
+
+            if (length > coordinateLength) return false;
 
             integer = new byte[coordinateLength];
             Buffer.BlockCopy(der, start, integer, coordinateLength - length, length);
