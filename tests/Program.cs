@@ -87,6 +87,7 @@ internal static class Program
         UpdateCheckerSelectsNewestReleaseWithPlgxAsset();
         UpdateCheckerSkipsReleaseWithoutChecksumAsset();
         UpdateCheckerExtractsExpectedPluginChecksum();
+        UpdateCheckerRejectsDuplicatePluginChecksumEntries();
         UpdateCheckerVerifiesDownloadedPluginChecksum();
         PairingSessionGeneratesSixDigitCode();
         PairingSessionStoresExtensionOriginFromBegin();
@@ -1598,6 +1599,18 @@ internal static class Program
 
         AssertEqual("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", expected,
             "update checker should extract and normalize the plugin checksum");
+    }
+
+    private static void UpdateCheckerRejectsDuplicatePluginChecksumEntries()
+    {
+        string checksumText =
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  KeePassBrowserBridge.plgx\n" +
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  KeePassBrowserBridge.plgx\n";
+
+        string expected = UpdateChecker.GetExpectedSha256(checksumText, "KeePassBrowserBridge.plgx");
+
+        AssertEqual(string.Empty, expected,
+            "plugin auto-update should reject ambiguous duplicate checksum entries for the PLGX asset");
     }
 
     private static void UpdateCheckerVerifiesDownloadedPluginChecksum()

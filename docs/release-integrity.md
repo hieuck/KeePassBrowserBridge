@@ -93,7 +93,7 @@ The current release process provides:
 - Structured release provenance metadata with source revision, dirty-state, build runtime versions, artifact sizes, and artifact hashes.
 - Clean-source release gating with `-RequireCleanSource` in the GitHub release workflow and maintainer release commands.
 - SHA-256 checksums for accidental corruption detection.
-- Plugin auto-update verifies `KeePassBrowserBridge.plgx` against the release `SHA256SUMS.txt` before replacing the local plugin package.
+- Plugin auto-update verifies `KeePassBrowserBridge.plgx` against the release `SHA256SUMS.txt` before replacing the local plugin package, and refuses ambiguous checksum lists that contain duplicate PLGX entries.
 - Optional GPG detached signatures for authenticated release assets when maintainers build with `-SignArtifacts`.
 - Optional expected-signer fingerprint pinning with `-ExpectedSignerFingerprint` when maintainers verify signed releases.
 - GitHub Release asset pinning for plugin update discovery.

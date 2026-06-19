@@ -129,6 +129,8 @@ namespace KeePassBrowserBridge.Bridge
         {
             if (string.IsNullOrEmpty(checksumText) || string.IsNullOrEmpty(assetName)) return string.Empty;
 
+            string expected = string.Empty;
+            bool found = false;
             string[] lines = checksumText.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
             foreach (string line in lines)
             {
@@ -137,10 +139,14 @@ namespace KeePassBrowserBridge.Bridge
                 if (!match.Success) continue;
 
                 if (string.Equals(match.Groups["name"].Value, assetName, StringComparison.Ordinal))
-                    return match.Groups["hash"].Value.ToLowerInvariant();
+                {
+                    if (found) return string.Empty;
+                    expected = match.Groups["hash"].Value.ToLowerInvariant();
+                    found = true;
+                }
             }
 
-            return string.Empty;
+            return expected;
         }
 
         public static bool VerifyFileSha256(string filePath, string expectedSha256)
