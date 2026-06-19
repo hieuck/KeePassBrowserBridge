@@ -38,6 +38,7 @@ internal static class Program
         PasskeyCredentialIdsAreUnique();
         PasskeyAssertionSignsChallengeAndIncrementsCounter();
         PasskeyAssertionRejectsNonEs256PublicKeyCose();
+        PasskeyAssertionRejectsNonCanonicalPublicKeyCose();
         PasskeyAssertionRejectsRequiredUserVerification();
         PasskeyAssertionRejectsUnknownUserVerification();
         PasskeyEntryStoreProtectsPrivateKeyMaterial();
@@ -561,6 +562,29 @@ internal static class Program
             0x03, 0x26, 0x20, "passkey assertion verification must reject public key COSE when alg is not ES256");
         AssertRejectsPublicKeyCoseMutation(service, registration.Credential, assertion.Assertion, validPublicKeyCose,
             0x20, 0x01, 0x02, "passkey assertion verification must reject public key COSE when crv is not P-256");
+    }
+
+    private static void PasskeyAssertionRejectsNonCanonicalPublicKeyCose()
+    {
+        PasskeyService service = new PasskeyService();
+        PasskeyRegistrationResult registration = service.CreateCredential(CreatePasskeyRegistrationRequest());
+        AssertTrue(registration.Success, "passkey registration should succeed before non-canonical COSE verification test: " + registration.Error);
+
+        PasskeyAssertionResult assertion = service.CreateAssertion(registration.Credential, new PasskeyAssertionRequest
+        {
+            RpId = "example.com",
+            Origin = "https://example.com/login",
+            Challenge = Base64Url.Encode(Encoding.ASCII.GetBytes("fedcba9876543210"))
+        });
+        AssertTrue(assertion.Success, "passkey assertion should succeed before non-canonical COSE verification test: " + assertion.Error);
+
+        registration.Credential.PublicKeyCose = ReplaceCanonicalCoseIntWithUint8(registration.Credential.PublicKeyCose, 0x01);
+
+        EccPublicKey publicKey;
+        AssertFalse(CoseKey.TryDecodeEs256PublicKey(Base64UrlDecodeForTest(registration.Credential.PublicKeyCose), out publicKey),
+            "passkey public key COSE parser must reject non-canonical integer encodings");
+        AssertFalse(service.VerifyAssertionSignature(registration.Credential, assertion.Assertion),
+            "passkey assertion verification must reject non-canonical public key COSE encodings");
     }
 
     private static void PasskeyAssertionRejectsRequiredUserVerification()
@@ -4680,8 +4704,7 @@ internal static class Program
 
     private static string ReplaceCoseValueAfterKey(string publicKeyCose, byte keyMarker, byte expectedValue, byte replacementValue)
     {
-        byte[] cose;
-        AssertTrue(Base64Url.TryDecode(publicKeyCose, out cose), "test public key COSE should be base64url encoded");
+        byte[] cose = Base64UrlDecodeForTest(publicKeyCose);
         for (int i = 0; i < cose.Length - 1; ++i)
         {
             if (cose[i] == keyMarker && cose[i + 1] == expectedValue)
@@ -4692,6 +4715,32 @@ internal static class Program
         }
 
         throw new Exception("test public key COSE did not contain the expected key/value marker.");
+    }
+
+    private static string ReplaceCanonicalCoseIntWithUint8(string publicKeyCose, byte canonicalValue)
+    {
+        byte[] cose = Base64UrlDecodeForTest(publicKeyCose);
+        for (int i = 0; i < cose.Length; ++i)
+        {
+            if (cose[i] == canonicalValue)
+            {
+                byte[] mutated = new byte[cose.Length + 1];
+                Buffer.BlockCopy(cose, 0, mutated, 0, i);
+                mutated[i] = 0x18;
+                mutated[i + 1] = canonicalValue;
+                Buffer.BlockCopy(cose, i + 1, mutated, i + 2, cose.Length - i - 1);
+                return Base64Url.Encode(mutated);
+            }
+        }
+
+        throw new Exception("test public key COSE did not contain the expected canonical integer.");
+    }
+
+    private static byte[] Base64UrlDecodeForTest(string value)
+    {
+        byte[] bytes;
+        AssertTrue(Base64Url.TryDecode(value, out bytes), "test value should be base64url encoded");
+        return bytes;
     }
 
     private static void AssertP256SubjectPublicKeyInfo(byte[] spki, byte[] publicKeyCose, string label)

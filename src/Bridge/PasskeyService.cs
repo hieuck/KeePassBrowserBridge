@@ -1629,14 +1629,14 @@ namespace KeePassBrowserBridge.Bridge
             {
                 if (offset >= bytes.Length) return false;
                 length = bytes[offset++];
-                return true;
+                return length >= 24;
             }
             if (additionalInfo == 25)
             {
                 if (offset + 2 > bytes.Length) return false;
                 length = (ulong)((bytes[offset] << 8) | bytes[offset + 1]);
                 offset += 2;
-                return true;
+                return length > byte.MaxValue;
             }
             return false;
         }
