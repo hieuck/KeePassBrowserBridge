@@ -6,6 +6,8 @@
     'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
   const invalidRequestIdMessage =
     'WebAuthn proxy request is missing a valid request ID.';
+  const invalidRequestDetailsMessage =
+    'WebAuthn proxy request details must be valid JSON.';
   const duplicatePendingRequestMessage =
     'A pending passkey request already exists for this WebAuthn request.';
   const requestTimeoutMessage =
@@ -177,6 +179,14 @@
     async function handleRequest(kind, requestInfo) {
       const requestId = normalizeRequestId(requestInfo && requestInfo.requestId);
       if (!requestId) return;
+      try {
+        parseRequestDetails(requestInfo);
+      } catch (error) {
+        if (kind === 'create') {
+          return completeCreateError(chromeLike, requestId, error);
+        }
+        return completeGetError(chromeLike, requestId, error);
+      }
       if (pending.has(requestId)) {
         await rejectDuplicateRequest(kind, requestId);
         return;
@@ -369,7 +379,12 @@
       throw notAllowedError(invalidRequestIdMessage);
     }
 
-    const details = JSON.parse(requestInfo.requestDetailsJson);
+    let details;
+    try {
+      details = JSON.parse(requestInfo.requestDetailsJson);
+    } catch {
+      throw notAllowedError(invalidRequestDetailsMessage);
+    }
     return {
       requestId,
       details

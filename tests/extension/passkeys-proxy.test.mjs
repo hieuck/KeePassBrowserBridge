@@ -135,6 +135,17 @@ assert.throws(
   'proxy experiment must reject create requests without a valid WebAuthn request ID'
 );
 
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 68,
+    requestDetailsJson: '{not-json'
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidRequestDetailsError,
+  'proxy experiment must reject malformed create requestDetailsJson with a stable WebAuthn error'
+);
+
 const createWithoutRpId = api.normalizeCreateRequest({
   requestId: 42,
   requestDetailsJson: JSON.stringify(createOptions({
@@ -2679,6 +2690,49 @@ assert.equal(missingRequestIdCalls.some((entry) => entry[0] === 'createComplete'
   'lifecycle should not call Chrome completion APIs when Chrome did not provide a valid request ID');
 await missingRequestIdLifecycle.detach();
 
+const malformedDetailsCalls = [];
+const malformedDetailsCreateEvent = makeEvent();
+let malformedDetailsResolverCalled = false;
+let malformedDetailsHandlerCalled = false;
+const malformedDetailsLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => malformedDetailsCalls.push(['attach']),
+      detach: async () => malformedDetailsCalls.push(['detach']),
+      completeCreateRequest: async (details) => malformedDetailsCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => malformedDetailsCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => malformedDetailsCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: malformedDetailsCreateEvent,
+      onGetRequest: makeEvent(),
+      onIsUvpaaRequest: makeEvent(),
+      onRequestCanceled: makeEvent()
+    }
+  },
+  resolveTrustedOrigin: async () => {
+    malformedDetailsResolverCalled = true;
+    return 'https://example.com';
+  },
+  onCreateRequest: async () => {
+    malformedDetailsHandlerCalled = true;
+  }
+});
+await malformedDetailsLifecycle.attach();
+await malformedDetailsCreateEvent.dispatch({
+  requestId: 74,
+  requestDetailsJson: '{not-json'
+});
+assert.equal(malformedDetailsResolverCalled, false,
+  'lifecycle should not resolve origin for malformed WebAuthn request details');
+assert.equal(malformedDetailsHandlerCalled, false,
+  'lifecycle should not call create handlers for malformed WebAuthn request details');
+assert.equal(malformedDetailsLifecycle.pendingCount(), 0,
+  'lifecycle should not track malformed WebAuthn request details as pending');
+assert.deepEqual(plain(malformedDetailsCalls.find((entry) => entry[0] === 'createComplete')), [
+  'createComplete',
+  { requestId: 74, error: { name: 'NotAllowedError', message: 'WebAuthn proxy request details must be valid JSON.' } }
+], 'lifecycle should complete malformed WebAuthn request details with a stable WebAuthn error');
+await malformedDetailsLifecycle.detach();
+
 const invalidRpCalls = [];
 const invalidRpCreateEvent = makeEvent();
 const invalidRpLifecycle = api.createLifecycle({
@@ -3054,6 +3108,12 @@ function isInvalidRequestIdError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'WebAuthn proxy request is missing a valid request ID.');
+}
+
+function isInvalidRequestDetailsError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'WebAuthn proxy request details must be valid JSON.');
 }
 
 function isInvalidUserHandleError(error) {
