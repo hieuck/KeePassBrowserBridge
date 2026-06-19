@@ -42,7 +42,7 @@ extension test.
 | Popup full-entry fill with auto-submit should submit the same focused form | `two-login-forms.html` | `auto-submits the focused login form after popup full-entry fill` |
 | Open Shadow DOM login form | `shadow-login-page.html` | `fills username and password inside open Shadow DOM login forms` |
 | Delayed Shadow DOM login form | `delayed-shadow-login-page.html` | `adds inline buttons when an open Shadow DOM login form renders later` |
-| Embedded login widgets in child frames | extension manifest | `content scripts should run in iframes for embedded login widgets` |
+| Embedded login widgets in child frames | `embedded-about-blank-login-widget.html` plus extension manifest | `content scripts should run in iframes for embedded login widgets`, `inline picker in an about:blank embedded login widget queries with the top page URL` |
 | Save new login after submit | `login-page.html`, `login-submit-redirect.html` | `prompts to save a new login after form submit`, `restores save prompt after form submit navigates to another page` |
 | SPA login without native form submit | `spa-type-button-login-page.html` | `prompts to save a new SPA login after clicking a credential action type button`, `does not prompt after clicking a neutral type button in a SPA login panel`, `prompts to save a new SPA login after pressing Enter in a password field`, `does not prompt after pressing Enter before a SPA password is typed` |
 | Update changed password after submit | `login-page.html`, `multi-step-password.html` | `prompts to update an existing login when submitted password changes` |

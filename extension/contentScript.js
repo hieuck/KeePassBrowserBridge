@@ -362,9 +362,10 @@ function collectCredentialFromForm(root) {
     return null;
   }
   const multiStepCredential = window.__keepassBrowserBridgeLastMultiStepCredential;
+  const pageUrl = credentialPageUrl();
   return {
-    title: document.title || new URL(window.location.href).hostname,
-    url: window.location.href,
+    title: document.title || titleFromCredentialUrl(pageUrl),
+    url: pageUrl,
     userName: usernameInput
       ? usernameInput.value
       : (passwordInput && multiStepCredential && multiStepCredential.UserName ? multiStepCredential.UserName : ""),
@@ -463,7 +464,7 @@ async function maybePromptSaveLogin(credential) {
       return;
     }
 
-    const pageUrl = credential.url || window.location.href;
+    const pageUrl = credential.url || credentialPageUrl();
     const result = await chrome.runtime.sendMessage({
       type: "KBB_QUERY_FOR_URL",
       url: pageUrl,
@@ -911,9 +912,10 @@ function positionInlineButton(input, button) {
 async function fillFromInlineButton(button) {
   setInlineButtonState(button, "...");
   try {
+    const pageUrl = credentialPageUrl();
     const result = await chrome.runtime.sendMessage({
       type: "KBB_QUERY_FOR_URL",
-      url: window.location.href,
+      url: pageUrl,
     });
     if (!result || !result.ok) {
       throw new Error(
@@ -1592,7 +1594,7 @@ function acknowledgeFilledEntry(entry) {
   const result = chrome.runtime.sendMessage({
     type: "KBB_FILL_ACK",
     entryId: entry.EntryId,
-    url: window.location.href,
+    url: credentialPageUrl(),
   });
   if (result && typeof result.catch === "function") {
     result.catch(() => {});
@@ -1737,6 +1739,33 @@ function titleFromCredentialUrl(url) {
   } catch (error) {
     return "New Login";
   }
+}
+function credentialPageUrl() {
+  const ownUrl = String(window.location && window.location.href ? window.location.href : "");
+  if (!isAboutFrameUrl(ownUrl)) {
+    return ownUrl;
+  }
+
+  const ancestorUrl = accessibleAncestorPageUrl();
+  return ancestorUrl || ownUrl;
+}
+function isAboutFrameUrl(url) {
+  return url === "about:blank" || url === "about:srcdoc";
+}
+function accessibleAncestorPageUrl() {
+  let current = window;
+  while (current && current.parent && current.parent !== current) {
+    try {
+      current = current.parent;
+      const href = String(current.location && current.location.href ? current.location.href : "");
+      if (href && !isAboutFrameUrl(href)) {
+        return href;
+      }
+    } catch (error) {
+      return "";
+    }
+  }
+  return "";
 }
 function showUpdateLoginPrompt(entry, credential) {
   closeMutationPrompt();

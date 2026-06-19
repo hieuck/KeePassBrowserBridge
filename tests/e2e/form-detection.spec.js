@@ -840,6 +840,73 @@ test.describe('content script form detection', () => {
     expect(ackMessage.url).toContain('/tests/fixtures/login-page.html');
   });
 
+  test('inline picker in an about:blank embedded login widget queries with the top page URL', async ({ page }) => {
+    await page.addInitScript(() => {
+      if (window.top === window) {
+        window.__kbbMessages = [];
+      }
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            let messages;
+            try {
+              messages = window.top.__kbbMessages || (window.top.__kbbMessages = []);
+            } catch (error) {
+              messages = window.__kbbMessages || (window.__kbbMessages = []);
+            }
+            messages.push({
+              ...message,
+              frameHref: window.location.href,
+              topHref: window.top === window ? window.location.href : window.top.location.href
+            });
+            if (message.type === 'KBB_FILL_ACK') {
+              return { ok: true, response: { Success: true } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return message.url.includes('/tests/fixtures/embedded-about-blank-login-widget.html')
+                ? {
+                    ok: true,
+                    response: {
+                      entries: [
+                        {
+                          Title: 'Embedded Work',
+                          EntryId: 'entry-embedded-work',
+                          UserName: 'iframe@example.com',
+                          Password: 'iframe-secret',
+                          Url: 'https://example.com/embedded'
+                        }
+                      ]
+                    }
+                  }
+                : { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/embedded-about-blank-login-widget.html');
+    const iframeHandle = await page.locator('#login-widget').elementHandle();
+    const frame = await iframeHandle.contentFrame();
+    await frame.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await frame.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+    await expect(frame.locator('#embedded-username')).toHaveValue('iframe@example.com');
+    await expect(frame.locator('#embedded-password')).toHaveValue('');
+
+    const queryMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_QUERY_FOR_URL'));
+    expect(queryMessage.url).toContain('/tests/fixtures/embedded-about-blank-login-widget.html');
+    expect(queryMessage.frameHref).toBe('about:srcdoc');
+
+    const ackMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_FILL_ACK'));
+    expect(ackMessage).toMatchObject({
+      type: 'KBB_FILL_ACK',
+      entryId: 'entry-embedded-work'
+    });
+    expect(ackMessage.url).toContain('/tests/fixtures/embedded-about-blank-login-widget.html');
+  });
+
   test('inline picker explains when no logins are available for the page', async ({ page }) => {
     await page.addInitScript(() => {
       window.chrome = {
