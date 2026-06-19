@@ -3008,6 +3008,8 @@ await lifecycle.attach();
 assert.equal(lifecycle.isAttached(), true, 'lifecycle attach should mark proxy attached');
 assert.equal(lifecycleCreateEvent.listenerCount(), 1, 'lifecycle attach should register create listener');
 assert.equal(lifecycleIsUvpaaEvent.listenerCount(), 1, 'lifecycle attach should register UVPAA listener');
+await lifecycleCancelEvent.dispatch(999);
+assert.deepEqual(canceled, [], 'lifecycle should ignore browser cancel events for unknown WebAuthn request IDs');
 await lifecycleIsUvpaaEvent.dispatch({ requestId: 76 });
 assert.deepEqual(plain(lifecycleCalls.find((entry) => entry[0] === 'isUvpaaComplete')),
   ['isUvpaaComplete', { requestId: 76, isUvpaa: false }],

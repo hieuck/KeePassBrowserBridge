@@ -262,6 +262,7 @@
       const key = normalizeRequestId(requestId);
       if (!key) return;
       const request = pending.get(key);
+      if (!request) return;
       pending.delete(key);
       clearPendingTimer(request);
       await notifyCanceled(key, request, 'canceled');
