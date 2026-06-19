@@ -117,6 +117,24 @@ const createWithUntrustedOptionOrigin = api.normalizeCreateRequest({
 assert.equal(createWithUntrustedOptionOrigin.Origin, 'https://example.com',
   'trusted context origin should override any origin value inside requestDetailsJson');
 
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com', name: 'Example' },
+      user: {
+        id: 'YWxpY2U',
+        name: 'alice@example.com',
+        displayName: 'Alice'
+      },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidRequestIdError,
+  'proxy experiment must reject create requests without a valid WebAuthn request ID'
+);
+
 const createWithoutRpId = api.normalizeCreateRequest({
   requestId: 42,
   requestDetailsJson: JSON.stringify(createOptions({
@@ -192,6 +210,20 @@ const getWithoutRpId = api.normalizeGetRequest({
 });
 assert.equal(getWithoutRpId.RpId, 'login.example.com',
   'get request should default a missing RP ID to the trusted origin host');
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: '',
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidRequestIdError,
+  'proxy experiment must reject get requests without a valid WebAuthn request ID'
+);
 
 assert.throws(
   () => api.normalizeCreateRequest({
@@ -2607,6 +2639,46 @@ assert.deepEqual(plain(noOriginCalls.find((entry) => entry[0] === 'createComplet
 ], 'lifecycle should complete missing-origin create requests with a WebAuthn error');
 await noOriginLifecycle.detach();
 
+const missingRequestIdCalls = [];
+const missingRequestIdCreateEvent = makeEvent();
+let missingRequestIdResolverCalled = false;
+let missingRequestIdHandlerCalled = false;
+const missingRequestIdLifecycle = api.createLifecycle({
+  chromeLike: {
+    webAuthenticationProxy: {
+      attach: async () => missingRequestIdCalls.push(['attach']),
+      detach: async () => missingRequestIdCalls.push(['detach']),
+      completeCreateRequest: async (details) => missingRequestIdCalls.push(['createComplete', details]),
+      completeGetRequest: async (details) => missingRequestIdCalls.push(['getComplete', details]),
+      completeIsUvpaaRequest: async (details) => missingRequestIdCalls.push(['isUvpaaComplete', details]),
+      onCreateRequest: missingRequestIdCreateEvent,
+      onGetRequest: makeEvent(),
+      onIsUvpaaRequest: makeEvent(),
+      onRequestCanceled: makeEvent()
+    }
+  },
+  resolveTrustedOrigin: async () => {
+    missingRequestIdResolverCalled = true;
+    return 'https://example.com';
+  },
+  onCreateRequest: async () => {
+    missingRequestIdHandlerCalled = true;
+  }
+});
+await missingRequestIdLifecycle.attach();
+await missingRequestIdCreateEvent.dispatch({
+  requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' }))
+});
+assert.equal(missingRequestIdResolverCalled, false,
+  'lifecycle should not resolve origin for WebAuthn requests without a valid request ID');
+assert.equal(missingRequestIdHandlerCalled, false,
+  'lifecycle should not call create handlers for WebAuthn requests without a valid request ID');
+assert.equal(missingRequestIdLifecycle.pendingCount(), 0,
+  'lifecycle should not track WebAuthn requests without a valid request ID');
+assert.equal(missingRequestIdCalls.some((entry) => entry[0] === 'createComplete'), false,
+  'lifecycle should not call Chrome completion APIs when Chrome did not provide a valid request ID');
+await missingRequestIdLifecycle.detach();
+
 const invalidRpCalls = [];
 const invalidRpCreateEvent = makeEvent();
 const invalidRpLifecycle = api.createLifecycle({
@@ -2976,6 +3048,12 @@ function isUnsupportedExtensionError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey requested WebAuthn extension is not supported by this build.');
+}
+
+function isInvalidRequestIdError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'WebAuthn proxy request is missing a valid request ID.');
 }
 
 function isInvalidUserHandleError(error) {

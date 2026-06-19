@@ -4,6 +4,8 @@
 
   const missingOriginMessage =
     'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
+  const invalidRequestIdMessage =
+    'WebAuthn proxy request is missing a valid request ID.';
   const duplicatePendingRequestMessage =
     'A pending passkey request already exists for this WebAuthn request.';
   const requestTimeoutMessage =
@@ -173,7 +175,8 @@
     }
 
     async function handleRequest(kind, requestInfo) {
-      const requestId = String(requestInfo && requestInfo.requestId);
+      const requestId = normalizeRequestId(requestInfo && requestInfo.requestId);
+      if (!requestId) return;
       if (pending.has(requestId)) {
         await rejectDuplicateRequest(kind, requestId);
         return;
@@ -233,7 +236,8 @@
     }
 
     async function handleIsUvpaaRequest(requestInfo) {
-      const requestId = String(requestInfo && requestInfo.requestId);
+      const requestId = normalizeRequestId(requestInfo && requestInfo.requestId);
+      if (!requestId) return;
       try {
         const result = typeof options.onIsUvpaaRequest === 'function'
           ? await options.onIsUvpaaRequest(requestInfo)
@@ -245,7 +249,8 @@
     }
 
     async function handleCanceled(requestId) {
-      const key = String(requestId);
+      const key = normalizeRequestId(requestId);
+      if (!key) return;
       const request = pending.get(key);
       pending.delete(key);
       clearPendingTimer(request);
@@ -359,9 +364,14 @@
       throw new Error('WebAuthn proxy request is missing requestDetailsJson.');
     }
 
+    const requestId = normalizeRequestId(requestInfo.requestId);
+    if (!requestId) {
+      throw notAllowedError(invalidRequestIdMessage);
+    }
+
     const details = JSON.parse(requestInfo.requestDetailsJson);
     return {
-      requestId: String(requestInfo.requestId),
+      requestId,
       details
     };
   }
@@ -1328,6 +1338,19 @@
   function normalizeTimeoutMs(value) {
     const timeout = Number(value);
     return Number.isFinite(timeout) && timeout > 0 ? Math.floor(timeout) : 0;
+  }
+
+  function normalizeRequestId(value) {
+    if (typeof value === 'number') {
+      return Number.isSafeInteger(value) && value >= 0 ? String(value) : '';
+    }
+
+    if (typeof value !== 'string') return '';
+
+    const trimmed = value.trim();
+    if (trimmed !== value || !/^(0|[1-9][0-9]*)$/.test(trimmed)) return '';
+    const numeric = Number(trimmed);
+    return Number.isSafeInteger(numeric) ? trimmed : '';
   }
 
   function stringValue(value) {
