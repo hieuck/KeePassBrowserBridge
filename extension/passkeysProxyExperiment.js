@@ -1266,10 +1266,7 @@
   }
 
   function normalizeIsUvpaaResult(result) {
-    if (result && typeof result === 'object' && 'isUvpaa' in result) {
-      return Boolean(result.isUvpaa);
-    }
-    return Boolean(result);
+    return false;
   }
 
   function normalizeRequestedExtensions(extensions) {

@@ -2634,6 +2634,9 @@ assert.deepEqual(plain(calls.slice(0, 2)), [
 ], 'error completion should call the matching Chrome completion APIs');
 assert.deepEqual(plain(calls[4]), ['isUvpaa', { requestId: 47, isUvpaa: false }],
   'UVPAA completion should call the Chrome completion API with an explicit boolean');
+await api.completeIsUvpaa(chromeApi, 98, { isUvpaa: true });
+assert.deepEqual(plain(calls.at(-1)), ['isUvpaa', { requestId: 98, isUvpaa: false }],
+  'UVPAA completion should stay false until a reviewed user-verifying authenticator path exists');
 
 const noOriginCalls = [];
 const noOriginCreateEvent = makeEvent();
@@ -3007,8 +3010,8 @@ assert.equal(lifecycleCreateEvent.listenerCount(), 1, 'lifecycle attach should r
 assert.equal(lifecycleIsUvpaaEvent.listenerCount(), 1, 'lifecycle attach should register UVPAA listener');
 await lifecycleIsUvpaaEvent.dispatch({ requestId: 76 });
 assert.deepEqual(plain(lifecycleCalls.find((entry) => entry[0] === 'isUvpaaComplete')),
-  ['isUvpaaComplete', { requestId: 76, isUvpaa: true }],
-  'lifecycle should complete UVPAA requests through the configured handler');
+  ['isUvpaaComplete', { requestId: 76, isUvpaa: false }],
+  'lifecycle should complete UVPAA requests as unavailable until a reviewed user-verifying authenticator path exists');
 await lifecycleCreateEvent.dispatch({
   requestId: 77,
   requestDetailsJson: JSON.stringify(createOptions({ rp: { id: 'example.com' }, user: { id: 'dXNlcg', name: 'alice' }, challenge: 'MDEyMzQ1Njc4OWFiY2RlZg' }))
