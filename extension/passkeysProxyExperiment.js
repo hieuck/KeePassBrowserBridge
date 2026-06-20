@@ -835,7 +835,11 @@
   }
 
   function normalizeCredentialDescriptorIdsWithError(credentials, invalidMessage) {
-    if (!Array.isArray(credentials)) return [];
+    if (credentials === undefined || credentials === null) return [];
+    if (!Array.isArray(credentials)) {
+      if (invalidMessage) throw notAllowedError(invalidMessage);
+      return [];
+    }
     const ids = [];
     for (const credential of credentials) {
       const type = stringValue(credential && credential.type).trim().toLowerCase();

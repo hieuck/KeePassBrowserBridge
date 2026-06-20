@@ -724,6 +724,22 @@ assert.throws(
 );
 
 assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 5601,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      excludeCredentials: { id: 'ZXhjbHVkZS0x', type: 'public-key' }
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidExcludeCredentialError,
+  'proxy experiment must reject non-array excludeCredentials instead of ignoring them'
+);
+
+assert.throws(
   () => api.normalizeGetRequest({
     requestId: 54,
     requestDetailsJson: JSON.stringify({
@@ -804,6 +820,21 @@ assert.throws(
   }),
   isInvalidAllowCredentialError,
   'proxy experiment must reject get requests with unsupported allowCredentials descriptor types'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 5701,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      allowCredentials: { id: 'Y3JlZC0x', type: 'public-key' }
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidAllowCredentialError,
+  'proxy experiment must reject non-array allowCredentials instead of broadening assertion requests'
 );
 
 assert.equal(api.isRpIdAllowedForOrigin('example.com', 'https://example.com/login'), true,

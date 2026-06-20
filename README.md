@@ -43,6 +43,8 @@ Explicitly empty passkey RP IDs and malformed create RP metadata are rejected in
 
 Malformed requested WebAuthn extension metadata is rejected before bridge dispatch.
 
+Malformed `excludeCredentials` and `allowCredentials` descriptor-list metadata is rejected instead of being ignored.
+
 ## Security Model
 
 - The browser extension never stores the KeePass master key.

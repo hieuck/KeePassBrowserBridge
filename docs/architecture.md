@@ -75,6 +75,8 @@ Explicitly empty WebAuthn RP IDs and malformed create RP metadata fail validatio
 
 Malformed requested WebAuthn extension metadata fails closed before bridge dispatch.
 
+Malformed passkey credential descriptor-list metadata fails closed before bridge dispatch.
+
 ## Data Model
 
 KeePass Browser Bridge uses standard KeePass fields where possible:
