@@ -1058,7 +1058,11 @@
         authenticatorData,
         publicKey,
         publicKeyAlgorithm: publicKey ? -7 : undefined,
-        transports: normalizeTransportArray(response && (response.Transports || response.transports || credential.Transports || credential.transports))
+        transports: normalizeCompleteTransportMetadata(
+          response && response.Transports,
+          response && response.transports,
+          credential.Transports,
+          credential.transports)
       }),
       clientExtensionResults: normalizeCompleteClientExtensionResults(response)
     }));
@@ -1115,12 +1119,11 @@
     const attestationObject = completeBase64UrlAliasField(response.attestationObject, response.AttestationObject);
     const authenticatorData = completeBase64UrlAliasField(response.authenticatorData, response.AuthenticatorData);
     const publicKey = completeBase64UrlField(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
-    const transports = firstDefined(response.transports, response.Transports);
+    const transports = completeSerializedTransportMetadata(response.transports, response.Transports);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
-    assertSerializedTransportMetadata(transports);
     completeAuthenticatorAttachment(parsed, true);
     assertCompleteClientExtensionResultAliases(parsed);
     return responseJson;
@@ -1233,6 +1236,37 @@
         throw notAllowedError(invalidCompleteResponseTransportMessage);
       }
     }
+  }
+
+  function normalizeCompleteTransportMetadata(...values) {
+    let selected;
+    for (const value of values) {
+      if (value === undefined || value === null || value === false) continue;
+      if (!Array.isArray(value)) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+      const normalized = normalizeTransportArray(value) || [];
+      if (selected === undefined) {
+        selected = normalized;
+      } else if (JSON.stringify(selected) !== JSON.stringify(normalized)) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+    }
+    return selected && selected.length ? selected : undefined;
+  }
+
+  function completeSerializedTransportMetadata(...values) {
+    let selected;
+    for (const value of values) {
+      if (value === undefined || value === null) continue;
+      assertSerializedTransportMetadata(value);
+      if (selected === undefined) {
+        selected = value;
+      } else if (JSON.stringify(selected) !== JSON.stringify(value)) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+    }
+    return selected;
   }
 
   function assertCompleteAuthenticatorAttachment(authenticatorAttachment) {

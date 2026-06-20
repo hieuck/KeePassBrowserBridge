@@ -2939,6 +2939,48 @@ assert.throws(
   'serialized get response validation should reject conflicting base64url field aliases'
 );
 
+assert.throws(
+  () => api.createResponseJson({
+    Credential: { CredentialId: 'Y3JlZC10cmFuc3BvcnQ' },
+    ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+    AttestationObject: 'YXR0ZXN0YXRpb24',
+    Transports: ['internal'],
+    transports: ['usb']
+  }),
+  isInvalidCompleteTransportError,
+  'create response serialization should reject conflicting transport aliases'
+);
+
+assert.throws(
+  () => api.createResponseJson({
+    Credential: {
+      CredentialId: 'Y3JlZC10cmFuc3BvcnQ',
+      Transports: ['usb']
+    },
+    ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+    AttestationObject: 'YXR0ZXN0YXRpb24',
+    Transports: ['internal']
+  }),
+  isInvalidCompleteTransportError,
+  'create response serialization should reject conflicting credential transport aliases'
+);
+
+assert.throws(
+  () => api.createResponseJson(JSON.stringify({
+    id: 'Y3JlZC10cmFuc3BvcnQ',
+    rawId: 'Y3JlZC10cmFuc3BvcnQ',
+    type: 'public-key',
+    response: {
+      clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+      attestationObject: 'YXR0ZXN0YXRpb24',
+      transports: ['internal'],
+      Transports: ['usb']
+    }
+  })),
+  isInvalidCompleteTransportError,
+  'serialized create response validation should reject conflicting transport aliases'
+);
+
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
   ['get', { requestId: 43, error: { name: 'NotAllowedError', message: 'Bridge unavailable' } }]
@@ -3536,6 +3578,12 @@ function isInvalidCompleteBase64UrlError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey complete response contained invalid base64url WebAuthn fields.');
+}
+
+function isInvalidCompleteTransportError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey complete response contained invalid transport metadata.');
 }
 
 function isUnsupportedExtensionError(error) {

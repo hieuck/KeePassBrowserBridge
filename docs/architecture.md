@@ -83,6 +83,8 @@ Conflicting complete-response client-extension result aliases, including nested 
 
 Conflicting complete-response base64url WebAuthn field aliases fail closed before browser completion.
 
+Conflicting complete-response transport metadata aliases fail closed before browser completion.
+
 ## Data Model
 
 KeePass Browser Bridge uses standard KeePass fields where possible:

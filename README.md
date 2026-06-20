@@ -51,6 +51,8 @@ Conflicting complete-response client-extension result aliases, including nested 
 
 Conflicting complete-response base64url WebAuthn field aliases are rejected before browser completion.
 
+Conflicting complete-response transport metadata aliases are rejected before browser completion.
+
 ## Security Model
 
 - The browser extension never stores the KeePass master key.
