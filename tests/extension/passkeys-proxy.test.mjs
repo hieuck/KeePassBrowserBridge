@@ -814,6 +814,18 @@ assert.equal(await trustedOriginResolver({
   requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
 }), 'http://localhost:8080', 'trusted-origin resolver should allow loopback HTTP for local WebAuthn development');
 assert.equal(await trustedOriginResolver({
+  requestId: 4901,
+  tabId: '9',
+  frameId: 4,
+  requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
+}), '', 'trusted-origin resolver should reject string tab IDs instead of coercing them into trusted frame context');
+assert.equal(await trustedOriginResolver({
+  requestId: 4902,
+  tabId: 9,
+  frameId: '4',
+  requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
+}), '', 'trusted-origin resolver should reject string frame IDs instead of coercing them into trusted frame context');
+assert.equal(await trustedOriginResolver({
   requestId: 50,
   requestDetailsJson: JSON.stringify({ origin: 'https://spoofed.example' })
 }), '', 'trusted-origin resolver must not use origin values embedded in requestDetailsJson');

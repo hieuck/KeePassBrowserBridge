@@ -614,10 +614,13 @@
     const tabId = integerValue(requestInfo && requestInfo.tabId);
     if (tabId < 0) return '';
 
-    const frameId = integerValue(requestInfo && requestInfo.frameId);
+    const frameId = requestInfo && requestInfo.frameId === undefined
+      ? 0
+      : integerValue(requestInfo && requestInfo.frameId);
+    if (frameId < 0) return '';
     const details = {
       tabId,
-      frameId: frameId >= 0 ? frameId : 0
+      frameId
     };
 
     try {
@@ -886,8 +889,7 @@
   }
 
   function integerValue(value) {
-    const parsed = Number(value);
-    return Number.isInteger(parsed) ? parsed : -1;
+    return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : -1;
   }
 
   async function cancelBridgeRequest(bridgeCall, requestId) {

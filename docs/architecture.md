@@ -69,6 +69,8 @@ The current protocol covers passwords, TOTP codes, selected non-protected custom
 
 The proxy ignores browser cancellation events for unknown or non-pending WebAuthn request IDs before calling backend cancellation hooks.
 
+Frame-origin fallback only accepts numeric browser tab/frame IDs; string or malformed IDs fail closed before `webNavigation.getFrame` context is trusted.
+
 ## Data Model
 
 KeePass Browser Bridge uses standard KeePass fields where possible:

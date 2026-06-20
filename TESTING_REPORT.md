@@ -78,6 +78,8 @@ Current passkey tests also cover WebAuthn Level 3 UX hint normalization for crea
 
 Passkey proxy cancellation note: browser cancel events for unknown or non-pending WebAuthn request IDs are ignored before backend cancellation hooks. Covered by JS tests.
 
+Passkey proxy origin note: trusted-origin frame fallback rejects non-numeric tab/frame IDs instead of coercing them into browser frame context. Covered by JS tests.
+
 ## Next Steps
 
 1. Keep `.\scripts\verify.ps1` green after every change, including the clean-source release-gate and fake-GPG signed release smokes.

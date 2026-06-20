@@ -174,6 +174,7 @@ Browser:
 - User cancellation and request-timeout behavior. Covered by JS tests.
 - Revoked browser behavior while a WebAuthn request is pending. Covered by JS background tests that invoke proxy lifecycle cleanup on current-client revoke; lifecycle tests cover browser-visible cancellation for extension-initiated pending cleanup.
 - Unknown or non-pending browser cancel events are ignored before backend cancellation dispatch. Covered by JS tests.
+- Trusted-origin frame fallback rejects non-numeric tab/frame IDs instead of coercing them into `webNavigation.getFrame` context. Covered by JS tests.
 - Firefox compatibility or explicit unsupported behavior.
 
 Release:
