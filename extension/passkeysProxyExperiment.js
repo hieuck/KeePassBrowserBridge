@@ -409,9 +409,15 @@
     const options = parsed.details || {};
     const origin = trustedOrigin(context);
     const user = options.user || {};
-    const rp = options.rp && typeof options.rp === 'object' ? options.rp : {};
+    const hasRp = Object.prototype.hasOwnProperty.call(options, 'rp');
+    const rp = hasRp ? options.rp : undefined;
+    const rpIdSource = hasRp
+      ? (rp && typeof rp === 'object' && !Array.isArray(rp)
+          ? (Object.prototype.hasOwnProperty.call(rp, 'id') ? rp.id : rpIdFromOrigin(origin))
+          : '')
+      : rpIdFromOrigin(origin);
     const authenticatorSelection = options.authenticatorSelection || {};
-    const rpId = normalizeRpId(Object.prototype.hasOwnProperty.call(rp, 'id') ? rp.id : rpIdFromOrigin(origin));
+    const rpId = normalizeRpId(rpIdSource);
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
     assertUserVerificationSupported(userVerification);

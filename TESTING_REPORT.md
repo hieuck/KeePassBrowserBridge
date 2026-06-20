@@ -80,7 +80,7 @@ Passkey proxy cancellation note: browser cancel events for unknown or non-pendin
 
 Passkey proxy origin note: trusted-origin frame fallback rejects non-numeric tab/frame IDs instead of coercing them into browser frame context. Covered by JS tests.
 
-Passkey proxy RP ID note: explicitly empty create/get RP IDs are rejected instead of defaulting to the trusted origin host. Covered by JS tests.
+Passkey proxy RP ID note: explicitly empty create/get RP IDs and malformed create RP metadata are rejected instead of defaulting to the trusted origin host. Covered by JS tests.
 
 ## Next Steps
 

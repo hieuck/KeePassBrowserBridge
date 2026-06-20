@@ -193,6 +193,25 @@ assert.throws(
   'create request should reject explicit empty RP IDs instead of defaulting them to the trusted origin host'
 );
 
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 4202,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: [],
+      user: {
+        id: 'YWxpY2U',
+        name: 'alice@example.com',
+        displayName: 'Alice'
+      },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    }))
+  }, {
+    origin: 'https://login.example.com'
+  }),
+  (error) => error && error.message === 'Passkey RP ID is not valid for the trusted caller origin.',
+  'create request should reject malformed RP metadata instead of defaulting it to the trusted origin host'
+);
+
 const createWithLegacyResidentKey = api.normalizeCreateRequest({
   requestId: 44,
   requestDetailsJson: JSON.stringify(createOptions({
