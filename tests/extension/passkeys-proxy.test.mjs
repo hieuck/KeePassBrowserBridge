@@ -174,6 +174,25 @@ const createWithoutRpId = api.normalizeCreateRequest({
 assert.equal(createWithoutRpId.RpId, 'login.example.com',
   'create request should default a missing RP ID to the trusted origin host');
 
+assert.throws(
+  () => api.normalizeCreateRequest({
+    requestId: 4201,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: '', name: 'Example' },
+      user: {
+        id: 'YWxpY2U',
+        name: 'alice@example.com',
+        displayName: 'Alice'
+      },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    }))
+  }, {
+    origin: 'https://login.example.com'
+  }),
+  (error) => error && error.message === 'Passkey RP ID is not valid for the trusted caller origin.',
+  'create request should reject explicit empty RP IDs instead of defaulting them to the trusted origin host'
+);
+
 const createWithLegacyResidentKey = api.normalizeCreateRequest({
   requestId: 44,
   requestDetailsJson: JSON.stringify(createOptions({
@@ -232,6 +251,20 @@ const getWithoutRpId = api.normalizeGetRequest({
 });
 assert.equal(getWithoutRpId.RpId, 'login.example.com',
   'get request should default a missing RP ID to the trusted origin host');
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 4301,
+    requestDetailsJson: JSON.stringify({
+      rpId: '',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+    })
+  }, {
+    origin: 'https://login.example.com'
+  }),
+  (error) => error && error.message === 'Passkey RP ID is not valid for the trusted caller origin.',
+  'get request should reject explicit empty RP IDs instead of defaulting them to the trusted origin host'
+);
 
 assert.throws(
   () => api.normalizeGetRequest({

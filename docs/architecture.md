@@ -71,6 +71,8 @@ The proxy ignores browser cancellation events for unknown or non-pending WebAuth
 
 Frame-origin fallback only accepts numeric browser tab/frame IDs; string or malformed IDs fail closed before `webNavigation.getFrame` context is trusted.
 
+Explicitly empty WebAuthn RP IDs fail validation instead of falling back to the trusted origin host.
+
 ## Data Model
 
 KeePass Browser Bridge uses standard KeePass fields where possible:

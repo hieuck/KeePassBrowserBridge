@@ -39,6 +39,8 @@ Passkeys/WebAuthn are not supported in version 0.9.0. A backend-only C# prototyp
 
 The passkey proxy origin resolver only accepts numeric browser tab/frame IDs for `webNavigation.getFrame` fallback and rejects coerced string IDs before trusting frame context.
 
+Explicitly empty passkey RP IDs are rejected instead of being treated as missing and defaulted to the trusted origin host.
+
 ## Security Model
 
 - The browser extension never stores the KeePass master key.

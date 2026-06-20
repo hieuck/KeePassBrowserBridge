@@ -409,8 +409,9 @@
     const options = parsed.details || {};
     const origin = trustedOrigin(context);
     const user = options.user || {};
+    const rp = options.rp && typeof options.rp === 'object' ? options.rp : {};
     const authenticatorSelection = options.authenticatorSelection || {};
-    const rpId = normalizeRpId(options.rp && options.rp.id ? options.rp.id : rpIdFromOrigin(origin));
+    const rpId = normalizeRpId(Object.prototype.hasOwnProperty.call(rp, 'id') ? rp.id : rpIdFromOrigin(origin));
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
     assertUserVerificationSupported(userVerification);
@@ -449,7 +450,7 @@
     const parsed = parseRequestDetails(requestInfo);
     const options = parsed.details || {};
     const origin = trustedOrigin(context);
-    const rpId = normalizeRpId(options.rpId || rpIdFromOrigin(origin));
+    const rpId = normalizeRpId(Object.prototype.hasOwnProperty.call(options, 'rpId') ? options.rpId : rpIdFromOrigin(origin));
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(options.userVerification);
     assertUserVerificationSupported(userVerification);
