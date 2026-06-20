@@ -90,6 +90,8 @@ Passkey proxy authenticator-selection note: malformed `authenticatorSelection` m
 
 Passkey proxy completion note: conflicting client-extension result aliases, including nested `credProps` aliases, are rejected before browser completion. Covered by JS tests.
 
+Passkey proxy completion note: conflicting base64url WebAuthn field aliases are rejected before browser completion. Covered by JS tests.
+
 ## Next Steps
 
 1. Keep `.\scripts\verify.ps1` green after every change, including the clean-source release-gate and fake-GPG signed release smokes.

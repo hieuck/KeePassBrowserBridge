@@ -49,6 +49,8 @@ Malformed `authenticatorSelection` metadata is rejected before bridge dispatch.
 
 Conflicting complete-response client-extension result aliases, including nested `credProps` aliases, are rejected before browser completion.
 
+Conflicting complete-response base64url WebAuthn field aliases are rejected before browser completion.
+
 ## Security Model
 
 - The browser extension never stores the KeePass master key.

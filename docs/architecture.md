@@ -81,6 +81,8 @@ Malformed passkey authenticator-selection metadata fails closed before bridge di
 
 Conflicting complete-response client-extension result aliases, including nested `credProps` aliases, fail closed before browser completion.
 
+Conflicting complete-response base64url WebAuthn field aliases fail closed before browser completion.
+
 ## Data Model
 
 KeePass Browser Bridge uses standard KeePass fields where possible:

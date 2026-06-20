@@ -2881,6 +2881,64 @@ assert.throws(
   'get response serialization should reject conflicting nested client extension result aliases'
 );
 
+assert.throws(
+  () => api.createResponseJson({
+    Credential: { CredentialId: 'Y3JlZC1hbGlhcw' },
+    ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+    clientDataJSON: 'Y2xpZW50LW90aGVy',
+    AttestationObject: 'YXR0ZXN0YXRpb24'
+  }),
+  isInvalidCompleteBase64UrlError,
+  'create response serialization should reject conflicting base64url field aliases'
+);
+
+assert.throws(
+  () => api.getResponseJson({
+    Assertion: {
+      CredentialId: 'Y3JlZC1hbGlhcw',
+      AuthenticatorData: 'YXV0aC1kYXRh',
+      authenticatorData: 'YXV0aC1vdGhlcg',
+      ClientDataJson: 'Y2xpZW50LWdldA',
+      Signature: 'c2lnbmF0dXJl'
+    }
+  }),
+  isInvalidCompleteBase64UrlError,
+  'get response serialization should reject conflicting base64url field aliases'
+);
+
+assert.throws(
+  () => api.createResponseJson(JSON.stringify({
+    id: 'Y3JlZC1hbGlhcw',
+    rawId: 'Y3JlZC1hbGlhcw',
+    type: 'public-key',
+    response: {
+      clientDataJSON: 'Y2xpZW50LWNyZWF0ZQ',
+      ClientDataJson: 'Y2xpZW50LW90aGVy',
+      attestationObject: 'YXR0ZXN0YXRpb24'
+    }
+  })),
+  isInvalidCompleteBase64UrlError,
+  'serialized create response validation should reject conflicting base64url field aliases'
+);
+
+assert.throws(
+  () => api.getResponseJson({
+    responseJson: JSON.stringify({
+      id: 'Y3JlZC1hbGlhcw',
+      rawId: 'Y3JlZC1hbGlhcw',
+      type: 'public-key',
+      response: {
+        authenticatorData: 'YXV0aC1kYXRh',
+        clientDataJSON: 'Y2xpZW50LWdldA',
+        signature: 'c2lnbmF0dXJl',
+        Signature: 'c2lnLW90aGVy'
+      }
+    })
+  }),
+  isInvalidCompleteBase64UrlError,
+  'serialized get response validation should reject conflicting base64url field aliases'
+);
+
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
   ['get', { requestId: 43, error: { name: 'NotAllowedError', message: 'Bridge unavailable' } }]
@@ -3472,6 +3530,12 @@ function isInvalidCompleteClientExtensionResultsError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey complete response contained invalid client extension results.');
+}
+
+function isInvalidCompleteBase64UrlError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey complete response contained invalid base64url WebAuthn fields.');
 }
 
 function isUnsupportedExtensionError(error) {
