@@ -44,6 +44,8 @@
     'Passkey authenticator attachment is not supported by this build.';
   const unsupportedResidentKeyMessage =
     'Passkey resident-key requirement is not supported by this build.';
+  const invalidAuthenticatorSelectionMessage =
+    'Passkey authenticator selection metadata is invalid.';
   const unsupportedExtensionMessage =
     'Passkey requested WebAuthn extension is not supported by this build.';
   const invalidUserHandleMessage =
@@ -416,7 +418,7 @@
           ? (Object.prototype.hasOwnProperty.call(rp, 'id') ? rp.id : rpIdFromOrigin(origin))
           : '')
       : rpIdFromOrigin(origin);
-    const authenticatorSelection = options.authenticatorSelection || {};
+    const authenticatorSelection = normalizeAuthenticatorSelection(options.authenticatorSelection);
     const rpId = normalizeRpId(rpIdSource);
     assertRpIdAllowedForOrigin(rpId, origin);
     const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
@@ -736,6 +738,14 @@
     return normalizeKnownOptionalEnum(value,
       ['platform', 'cross-platform'],
       unsupportedAuthenticatorAttachmentMessage);
+  }
+
+  function normalizeAuthenticatorSelection(value) {
+    if (value === undefined || value === null) return {};
+    if (typeof value !== 'object' || Array.isArray(value)) {
+      throw notAllowedError(invalidAuthenticatorSelectionMessage);
+    }
+    return value;
   }
 
   function assertAuthenticatorAttachmentSupported(authenticatorAttachment) {

@@ -45,6 +45,8 @@ Malformed requested WebAuthn extension metadata is rejected before bridge dispat
 
 Malformed `excludeCredentials` and `allowCredentials` descriptor-list metadata is rejected instead of being ignored.
 
+Malformed `authenticatorSelection` metadata is rejected before bridge dispatch.
+
 ## Security Model
 
 - The browser extension never stores the KeePass master key.

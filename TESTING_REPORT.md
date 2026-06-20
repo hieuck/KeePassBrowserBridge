@@ -86,6 +86,8 @@ Passkey proxy extension note: malformed requested WebAuthn extension metadata is
 
 Passkey proxy descriptor note: malformed `excludeCredentials`/`allowCredentials` descriptor-list metadata is rejected instead of being ignored. Covered by JS tests.
 
+Passkey proxy authenticator-selection note: malformed `authenticatorSelection` metadata is rejected before bridge dispatch. Covered by JS tests.
+
 ## Next Steps
 
 1. Keep `.\scripts\verify.ps1` green after every change, including the clean-source release-gate and fake-GPG signed release smokes.

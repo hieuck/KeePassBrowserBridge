@@ -77,6 +77,8 @@ Malformed requested WebAuthn extension metadata fails closed before bridge dispa
 
 Malformed passkey credential descriptor-list metadata fails closed before bridge dispatch.
 
+Malformed passkey authenticator-selection metadata fails closed before bridge dispatch.
+
 ## Data Model
 
 KeePass Browser Bridge uses standard KeePass fields where possible:

@@ -497,6 +497,22 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeCreateRequest({
+    requestId: 6101,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      authenticatorSelection: []
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isInvalidAuthenticatorSelectionError,
+  'proxy experiment must reject malformed authenticatorSelection metadata before bridge dispatch'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
     requestId: 62,
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },
@@ -3333,6 +3349,12 @@ function isUnsupportedResidentKeyError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey resident-key requirement is not supported by this build.');
+}
+
+function isInvalidAuthenticatorSelectionError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey authenticator selection metadata is invalid.');
 }
 
 function isUnsupportedExtensionError(error) {

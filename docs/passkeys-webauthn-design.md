@@ -178,6 +178,7 @@ Browser:
 - Explicitly empty create/get RP IDs and malformed create RP metadata are rejected instead of being treated as missing and defaulted to the trusted origin host. Covered by JS tests.
 - Malformed requested WebAuthn extension metadata is rejected before bridge dispatch. Covered by JS tests.
 - Malformed `excludeCredentials`/`allowCredentials` descriptor-list metadata is rejected instead of being ignored. Covered by JS tests.
+- Malformed `authenticatorSelection` metadata is rejected before bridge dispatch. Covered by JS tests.
 - Firefox compatibility or explicit unsupported behavior.
 
 Release:
