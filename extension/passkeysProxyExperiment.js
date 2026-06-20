@@ -1366,24 +1366,53 @@
       throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
     }
     const normalized = {};
-    const credProps = results.credProps || results.CredProps;
-    if (credProps !== undefined && credProps !== null && credProps !== false &&
-        (typeof credProps !== 'object' || Array.isArray(credProps))) {
+    const lowerCredProps = results.credProps;
+    const upperCredProps = results.CredProps;
+    const lower = normalizeCredPropsExtensionResult(lowerCredProps);
+    const upper = normalizeCredPropsExtensionResult(upperCredProps);
+    if (isExtensionAliasPresent(lowerCredProps) && isExtensionAliasPresent(upperCredProps) &&
+        JSON.stringify(lower) !== JSON.stringify(upper)) {
       throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
     }
-    if (credProps && typeof credProps === 'object') {
-      if (unsupportedCredPropsResultNames(credProps).length > 0) {
-        throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
-      }
-      const rk = firstDefined(credProps.rk, credProps.Rk, credProps.residentKey, credProps.ResidentKey);
-      if (rk !== undefined) {
-        if (typeof rk !== 'boolean') {
-          throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
-        }
-        normalized.credProps = { rk };
-      }
+    const credProps = lower.rk !== undefined ? lower : upper;
+    if (credProps.rk !== undefined) {
+      normalized.credProps = { rk: credProps.rk };
     }
     return normalized;
+  }
+
+  function normalizeCredPropsExtensionResult(credProps) {
+    if (credProps === undefined || credProps === null || credProps === false) return {};
+    if (typeof credProps !== 'object' || Array.isArray(credProps)) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    if (unsupportedCredPropsResultNames(credProps).length > 0) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    return normalizeBooleanAliasGroup(
+      credProps.rk,
+      credProps.Rk,
+      credProps.residentKey,
+      credProps.ResidentKey);
+  }
+
+  function normalizeBooleanAliasGroup(...values) {
+    let normalized;
+    for (const value of values) {
+      if (value === undefined || value === null) continue;
+      if (typeof value !== 'boolean') {
+        throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+      }
+      if (normalized !== undefined && normalized !== value) {
+        throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+      }
+      normalized = value;
+    }
+    return normalized === undefined ? {} : { rk: normalized };
+  }
+
+  function isExtensionAliasPresent(value) {
+    return value !== undefined && value !== null && value !== false;
   }
 
   function normalizeTimeoutMs(value) {

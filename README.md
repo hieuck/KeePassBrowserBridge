@@ -47,7 +47,7 @@ Malformed `excludeCredentials` and `allowCredentials` descriptor-list metadata i
 
 Malformed `authenticatorSelection` metadata is rejected before bridge dispatch.
 
-Conflicting complete-response client-extension result aliases are rejected before browser completion.
+Conflicting complete-response client-extension result aliases, including nested `credProps` aliases, are rejected before browser completion.
 
 ## Security Model
 

@@ -79,7 +79,7 @@ Malformed passkey credential descriptor-list metadata fails closed before bridge
 
 Malformed passkey authenticator-selection metadata fails closed before bridge dispatch.
 
-Conflicting complete-response client-extension result aliases fail closed before browser completion.
+Conflicting complete-response client-extension result aliases, including nested `credProps` aliases, fail closed before browser completion.
 
 ## Data Model
 

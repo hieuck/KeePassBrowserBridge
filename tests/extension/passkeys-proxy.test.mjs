@@ -2234,6 +2234,29 @@ await api.completeGetSuccess(chromeApi, 97, {
     Signature: 'c2lnbmF0dXJl'
   }
 });
+await api.completeCreateSuccess(chromeApi, 99, {
+  Credential: { CredentialId: 'Y3JlZC05OQ' },
+  ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+  AttestationObject: 'YXR0ZXN0YXRpb24',
+  ClientExtensionResults: {
+    credProps: { rk: true },
+    CredProps: { Rk: false }
+  }
+});
+await api.completeGetSuccess(chromeApi, 100, {
+  Assertion: {
+    CredentialId: 'Y3JlZC0xMDA',
+    AuthenticatorData: 'YXV0aC1kYXRh',
+    ClientDataJson: 'Y2xpZW50LWdldA',
+    Signature: 'c2lnbmF0dXJl'
+  },
+  ClientExtensionResults: {
+    CredProps: {
+      rk: false,
+      Rk: true
+    }
+  }
+});
 
 const createSuccessJson = JSON.parse(calls[2][1].responseJson);
 const getSuccessJson = JSON.parse(calls[3][1].responseJson);
@@ -2769,6 +2792,26 @@ assert.deepEqual(plain(calls[54]), [
     }
   }
 ], 'get success should fail closed when object complete response has mismatched credential ID aliases');
+assert.deepEqual(plain(calls[55]), [
+  'create',
+  {
+    requestId: 99,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'create success should fail closed when object complete response has conflicting nested client extension result aliases');
+assert.deepEqual(plain(calls[56]), [
+  'get',
+  {
+    requestId: 100,
+    error: {
+      name: 'NotAllowedError',
+      message: 'Passkey complete response contained invalid client extension results.'
+    }
+  }
+], 'get success should fail closed when object complete response has conflicting nested client extension result aliases');
 
 assert.throws(
   () => api.createResponseJson({
@@ -2803,6 +2846,39 @@ assert.throws(
   }),
   isInvalidCompleteClientExtensionResultsError,
   'get response serialization should reject conflicting client extension result aliases'
+);
+
+assert.throws(
+  () => api.createResponseJson({
+    Credential: { CredentialId: 'Y3JlZC1uZXN0ZWQ' },
+    ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+    AttestationObject: 'YXR0ZXN0YXRpb24',
+    ClientExtensionResults: {
+      credProps: { rk: true },
+      CredProps: { Rk: false }
+    }
+  }),
+  isInvalidCompleteClientExtensionResultsError,
+  'create response serialization should reject conflicting nested client extension result aliases'
+);
+
+assert.throws(
+  () => api.getResponseJson({
+    Assertion: {
+      CredentialId: 'Y3JlZC1uZXN0ZWQ',
+      AuthenticatorData: 'YXV0aC1kYXRh',
+      ClientDataJson: 'Y2xpZW50LWdldA',
+      Signature: 'c2lnbmF0dXJl'
+    },
+    ClientExtensionResults: {
+      CredProps: {
+        rk: false,
+        Rk: true
+      }
+    }
+  }),
+  isInvalidCompleteClientExtensionResultsError,
+  'get response serialization should reject conflicting nested client extension result aliases'
 );
 
 assert.deepEqual(plain(calls.slice(0, 2)), [

@@ -88,7 +88,7 @@ Passkey proxy descriptor note: malformed `excludeCredentials`/`allowCredentials`
 
 Passkey proxy authenticator-selection note: malformed `authenticatorSelection` metadata is rejected before bridge dispatch. Covered by JS tests.
 
-Passkey proxy completion note: conflicting client-extension result aliases are rejected before browser completion. Covered by JS tests.
+Passkey proxy completion note: conflicting client-extension result aliases, including nested `credProps` aliases, are rejected before browser completion. Covered by JS tests.
 
 ## Next Steps
 
