@@ -1252,8 +1252,14 @@
 
   function assertCompleteClientExtensionResultAliases(source) {
     if (!source || typeof source !== 'object') return;
-    assertSerializedClientExtensionResults(source.ClientExtensionResults);
-    assertSerializedClientExtensionResults(source.clientExtensionResults);
+    const upper = source.ClientExtensionResults;
+    const lower = source.clientExtensionResults;
+    assertSerializedClientExtensionResults(upper);
+    assertSerializedClientExtensionResults(lower);
+    if (upper !== undefined && upper !== null && lower !== undefined && lower !== null &&
+        JSON.stringify(normalizeClientExtensionResults(upper)) !== JSON.stringify(normalizeClientExtensionResults(lower))) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
   }
 
   function normalizeCompleteClientExtensionResults(source) {

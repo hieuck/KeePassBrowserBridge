@@ -2770,6 +2770,41 @@ assert.deepEqual(plain(calls[54]), [
   }
 ], 'get success should fail closed when object complete response has mismatched credential ID aliases');
 
+assert.throws(
+  () => api.createResponseJson({
+    Credential: { CredentialId: 'Y3JlZC1jb25mbGljdA' },
+    ClientDataJson: 'Y2xpZW50LWNyZWF0ZQ',
+    AttestationObject: 'YXR0ZXN0YXRpb24',
+    ClientExtensionResults: {
+      CredProps: { Rk: false }
+    },
+    clientExtensionResults: {
+      credProps: { rk: true }
+    }
+  }),
+  isInvalidCompleteClientExtensionResultsError,
+  'create response serialization should reject conflicting client extension result aliases'
+);
+
+assert.throws(
+  () => api.getResponseJson({
+    Assertion: {
+      CredentialId: 'Y3JlZC1jb25mbGljdA',
+      AuthenticatorData: 'YXV0aC1kYXRh',
+      ClientDataJson: 'Y2xpZW50LWdldA',
+      Signature: 'c2lnbmF0dXJl'
+    },
+    ClientExtensionResults: {
+      CredProps: { Rk: false }
+    },
+    clientExtensionResults: {
+      credProps: { rk: true }
+    }
+  }),
+  isInvalidCompleteClientExtensionResultsError,
+  'get response serialization should reject conflicting client extension result aliases'
+);
+
 assert.deepEqual(plain(calls.slice(0, 2)), [
   ['create', { requestId: 42, error: { name: 'NotAllowedError', message: 'Denied' } }],
   ['get', { requestId: 43, error: { name: 'NotAllowedError', message: 'Bridge unavailable' } }]
@@ -3355,6 +3390,12 @@ function isInvalidAuthenticatorSelectionError(error) {
   return Boolean(error &&
     error.name === 'NotAllowedError' &&
     error.message === 'Passkey authenticator selection metadata is invalid.');
+}
+
+function isInvalidCompleteClientExtensionResultsError(error) {
+  return Boolean(error &&
+    error.name === 'NotAllowedError' &&
+    error.message === 'Passkey complete response contained invalid client extension results.');
 }
 
 function isUnsupportedExtensionError(error) {
