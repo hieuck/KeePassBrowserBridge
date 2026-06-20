@@ -1280,7 +1280,10 @@
   }
 
   function normalizeRequestedExtensions(extensions) {
-    if (!extensions || typeof extensions !== 'object') return undefined;
+    if (extensions === undefined || extensions === null) return undefined;
+    if (typeof extensions !== 'object' || Array.isArray(extensions)) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
     const unsupportedExtensions = unsupportedRequestedExtensionNames(extensions);
     if (unsupportedExtensions.length > 0) {
       throw notAllowedError(unsupportedExtensionMessage);
@@ -1289,7 +1292,10 @@
   }
 
   function assertNoUnsupportedGetExtensions(extensions) {
-    if (!extensions || typeof extensions !== 'object') return;
+    if (extensions === undefined || extensions === null) return;
+    if (typeof extensions !== 'object' || Array.isArray(extensions)) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
     if (unsupportedRequestedExtensionNames(extensions).length > 0 ||
         isRequestedExtensionValue(extensions.credProps)) {
       throw notAllowedError(unsupportedExtensionMessage);

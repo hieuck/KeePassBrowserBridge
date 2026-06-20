@@ -41,6 +41,8 @@ The passkey proxy origin resolver only accepts numeric browser tab/frame IDs for
 
 Explicitly empty passkey RP IDs and malformed create RP metadata are rejected instead of being treated as missing and defaulted to the trusted origin host.
 
+Malformed requested WebAuthn extension metadata is rejected before bridge dispatch.
+
 ## Security Model
 
 - The browser extension never stores the KeePass master key.

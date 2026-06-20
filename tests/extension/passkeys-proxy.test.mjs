@@ -533,6 +533,37 @@ assert.throws(
 
 assert.throws(
   () => api.normalizeCreateRequest({
+    requestId: 6301,
+    requestDetailsJson: JSON.stringify(createOptions({
+      rp: { id: 'example.com' },
+      user: { id: 'YWxpY2U', name: 'alice@example.com' },
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      extensions: []
+    }))
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedExtensionError,
+  'proxy experiment must reject malformed create extension metadata'
+);
+
+assert.throws(
+  () => api.normalizeGetRequest({
+    requestId: 6302,
+    requestDetailsJson: JSON.stringify({
+      rpId: 'example.com',
+      challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+      extensions: []
+    })
+  }, {
+    origin: 'https://example.com'
+  }),
+  isUnsupportedExtensionError,
+  'proxy experiment must reject malformed get extension metadata'
+);
+
+assert.throws(
+  () => api.normalizeCreateRequest({
     requestId: 51,
     requestDetailsJson: JSON.stringify(createOptions({
       rp: { id: 'example.com' },

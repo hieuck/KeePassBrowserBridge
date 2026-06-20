@@ -73,6 +73,8 @@ Frame-origin fallback only accepts numeric browser tab/frame IDs; string or malf
 
 Explicitly empty WebAuthn RP IDs and malformed create RP metadata fail validation instead of falling back to the trusted origin host.
 
+Malformed requested WebAuthn extension metadata fails closed before bridge dispatch.
+
 ## Data Model
 
 KeePass Browser Bridge uses standard KeePass fields where possible:

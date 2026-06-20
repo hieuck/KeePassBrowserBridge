@@ -176,6 +176,7 @@ Browser:
 - Unknown or non-pending browser cancel events are ignored before backend cancellation dispatch. Covered by JS tests.
 - Trusted-origin frame fallback rejects non-numeric tab/frame IDs instead of coercing them into `webNavigation.getFrame` context. Covered by JS tests.
 - Explicitly empty create/get RP IDs and malformed create RP metadata are rejected instead of being treated as missing and defaulted to the trusted origin host. Covered by JS tests.
+- Malformed requested WebAuthn extension metadata is rejected before bridge dispatch. Covered by JS tests.
 - Firefox compatibility or explicit unsupported behavior.
 
 Release:

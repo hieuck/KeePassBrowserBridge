@@ -82,6 +82,8 @@ Passkey proxy origin note: trusted-origin frame fallback rejects non-numeric tab
 
 Passkey proxy RP ID note: explicitly empty create/get RP IDs and malformed create RP metadata are rejected instead of defaulting to the trusted origin host. Covered by JS tests.
 
+Passkey proxy extension note: malformed requested WebAuthn extension metadata is rejected before bridge dispatch. Covered by JS tests.
+
 ## Next Steps
 
 1. Keep `.\scripts\verify.ps1` green after every change, including the clean-source release-gate and fake-GPG signed release smokes.
