@@ -2385,7 +2385,7 @@ internal static class Program
 
         AssertTrue(response.Success, "hello should succeed without authentication: " + response.Error);
         AssertEqual(request.RequestId, response.RequestId, "hello response request ID mismatch");
-        AssertEqual("0.9.0", payload.PluginVersion, "hello should expose the KeePass plugin version");
+        AssertEqual("1.0.0", payload.PluginVersion, "hello should expose the KeePass plugin version");
         AssertEqual(BridgeSettings.UpdateInfoUrl, payload.PluginUpdateUrl, "hello should expose the KeePass plugin update URL");
         AssertTrue(Array.IndexOf(payload.SupportedMethods, BridgeMethods.LoginsQuery) >= 0,
             "hello should advertise password query support");

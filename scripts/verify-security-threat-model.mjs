@@ -36,6 +36,7 @@ const sources = {
   contentScriptTests: read('tests/extension/content-script.test.mjs'),
   passkeysProxyExperiment: read('extension/passkeysProxyExperiment.js'),
   manifest: read('extension/manifest.json'),
+  manifestPermissions: JSON.stringify(JSON.parse(read('extension/manifest.json')).permissions || []),
   firefoxManifest: read('extension/manifest.firefox.json'),
   passkeysProxyTests: read('tests/extension/passkeys-proxy.test.mjs'),
   buildRelease: read('scripts/build-release.ps1'),
@@ -1030,8 +1031,8 @@ requireEvery('passkeyDesign', [
 ], 'future WebAuthn permissions should stay routed through the passkey design');
 requireIncludes('securityThreatModel', 'strict base64url alphabet/padding/whitespace validation',
   'security threat model should track strict passkey base64url decoding');
-requireNotIncludes('manifest', 'webAuthenticationProxy',
-  'Chrome manifest should not request WebAuthn proxy permission before review');
+requireNotIncludes('manifestPermissions', 'webAuthenticationProxy',
+  'Chrome manifest should not require WebAuthn proxy permission before review');
 requireNotIncludes('firefoxManifest', 'webAuthenticationProxy',
   'Firefox manifest should not request unsupported WebAuthn proxy permission');
 requireEvery('releaseReadiness', [

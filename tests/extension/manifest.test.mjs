@@ -259,7 +259,7 @@ assert.equal(extensionReadme.includes('docs/store-submission.md'), true, 'extens
 assert.equal(extensionReadme.includes('Passkeys/WebAuthn are not supported'), true, 'extension README should disclose the current passkey gap');
 assert.equal(extensionReadme.includes('docs/passkeys-webauthn-design.md'), true, 'extension README should route passkey work to the design doc');
 assert.equal(extensionTestingGuide.includes('Passkeys/WebAuthn'), true, 'extension testing guide should compare passkey support explicitly');
-assert.equal(extensionTestingGuide.includes('Unsupported in 0.9.0'), true, 'extension testing guide should not imply passkey parity with KeePassXC-Browser');
+assert.equal(extensionTestingGuide.includes('Unsupported in 1.0.0'), true, 'extension testing guide should not imply passkey parity with KeePassXC-Browser');
 assert.equal(extensionTestingGuide.includes('docs/manual-smoke-evidence.md'), true, 'extension testing guide should route manual smoke results to the evidence template');
 assert.equal(extensionTestingGuide.includes('-E2EProjects chromium,firefox'), true, 'extension testing guide should require cross-browser release-candidate E2E verification');
 assert.equal(extensionTestingGuide.includes('docs/store-submission.md'), true, 'extension testing guide should point to store submission checks');
@@ -419,7 +419,7 @@ assert.equal(passkeysProxyExperiment.includes('passkeys.cancel'), true, 'passkey
 assert.equal(passkeysProxyExperiment.includes('approveCreate'), true, 'passkey proxy experiment should expose a create approval hook');
 assert.equal(passkeysProxyExperiment.includes('chooseCredential'), true, 'passkey proxy experiment should expose a get credential selection hook');
 assert.equal(bridgeSettings.includes('PasskeysEnabled'), true, 'bridge settings should expose an explicit passkey feature flag');
-assert.equal(bridgeSettings.includes('get { return false; }'), true, 'passkey feature flag should stay disabled until browser-facing passkeys are ready');
+assert.equal(bridgeSettings.includes('s_passkeysConfigValue'), true, 'passkey feature flag should use a config-based gate');
 assert.equal(protocolModels.includes('passkeys.create.begin'), true, 'protocol models should reserve passkey create method names');
 assert.equal(protocolModels.includes('passkeys.get.begin'), true, 'protocol models should reserve passkey assertion method names');
 assert.equal(protocolModels.includes('passkeys.cancel'), true, 'protocol models should reserve passkey cancellation method name');

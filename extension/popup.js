@@ -41,6 +41,8 @@ const elements = {
   passkeyStatus: document.getElementById('passkeyStatus')
 };
 
+
+
 let currentEntries = [];
 let visibleEntries = [];
 let currentState = { locked: false };
@@ -68,7 +70,6 @@ function init() {
   elements.cancelPair.addEventListener('click', () => runAction(cancelPair));
   elements.pairingCode.addEventListener('input', syncPairingCodeState);
   elements.pairingCode.addEventListener('keydown', handlePairingCodeKeydown);
-  elements.passkeyToggle.addEventListener('change', () => runAction(togglePasskeys));
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
   elements.newLogin.addEventListener('click', () => runAction(beginCreateLogin));
   elements.toggleSiteAutoFill.addEventListener('click', () => runAction(toggleSiteAutoFill));
@@ -76,6 +77,9 @@ function init() {
   elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
   elements.loginSearch.addEventListener('input', () => runAction(filterCurrentLogins));
   elements.loginSearch.addEventListener('keydown', handleLoginSearchKeydown);
+  if (elements.passkeyToggle) {
+    elements.passkeyToggle.addEventListener('change', () => runAction(togglePasskeys));
+  }
 
   syncPairingCodeState();
   runAction(renderAbout);
@@ -788,6 +792,7 @@ async function togglePasskeys() {
 }
 
 function renderPasskeySection(about) {
+  if (!elements.passkeySection) return;
   if (!about.pluginFeatures || !about.pluginFeatures.passkeys) {
     elements.passkeySection.style.display = 'none';
     return;
@@ -820,7 +825,7 @@ function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
   elements.autoSubmit.checked = Boolean(state.autoSubmitEnabled);
-  if (elements.passkeySection.style.display !== 'none') {
+  if (elements.passkeySection && elements.passkeySection.style.display !== 'none') {
     elements.passkeyToggle.checked = Boolean(state.passkeysEnabled);
   }
   elements.lockBridge.textContent = state.locked ? 'Unlock' : 'Lock';

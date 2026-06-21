@@ -1393,19 +1393,23 @@ function isExpectedAccessStateError(error) {
 
 // --- Passkey Proxy Startup & Storage Sync ---
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.passkeysEnabled) {
-    if (changes.passkeysEnabled.newValue) {
-      setupPasskeyProxy();
-    } else {
-      teardownPasskeyProxy();
+if (chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.passkeysEnabled) {
+      if (changes.passkeysEnabled.newValue) {
+        setupPasskeyProxy();
+      } else {
+        teardownPasskeyProxy();
+      }
     }
-  }
-});
+  });
+}
 
 // Startup: check if passkeys were enabled and start proxy if so
-chrome.storage.local.get(['passkeysEnabled'], (result) => {
-  if (result.passkeysEnabled) {
-    setupPasskeyProxy();
-  }
-});
+if (chrome.storage && chrome.storage.local) {
+  chrome.storage.local.get(['passkeysEnabled'], (result) => {
+    if (result.passkeysEnabled) {
+      setupPasskeyProxy();
+    }
+  });
+}
