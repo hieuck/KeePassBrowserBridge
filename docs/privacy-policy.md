@@ -28,7 +28,7 @@ KeePass Browser Bridge does not collect or transmit:
 - `.kdbx` database files.
 - Complete browsing history.
 - Credentials to any remote server controlled by the project maintainers.
-- Passkey/WebAuthn credentials in version 0.9.0.
+- Passkey/WebAuthn credentials in version 1.0.0.
 
 ## Local Storage And Retention
 

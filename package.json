@@ -1,6 +1,6 @@
 {
   "name": "keepass-browser-bridge",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "KeePass browser integration extension",
   "type": "module",
   "scripts": {

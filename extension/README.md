@@ -1,6 +1,6 @@
 # KeePass Browser Bridge Extension
 
-Version 0.9.0
+Version 1.0.0
 
 This directory contains the Chrome MV3 and Firefox-compatible browser extension for KeePass Browser Bridge. The extension talks to the KeePass plugin through the local loopback bridge at `http://127.0.0.1:19455/bridge`.
 
@@ -35,7 +35,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 
 ## Known Gap
 
-Passkeys/WebAuthn are not supported in extension release 0.9.0. Public builds do not request WebAuthn proxy permissions or expose passkey workflows. Backend and proxy experiment work is tracked in `docs/passkeys-webauthn-design.md`.
+Passkeys/WebAuthn are not supported in extension release 1.0.0. Public builds do not request WebAuthn proxy permissions or expose passkey workflows. Backend and proxy experiment work is tracked in `docs/passkeys-webauthn-design.md`.
 
 ## Development Checks
 
