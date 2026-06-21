@@ -95,7 +95,8 @@ assert.equal(packageJson.scripts['build:release'].includes('scripts/build-releas
 assert.equal(packageJson.scripts['build:extension'].includes('build:release'), true, 'package.json build:extension should delegate to release packaging');
 assert.equal(JSON.stringify(packageJson.scripts).includes('dist/kbb-extension.zip'), false, 'package.json scripts should not create ad hoc extension ZIPs');
 assert.equal(JSON.stringify(packageJson.scripts).includes('zip -r'), false, 'package.json scripts should not zip the raw extension source tree');
-assert.equal(optionsMarkup.includes('Override auto-fill behavior for a host and its subdomains.'), true, 'settings UI should explain that site overrides apply to subdomains');
+const sitesTabSource = fs.readFileSync(path.join(projectRoot, 'extension', 'src', 'options', 'tabs', 'SitesTab.vue'), 'utf8');
+assert.equal(sitesTabSource.includes('Override auto-fill behavior for a host and its subdomains.'), true, 'settings UI should explain that site overrides apply to subdomains');
 assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.all_frames === true), true, 'Firefox content scripts should run in iframes for embedded login widgets');
 assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.match_about_blank === true), true, 'Firefox content scripts should run in about:blank child frames when the parent URL matches');
 assert.equal(releaseScript.includes('manifest.firefox.json'), true, 'release script should package a Firefox extension with the Firefox manifest');
