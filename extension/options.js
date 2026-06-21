@@ -103,37 +103,34 @@ function init() {
 }
 
 function detectAndApplyTheme() {
-  chrome.storage.local.get(['theme'], (result) => {
-    let theme = result.theme || 'system';
-    
-    if (theme === 'system') {
-      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const saved = localStorage.getItem('kbbTheme');
+  if (saved === 'light' || saved === 'dark') {
+    applyTheme(saved);
+    return;
+  }
+  const mql = window.matchMedia('(prefers-color-scheme: dark)');
+  applyTheme(mql.matches ? 'dark' : 'light');
+  mql.addEventListener('change', (e) => {
+    if (!localStorage.getItem('kbbTheme')) {
+      applyTheme(e.matches ? 'dark' : 'light');
     }
-    
-    applyTheme(theme);
   });
 }
 
 function applyTheme(theme) {
   const html = document.documentElement;
-  if (theme === 'dark') {
-    html.setAttribute('data-theme', 'dark');
-    elements.themeToggle.querySelector('.theme-icon').textContent = '☀️';
-  } else {
-    html.removeAttribute('data-theme');
-    elements.themeToggle.querySelector('.theme-icon').textContent = '🌙';
+  html.setAttribute('data-theme', theme);
+  const icon = elements.themeToggle.querySelector('.theme-icon');
+  if (icon) {
+    icon.textContent = theme === 'dark' ? '☀️' : '🌙';
   }
 }
 
 function toggleTheme() {
-  chrome.storage.local.get(['theme'], (result) => {
-    let currentTheme = result.theme || 'system';
-    let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    chrome.storage.local.set({ theme: newTheme }, () => {
-      applyTheme(newTheme);
-    });
-  });
+  const theme = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('kbbTheme', next);
+  applyTheme(next);
 }
 
 function loadSettings() {

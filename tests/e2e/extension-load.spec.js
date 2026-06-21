@@ -1282,4 +1282,24 @@ test('popup has smooth view transitions with CSS animations', async ({ page }) =
       permissions: ['read', 'passkeyRead']
     });
   });
+
+  test('follows system color scheme preference by default and remembers manual toggle', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/extension/popup.html');
+
+    await expect(page.locator('#themeToggle')).toBeVisible();
+    let theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    expect(theme).toBe('dark');
+
+    await page.locator('#themeToggle').click();
+    theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    expect(theme).toBe('light');
+
+    const stored = await page.evaluate(() => localStorage.getItem('kbbTheme'));
+    expect(stored).toBe('light');
+
+    await page.reload();
+    theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    expect(theme).toBe('light');
+  });
 });
