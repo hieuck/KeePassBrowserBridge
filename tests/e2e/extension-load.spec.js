@@ -1174,9 +1174,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
 test('clicking credential item shows detail view with all fields', async ({ page }) => {
   await page.locator('#queryLogins').click();
 
-  await page.locator('.credential-item').first().click();
+  await page.locator('.credential-item').first().locator('.item-info').click();
 
-  await expect(page.locator('.detail-view')).toBeVisible();
+  await expect(page.locator('.detail-view')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('.detail-title')).toBeVisible();
   await expect(page.locator('.detail-field').first()).toBeVisible();
   await expect(page.locator('.detail-fields')).not.toBeEmpty();
@@ -1215,7 +1215,7 @@ test('popup has smooth view transitions with CSS animations', async ({ page }) =
   await expect(vaultList).toHaveCSS('transition', /opacity|transform/);
 
   await page.locator('#queryLogins').click();
-  await page.locator('.credential-item').first().click();
+  await page.locator('.credential-item').first().locator('.item-info').click();
   const detailView = page.locator('.detail-view');
   await expect(detailView).toHaveCSS('transition', /opacity|transform/);
 });
