@@ -1061,116 +1061,139 @@ async function renderResults(entries) {
   const avatarColors = ['#175cd3', '#b42318', '#067647', '#b54708', '#6941c6', '#363f72', '#c01048', '#4a90e2'];
   const maxUsage = Math.max(...visibleEntries.map((e) => Number(e.UsageCount || 0)), 0);
 
+  const grouped = {};
   for (const entry of visibleEntries) {
-    const item = document.createElement('div');
-    item.className = 'credential-item';
+    const group = entry.Group || 'Other';
+    if (!grouped[group]) grouped[group] = [];
+    grouped[group].push(entry);
+  }
 
-    const main = document.createElement('div');
-    main.className = 'item-main';
+  const sortedGroups = Object.keys(grouped).sort();
 
-    const colorIndex = (entry.Title || '').length % avatarColors.length;
-    const avatar = document.createElement('div');
-    avatar.className = 'item-avatar';
-    avatar.style.backgroundColor = avatarColors[colorIndex];
-    avatar.textContent = (entry.Title || '?')[0].toUpperCase();
-    if (entry.Url) {
-      avatar.style.backgroundImage = 'url(https://www.google.com/s2/favicons?domain=' + encodeURIComponent(entry.Url) + '&sz=32)';
-      avatar.style.backgroundSize = 'cover';
-      avatar.style.backgroundPosition = 'center';
-      avatar.style.color = 'transparent';
-    }
+  for (const groupName of sortedGroups) {
+    const groupEntries = grouped[groupName];
 
-    const info = document.createElement('div');
-    info.className = 'item-info';
+    const header = document.createElement('div');
+    header.className = 'folder-header';
+    header.textContent = groupName;
+    elements.results.append(header);
 
-    const title = document.createElement('div');
-    title.className = 'item-title';
-    title.textContent = entry.Title || '(Untitled)';
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'credential-group';
 
-    const subtitle = document.createElement('div');
-    subtitle.className = 'item-subtitle';
-    subtitle.textContent = entry.UserName || '';
+    for (const entry of groupEntries) {
+      const item = document.createElement('div');
+      item.className = 'credential-item';
 
-    const meta = document.createElement('div');
-    meta.className = 'item-meta';
-    const parts = [];
-    if (entry.UsageCount >= maxUsage && maxUsage > 0) parts.push('★ Most used');
-    if (entry.Group) parts.push(entry.Group);
-    if (entry.Url) parts.push(entry.Url);
-    if (entry.FrequencyRank && entry.FrequencyRank <= 3) parts.unshift('★ Frequent');
-    meta.textContent = parts.join(' · ');
+      const main = document.createElement('div');
+      main.className = 'item-main';
 
-    info.append(title, subtitle);
-    if (meta.textContent) info.append(meta);
-    main.append(avatar, info);
-    item.append(main);
+      const colorIndex = (entry.Title || '').length % avatarColors.length;
+      const avatar = document.createElement('div');
+      avatar.className = 'item-avatar';
+      avatar.style.backgroundColor = avatarColors[colorIndex];
+      avatar.textContent = (entry.Title || '?')[0].toUpperCase();
+      if (entry.Url) {
+        avatar.style.backgroundImage = 'url(https://www.google.com/s2/favicons?domain=' + encodeURIComponent(entry.Url) + '&sz=32)';
+        avatar.style.backgroundSize = 'cover';
+        avatar.style.backgroundPosition = 'center';
+        avatar.style.color = 'transparent';
+      }
 
-    const actions = document.createElement('div');
-    actions.className = 'item-actions';
+      const info = document.createElement('div');
+      info.className = 'item-info';
 
-    const fill = document.createElement('button');
-    fill.className = 'btn-autofill';
-    fill.textContent = '✓ Autofill';
-    fill.addEventListener('click', () => runAction(() => fillLogin(entry)));
+      const title = document.createElement('div');
+      title.className = 'item-title';
+      title.textContent = entry.Title || '(Untitled)';
 
-    actions.append(fill);
+      const subtitle = document.createElement('div');
+      subtitle.className = 'item-subtitle';
+      subtitle.textContent = entry.UserName || '';
 
-    if (entry.UserName) {
-      actions.append(createCopyButton('Copy U', 'username', entry.UserName, 'btn-copy'));
-    }
-    if (entry.Password) {
-      actions.append(createCopyButton('Copy P', 'password', entry.Password, 'btn-copy'));
-    }
-    if (entry.OneTimePassword) {
-      actions.append(createCopyButton('OTP', 'OTP', entry.OneTimePassword, 'btn-copy'));
-    }
-    item.append(actions);
+      const meta = document.createElement('div');
+      meta.className = 'item-meta';
+      const parts = [];
+      if (entry.UsageCount >= maxUsage && maxUsage > 0) parts.push('★ Most used');
+      if (entry.Group) parts.push(entry.Group);
+      if (entry.Url) parts.push(entry.Url);
+      if (entry.FrequencyRank && entry.FrequencyRank <= 3) parts.unshift('★ Frequent');
+      meta.textContent = parts.join(' · ');
 
-    if (entry.CustomFields && entry.CustomFields.length > 0) {
-      const customFieldsDiv = document.createElement('div');
-      customFieldsDiv.className = 'custom-fields';
-      
-      for (const field of entry.CustomFields) {
-        const fieldDiv = document.createElement('div');
-        fieldDiv.className = 'custom-field';
-        fieldDiv.innerHTML = `
-          <span class="field-name">${escapeHtml(field.Name)}:</span>
-          <span class="field-value">${field.IsProtected ? '••••••••' : escapeHtml(field.Value)}</span>
-        `;
+      info.append(title, subtitle);
+      if (meta.textContent) info.append(meta);
+      main.append(avatar, info);
+      item.append(main);
 
-        if (!field.IsProtected) {
-          const fillBtn = document.createElement('button');
-          fillBtn.type = 'button';
-          fillBtn.className = 'field-fill-btn';
-          fillBtn.title = `Fill focused field with ${field.Name}`;
-          fillBtn.textContent = `Fill ${field.Name}`;
-          fillBtn.addEventListener('click', () => runAction(() => fillLogin(entry, 'custom', field.Name)));
-          fieldDiv.append(fillBtn);
+      const actions = document.createElement('div');
+      actions.className = 'item-actions';
 
-          const copyBtn = document.createElement('button');
-          copyBtn.type = 'button';
-          copyBtn.className = 'copy-btn';
-          copyBtn.title = 'Copy to clipboard';
-          copyBtn.textContent = '📋';
-          copyBtn.addEventListener('click', () => runAction(() => copyToClipboard(field.Name, field.Value)));
-          fieldDiv.append(copyBtn);
+      const fill = document.createElement('button');
+      fill.className = 'btn-autofill';
+      fill.textContent = '✓ Autofill';
+      fill.addEventListener('click', () => runAction(() => fillLogin(entry)));
+
+      actions.append(fill);
+
+      if (entry.UserName) {
+        actions.append(createCopyButton('Copy U', 'username', entry.UserName, 'btn-copy'));
+      }
+      if (entry.Password) {
+        actions.append(createCopyButton('Copy P', 'password', entry.Password, 'btn-copy'));
+      }
+      if (entry.OneTimePassword) {
+        actions.append(createCopyButton('OTP', 'OTP', entry.OneTimePassword, 'btn-copy'));
+      }
+      item.append(actions);
+
+      if (entry.CustomFields && entry.CustomFields.length > 0) {
+        const customFieldsDiv = document.createElement('div');
+        customFieldsDiv.className = 'custom-fields';
+        
+        for (const field of entry.CustomFields) {
+          const fieldDiv = document.createElement('div');
+          fieldDiv.className = 'custom-field';
+          fieldDiv.innerHTML = `
+            <span class="field-name">${escapeHtml(field.Name)}:</span>
+            <span class="field-value">${field.IsProtected ? '••••••••' : escapeHtml(field.Value)}</span>
+          `;
+
+          if (!field.IsProtected) {
+            const fillBtn = document.createElement('button');
+            fillBtn.type = 'button';
+            fillBtn.className = 'field-fill-btn';
+            fillBtn.title = `Fill focused field with ${field.Name}`;
+            fillBtn.textContent = `Fill ${field.Name}`;
+            fillBtn.addEventListener('click', () => runAction(() => fillLogin(entry, 'custom', field.Name)));
+            fieldDiv.append(fillBtn);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'copy-btn';
+            copyBtn.title = 'Copy to clipboard';
+            copyBtn.textContent = '📋';
+            copyBtn.addEventListener('click', () => runAction(() => copyToClipboard(field.Name, field.Value)));
+            fieldDiv.append(copyBtn);
+          }
+          
+          customFieldsDiv.appendChild(fieldDiv);
         }
         
-        customFieldsDiv.appendChild(fieldDiv);
+        item.appendChild(customFieldsDiv);
       }
-      
-      item.appendChild(customFieldsDiv);
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn-copy';
+      editBtn.textContent = '✎ Edit';
+      editBtn.disabled = !hasClientPermission('write');
+      editBtn.addEventListener('click', () => showEditForm(item, entry));
+      item.append(editBtn);
+
+      groupDiv.append(item);
     }
 
-    const editBtn = document.createElement('button');
-    editBtn.type = 'button';
-    editBtn.className = 'btn-copy';
-    editBtn.textContent = '✎ Edit';
-    editBtn.disabled = !hasClientPermission('write');
-    editBtn.addEventListener('click', () => showEditForm(item, entry));
-    item.append(editBtn);
-
-    elements.results.append(item);
+    elements.results.append(groupDiv);
   }
 }
 

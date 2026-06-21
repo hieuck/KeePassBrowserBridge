@@ -1134,7 +1134,30 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('.empty-state .btn-new-login')).toBeVisible();
   });
 
-  test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
+  test('credentials grouped by folder with section headers', async ({ page }) => {
+  const entries = [
+    { Title: 'GitHub', UserName: 'dev', Group: 'Work', Url: 'https://github.com', Password: 'p1' },
+    { Title: 'Gmail', UserName: 'me', Group: 'Personal', Url: 'https://gmail.com', Password: 'p2' },
+    { Title: 'AWS', UserName: 'admin', Group: 'Work', Url: 'https://aws.com', Password: 'p3' }
+  ];
+  await page.evaluate((data) => { window.__kbbPopupEntries = data; }, entries);
+  await page.locator('#queryLogins').click();
+
+  const headers = page.locator('.folder-header');
+  await expect(headers).toHaveCount(2);
+  await expect(headers.first()).toContainText('Personal');
+  await expect(headers.nth(1)).toContainText('Work');
+
+  const groups = page.locator('.credential-group');
+  await expect(groups).toHaveCount(2);
+
+  const firstGroupItems = groups.first().locator('.credential-item');
+  const secondGroupItems = groups.nth(1).locator('.credential-item');
+  await expect(firstGroupItems).toHaveCount(1);
+  await expect(secondGroupItems).toHaveCount(2);
+});
+
+test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
     await page.locator('#showSettings').click();
     await page.locator('#listClients').click();
     await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
