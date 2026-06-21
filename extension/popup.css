@@ -649,5 +649,51 @@ input {
 .detail-actions { display: flex; gap: var(--space-sm); }
 .detail-actions .detail-fill-btn { flex: 1; height: 40px; font-size: var(--font-size-lg); }
 
+/* ---- Toast notification ---- */
+.toast {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 8px 16px;
+  background: #1f2933;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10000;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-success { background: #2ecc71; }
+.toast-error { background: #e74c3c; }
+
+/* ---- Loading spinner ---- */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.6);
+  z-index: 1000;
+}
+:root[data-theme="dark"] .loading-overlay {
+  background: rgba(0,0,0,0.4);
+}
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ---- Utility ---- */
 .hidden { display: none !important; }

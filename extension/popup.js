@@ -330,8 +330,10 @@ async function saveEndpoint() {
 }
 
 async function checkStatus() {
-  await send({ type: 'KBB_HELLO' });
-  const state = await send({ type: 'KBB_GET_STATE' });
+  showLoading();
+  try {
+    await send({ type: 'KBB_HELLO' });
+    const state = await send({ type: 'KBB_GET_STATE' });
 
   if (state.locked) {
     renderState(state);
@@ -350,6 +352,9 @@ async function checkStatus() {
     renderState(state);
     setStatus('Ready', '');
     setMessage('KeePass bridge is reachable. Pair this browser to query logins.');
+  }
+  } finally {
+    hideLoading();
   }
 }
 
@@ -523,7 +528,9 @@ async function expirePairingSession() {
 }
 
 async function queryLogins() {
-  const state = await send({ type: 'KBB_GET_STATE' });
+  showLoading();
+  try {
+    const state = await send({ type: 'KBB_GET_STATE' });
   const hydratedState = await hydrateStatePermissions(state);
   renderState(hydratedState);
   if (hydratedState.locked) {
@@ -543,10 +550,15 @@ async function queryLogins() {
   setMessage(result.entries && result.entries.length
     ? `${result.entries.length} login(s) found.`
     : 'No matching logins found.');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function beginCreateLogin() {
-  const state = await send({ type: 'KBB_GET_STATE' });
+  showLoading();
+  try {
+    const state = await send({ type: 'KBB_GET_STATE' });
   renderState(await hydrateStatePermissions(state));
   if (state.locked) {
     setMessage('Unlock KeePass Bridge before creating logins.', true);
@@ -563,6 +575,9 @@ async function beginCreateLogin() {
   updateSearchVisibility();
   showCreateForm(url, pageCredential);
   setMessage('Create a new KeePass login for this page.');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function collectPageCredential() {
@@ -1902,13 +1917,47 @@ function setStatus(text, kind) {
   elements.statusBadge.classList.toggle('error', kind === 'error');
 }
 
+function showToast(message, variant) {
+  if (!document.body) return;
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (variant ? ' toast-' + variant : '');
+  toast.role = 'alert';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.add('toast-visible');
+  });
+
+  setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    setTimeout(() => toast.remove(), 200);
+  }, 2500);
+}
+
 function setMessage(text, isError) {
   elements.message.textContent = text;
   elements.message.classList.toggle('error', Boolean(isError));
+  if (isError !== true && text) {
+    showToast(text, 'success');
+  }
 }
 
 function clearMessage() {
   setMessage('', false);
+}
+
+function showLoading() {
+  const overlay = document.querySelector('.loading-overlay');
+  if (overlay) overlay.classList.remove('hidden');
+}
+
+function hideLoading() {
+  const overlay = document.querySelector('.loading-overlay');
+  if (overlay) overlay.classList.add('hidden');
 }
 
 function escapeHtml(text) {

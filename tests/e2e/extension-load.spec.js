@@ -625,6 +625,18 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#results')).toContainText('No matching logins in this list.');
   });
 
+  test('popup shows toast notification on copy action', async ({ page }) => {
+    await page.locator('#queryLogins').click();
+
+    const copyBtn = page.locator('.btn-copy').first();
+    await copyBtn.click();
+
+    const toast = page.locator('.toast');
+    await expect(toast).toBeVisible();
+
+    await expect(toast).toContainText(/copied|Copied/i);
+  });
+
   test('copies username password and OTP from popup results', async ({ page }) => {
     await page.locator('#queryLogins').click();
 
