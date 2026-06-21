@@ -875,23 +875,24 @@ function placeInlineButton(input, button) {
   }
   button.style.position = "absolute";
   button.style.zIndex = "2147483647";
-  button.style.width = "24px";
-  button.style.height = "24px";
-  button.style.minWidth = "24px";
-  button.style.minHeight = "24px";
-  button.style.maxWidth = "24px";
-  button.style.maxHeight = "24px";
+  button.style.width = "20px";
+  button.style.height = "20px";
+  button.style.minWidth = "20px";
+  button.style.minHeight = "20px";
+  button.style.maxWidth = "20px";
+  button.style.maxHeight = "20px";
   button.style.margin = "0";
   button.style.padding = "0";
   button.style.boxSizing = "border-box";
-  button.style.border = "1px solid #176b87";
-  button.style.borderRadius = "6px";
-  button.style.background = "#ffffff";
-  button.style.color = "#176b87";
+  button.style.border = "none";
+  button.style.borderRadius = "50%";
+  button.style.background = "#4a90e2";
+  button.style.color = "#ffffff";
   button.style.appearance = "none";
   button.style.font =
-    '700 12px/22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    '14px/20px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   button.style.cursor = "pointer";
+  button.style.textAlign = "center";
   button.style.boxShadow = "0 1px 4px rgba(15, 23, 42, 0.18)";
   parent.appendChild(button);
   positionInlineButton(input, button);
@@ -1896,7 +1897,7 @@ function applySavePromptStyle(prompt) {
   prompt.style.borderRadius = "8px";
   prompt.style.background = "#ffffff";
   prompt.style.color = "#1f2933";
-  prompt.style.boxShadow = "0 12px 30px rgba(15, 23, 42, 0.22)";
+  prompt.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.12)";
   prompt.style.font =
     '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 }
@@ -1932,11 +1933,12 @@ function applyPickerStyle(picker) {
   picker.style.maxWidth = "calc(100vw - 16px)";
   picker.style.maxHeight = "320px";
   picker.style.overflowY = "auto";
+  picker.style.padding = "8px";
   picker.style.background = "#ffffff";
   picker.style.color = "#1f2933";
   picker.style.border = "1px solid #d7dde5";
   picker.style.borderRadius = "8px";
-  picker.style.boxShadow = "0 12px 30px rgba(15, 23, 42, 0.22)";
+  picker.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
   picker.style.font =
     '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 }
@@ -1998,8 +2000,8 @@ function applyPickerSearchStyle(search) {
   search.style.display = "block";
   search.style.width = "calc(100% - 16px)";
   search.style.margin = "8px";
-  search.style.padding = "7px 9px";
-  search.style.border = "1px solid #cbd5e1";
+  search.style.padding = "6px 8px";
+  search.style.border = "1px solid #d7dde5";
   search.style.borderRadius = "6px";
   search.style.boxSizing = "border-box";
   search.style.background = "#ffffff";
@@ -2027,22 +2029,22 @@ function positionInlinePicker(button, picker) {
 function setInlineButtonState(button, state) {
   if (state === "ok") {
     button.textContent = "OK";
-    button.style.borderColor = "#067647";
-    button.style.color = "#067647";
+    button.style.background = "#067647";
+    button.style.color = "#ffffff";
   } else if (state === "!") {
     button.textContent = "!";
-    button.style.borderColor = "#b42318";
-    button.style.color = "#b42318";
+    button.style.background = "#b42318";
+    button.style.color = "#ffffff";
   } else {
     button.textContent = state;
-    button.style.borderColor = "#176b87";
-    button.style.color = "#176b87";
+    button.style.background = "#4a90e2";
+    button.style.color = "#ffffff";
   }
   window.setTimeout(() => {
     if (document.documentElement.contains(button)) {
       button.textContent = "K";
-      button.style.borderColor = "#176b87";
-      button.style.color = "#176b87";
+      button.style.background = "#4a90e2";
+      button.style.color = "#ffffff";
     }
   }, 1600);
 }

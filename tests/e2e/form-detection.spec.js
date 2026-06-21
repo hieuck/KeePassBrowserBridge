@@ -840,6 +840,42 @@ test.describe('content script form detection', () => {
     expect(ackMessage.url).toContain('/tests/fixtures/login-page.html');
   });
 
+  test('inline picker has modern card styling', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
+            return {
+              ok: true,
+              response: {
+                entries: [
+                  { Title: 'Personal', EntryId: 'entry-personal', UserName: 'personal@example.com', Password: 'personal-secret', Url: 'https://example.com' },
+                  { Title: 'Work', EntryId: 'entry-work', UserName: 'work@example.com', Password: 'work-secret', Url: 'https://example.com', Group: 'Accounts/Work' }
+                ]
+              }
+            };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+
+    const picker = page.locator('.kbb-inline-picker');
+    await expect(picker).toBeVisible();
+
+    // Check for shadow with black color (modern card indicator)
+    await expect(picker).toHaveCSS('box-shadow', /rgba?\(0, 0, 0, /);
+    // Check for rounded corners
+    await expect(picker).toHaveCSS('border-radius', /8px|12px/);
+  });
+
   test('inline picker in an about:blank embedded login widget queries with the top page URL', async ({ page }) => {
     await page.addInitScript(() => {
       if (window.top === window) {
