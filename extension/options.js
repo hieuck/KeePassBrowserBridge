@@ -725,15 +725,15 @@ async function togglePasskeys() {
 }
 
 function renderPasskeySection(about) {
-  if (!elements.passkeySection) return;
+  if (!elements.passkeySection || !elements.passkeySection.style) return;
   if (!about.pluginFeatures || !about.pluginFeatures.passkeys) {
     elements.passkeySection.style.display = 'none';
     return;
   }
   elements.passkeySection.style.display = '';
-  chrome.storage.local.get(['passkeysEnabled'], (result) => {
-    elements.passkeyToggle.checked = result.passkeysEnabled === true;
-  });
+  if (elements.passkeyToggle) {
+    elements.passkeyToggle.checked = bridgePasskeysEnabled === true;
+  }
   const status = about.pluginPasskeysStatus;
   if (status === 'enabled') {
     elements.passkeyStatus.textContent = 'Passkeys are active';
