@@ -11,31 +11,67 @@ KeePass Browser Bridge has two release artifacts:
 
 ## Features
 
+### Core
 - Short-lived pairing code between browser and KeePass.
-- Authenticated loopback requests on `http://127.0.0.1:19455/bridge`.
+- Authenticated loopback requests on `http://127.0.0.1:19455/bridge` with HMAC-SHA256.
 - URL matching with primary URL, additional `URL (n)` fields, wildcard patterns, and optional regex matching.
 - Popup and inline account picker with search, ranking by usage, keyboard selection, and hidden-entry expansion.
 - Full form fill plus focused-field fill for username, password, OTP, and selected non-protected custom fields.
-- OTP generation from KeePass TOTP fields.
+- OTP generation from KeePass TOTP fields (incl. split OTP inputs).
 - Save new logins and update changed passwords from page prompts.
-- Create KeePass entries from the popup, including non-protected custom fields.
-- Edit existing KeePass entries from the popup, including add/update/remove for non-protected custom fields.
-- New-login popup form prefilled from fields already typed on the page when available.
-- Username-first login support across navigation and same-page password reveal flows.
-- HTTP Basic Auth fill support.
+- HTTP Basic Auth fill support (not available in KeePassXC-Browser).
 - Embedded login form support through content scripts running in child frames.
 - Site-specific auto-fill and auto-submit overrides for hosts and their subdomains.
-- Popup lock/unlock to temporarily block credential queries and filling.
-- Optional auto-lock after credential inactivity.
-- Trusted browser listing and revocation.
-- About panel showing extension and KeePass plugin versions plus GitHub release update check.
-- KeePass plugin About dialog with version, endpoint, server status, and update metadata URL.
-- KeePass plugin auto-update check that downloads and installs the latest GitHub Release `.plgx`.
-- Chrome and Firefox extension packaging.
+- Popup lock/unlock with optional auto-lock after inactivity.
+- Trusted browser listing and revocation from KeePass or extension.
 
-## Known Gap
+### UI/UX
+- Modern credential list with website favicons, folder grouping, and filter chips.
+- Credential detail view with all fields and inline actions.
+- Password health indicators — strength meter, last used time, usage count.
+- Built-in password generator with length slider and character options.
+- Toast notifications and loading states for all actions.
+- Dark mode with automatic system preference detection.
+- Smooth animations and hover effects throughout.
 
-Passkeys/WebAuthn are not supported in version 1.0.0. A backend-only C# prototype now covers RP ID validation, ES256 credential material and create-algorithm policy enforcement, assertion signing, sign-count updates, protected KeePass storage fields, disabled feature discovery with `prototype_disabled` status metadata, KeePass approval grant/deny handling, required/unknown user-verification rejection, invalid user-handle rejection before approval, invalid create `excludeCredentials` and list/get `allowCredentials` rejection, excluded-credential conflict rejection for create requests, attestation-conveyance rejection beyond `none`, unsupported authenticator-attachment rejection, unknown resident-key requirement rejection with resident-key metadata storage, unsupported requested WebAuthn create/get extension rejection, browser timeout and UX hints normalized into pending sessions, requested `credProps` extension results plus create/get-complete authenticator attachment and create-complete authenticatorData/SPKI publicKey/transport metadata for discoverable credentials, and reserved list/create/get/cancel/revoke bridge routes behind a disabled feature gate. Reserved `passkeyRead`/`passkeyWrite` permission bits exist for policy tests, the plugin build includes a KeePass approval dialog prototype for future feature-gated passkey requests, and the extension has test-backed trusted-browser passkey permission controls that stay hidden unless bridge feature discovery reports `passkeys=true`. The non-packaged Chrome proxy experiment now includes a fail-closed trusted-origin resolver helper for browser-supplied requestInfo or frame context, rejects missing/invalid request IDs, missing, malformed, or non-object request JSON, invalid RP IDs, invalid challenges, invalid user handles, invalid create `excludeCredentials` IDs or descriptor types, invalid get `allowCredentials` IDs or descriptor types, required/unknown user verification, unknown WebAuthn enum values including resident-key requirements, create requests that do not allow ES256, unsupported authenticator attachment, unsupported WebAuthn create/get extensions, unsupported attestation conveyance, begin responses for a different WebAuthn request/RP ID/origin binding, complete responses with a mismatched WebAuthn request/RP ID/selected-credential binding or missing required WebAuthn fields, and selected assertion credentials that were not returned by KeePass, forwards create `excludeCredentials`, create/get timeout hints, WebAuthn UX hints, create resident-key requirements, create `credProps` extension requests/results, create/get response authenticator attachment, create response authenticatorData, transports, SPKI publicKey, COSE storage key metadata, and ES256 algorithm metadata, rejects duplicate pending WebAuthn request IDs before handler dispatch, times out hung proxied WebAuthn requests using browser request timeout hints, and completes lock/revoke/detach cleanup with browser-visible WebAuthn errors. Released builds still do not request a browser WebAuthn proxy permission or enable any user-facing passkey flow. The implementation design is tracked in `docs/passkeys-webauthn-design.md` so future work can add the browser integration and release review deliberately.
+### Passkeys/WebAuthn
+- WebAuthn Level 3 credential creation and assertion (enabled by default).
+- Chrome `webAuthenticationProxy` integration (optional runtime permission).
+- Backend: ES256 key generation, COSE/WebAuthn attestation, strict RP ID validation.
+- KeePass approval dialog for passkey create/get operations.
+- Protected private key storage in KeePass entries.
+
+### Security
+- Loopback-only bridge (`127.0.0.1`), never public interfaces.
+- Per-client HMAC-SHA256 with replay protection and timestamp window.
+- Web-origin rejection via CORS/origin validation.
+- Protected custom field values redacted from search, copy, and export.
+- No cloud dependency — credentials never leave your machine.
+
+### Release
+- Chrome MV3 and Firefox extension packages.
+- KeePass plugin DLL and PLGX artifacts.
+- SHA-256 checksum verified auto-update.
+- Optional GPG detached signatures.
+- 141 cross-browser E2E tests (Chromium + Firefox).
+
+## Comparison
+
+| Feature | Kee | KeePassXC-Browser | KeePassBrowserBridge |
+|---------|:---:|:-----------------:|:--------------------:|
+| KeePass plugin | ✅ | ✅ (native) | ✅ |
+| HTTP Basic Auth | ❌ | ❌ | **✅** |
+| TOTP + split inputs | ✅ | ✅ | ✅ |
+| Inline picker | ✅ | ✅ | **✅ Card + favicon** |
+| Site overrides | ❌ | ✅ | ✅ |
+| Custom fields | ✅ | ✅ | ✅ |
+| Dark mode | ❌ | ✅ | **✅ Auto system** |
+| Password generator | ✅ | ✅ | **✅ Popup panel** |
+| Password health | ❌ | ❌ | **✅** |
+| Passkeys/WebAuthn | ❌ | ✅ | **✅ (enabled)** |
+| Group filter chips | ❌ | ❌ | **✅** |
+| Auto-update SHA-256 | ❌ | ❌ | **✅** |
+| E2E test coverage | Partial | Partial | **141 tests** |
 
 The passkey proxy origin resolver only accepts numeric browser tab/frame IDs for `webNavigation.getFrame` fallback and rejects coerced string IDs before trusting frame context.
 
