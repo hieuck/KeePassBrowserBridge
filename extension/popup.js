@@ -292,18 +292,22 @@ function handleKeyboardShortcuts(event) {
 }
 
 function detectAndApplyTheme() {
-  const saved = localStorage.getItem('kbbTheme');
+  const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('kbbTheme') : null;
   if (saved === 'light' || saved === 'dark') {
     applyTheme(saved);
     return;
   }
-  const mql = window.matchMedia('(prefers-color-scheme: dark)');
-  applyTheme(mql.matches ? 'dark' : 'light');
-  mql.addEventListener('change', (e) => {
-    if (!localStorage.getItem('kbbTheme')) {
-      applyTheme(e.matches ? 'dark' : 'light');
-    }
-  });
+  const mql = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  if (mql && typeof mql.addEventListener === 'function') {
+    applyTheme(mql.matches ? 'dark' : 'light');
+    mql.addEventListener('change', (e) => {
+      if (typeof localStorage === 'undefined' || !localStorage.getItem('kbbTheme')) {
+        applyTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+  } else if (mql) {
+    applyTheme(mql.matches ? 'dark' : 'light');
+  }
 }
 
 function applyTheme(theme) {
@@ -318,7 +322,7 @@ function applyTheme(theme) {
 function toggleTheme() {
   const theme = document.documentElement.getAttribute('data-theme') || 'light';
   const next = theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('kbbTheme', next);
+  if (typeof localStorage !== 'undefined') localStorage.setItem('kbbTheme', next);
   applyTheme(next);
 }
 
