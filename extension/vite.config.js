@@ -7,7 +7,8 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        popup: 'src/popup/main.js'
+        popup: 'src/popup/main.js',
+        options: 'src/options/main.js'
       },
       output: {
         entryFileNames: '[name].js',
