@@ -1102,7 +1102,9 @@ function showInlinePicker(button, entries) {
     }
     const title = document.createElement("div");
     title.textContent = entry.Title || "(Untitled)";
-    title.style.fontWeight = "700";
+    title.style.fontWeight = "600";
+    title.style.fontSize = "13px";
+    title.style.marginBottom = "1px";
     title.style.overflow = "hidden";
     title.style.textOverflow = "ellipsis";
     title.style.whiteSpace = "nowrap";
@@ -1943,20 +1945,21 @@ function applyPickerStyle(picker) {
     '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 }
 function applyPickerItemStyle(item) {
-  item.style.display = "block";
+  item.style.display = "flex";
+  item.style.flexDirection = "column";
   item.style.width = "100%";
-  item.style.margin = "0";
-  item.style.padding = "9px 10px";
-  item.style.border = "0";
-  item.style.borderBottom = "1px solid #edf0f3";
-  item.style.borderRadius = "0";
+  item.style.padding = "8px 12px";
+  item.style.marginBottom = "4px";
+  item.style.border = "1px solid #d7dde5";
+  item.style.borderRadius = "8px";
   item.style.background = "#ffffff";
-  item.style.color = "#1f2933";
-  item.style.textAlign = "left";
+  item.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
   item.style.cursor = "pointer";
-  item.style.appearance = "none";
-  item.style.font =
-    '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  item.style.textAlign = "left";
+  item.style.fontFamily =
+    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  item.style.transition = "box-shadow 0.15s ease";
+  item.style.color = "#1f2933";
   item.addEventListener("mouseenter", () => {
     item.style.background = "#f3f7fa";
   });

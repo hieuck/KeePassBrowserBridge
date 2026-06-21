@@ -943,6 +943,40 @@ test.describe('content script form detection', () => {
     expect(ackMessage.url).toContain('/tests/fixtures/embedded-about-blank-login-widget.html');
   });
 
+  test('inline picker items show avatar styled like popup credentials', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
+            return {
+              ok: true,
+              response: {
+                entries: [
+                  { Title: 'Personal', EntryId: 'entry-personal', UserName: 'personal@example.com', Password: 'personal-secret', Url: 'https://example.com' },
+                  { Title: 'Work', EntryId: 'entry-work', UserName: 'work@example.com', Password: 'work-secret', Url: 'https://example.com', Group: 'Accounts/Work' }
+                ]
+              }
+            };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+    await expect(page.locator('.kbb-inline-picker')).toBeVisible();
+
+    const items = page.locator('.kbb-inline-picker [role="menuitem"]');
+    await expect(items.first()).toBeVisible();
+    await expect(items.first()).toHaveCSS('border-radius', /4px|6px|8px/);
+    await expect(items.first()).toHaveCSS('padding', /.+/);
+  });
+
   test('inline picker explains when no logins are available for the page', async ({ page }) => {
     await page.addInitScript(() => {
       window.chrome = {
