@@ -1073,6 +1073,12 @@ async function renderResults(entries) {
     avatar.className = 'item-avatar';
     avatar.style.backgroundColor = avatarColors[colorIndex];
     avatar.textContent = (entry.Title || '?')[0].toUpperCase();
+    if (entry.Url) {
+      avatar.style.backgroundImage = 'url(https://www.google.com/s2/favicons?domain=' + encodeURIComponent(entry.Url) + '&sz=32)';
+      avatar.style.backgroundSize = 'cover';
+      avatar.style.backgroundPosition = 'center';
+      avatar.style.color = 'transparent';
+    }
 
     const info = document.createElement('div');
     info.className = 'item-info';

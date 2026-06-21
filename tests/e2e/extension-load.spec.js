@@ -1022,6 +1022,12 @@ test.describe('KeePassBrowserBridge Extension', () => {
     });
   });
 
+  test('credential items show favicon from google favicon service when entry has URL', async ({ page }) => {
+    await page.locator('#queryLogins').click();
+    const firstAvatar = page.locator('.item-avatar').first();
+    await expect(firstAvatar).toHaveCSS('background-image', /google\.com\/s2\/favicons/);
+  });
+
   test('renders credential list with entry avatars and prominent username', async ({ page }) => {
   await page.evaluate(() => {
     window.__kbbPopupEntries = [
