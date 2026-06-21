@@ -181,6 +181,9 @@ internal static class Program
         BridgeHandlerCancelsPendingPasskeySessionWhenFeatureGateIsEnabled();
         BridgeHandlerRevokingClientClearsPendingPasskeySessions();
         BridgeHandlerClearPendingPasskeySessionsRejectsLaterCompletion();
+        PasskeysGateDefaultsToFalse();
+        PasskeysGateReturnsTrueWhenConfigSet();
+        PasskeysGateDefaultsToFalseAfterReset();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerSavesDatabaseAfterSuccessfulCreate();
@@ -4897,6 +4900,24 @@ internal static class Program
         {
             return m_secret;
         }
+    }
+
+    private static void PasskeysGateDefaultsToFalse()
+    {
+        BridgeSettings.TestSetPasskeysConfigValue(null);
+        AssertFalse(BridgeSettings.PasskeysEnabled, "passkeys gate should default to false when config value is not set");
+    }
+
+    private static void PasskeysGateReturnsTrueWhenConfigSet()
+    {
+        BridgeSettings.TestSetPasskeysConfigValue("true");
+        AssertTrue(BridgeSettings.PasskeysEnabled, "passkeys gate should return true when config value is set to true");
+    }
+
+    private static void PasskeysGateDefaultsToFalseAfterReset()
+    {
+        BridgeSettings.TestSetPasskeysConfigValue(null);
+        AssertFalse(BridgeSettings.PasskeysEnabled, "passkeys gate should return false after config value is cleared");
     }
 
     private sealed class RawHttpResponse
