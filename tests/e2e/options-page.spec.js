@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 async function clickTab(page, tabName) {
-  await page.locator(`.tab-btn[data-tab="${tabName}"]`).click();
+  await page.locator(`.pill-tab[data-tab="${tabName}"]`).click();
 }
 
 async function installOptionsStorage(page, initial = {}) {
@@ -161,11 +161,12 @@ async function installOptionsStorage(page, initial = {}) {
 }
 
 test.describe('options page settings', () => {
-  test('options page renders with tab navigation', async ({ page }) => {
+  test('options page renders with pill-style tab navigation', async ({ page }) => {
     await page.goto('/extension/options.html');
-    await expect(page.locator('.tab-nav')).toBeVisible();
-    const tabs = page.locator('.tab-btn');
+    await expect(page.locator('.pill-nav')).toBeVisible();
+    const tabs = page.locator('.pill-tab');
     await expect(tabs.first()).toBeVisible();
+    await expect(tabs).toHaveCount(4);
     // Click second tab
     await tabs.nth(1).click();
     await expect(page.locator('.tab-panel.active')).toBeVisible();
@@ -199,18 +200,18 @@ test.describe('options page settings', () => {
 
     await page.locator('#bridgeEndpoint').fill('http://127.0.0.1:19456/bridge');
     await page.locator('#theme').selectOption('dark');
-    await page.locator('#autoFillEnabled').uncheck();
-    await page.locator('#autoSubmitEnabled').check();
+    await page.locator('#autoFillEnabled').uncheck({ force: true });
+    await page.locator('#autoSubmitEnabled').check({ force: true });
     await page.locator('#autoFillDelay').fill('800');
     await clickTab(page, 'sites');
-    await page.locator('#strictUrlMatching').check();
-    await page.locator('#regexUrlMatching').check();
+    await page.locator('#strictUrlMatching').check({ force: true });
+    await page.locator('#regexUrlMatching').check({ force: true });
     await clickTab(page, 'clients');
-    await page.locator('#showPasswordsInPopup').check();
-    await page.locator('#notificationsEnabled').uncheck();
+    await page.locator('#showPasswordsInPopup').check({ force: true });
+    await page.locator('#notificationsEnabled').uncheck({ force: true });
     await page.locator('#autoLockTimeoutMinutes').fill('15');
     await page.locator('#clipboardClearDelay').fill('45');
-    await page.locator('#debugMode').check();
+    await page.locator('#debugMode').check({ force: true });
     await page.locator('#saveSettings').click();
 
     await expect(page.locator('#message')).toHaveText('Settings saved successfully!');
@@ -345,8 +346,8 @@ test.describe('options page settings', () => {
 
     await expect(page.locator('#siteOverrideList')).toContainText('old.example.com');
     await page.locator('#siteOverrideHost').fill('Example.COM');
-    await page.locator('#siteOverrideAutoFill').uncheck();
-    await page.locator('#siteOverrideAutoSubmit').check();
+    await page.locator('#siteOverrideAutoFill').uncheck({ force: true });
+    await page.locator('#siteOverrideAutoSubmit').check({ force: true });
     await page.locator('#addSiteOverride').click();
 
     await expect(page.locator('#siteOverrideList')).toContainText('example.com');
@@ -634,7 +635,7 @@ test.describe('options page settings', () => {
     await expect(page.locator('#passkeyToggle')).toBeChecked();
     await expect(page.locator('#passkeyStatus')).toHaveText('Passkeys are active');
 
-    await page.locator('#passkeyToggle').uncheck();
+    await page.locator('#passkeyToggle').uncheck({ force: true });
     await expect(page.locator('#passkeyStatus')).toHaveText('Passkeys disabled');
 
     const messages = await page.evaluate(() => window.__kbbOptionsMessages.map((msg) => msg.type));
@@ -673,5 +674,18 @@ test.describe('options page settings', () => {
     const stored = await page.evaluate(() => window.__kbbOptionsStore);
     expect(stored.autoLockTimeoutMinutes).toBe(5);
     expect(stored.clipboardClearDelay).toBe(30);
+  });
+
+  test('options page has modern consistent header with popup', async ({ page }) => {
+    await page.goto('/extension/options.html');
+    await expect(page.locator('.options-header .logo')).toBeVisible();
+    await expect(page.locator('.options-header .logo-text')).toContainText('KeePass Bridge');
+  });
+
+  test('options uses pill-style tab navigation', async ({ page }) => {
+    await page.goto('/extension/options.html');
+    await expect(page.locator('.tab-nav.pill-nav')).toBeVisible();
+    const tabs = page.locator('.pill-tab');
+    await expect(tabs).toHaveCount(4);
   });
 });
