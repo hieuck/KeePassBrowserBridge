@@ -134,6 +134,8 @@ async function handleMessage(message) {
       return getAbout();
     case 'KBB_CHECK_UPDATES':
       return checkUpdates();
+    case 'KBB_SET_PASSKEYS_ENABLED':
+      return setPasskeysEnabled(message.enabled);
     default:
       throw new Error('Unknown message type.');
   }
@@ -359,6 +361,36 @@ async function setLocked(locked) {
     await clearSensitiveRuntimeState('lock');
   }
   return getState();
+}
+
+async function setPasskeysEnabled(enabled) {
+  const enable = enabled === true;
+  await chrome.storage.local.set({ passkeysEnabled: enable });
+
+  if (enable) {
+    try {
+      const granted = await chrome.permissions.request({
+        permissions: ['webAuthenticationProxy', 'webNavigation']
+      });
+      if (!granted) {
+        await chrome.storage.local.set({ passkeysEnabled: false });
+        throw new Error('WebAuthenticationProxy permission was denied.');
+      }
+    } catch (error) {
+      await chrome.storage.local.set({ passkeysEnabled: false });
+      throw error;
+    }
+    await setupPasskeyProxy();
+  } else {
+    await teardownPasskeyProxy();
+    try {
+      await chrome.permissions.remove({
+        permissions: ['webAuthenticationProxy', 'webNavigation']
+      });
+    } catch (_) {}
+  }
+
+  return { passkeysEnabled: enable };
 }
 
 async function listClients() {
@@ -1358,3 +1390,22 @@ function isExpectedAccessStateError(error) {
   const message = error && error.message ? error.message : String(error || '');
   return /locked|pair this browser/i.test(message);
 }
+
+// --- Passkey Proxy Startup & Storage Sync ---
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.passkeysEnabled) {
+    if (changes.passkeysEnabled.newValue) {
+      setupPasskeyProxy();
+    } else {
+      teardownPasskeyProxy();
+    }
+  }
+});
+
+// Startup: check if passkeys were enabled and start proxy if so
+chrome.storage.local.get(['passkeysEnabled'], (result) => {
+  if (result.passkeysEnabled) {
+    setupPasskeyProxy();
+  }
+});
