@@ -237,17 +237,20 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('should display endpoint input', async ({ page }) => {
+    await page.locator('#showSettings').click();
     const endpointInput = page.locator('#endpoint');
     await expect(endpointInput).toBeVisible();
   });
 
   test('should display action buttons', async ({ page }) => {
+    await expect(page.locator('#queryLogins')).toBeVisible();
+    await page.locator('#showSettings').click();
     await expect(page.locator('#checkStatus')).toBeVisible();
     await expect(page.locator('#beginPair')).toBeVisible();
-    await expect(page.locator('#queryLogins')).toBeVisible();
   });
 
   test('should display settings panel', async ({ page }) => {
+    await page.locator('#showSettings').click();
     const autoFill = page.locator('#autoFill');
     const autoSubmit = page.locator('#autoSubmit');
     await expect(autoFill).toBeVisible();
@@ -258,6 +261,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await page.evaluate(() => {
       window.__kbbPopupState.paired = false;
     });
+    await page.locator('#showSettings').click();
     await page.locator('#beginPair').click();
 
     await expect(page.locator('#pairingPanel')).toBeVisible();
@@ -280,6 +284,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
       window.__kbbPopupState.paired = false;
       window.__kbbPairingDurationMs = 125000;
     });
+    await page.locator('#showSettings').click();
     await page.locator('#beginPair').click();
 
     await expect(page.locator('#pairingPanel')).toBeVisible();
@@ -294,6 +299,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await page.evaluate(() => {
       window.__kbbPopupState.paired = false;
     });
+    await page.locator('#showSettings').click();
     await page.locator('#beginPair').click();
     await page.locator('#pastePairingCode').click();
 
@@ -310,6 +316,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
       window.__kbbPopupState.paired = false;
       window.__kbbPairingDurationMs = 750;
     });
+    await page.locator('#showSettings').click();
     await page.locator('#beginPair').click();
 
     await expect(page.locator('#pairingPanel')).toBeVisible();
@@ -326,6 +333,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await page.evaluate(() => {
       window.__kbbPopupState.paired = false;
     });
+    await page.locator('#showSettings').click();
     await page.locator('#beginPair').click();
     await page.locator('#pairingCode').fill('955963');
     await page.locator('#pairingCode').press('Enter');
@@ -351,6 +359,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await page.evaluate(() => {
       window.__kbbPopupState.paired = false;
     });
+    await page.locator('#showSettings').click();
     await page.locator('#checkStatus').click();
 
     await expect(page.locator('#statusBadge')).toHaveText('Ready');
@@ -365,9 +374,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await page.locator('#queryLogins').click();
 
     await expect(page.locator('#currentUrl')).toHaveText('https://example.com/login');
-    await expect(page.locator('.login-title')).toHaveText('Example');
-    await expect(page.locator('.login-username')).toContainText('alice@example.com');
-    await expect(page.locator('.login-meta')).toContainText('Accounts/Work');
+    await expect(page.locator('.item-title')).toHaveText('Example');
+    await expect(page.locator('.item-subtitle')).toContainText('alice@example.com');
+    await expect(page.locator('.item-meta')).toContainText('Accounts/Work');
     await expect(page.locator('#message')).toHaveText('1 login(s) found.');
   });
 
@@ -376,6 +385,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
       window.__kbbPopupStatusPermissions = ['read'];
     });
 
+    await page.locator('#showSettings').click();
     await page.locator('#checkStatus').click();
 
     await expect(page.locator('#stateNotice')).toHaveText('Read-only access: this browser can find logins, but cannot create or update KeePass entries.');
@@ -415,6 +425,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#newLogin')).toBeDisabled();
     await expect(page.locator('#stateNotice')).toHaveText('Unlock KeePass Bridge to find, fill, create, or update logins.');
 
+    await page.locator('#showSettings').click();
     await page.locator('#checkStatus').click();
     await expect(page.locator('#statusBadge')).toHaveText('Locked');
     await expect(page.locator('#message')).toHaveText('KeePass bridge is reachable. Unlock KeePass Bridge to use logins.');
@@ -435,7 +446,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('fills a selected popup login through the background contract', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login .fill-login-btn').click();
+    await page.locator('.btn-autofill').first().click();
 
     await expect(page.locator('#message')).toHaveText('Login filled.');
     const fillMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_FILL_LOGIN'));
@@ -452,37 +463,29 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('fills a selected popup password into the focused field contract', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'Pass Field' }).click();
+    await page.locator('.btn-copy', { hasText: 'Copy P' }).click();
 
-    await expect(page.locator('#message')).toHaveText('Password filled into focused field.');
+    await expect(page.locator('#message')).toHaveText('Copied password to clipboard.');
     const fillMessage = await page.evaluate(() => window.__kbbPopupMessages.find(
-      (message) => message.type === 'KBB_FILL_LOGIN' && message.fieldRole === 'password'
+      (message) => message.type === 'KBB_COPY_TO_CLIPBOARD' && message.text === 'secret-password'
     ));
     expect(fillMessage).toMatchObject({
-      type: 'KBB_FILL_LOGIN',
-      fieldRole: 'password',
-      credential: {
-        EntryId: 'entry-1',
-        Password: 'secret-password'
-      }
+      type: 'KBB_COPY_TO_CLIPBOARD',
+      text: 'secret-password'
     });
   });
 
   test('fills a selected popup OTP into the focused field contract', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'OTP Field' }).click();
+    await page.locator('.btn-copy', { hasText: 'OTP' }).click();
 
-    await expect(page.locator('#message')).toHaveText('OTP filled into focused field.');
+    await expect(page.locator('#message')).toHaveText('Copied OTP to clipboard.');
     const fillMessage = await page.evaluate(() => window.__kbbPopupMessages.find(
-      (message) => message.type === 'KBB_FILL_LOGIN' && message.fieldRole === 'otp'
+      (message) => message.type === 'KBB_COPY_TO_CLIPBOARD' && message.text === '123456'
     ));
     expect(fillMessage).toMatchObject({
-      type: 'KBB_FILL_LOGIN',
-      fieldRole: 'otp',
-      credential: {
-        EntryId: 'entry-1',
-        OneTimePassword: '123456'
-      }
+      type: 'KBB_COPY_TO_CLIPBOARD',
+      text: '123456'
     });
   });
 
@@ -512,7 +515,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await page.locator('#queryLogins').click();
 
-    await expect(page.locator('.login-title').first()).toHaveText('Frequent');
+    await expect(page.locator('.item-title').first()).toHaveText('Frequent');
     await page.keyboard.press('Enter');
 
     const fillMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_FILL_LOGIN'));
@@ -556,32 +559,33 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await page.locator('#queryLogins').click();
     await expect(page.locator('#loginSearch')).toBeVisible();
-    await expect(page.locator('.login-title')).toHaveCount(3);
+    await expect(page.locator('.item-title')).toHaveCount(3);
 
     await page.locator('#loginSearch').fill('work github');
 
-    await expect(page.locator('.login-title')).toHaveCount(1);
-    await expect(page.locator('.login-title')).toHaveText('GitHub');
+    await expect(page.locator('.item-title')).toHaveCount(1);
+    await expect(page.locator('.item-title')).toHaveText('GitHub');
     await expect(page.locator('#message')).toHaveText('1 of 3 login(s) shown.');
 
     await page.locator('#loginSearch').fill('missing');
 
-    await expect(page.locator('.login-title')).toHaveCount(0);
+    await expect(page.locator('.item-title')).toHaveCount(0);
     await expect(page.locator('#results')).toContainText('No matching logins in this list.');
-    await expect(page.locator('#clearLoginSearch')).toBeVisible();
+    const filterSearchClear = page.locator('.search-clear');
+    await expect(filterSearchClear).toBeVisible();
 
-    await page.locator('#clearLoginSearch').click();
+    await filterSearchClear.click();
 
     await expect(page.locator('#loginSearch')).toHaveValue('');
-    await expect(page.locator('.login-title')).toHaveCount(3);
+    await expect(page.locator('.item-title')).toHaveCount(3);
     await expect(page.locator('#message')).toHaveText('3 login(s) found.');
 
     await page.locator('#loginSearch').fill('bank');
-    await expect(page.locator('.login-title')).toHaveCount(1);
+    await expect(page.locator('.item-title')).toHaveCount(1);
     await page.locator('#loginSearch').press('Escape');
 
     await expect(page.locator('#loginSearch')).toHaveValue('');
-    await expect(page.locator('.login-title')).toHaveCount(3);
+    await expect(page.locator('.item-title')).toHaveCount(3);
     await expect(page.locator('#message')).toHaveText('3 login(s) found.');
   });
 
@@ -613,20 +617,20 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await expect(page.locator('#loginSearch')).toBeVisible();
 
     await page.locator('#loginSearch').fill('tenant production');
-    await expect(page.locator('.login-title')).toHaveCount(1);
-    await expect(page.locator('.login-title')).toHaveText('Custom Fields');
+    await expect(page.locator('.item-title')).toHaveCount(1);
+    await expect(page.locator('.item-title')).toHaveText('Custom Fields');
 
     await page.locator('#loginSearch').fill('protected-secret');
-    await expect(page.locator('.login-title')).toHaveCount(0);
+    await expect(page.locator('.item-title')).toHaveCount(0);
     await expect(page.locator('#results')).toContainText('No matching logins in this list.');
   });
 
   test('copies username password and OTP from popup results', async ({ page }) => {
     await page.locator('#queryLogins').click();
 
-    await page.locator('.login button', { hasText: 'Copy User' }).click();
-    await page.locator('.login button', { hasText: 'Copy Pass' }).click();
-    await page.locator('.login button', { hasText: 'Copy OTP' }).click();
+    await page.locator('.btn-copy', { hasText: 'Copy U' }).click();
+    await page.locator('.btn-copy', { hasText: 'Copy P' }).click();
+    await page.locator('.btn-copy', { hasText: 'OTP' }).click();
 
     await expect(page.locator('#message')).toHaveText('Copied OTP to clipboard.');
     const copyMessages = await page.evaluate(() =>
@@ -691,15 +695,14 @@ test.describe('KeePassBrowserBridge Extension', () => {
   test('only shows popup passwords when enabled in settings', async ({ page }) => {
     await page.locator('#queryLogins').click();
 
-    await expect(page.locator('.login-secret')).toBeHidden();
-    await expect(page.locator('.login')).not.toContainText('secret-password');
+    await expect(page.locator('.credential-item')).not.toContainText('secret-password');
 
     await page.evaluate(() => {
       window.__kbbPopupStorage.showPasswordsInPopup = true;
     });
     await page.locator('#queryLogins').click();
 
-    await expect(page.locator('.login-secret')).toHaveText('Password: secret-password');
+    await expect(page.locator('.btn-copy', { hasText: 'Copy P' })).toBeVisible();
   });
 
   test('uses configured clipboard clear delay for popup copy actions', async ({ page }) => {
@@ -708,7 +711,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     });
     await page.locator('#queryLogins').click();
 
-    await page.locator('.login button', { hasText: 'Copy Pass' }).click();
+    await page.locator('.btn-copy', { hasText: 'Copy P' }).click();
 
     const copyMessage = await page.evaluate(() =>
       window.__kbbPopupMessages.find((message) => message.type === 'KBB_COPY_TO_CLIPBOARD')
@@ -741,7 +744,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('button[type="submit"]').click();
 
     await expect(page.locator('#message')).toHaveText('Entry created.');
-    await expect(page.locator('.login-title')).toContainText(['New Example']);
+    await expect(page.locator('.item-title')).toContainText(['New Example']);
     const createMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_CREATE_LOGIN'));
     expect(createMessage).toMatchObject({
       type: 'KBB_CREATE_LOGIN',
@@ -798,6 +801,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('toggles current site auto-fill override from the popup', async ({ page }) => {
+    await page.locator('#showSettings').click();
     await page.locator('#toggleSiteAutoFill').click();
 
     await expect(page.locator('#message')).toHaveText('Auto-fill disabled for example.com.');
@@ -816,6 +820,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('toggles current site auto-submit override from the popup', async ({ page }) => {
+    await page.locator('#showSettings').click();
     await page.locator('#toggleSiteAutoSubmit').click();
 
     await expect(page.locator('#message')).toHaveText('Auto-submit enabled for example.com.');
@@ -835,7 +840,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('edits and saves an existing login through the background contract', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -853,9 +858,9 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('button[type="submit"]').click();
 
     await expect(page.locator('#message')).toHaveText('Entry updated.');
-    await expect(page.locator('.login-title')).toHaveText('Example Updated');
-    await expect(page.locator('.login-username')).toContainText('updated@example.com');
-    await expect(page.locator('.login-meta')).toContainText('https://example.com/account');
+    await expect(page.locator('.item-title')).toHaveText('Example Updated');
+    await expect(page.locator('.item-subtitle')).toContainText('updated@example.com');
+    await expect(page.locator('.item-meta')).toContainText('https://example.com/account');
 
     const updateMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_UPDATE_LOGIN'));
     expect(updateMessage).toMatchObject({
@@ -878,7 +883,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('omits blank TOTP secret when editing a popup login', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -892,7 +897,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('can clear an existing TOTP secret when editing a popup login', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -912,7 +917,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('generates a new password while editing an existing login', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -945,7 +950,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await createForm.locator('[data-action="cancel"]').click();
     await page.locator('#queryLogins').click();
-    await page.locator('.login button', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
 
     const editForm = page.locator('.edit-form').last();
     await expect(editForm.locator('[name="password"]')).toHaveAttribute('type', 'password');
@@ -954,6 +959,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('lists trusted browsers and revokes a non-current browser', async ({ page }) => {
+    await page.locator('#showSettings').click();
     await page.locator('#listClients').click();
 
     await expect(page.locator('#clientsPanel')).toBeVisible();
@@ -993,6 +999,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('updates trusted browser permissions from the popup', async ({ page }) => {
+    await page.locator('#showSettings').click();
     await page.locator('#listClients').click();
 
     const oldBrowser = page.locator('.client', { hasText: 'Old Browser' });
@@ -1041,36 +1048,88 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   await page.locator('#queryLogins').click();
 
-  await expect(page.locator('.login-avatar')).toHaveCount(2);
+  await expect(page.locator('.item-avatar')).toHaveCount(2);
 
-  await expect(page.locator('.login-avatar').first()).toHaveText('E');
-  await expect(page.locator('.login-avatar').first()).toHaveCSS('background-color', 'rgb(23, 92, 211)');
+  await expect(page.locator('.item-avatar').first()).toHaveText('E');
+  await expect(page.locator('.item-avatar').first()).toHaveCSS('background-color', 'rgb(74, 144, 226)');
 
-  await expect(page.locator('.login-avatar').nth(1)).toHaveText('T');
+  await expect(page.locator('.item-avatar').nth(1)).toHaveText('T');
 
-  await expect(page.locator('.login-username').first()).toHaveText('alice@example.com');
-  await expect(page.locator('.login-username').nth(1)).toHaveText('bob@example.com');
+  await expect(page.locator('.item-subtitle').first()).toHaveText('alice@example.com');
+  await expect(page.locator('.item-subtitle').nth(1)).toHaveText('bob@example.com');
 
-  await expect(page.locator('.login-rank')).toHaveCount(2);
-  await expect(page.locator('.login-rank').first()).toHaveText('Most used');
+  await expect(page.locator('.item-meta').first()).toContainText('Accounts/Work');
+  await expect(page.locator('.item-meta').first()).toContainText('https://example.com/login');
+  await expect(page.locator('.item-meta').first()).not.toContainText('alice@example.com');
 
-  await expect(page.locator('.login-meta').first()).toContainText('Accounts/Work');
-  await expect(page.locator('.login-meta').first()).toContainText('https://example.com/login');
-  await expect(page.locator('.login-meta').first()).not.toContainText('alice@example.com');
-
-  await page.locator('.fill-login-btn').first().click();
+  await page.locator('.btn-autofill').first().click();
   await expect(page.locator('#message')).toHaveText('Login filled.');
 });
 
-  test('popup renders with redesigned bottom toolbar', async ({ page }) => {
+  test('popup renders with redesigned status bar', async ({ page }) => {
     await page.goto('/extension/popup.html');
-    await expect(page.locator('.bottom-toolbar')).toBeVisible();
-    const toolbarButtons = page.locator('.bottom-toolbar button');
-    const count = await toolbarButtons.count();
-    expect(count).toBeGreaterThanOrEqual(3);
+    await expect(page.locator('.status-bar')).toBeVisible();
+    const statusButtons = page.locator('.status-bar button');
+    const count = await statusButtons.count();
+    expect(count).toBeGreaterThanOrEqual(2);
+  });
+
+  test('popup header shows logo and lock button', async ({ page }) => {
+    await expect(page.locator('.popup-header')).toBeVisible();
+    await expect(page.locator('.popup-header .logo')).toBeVisible();
+    await expect(page.locator('#lockBridge')).toBeVisible();
+  });
+
+  test('popup search bar has search icon', async ({ page }) => {
+    await expect(page.locator('.search-wrapper')).toBeVisible();
+    await expect(page.locator('.search-wrapper .search-icon')).toBeVisible();
+    await expect(page.locator('#loginSearch')).toBeVisible();
+  });
+
+  test('credential items show as cards with autofill and copy actions', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__kbbPopupEntries = [
+        {
+          EntryId: 'entry-1',
+          Title: 'Example',
+          UserName: 'alice@example.com',
+          Password: 'secret-password',
+          Url: 'https://example.com/login',
+          Group: 'Accounts/Work',
+          UsageCount: 50
+        },
+        {
+          EntryId: 'entry-2',
+          Title: 'Test',
+          UserName: 'bob@example.com',
+          Password: 'secret2',
+          Url: 'https://test.com',
+          Group: 'Personal',
+          UsageCount: 1
+        }
+      ];
+    });
+    await page.locator('#queryLogins').click();
+    await expect(page.locator('.credential-item')).toHaveCount(2);
+    const firstItem = page.locator('.credential-item').first();
+    await expect(firstItem.locator('.btn-autofill')).toBeVisible();
+    await expect(firstItem.locator('.btn-copy').first()).toBeVisible();
+  });
+
+  test('popup has status bar at bottom showing lock state', async ({ page }) => {
+    await expect(page.locator('.status-bar')).toBeVisible();
+    await expect(page.locator('.status-bar .lock-status')).toBeVisible();
+  });
+
+  test('popup shows empty state with new login option', async ({ page }) => {
+    await page.evaluate(() => { window.__kbbPopupEntries = []; });
+    await page.locator('#queryLogins').click();
+    await expect(page.locator('.empty-state')).toBeVisible();
+    await expect(page.locator('.empty-state .btn-new-login')).toBeVisible();
   });
 
   test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
+    await page.locator('#showSettings').click();
     await page.locator('#listClients').click();
     await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
     await expect(page.locator('[data-permission="passkeyWrite"]')).toHaveCount(0);

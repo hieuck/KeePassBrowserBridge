@@ -14,6 +14,7 @@ const elements = {
   autoSubmit: document.getElementById('autoSubmit'),
   listClients: document.getElementById('listClients'),
   lockBridge: document.getElementById('lockBridge'),
+  lockStatus: null,
   clientsPanel: document.getElementById('clientsPanel'),
   pairingPanel: document.getElementById('pairingPanel'),
   pairingTimer: document.getElementById('pairingTimer'),
@@ -34,12 +35,25 @@ const elements = {
   checkUpdates: document.getElementById('checkUpdates'),
   currentUrl: document.getElementById('currentUrl'),
   loginSearch: document.getElementById('loginSearch'),
+  clearSearch: document.getElementById('clearLoginSearch'),
   results: document.getElementById('results'),
   message: document.getElementById('message'),
   passkeySection: document.getElementById('passkeySection'),
   passkeyToggle: document.getElementById('passkeyToggle'),
-  passkeyStatus: document.getElementById('passkeyStatus')
+  passkeyStatus: document.getElementById('passkeyStatus'),
+  settingsPanel: document.getElementById('settingsPanel'),
+  showSettings: document.getElementById('showSettings'),
+  aboutPanel: document.getElementById('aboutPanel')
 };
+(function initElementsLockStatus() {
+  try {
+    elements.lockStatus = document.querySelector('.lock-status');
+  } catch (e) {
+    if (elements.lockBridge) {
+      elements.lockStatus = elements.lockBridge.querySelector('.lock-status');
+    }
+  }
+})();
 
 
 
@@ -77,17 +91,28 @@ function init() {
   elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
   elements.loginSearch.addEventListener('input', () => runAction(filterCurrentLogins));
   elements.loginSearch.addEventListener('keydown', handleLoginSearchKeydown);
+  if (elements.clearSearch) {
+    elements.clearSearch.addEventListener('click', () => runAction(clearLoginSearch));
+  }
   if (elements.passkeyToggle) {
     elements.passkeyToggle.addEventListener('change', () => runAction(togglePasskeys));
   }
 
-  document.getElementById('showSites')?.addEventListener('click', () => runAction(toggleSiteAutoFill));
-  document.getElementById('showClients')?.addEventListener('click', () => runAction(listClients));
-  document.getElementById('showAbout')?.addEventListener('click', () => runAction(showAbout));
+  if (elements.showSettings) {
+    elements.showSettings.addEventListener('click', toggleSettingsPanel);
+  }
+  if (elements.showAbout) {
+    elements.showAbout.addEventListener('click', () => runAction(showAbout));
+  }
 
   syncPairingCodeState();
   runAction(renderAbout);
   runAction(refreshState);
+}
+
+function toggleSettingsPanel() {
+  elements.settingsPanel.classList.toggle('hidden');
+  elements.clientsPanel.classList.add('hidden');
 }
 
 function handleLoginSearchKeydown(event) {
@@ -271,7 +296,7 @@ async function setAutoSubmit() {
 }
 
 async function toggleLocked() {
-  const lockLabel = elements.lockBridge?.querySelector('span')?.textContent?.trim() || elements.lockBridge.textContent;
+  const lockLabel = (elements.lockStatus || elements.lockBridge?.querySelector('span'))?.textContent?.trim() || elements.lockBridge.textContent;
   const state = await send({ type: 'KBB_SET_LOCKED', locked: lockLabel !== 'Unlock' });
   renderState(await hydrateStatePermissions(state));
   setMessage(state.locked ? 'KeePass Bridge is locked.' : 'KeePass Bridge is unlocked.');
@@ -816,7 +841,8 @@ function renderPasskeySection(about) {
 
 async function showAbout() {
   await refreshAboutMetadata();
-  document.querySelector('.about')?.scrollIntoView({ behavior: 'smooth' });
+  elements.aboutPanel.classList.toggle('hidden');
+  elements.settingsPanel.classList.add('hidden');
 }
 
 async function checkUpdates() {
@@ -838,11 +864,15 @@ function renderState(state) {
   if (elements.passkeySection && elements.passkeySection.style.display !== 'none') {
     elements.passkeyToggle.checked = Boolean(state.passkeysEnabled);
   }
-  const lockSpan = elements.lockBridge?.querySelector('span');
-  if (lockSpan) {
-    lockSpan.textContent = state.locked ? 'Unlock' : 'Lock';
+  if (elements.lockStatus) {
+    elements.lockStatus.textContent = state.locked ? 'Unlock' : 'Lock';
   } else {
-    elements.lockBridge.textContent = state.locked ? 'Unlock' : 'Lock';
+    const lockSpan = elements.lockBridge?.querySelector('span');
+    if (lockSpan) {
+      lockSpan.textContent = state.locked ? 'Unlock' : 'Lock';
+    } else {
+      elements.lockBridge.textContent = state.locked ? 'Unlock' : 'Lock';
+    }
   }
   const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
@@ -981,7 +1011,6 @@ function clearRenderedCredentials() {
   currentEntries = [];
   visibleEntries = [];
   elements.loginSearch.value = '';
-  elements.loginSearch.classList.add('hidden');
   elements.results.textContent = '';
 }
 
@@ -1029,104 +1058,68 @@ async function renderResults(entries) {
     return;
   }
 
-  const avatarColors = ['#176b87', '#b42318', '#067647', '#b54708', '#6941c6', '#363f72', '#c01048', '#175cd3'];
+  const avatarColors = ['#175cd3', '#b42318', '#067647', '#b54708', '#6941c6', '#363f72', '#c01048', '#4a90e2'];
   const maxUsage = Math.max(...visibleEntries.map((e) => Number(e.UsageCount || 0)), 0);
 
   for (const entry of visibleEntries) {
-    const item = document.createElement('article');
-    item.className = 'login';
+    const item = document.createElement('div');
+    item.className = 'credential-item';
 
-    const header = document.createElement('div');
-    header.className = 'login-header';
+    const main = document.createElement('div');
+    main.className = 'item-main';
 
     const colorIndex = (entry.Title || '').length % avatarColors.length;
     const avatar = document.createElement('div');
-    avatar.className = 'login-avatar';
+    avatar.className = 'item-avatar';
     avatar.style.backgroundColor = avatarColors[colorIndex];
     avatar.textContent = (entry.Title || '?')[0].toUpperCase();
 
     const info = document.createElement('div');
-    info.className = 'login-info';
-
-    const titleRow = document.createElement('div');
-    titleRow.className = 'login-title-row';
+    info.className = 'item-info';
 
     const title = document.createElement('div');
-    title.className = 'login-title';
+    title.className = 'item-title';
     title.textContent = entry.Title || '(Untitled)';
 
-    titleRow.append(title);
-
-    if (entry.UsageCount > 0) {
-      const rank = document.createElement('span');
-      rank.className = 'login-rank';
-      rank.textContent = entry.UsageCount >= maxUsage && maxUsage > 0 ? 'Most used' : 'Frequent';
-      titleRow.append(rank);
-    }
-
-    const username = document.createElement('div');
-    username.className = 'login-username';
-    username.textContent = entry.UserName || '';
+    const subtitle = document.createElement('div');
+    subtitle.className = 'item-subtitle';
+    subtitle.textContent = entry.UserName || '';
 
     const meta = document.createElement('div');
-    meta.className = 'login-meta';
-    meta.textContent = [entry.Group, entry.Url].filter(Boolean).join(' - ');
+    meta.className = 'item-meta';
+    const parts = [];
+    if (entry.UsageCount >= maxUsage && maxUsage > 0) parts.push('★ Most used');
+    if (entry.Group) parts.push(entry.Group);
+    if (entry.Url) parts.push(entry.Url);
+    if (entry.FrequencyRank && entry.FrequencyRank <= 3) parts.unshift('★ Frequent');
+    meta.textContent = parts.join(' · ');
 
-    info.append(titleRow, username);
-    header.append(avatar, info);
-
-    const secret = document.createElement('div');
-    secret.className = 'login-secret';
-    secret.textContent = showPasswords && entry.Password ? `Password: ${entry.Password}` : '';
+    info.append(title, subtitle);
+    if (meta.textContent) info.append(meta);
+    main.append(avatar, info);
+    item.append(main);
 
     const actions = document.createElement('div');
-    actions.className = 'login-actions';
+    actions.className = 'item-actions';
 
     const fill = document.createElement('button');
-    fill.type = 'button';
-    fill.className = 'fill-login-btn';
-    fill.textContent = '✓ Fill';
+    fill.className = 'btn-autofill';
+    fill.textContent = '✓ Autofill';
     fill.addEventListener('click', () => runAction(() => fillLogin(entry)));
 
-    const edit = document.createElement('button');
-    edit.type = 'button';
-    edit.className = 'secondary';
-    edit.textContent = '✎ Edit';
-    edit.disabled = !hasClientPermission('write');
-    edit.addEventListener('click', () => showEditForm(item, entry));
+    actions.append(fill);
 
-    actions.append(fill, edit);
     if (entry.UserName) {
-      actions.append(createFieldFillButton('User Field', entry, 'username'));
+      actions.append(createCopyButton('Copy U', 'username', entry.UserName, 'btn-copy'));
     }
     if (entry.Password) {
-      actions.append(createFieldFillButton('Pass Field', entry, 'password'));
+      actions.append(createCopyButton('Copy P', 'password', entry.Password, 'btn-copy'));
     }
     if (entry.OneTimePassword) {
-      actions.append(createFieldFillButton('OTP Field', entry, 'otp'));
-    }
-    item.append(header, meta);
-    if (secret.textContent) {
-      item.append(secret);
+      actions.append(createCopyButton('OTP', 'OTP', entry.OneTimePassword, 'btn-copy'));
     }
     item.append(actions);
 
-    const copyActions = document.createElement('div');
-    copyActions.className = 'copy-actions';
-    if (entry.UserName) {
-      copyActions.appendChild(createCopyButton('Copy User', 'username', entry.UserName));
-    }
-    if (entry.Password) {
-      copyActions.appendChild(createCopyButton('Copy Pass', 'password', entry.Password));
-    }
-    if (entry.OneTimePassword) {
-      copyActions.appendChild(createCopyButton('Copy OTP', 'OTP', entry.OneTimePassword));
-    }
-    if (copyActions.children.length) {
-      item.append(copyActions);
-    }
-
-    // Add custom fields display
     if (entry.CustomFields && entry.CustomFields.length > 0) {
       const customFieldsDiv = document.createElement('div');
       customFieldsDiv.className = 'custom-fields';
@@ -1163,13 +1156,21 @@ async function renderResults(entries) {
       item.appendChild(customFieldsDiv);
     }
 
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn-copy';
+    editBtn.textContent = '✎ Edit';
+    editBtn.disabled = !hasClientPermission('write');
+    editBtn.addEventListener('click', () => showEditForm(item, entry));
+    item.append(editBtn);
+
     elements.results.append(item);
   }
 }
 
 function renderFilteredEmptyState() {
   const empty = document.createElement('div');
-  empty.className = 'login-empty login-empty-actionable';
+  empty.className = 'login-empty';
 
   const title = document.createElement('div');
   title.className = 'login-empty-title';
@@ -1182,7 +1183,6 @@ function renderFilteredEmptyState() {
   const clear = document.createElement('button');
   clear.id = 'clearLoginSearch';
   clear.type = 'button';
-  clear.className = 'secondary';
   clear.textContent = 'Clear Search';
   clear.addEventListener('click', () => runAction(clearLoginSearch));
 
@@ -1192,23 +1192,27 @@ function renderFilteredEmptyState() {
 
 function renderNoLoginsEmptyState() {
   const empty = document.createElement('div');
-  empty.className = 'login-empty login-empty-actionable';
+  empty.className = 'empty-state';
+
+  const icon = document.createElement('div');
+  icon.className = 'empty-icon';
+  icon.textContent = '🔐';
 
   const title = document.createElement('div');
-  title.className = 'login-empty-title';
+  title.className = 'empty-title';
   title.textContent = 'No KeePass logins found for this page.';
 
   const hint = document.createElement('div');
-  hint.className = 'login-empty-hint';
+  hint.className = 'empty-hint';
   hint.textContent = 'Create a new entry or adjust URL matching in settings.';
 
   const create = document.createElement('button');
+  create.className = 'btn-new-login';
   create.id = 'emptyCreateLogin';
-  create.type = 'button';
   create.textContent = '+ New Login';
   create.addEventListener('click', () => runAction(beginCreateLogin));
 
-  empty.append(title, hint, create);
+  empty.append(icon, title, hint, create);
   elements.results.append(empty);
 }
 
@@ -1224,10 +1228,10 @@ async function shouldShowPasswordsInPopup() {
   return settings.showPasswordsInPopup === true;
 }
 
-function createCopyButton(text, label, value) {
+function createCopyButton(text, label, value, className) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'secondary';
+  button.className = className || 'secondary';
   button.textContent = text;
   button.addEventListener('click', () => runAction(() => copyToClipboard(label, value)));
   return button;
@@ -1369,10 +1373,8 @@ function sortCredentialEntries(entries) {
 }
 
 function updateSearchVisibility() {
-  const show = currentEntries.length > 1;
-  elements.loginSearch.classList.toggle('hidden', !show);
-  if (!show) {
-    elements.loginSearch.value = '';
+  if (elements.clearSearch) {
+    elements.clearSearch.classList.toggle('hidden', !elements.loginSearch.value);
   }
 }
 
@@ -1431,7 +1433,7 @@ function showCreateForm(url, pageCredential) {
         <button type="button" class="secondary" data-action="add-custom-field">Add field</button>
       </div>
     </div>
-    <div class="login-actions">
+    <div class="edit-actions">
       <button type="submit">✓ Save</button>
       <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>
     </div>
@@ -1601,7 +1603,7 @@ function showEditForm(item, entry) {
         <button type="button" class="secondary" data-action="add-custom-field">Add field</button>
       </div>
     </div>
-    <div class="login-actions">
+    <div class="edit-actions">
       <button type="submit">✓ Save</button>
       <button type="button" class="secondary" data-action="cancel">✕ Cancel</button>
     </div>

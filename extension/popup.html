@@ -8,43 +8,64 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="header">
-      <h1>KeePass Bridge</h1>
+  <div class="app">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="logo">
+        <span class="logo-icon">🔑</span>
+        <span class="logo-text">KeePass Bridge</span>
+      </div>
       <div class="header-actions">
-        <button id="themeToggle" type="button" class="icon-button" aria-label="Toggle theme" title="Toggle dark/light mode">
+        <button id="themeToggle" class="btn-icon" type="button" aria-label="Toggle theme" title="Toggle dark/light mode">
           <span class="theme-icon">🌙</span>
         </button>
-        <span id="statusBadge" class="badge">Checking</span>
       </div>
     </header>
 
-    <section class="section">
-      <label for="endpoint">Bridge endpoint</label>
-      <div class="row">
-        <input id="endpoint" type="url" spellcheck="false">
-        <button id="saveEndpoint" type="button">Save</button>
+    <!-- Search -->
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input id="loginSearch" class="search-input" type="search" placeholder="Search vault..." spellcheck="false" aria-label="Search credentials">
+      <button id="clearLoginSearch" class="search-clear hidden" type="button">&times;</button>
+    </div>
+
+    <!-- State notice -->
+    <div id="stateNotice" class="state-notice" aria-live="polite"></div>
+
+    <!-- Current URL -->
+    <div id="currentUrl" class="url"></div>
+
+    <!-- Settings panel (collapsible) -->
+    <section id="settingsPanel" class="settings-panel hidden">
+      <div class="settings-section">
+        <label for="endpoint">Bridge endpoint</label>
+        <div class="row">
+          <input id="endpoint" type="url" spellcheck="false">
+          <button id="saveEndpoint" type="button">Save</button>
+        </div>
       </div>
-    </section>
 
-    <section class="section">
-      <div class="toolbar">
-        <button id="checkStatus" type="button">Check</button>
-        <button id="beginPair" type="button">Pair</button>
-      </div>
-
-      <label class="toggle">
-        <input id="autoFill" type="checkbox">
-        <span>Auto-fill when exactly one login matches</span>
-      </label>
-
-      <label class="toggle">
-        <input id="autoSubmit" type="checkbox">
-        <span>Auto-submit form after filling</span>
-      </label>
-
-      <div class="toolbar secondary-toolbar">
+      <div class="settings-section">
+        <div class="row">
+          <button id="checkStatus" type="button">Check</button>
+          <button id="beginPair" type="button">Pair</button>
+        </div>
+        <label class="toggle">
+          <input id="autoFill" type="checkbox">
+          <span>Auto-fill when exactly one login matches</span>
+        </label>
+        <label class="toggle">
+          <input id="autoSubmit" type="checkbox">
+          <span>Auto-submit form after filling</span>
+        </label>
         <button id="listClients" class="secondary" type="button">Trusted Browsers</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="row">
+          <button id="toggleSiteAutoFill" class="secondary" type="button">Site Auto-fill</button>
+          <button id="toggleSiteAutoSubmit" class="secondary" type="button">Site Auto-submit</button>
+        </div>
       </div>
 
       <div id="clientsPanel" class="clients hidden"></div>
@@ -60,20 +81,17 @@
       </div>
     </section>
 
-    <section class="section">
-      <div class="toolbar">
-        <button id="queryLogins" type="button">Find Logins</button>
-        <button id="newLogin" class="secondary" type="button">New Login</button>
-        <button id="toggleSiteAutoFill" class="secondary" type="button">Site Auto-fill</button>
-        <button id="toggleSiteAutoSubmit" class="secondary" type="button">Site Auto-submit</button>
-      </div>
-      <div id="stateNotice" class="state-notice" aria-live="polite"></div>
-      <div id="currentUrl" class="url"></div>
-      <input id="loginSearch" class="login-search hidden" type="search" placeholder="Search logins" aria-label="Search matching KeePass logins" spellcheck="false">
-      <div id="results" class="results"></div>
-    </section>
+    <!-- Primary actions -->
+    <div class="action-bar">
+      <button id="queryLogins" class="btn-primary" type="button">Find Logins</button>
+      <button id="newLogin" class="btn-secondary" type="button">+ New Login</button>
+    </div>
 
-    <section id="passkeySection" class="section" style="display:none">
+    <!-- Vault list -->
+    <div class="vault-list" id="results"></div>
+
+    <!-- Passkey section -->
+    <section id="passkeySection" class="settings-section passkey-section" style="display:none">
       <div class="section-header">Passkey Support</div>
       <label class="toggle">
         <input id="passkeyToggle" type="checkbox">
@@ -82,7 +100,8 @@
       <div id="passkeyStatus" class="status-text"></div>
     </section>
 
-    <section class="section about">
+    <!-- About section -->
+    <section id="aboutPanel" class="settings-section about-section hidden">
       <div class="about-header">
         <div>
           <div class="about-title">About</div>
@@ -100,15 +119,21 @@
       </div>
     </section>
 
-    <div class="bottom-toolbar">
-      <button class="toolbar-btn" id="lockBridge" title="Lock/unlock credential access">🔒 <span>Lock</span></button>
-      <button class="toolbar-btn" id="showSites" title="Site-specific auto-fill overrides">🌐 <span>Sites</span></button>
-      <button class="toolbar-btn" id="showClients" title="Trusted browsers">👥 <span>Clients</span></button>
-      <button class="toolbar-btn" id="showAbout" title="About KeePass Browser Bridge">ℹ <span>About</span></button>
-    </div>
+    <!-- Status bar -->
+    <footer class="status-bar">
+      <button id="lockBridge" class="lock-btn" title="Lock vault">
+        <span class="lock-icon">🔒</span>
+        <span class="lock-status">Lock</span>
+      </button>
+      <span id="statusBadge" class="vault-status">Checking</span>
+      <div class="status-actions">
+        <button id="showSettings" class="btn-icon" type="button" title="Settings">⚙</button>
+        <button id="showAbout" class="btn-icon" type="button" title="About">ℹ</button>
+      </div>
+    </footer>
 
-    <footer id="message" class="message"></footer>
-  </main>
+    <div id="message" class="message"></div>
+  </div>
 
   <script src="popup.js"></script>
 </body>
