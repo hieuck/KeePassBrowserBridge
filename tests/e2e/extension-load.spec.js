@@ -763,15 +763,15 @@ test.describe('KeePassBrowserBridge Extension', () => {
     expect(createMessage).toMatchObject({
       type: 'KBB_CREATE_LOGIN',
       login: {
-        title: 'New Example',
-        group: 'Accounts/Work',
-        url: 'https://example.com/login',
-        userName: 'new@example.com',
-        password: 'new-secret',
-        otp: 'JBSWY3DPEHPK3PXP',
-        customFields: [
-          { name: 'Tenant', value: 'production', isProtected: false },
-          { name: 'Environment', value: 'prod-us', isProtected: false }
+        Title: 'New Example',
+        Group: 'Accounts/Work',
+        Url: 'https://example.com/login',
+        UserName: 'new@example.com',
+        Password: 'new-secret',
+        Otp: 'JBSWY3DPEHPK3PXP',
+        CustomFields: [
+          { Name: 'Tenant', Value: 'production', IsProtected: false },
+          { Name: 'Environment', Value: 'prod-us', IsProtected: false }
         ]
       }
     });
@@ -788,7 +788,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('button[type="submit"]').click();
 
     const createMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_CREATE_LOGIN'));
-    expect(createMessage.login).not.toHaveProperty('otp');
+    expect(createMessage.login).not.toHaveProperty('Otp');
   });
 
   test('rejects duplicate custom field names when creating a popup login', async ({ page }) => {
@@ -880,16 +880,16 @@ test.describe('KeePassBrowserBridge Extension', () => {
     expect(updateMessage).toMatchObject({
       type: 'KBB_UPDATE_LOGIN',
       login: {
-        entryId: 'entry-1',
-        title: 'Example Updated',
-        group: 'Accounts/Personal',
-        userName: 'updated@example.com',
-        url: 'https://example.com/account',
-        password: 'updated-secret',
-        otp: 'JBSWY3DPEHPK3PXP',
-        replaceCustomFields: true,
-        customFields: [
-          { name: 'Tenant', value: 'production', isProtected: false }
+        EntryId: 'entry-1',
+        Title: 'Example Updated',
+        Group: 'Accounts/Personal',
+        UserName: 'updated@example.com',
+        Url: 'https://example.com/account',
+        Password: 'updated-secret',
+        Otp: 'JBSWY3DPEHPK3PXP',
+        ReplaceCustomFields: true,
+        CustomFields: [
+          { Name: 'Tenant', Value: 'production', IsProtected: false }
         ]
       }
     });
@@ -906,7 +906,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('button[type="submit"]').click();
 
     const updateMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_UPDATE_LOGIN'));
-    expect(updateMessage.login).not.toHaveProperty('otp');
+    expect(updateMessage.login).not.toHaveProperty('Otp');
   });
 
   test('can clear an existing TOTP secret when editing a popup login', async ({ page }) => {
@@ -922,11 +922,11 @@ test.describe('KeePassBrowserBridge Extension', () => {
     expect(updateMessage).toMatchObject({
       type: 'KBB_UPDATE_LOGIN',
       login: {
-        entryId: 'entry-1',
-        clearOtp: true
+        EntryId: 'entry-1',
+        ClearOtp: true
       }
     });
-    expect(updateMessage.login).not.toHaveProperty('otp');
+    expect(updateMessage.login).not.toHaveProperty('Otp');
   });
 
   test('generates a new password while editing an existing login', async ({ page }) => {
@@ -944,7 +944,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
     await form.locator('button[type="submit"]').click();
 
     const updateMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_UPDATE_LOGIN'));
-    expect(updateMessage.login.password).toBe(generatedPassword);
+    expect(updateMessage.login.Password).toBe(generatedPassword);
   });
 
   test('shows and hides password fields in popup create and edit forms', async ({ page }) => {

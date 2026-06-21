@@ -1090,24 +1090,24 @@ function wirePasswordToggle(form) {
 
 async function createLogin(form) {
   const login = {
-    title: form.querySelector('[name="title"]').value,
-    group: form.querySelector('[name="group"]').value,
-    url: form.querySelector('[name="url"]').value,
-    userName: form.querySelector('[name="userName"]').value,
-    password: form.querySelector('[name="password"]').value
+    Title: form.querySelector('[name="title"]').value,
+    Group: form.querySelector('[name="group"]').value,
+    Url: form.querySelector('[name="url"]').value,
+    UserName: form.querySelector('[name="userName"]').value,
+    Password: form.querySelector('[name="password"]').value
   };
   const otp = String(form.querySelector('[name="otp"]')?.value || '').trim();
-  if (otp) login.otp = otp;
+  if (otp) login.Otp = otp;
   const customFields = Array.from(form.querySelectorAll('.custom-field-row'))
-    .map(r => ({ name: String(r.querySelector('[name="customFieldName"]')?.value || '').trim(), value: String(r.querySelector('[name="customFieldValue"]')?.value || '').trim(), isProtected: false }))
-    .filter(f => f.name && f.value);
+    .map(r => ({ Name: String(r.querySelector('[name="customFieldName"]')?.value || '').trim(), Value: String(r.querySelector('[name="customFieldValue"]')?.value || '').trim(), IsProtected: false }))
+    .filter(f => f.Name && f.Value);
   const seen = new Set();
   for (const f of customFields) {
-    const key = f.name.toLowerCase();
-    if (seen.has(key)) throw new Error(`Custom field "${f.name}" is duplicated.`);
+    const key = f.Name.toLowerCase();
+    if (seen.has(key)) throw new Error(`Custom field "${f.Name}" is duplicated.`);
     seen.add(key);
   }
-  if (customFields.length) login.customFields = customFields;
+  if (customFields.length) login.CustomFields = customFields;
   const result = await send({ type: 'KBB_CREATE_LOGIN', login });
   if (!result || !result.Success) throw new Error(result && result.Error ? result.Error : 'KeePass entry could not be created.');
   const entry = mergeCreatedEntry(login, result.Entry);
@@ -1119,11 +1119,11 @@ async function createLogin(form) {
 function mergeCreatedEntry(login, resultEntry) {
   const entry = resultEntry || {};
   return Object.assign({}, entry, {
-    Title: entry.Title || login.title,
-    Group: entry.Group || login.group,
-    Url: entry.Url || login.url,
-    UserName: entry.UserName || login.userName,
-    Password: login.password,
+    Title: entry.Title || login.Title,
+    Group: entry.Group || login.Group,
+    Url: entry.Url || login.Url,
+    UserName: entry.UserName || login.UserName,
+    Password: login.Password,
     CustomFields: entry.CustomFields || []
   });
 }
@@ -1135,37 +1135,37 @@ function editableCustomFields(entry) {
 
 async function updateLogin(entry, form) {
   const login = {
-    entryId: entry.EntryId,
-    title: form.querySelector('[name="title"]').value,
-    group: form.querySelector('[name="group"]').value,
-    url: form.querySelector('[name="url"]').value,
-    userName: form.querySelector('[name="userName"]').value,
-    password: form.querySelector('[name="password"]').value,
-    clearOtp: form.querySelector('[name="clearOtp"]').checked
+    EntryId: entry.EntryId,
+    Title: form.querySelector('[name="title"]').value,
+    Group: form.querySelector('[name="group"]').value,
+    Url: form.querySelector('[name="url"]').value,
+    UserName: form.querySelector('[name="userName"]').value,
+    Password: form.querySelector('[name="password"]').value,
+    ClearOtp: form.querySelector('[name="clearOtp"]').checked
   };
-  if (!login.clearOtp) {
+  if (!login.ClearOtp) {
     const otp = String(form.querySelector('[name="otp"]')?.value || '').trim();
-    if (otp) login.otp = otp;
+    if (otp) login.Otp = otp;
   }
-  login.replaceCustomFields = true;
+  login.ReplaceCustomFields = true;
   const customFields = Array.from(form.querySelectorAll('.custom-field-row'))
-    .map(r => ({ name: String(r.querySelector('[name="customFieldName"]')?.value || '').trim(), value: String(r.querySelector('[name="customFieldValue"]')?.value || '').trim(), isProtected: false }))
-    .filter(f => f.name && f.value);
+    .map(r => ({ Name: String(r.querySelector('[name="customFieldName"]')?.value || '').trim(), Value: String(r.querySelector('[name="customFieldValue"]')?.value || '').trim(), IsProtected: false }))
+    .filter(f => f.Name && f.Value);
   const seen = new Set();
   for (const f of customFields) {
-    const key = f.name.toLowerCase();
-    if (seen.has(key)) throw new Error(`Custom field "${f.name}" is duplicated.`);
+    const key = f.Name.toLowerCase();
+    if (seen.has(key)) throw new Error(`Custom field "${f.Name}" is duplicated.`);
     seen.add(key);
   }
-  if (customFields.length) login.customFields = customFields;
+  if (customFields.length) login.CustomFields = customFields;
   const result = await send({ type: 'KBB_UPDATE_LOGIN', login });
   if (!result || !result.Success) throw new Error(result && result.Error ? result.Error : 'KeePass entry could not be updated.');
   Object.assign(entry, result.Entry || {}, {
-    Title: login.title,
-    Group: login.group,
-    Url: login.url,
-    UserName: login.userName,
-    Password: login.password,
+    Title: login.Title,
+    Group: login.Group,
+    Url: login.Url,
+    UserName: login.UserName,
+    Password: login.Password,
     CustomFields: result.Entry && result.Entry.CustomFields ? result.Entry.CustomFields : entry.CustomFields
   });
   formMode.value = false;

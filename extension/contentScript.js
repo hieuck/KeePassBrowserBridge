@@ -1663,13 +1663,13 @@ function showSaveLoginPrompt(credential) {
     save.textContent = "Saving...";
     clearPromptError(errorMessage);
     const login = {
-      title: titleInput.input.value,
-      group: groupInput.input.value,
-      url: urlInput.input.value,
-      userName: usernameInput.input.value,
-      password: credential.password || "",
+      Title: titleInput.input.value,
+      Group: groupInput.input.value,
+      Url: urlInput.input.value,
+      UserName: usernameInput.input.value,
+      Password: credential.password || "",
     };
-    addOptionalSecret(login, "otp", otpInput.input.value);
+    addOptionalSecret(login, "Otp", otpInput.input.value);
     const result = await chrome.runtime.sendMessage({
       type: "KBB_CREATE_LOGIN",
       login,
@@ -1816,17 +1816,17 @@ function showUpdateLoginPrompt(entry, credential) {
     update.textContent = "Updating...";
     clearPromptError(errorMessage);
     const login = {
-      entryId: entry.EntryId,
-      pageUrl: credential.url,
-      title: titleInput.input.value,
-      group: groupInput.input.value,
-      url: urlInput.input.value,
-      userName: usernameInput.input.value,
-      password: passwordInput.input.value,
-      clearOtp: clearOtpInput.input.checked,
+      EntryId: entry.EntryId,
+      PageUrl: credential.url,
+      Title: titleInput.input.value,
+      Group: groupInput.input.value,
+      Url: urlInput.input.value,
+      UserName: usernameInput.input.value,
+      Password: passwordInput.input.value,
+      ClearOtp: clearOtpInput.input.checked,
     };
-    if (!login.clearOtp) {
-      addOptionalSecret(login, "otp", otpInput.input.value);
+    if (!login.ClearOtp) {
+      addOptionalSecret(login, "Otp", otpInput.input.value);
     }
     const result = await chrome.runtime.sendMessage({
       type: "KBB_UPDATE_LOGIN",

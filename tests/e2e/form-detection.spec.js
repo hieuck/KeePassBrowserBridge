@@ -68,12 +68,12 @@ test.describe('content script form detection', () => {
     expect(createMessage).toMatchObject({
       type: 'KBB_CREATE_LOGIN',
       login: {
-        userName: 'new@example.com',
-        password: 'new-secret'
+        UserName: 'new@example.com',
+        Password: 'new-secret'
       }
     });
-    expect(createMessage.login).not.toHaveProperty('otp');
-    expect(createMessage.login.url).toContain('/tests/fixtures/login-page.html');
+    expect(createMessage.login).not.toHaveProperty('Otp');
+    expect(createMessage.login.Url).toContain('/tests/fixtures/login-page.html');
   });
 
   test('prompts to save a new SPA login after clicking a credential action type button', async ({ page }) => {
@@ -127,11 +127,11 @@ test.describe('content script form detection', () => {
     expect(createMessage).toMatchObject({
       type: 'KBB_CREATE_LOGIN',
       login: {
-        userName: 'spa@example.com',
-        password: 'spa-secret'
+        UserName: 'spa@example.com',
+        Password: 'spa-secret'
       }
     });
-    expect(createMessage.login.url).toContain('/tests/fixtures/spa-type-button-login-page.html');
+    expect(createMessage.login.Url).toContain('/tests/fixtures/spa-type-button-login-page.html');
   });
 
   test('does not prompt after clicking a neutral type button in a SPA login panel', async ({ page }) => {
@@ -213,8 +213,8 @@ test.describe('content script form detection', () => {
     expect(createMessage).toMatchObject({
       type: 'KBB_CREATE_LOGIN',
       login: {
-        userName: 'enter@example.com',
-        password: 'enter-secret'
+        UserName: 'enter@example.com',
+        Password: 'enter-secret'
       }
     });
   });
@@ -305,11 +305,11 @@ test.describe('content script form detection', () => {
     expect(createMessage).toMatchObject({
       type: 'KBB_CREATE_LOGIN',
       login: {
-        title: 'Edited Login',
-        group: 'Accounts/Work',
-        userName: 'edited@example.com',
-        password: 'typed-secret',
-        otp: 'JBSWY3DPEHPK3PXP'
+        Title: 'Edited Login',
+        Group: 'Accounts/Work',
+        UserName: 'edited@example.com',
+        Password: 'typed-secret',
+        Otp: 'JBSWY3DPEHPK3PXP'
       }
     });
   });
@@ -558,13 +558,13 @@ test.describe('content script form detection', () => {
     expect(updateMessage).toMatchObject({
       type: 'KBB_UPDATE_LOGIN',
       login: {
-        entryId: 'entry-1',
-        userName: 'alice@example.com',
-        password: 'new-secret'
+        EntryId: 'entry-1',
+        UserName: 'alice@example.com',
+        Password: 'new-secret'
       }
     });
-    expect(updateMessage.login).not.toHaveProperty('otp');
-    expect(updateMessage.login.pageUrl).toContain('/tests/fixtures/login-page.html');
+    expect(updateMessage.login).not.toHaveProperty('Otp');
+    expect(updateMessage.login.PageUrl).toContain('/tests/fixtures/login-page.html');
   });
 
   test('update prompt allows editing entry metadata before updating login', async ({ page }) => {
@@ -630,13 +630,13 @@ test.describe('content script form detection', () => {
     expect(updateMessage).toMatchObject({
       type: 'KBB_UPDATE_LOGIN',
       login: {
-        entryId: 'entry-1',
-        title: 'Example Updated',
-        group: 'Accounts/New',
-        url: 'https://example.com/account',
-        userName: 'edited@example.com',
-        password: 'edited-secret',
-        otp: 'JBSWY3DPEHPK3PXP'
+        EntryId: 'entry-1',
+        Title: 'Example Updated',
+        Group: 'Accounts/New',
+        Url: 'https://example.com/account',
+        UserName: 'edited@example.com',
+        Password: 'edited-secret',
+        Otp: 'JBSWY3DPEHPK3PXP'
       }
     });
   });
@@ -696,12 +696,12 @@ test.describe('content script form detection', () => {
     expect(updateMessage).toMatchObject({
       type: 'KBB_UPDATE_LOGIN',
       login: {
-        entryId: 'entry-1',
-        password: 'new-secret',
-        clearOtp: true
+        EntryId: 'entry-1',
+        Password: 'new-secret',
+        ClearOtp: true
       }
     });
-    expect(updateMessage.login).not.toHaveProperty('otp');
+    expect(updateMessage.login).not.toHaveProperty('Otp');
   });
 
   test('prompts to update an existing login with the new password from a change-password form', async ({ page }) => {
@@ -760,9 +760,9 @@ test.describe('content script form detection', () => {
     expect(updateMessage).toMatchObject({
       type: 'KBB_UPDATE_LOGIN',
       login: {
-        entryId: 'entry-change-password',
-        userName: 'alice@example.com',
-        password: 'new-rotated-secret'
+        EntryId: 'entry-change-password',
+        UserName: 'alice@example.com',
+        Password: 'new-rotated-secret'
       }
     });
   });
@@ -1646,9 +1646,9 @@ test.describe('content script form detection', () => {
     expect(updateMessage).toMatchObject({
       type: 'KBB_UPDATE_LOGIN',
       login: {
-        entryId: 'entry-work',
-        userName: 'work@example.com',
-        password: 'changed-secret'
+        EntryId: 'entry-work',
+        UserName: 'work@example.com',
+        Password: 'changed-secret'
       }
     });
   });
@@ -2817,8 +2817,8 @@ test.describe('content script form detection', () => {
     expect(createMessage).toMatchObject({
       type: 'KBB_CREATE_LOGIN',
       login: {
-        userName: 'shadow-new@example.com',
-        password: 'shadow-new-secret'
+        UserName: 'shadow-new@example.com',
+        Password: 'shadow-new-secret'
       }
     });
   });

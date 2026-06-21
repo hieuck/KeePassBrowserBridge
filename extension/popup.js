@@ -761,13 +761,13 @@ async function updateLogin(entry, form) {
   ensureCredentialActionsEnabled();
   ensureWriteActionsEnabled();
   const login = {
-    entryId: entry.EntryId,
-    title: form.querySelector('[name="title"]').value,
-    group: form.querySelector('[name="group"]').value,
-    url: form.querySelector('[name="url"]').value,
-    userName: form.querySelector('[name="userName"]').value,
-    password: form.querySelector('[name="password"]').value,
-    clearOtp: form.querySelector('[name="clearOtp"]').checked
+    EntryId: entry.EntryId,
+    Title: form.querySelector('[name="title"]').value,
+    Group: form.querySelector('[name="group"]').value,
+    Url: form.querySelector('[name="url"]').value,
+    UserName: form.querySelector('[name="userName"]').value,
+    Password: form.querySelector('[name="password"]').value,
+    ClearOtp: form.querySelector('[name="clearOtp"]').checked
   };
   if (!login.clearOtp) {
     addOptionalSecret(login, 'otp', form.querySelector('[name="otp"]').value);
@@ -796,13 +796,13 @@ async function createLogin(form) {
   ensureCredentialActionsEnabled();
   ensureWriteActionsEnabled();
   const login = {
-    title: form.querySelector('[name="title"]').value,
-    group: form.querySelector('[name="group"]').value,
-    url: form.querySelector('[name="url"]').value,
-    userName: form.querySelector('[name="userName"]').value,
-    password: form.querySelector('[name="password"]').value
+    Title: form.querySelector('[name="title"]').value,
+    Group: form.querySelector('[name="group"]').value,
+    Url: form.querySelector('[name="url"]').value,
+    UserName: form.querySelector('[name="userName"]').value,
+    Password: form.querySelector('[name="password"]').value
   };
-  addOptionalSecret(login, 'otp', form.querySelector('[name="otp"]').value);
+  addOptionalSecret(login, 'Otp', form.querySelector('[name="otp"]').value);
   addOptionalCustomField(login, form);
 
   const result = await send({ type: 'KBB_CREATE_LOGIN', login });
@@ -838,9 +838,9 @@ function addOptionalSecret(payload, name, value) {
 function addOptionalCustomField(payload, form) {
   const fields = Array.from(form.querySelectorAll('.custom-field-row'))
     .map((row) => ({
-      name: String(row.querySelector('[name="customFieldName"]')?.value || '').trim(),
-      value: String(row.querySelector('[name="customFieldValue"]')?.value || '').trim(),
-      isProtected: false
+      Name: String(row.querySelector('[name="customFieldName"]')?.value || '').trim(),
+      Value: String(row.querySelector('[name="customFieldValue"]')?.value || '').trim(),
+      IsProtected: false
     }))
     .filter((field) => field.name && field.value);
 
@@ -854,7 +854,7 @@ function addOptionalCustomField(payload, form) {
   }
 
   if (fields.length) {
-    payload.customFields = fields;
+    payload.CustomFields = fields;
   }
 }
 
