@@ -1907,9 +1907,9 @@ function applyPromptButtonStyle(button, primary) {
   button.style.margin = "0";
   button.style.minHeight = "30px";
   button.style.padding = "0 10px";
-  button.style.border = primary ? "1px solid #176b87" : "1px solid #d7dde5";
+  button.style.border = primary ? "1px solid #4a90e2" : "1px solid #d7dde5";
   button.style.borderRadius = "6px";
-  button.style.background = primary ? "#176b87" : "#ffffff";
+  button.style.background = primary ? "#4a90e2" : "#ffffff";
   button.style.color = primary ? "#ffffff" : "#1f2933";
   button.style.font =
     '13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -1977,8 +1977,8 @@ function applyPickerActionStyle(actionButton) {
   actionButton.style.padding = "0 7px";
   actionButton.style.border = "1px solid #d7dde5";
   actionButton.style.borderRadius = "6px";
-  actionButton.style.background = "#f8fafc";
-  actionButton.style.color = "#176b87";
+  actionButton.style.background = "rgba(74, 144, 226, 0.08)";
+  actionButton.style.color = "#4a90e2";
   actionButton.style.font =
     '600 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   actionButton.style.cursor = "pointer";
@@ -1991,8 +1991,8 @@ function applyPickerShowMoreStyle(button) {
   button.style.border = "0";
   button.style.borderTop = "1px solid #edf0f3";
   button.style.borderRadius = "0";
-  button.style.background = "#f8fafc";
-  button.style.color = "#176b87";
+  button.style.background = "rgba(74, 144, 226, 0.08)";
+  button.style.color = "#4a90e2";
   button.style.textAlign = "center";
   button.style.cursor = "pointer";
   button.style.appearance = "none";
