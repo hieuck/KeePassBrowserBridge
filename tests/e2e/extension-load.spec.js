@@ -1183,6 +1183,18 @@ test('popup has password generator panel', async ({ page }) => {
   await expect(page.locator('.gen-fill-btn')).toBeVisible();
 });
 
+test('popup has smooth view transitions with CSS animations', async ({ page }) => {
+  await page.goto('/extension/popup.html');
+
+  const vaultList = page.locator('.vault-list');
+  await expect(vaultList).toHaveCSS('transition', /opacity|transform/);
+
+  await page.locator('#queryLogins').click();
+  await page.locator('.credential-item').first().click();
+  const detailView = page.locator('.detail-view');
+  await expect(detailView).toHaveCSS('transition', /opacity|transform/);
+});
+
 test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
     await page.locator('#showSettings').click();
     await page.locator('#listClients').click();
