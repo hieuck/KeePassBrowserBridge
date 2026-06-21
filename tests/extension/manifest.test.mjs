@@ -75,6 +75,8 @@ assert.equal(manifest.permissions.includes('contextMenus'), true, 'Chrome manife
 assert.equal(firefoxManifest.permissions.includes('contextMenus'), true, 'Firefox manifest should request contextMenus for field actions');
 assert.equal(manifest.permissions.includes('webAuthenticationProxy'), false, 'manifest must not request WebAuthn proxy permission before browser-facing passkeys are implemented');
 assert.equal(firefoxManifest.permissions.includes('webAuthenticationProxy'), false, 'Firefox manifest must not request unsupported WebAuthn proxy permission');
+assert.equal(manifest.optional_permissions.includes('webAuthenticationProxy'), true, 'manifest should optionally declare WebAuthn proxy permission for passkey experiment');
+assert.equal(manifest.optional_permissions.includes('webNavigation'), true, 'manifest should optionally declare webNavigation for passkey proxy trusted origin resolution');
 assert.equal(contentScriptEntries.every((entry) => entry.all_frames === true), true, 'content scripts should run in iframes for embedded login widgets');
 assert.equal(contentScriptEntries.every((entry) => entry.match_about_blank === true), true, 'content scripts should run in about:blank child frames when the parent URL matches');
 assert.equal(firefoxManifest.version, manifest.version, 'Firefox and Chrome extension manifests should use the same release version');
