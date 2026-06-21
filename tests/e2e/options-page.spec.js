@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+async function clickTab(page, tabName) {
+  await page.locator(`.tab-btn[data-tab="${tabName}"]`).click();
+}
+
 async function installOptionsStorage(page, initial = {}) {
   await page.addInitScript((initialSettings) => {
     const store = { ...initialSettings };
@@ -157,6 +161,20 @@ async function installOptionsStorage(page, initial = {}) {
 }
 
 test.describe('options page settings', () => {
+  test('options page renders with tab navigation', async ({ page }) => {
+    await page.goto('/extension/options.html');
+    await expect(page.locator('.tab-nav')).toBeVisible();
+    const tabs = page.locator('.tab-btn');
+    await expect(tabs.first()).toBeVisible();
+    // Click second tab
+    await tabs.nth(1).click();
+    await expect(page.locator('.tab-panel.active')).toBeVisible();
+    // Click back to first tab
+    await tabs.first().click();
+    await expect(page.locator('.tab-panel.active')).toBeVisible();
+  });
+
+
   test('loads existing settings and saves edited settings', async ({ page }) => {
     await installOptionsStorage(page, {
       endpoint: 'http://127.0.0.1:19455/bridge',
@@ -184,8 +202,10 @@ test.describe('options page settings', () => {
     await page.locator('#autoFillEnabled').uncheck();
     await page.locator('#autoSubmitEnabled').check();
     await page.locator('#autoFillDelay').fill('800');
+    await clickTab(page, 'sites');
     await page.locator('#strictUrlMatching').check();
     await page.locator('#regexUrlMatching').check();
+    await clickTab(page, 'clients');
     await page.locator('#showPasswordsInPopup').check();
     await page.locator('#notificationsEnabled').uncheck();
     await page.locator('#autoLockTimeoutMinutes').fill('15');
@@ -260,6 +280,7 @@ test.describe('options page settings', () => {
     });
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
     await page.locator('#autoLockTimeoutMinutes').fill('-1');
     await page.locator('#saveSettings').click();
 
@@ -292,6 +313,7 @@ test.describe('options page settings', () => {
     });
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
     page.once('dialog', (dialog) => dialog.accept());
     await page.locator('#resetSettings').click();
 
@@ -319,6 +341,7 @@ test.describe('options page settings', () => {
     });
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'sites');
 
     await expect(page.locator('#siteOverrideList')).toContainText('old.example.com');
     await page.locator('#siteOverrideHost').fill('Example.COM');
@@ -349,6 +372,7 @@ test.describe('options page settings', () => {
     await installOptionsStorage(page);
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'about');
 
     await expect(page.locator('#aboutVersion')).toHaveText('0.9.0');
     await expect(page.locator('#aboutPluginVersion')).toHaveText('0.9.0');
@@ -369,6 +393,7 @@ test.describe('options page settings', () => {
     await installOptionsStorage(page);
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
     await page.locator('#refreshTrustedBrowsers').click();
 
     await expect(page.locator('#trustedBrowserList')).toContainText('Chrome');
@@ -414,6 +439,7 @@ test.describe('options page settings', () => {
     await installOptionsStorage(page);
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
     await page.locator('#refreshTrustedBrowsers').click();
     const oldBrowser = page.locator('.trusted-browser-row', { hasText: 'Old Browser' });
     await expect(oldBrowser).toContainText('Read');
@@ -441,6 +467,7 @@ test.describe('options page settings', () => {
     await installOptionsStorage(page);
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
     await page.locator('#refreshTrustedBrowsers').click();
     await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
     await expect(page.locator('[data-permission="passkeyWrite"]')).toHaveCount(0);
@@ -475,6 +502,7 @@ test.describe('options page settings', () => {
     await installOptionsStorage(page);
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
     await page.locator('#refreshTrustedBrowsers').click();
 
     const revokeCurrentBrowser = page.locator('[data-client-id="client-current"] [data-action="revoke-client"]');
@@ -521,6 +549,7 @@ test.describe('options page settings', () => {
     });
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
     await page.locator('#exportSettings').click();
     await expect(page.locator('#message')).toHaveText('Settings exported successfully!');
     await expect.poll(() => page.evaluate(() => window.__kbbExportedSettingsText)).not.toBe('');
@@ -597,6 +626,7 @@ test.describe('options page settings', () => {
     });
 
     await page.goto('/extension/options.html');
+    await clickTab(page, 'clients');
 
     const passkeySection = page.locator('#passkeySection');
     await expect(passkeySection).toBeVisible();
