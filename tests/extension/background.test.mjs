@@ -59,6 +59,9 @@ const sandbox = {
       }
     }
   },
+  importScripts: () => {
+    // passkeys proxy experiment is not loaded by default in tests
+  },
   KeePassBrowserBridgePasskeysProxyLifecycle: {
     cancelPending: async (reason) => {
       passkeyCleanupCalls.push(String(reason || ''));
@@ -1416,5 +1419,87 @@ assert.ok(sentMessage, 'sendMessage should be called on context menu click');
 assert.equal(sentMessage.type, 'KBB_FILL');
 assert.ok(sentMessage.credential.Password.length === 16, 'should generate 16 char password');
 assert.equal(sentMessage.fieldRole, 'password', 'generated passwords should fill the focused editable field');
+
+// --- Passkey Proxy Integration ---
+
+{
+  const result = await sandbox.setupPasskeyProxy();
+  assert.equal(result.attached, false, 'setupPasskeyProxy should return attached: false when experiment is not loaded');
+}
+
+{
+  sandbox.KeePassBrowserBridgePasskeysProxyExperiment = {
+    isAvailable: () => false
+  };
+  const result = await sandbox.setupPasskeyProxy();
+  assert.equal(result.attached, false, 'setupPasskeyProxy should return { attached: false } when webAuthenticationProxy API is not available');
+  delete sandbox.KeePassBrowserBridgePasskeysProxyExperiment;
+}
+
+{
+  let lifecycleCreated = false;
+  const mockLifecycle = {
+    attach: async () => ({ attached: true }),
+    detach: async () => {}
+  };
+  sandbox.KeePassBrowserBridgePasskeysProxyExperiment = {
+    isAvailable: () => true,
+    createBridgeRequestHandlers: (options) => {
+      assert.equal(typeof options.bridgeCall, 'function', 'createBridgeRequestHandlers should receive a bridgeCall function');
+      return { onCreateRequest: async () => {}, onGetRequest: async () => {}, onRequestCanceled: async () => {} };
+    },
+    createLifecycle: (options) => {
+      assert.equal(typeof options.onCreateRequest, 'function', 'createLifecycle should receive onCreateRequest handler');
+      assert.equal(typeof options.onGetRequest, 'function', 'createLifecycle should receive onGetRequest handler');
+      assert.equal(typeof options.onRequestCanceled, 'function', 'createLifecycle should receive onRequestCanceled handler');
+      lifecycleCreated = true;
+      return mockLifecycle;
+    }
+  };
+  const result = await sandbox.setupPasskeyProxy();
+  assert.equal(result.attached, true, 'setupPasskeyProxy should return attached result from lifecycle');
+  assert.equal(lifecycleCreated, true, 'createLifecycle should be called during setup');
+  assert.equal(sandbox.KeePassBrowserBridgePasskeysProxyLifecycle, mockLifecycle, 'lifecycle should be stored on globalThis for cleanup');
+  delete sandbox.KeePassBrowserBridgePasskeysProxyExperiment;
+  sandbox.KeePassBrowserBridgePasskeysProxyLifecycle = null;
+}
+
+{
+  let detachCalled = false;
+  sandbox.KeePassBrowserBridgePasskeysProxyExperiment = {
+    isAvailable: () => true,
+    createBridgeRequestHandlers: () => ({
+      onCreateRequest: async () => {}, onGetRequest: async () => {}, onRequestCanceled: async () => {}
+    }),
+    createLifecycle: () => ({
+      attach: async () => ({ attached: true }),
+      detach: async () => { detachCalled = true; }
+    })
+  };
+  await sandbox.setupPasskeyProxy();
+  assert.ok(sandbox.KeePassBrowserBridgePasskeysProxyLifecycle, 'lifecycle should be stored after setup');
+  await sandbox.teardownPasskeyProxy();
+  assert.equal(sandbox.KeePassBrowserBridgePasskeysProxyLifecycle, null, 'lifecycle should be cleared after teardown');
+  assert.equal(detachCalled, true, 'detach should be called during teardown');
+  delete sandbox.KeePassBrowserBridgePasskeysProxyExperiment;
+}
+
+{
+  sandbox.KeePassBrowserBridgePasskeysProxyLifecycle = null;
+  await sandbox.teardownPasskeyProxy();
+  assert.equal(sandbox.KeePassBrowserBridgePasskeysProxyLifecycle, null, 'teardown with no lifecycle should not throw');
+}
+
+{
+  passkeyCleanupCalls.length = 0;
+  sandbox.KeePassBrowserBridgePasskeysProxyLifecycle = {
+    cancelPending: async (reason) => {
+      passkeyCleanupCalls.push(String(reason || ''));
+      return { canceled: 1, reason };
+    }
+  };
+  await sandbox.clearPendingPasskeyState('custom-reason');
+  assert.equal(passkeyCleanupCalls.at(-1), 'custom-reason', 'clearPendingPasskeyState should forward the reason to the stored lifecycle');
+}
 
 console.log('Background tests passed.');

@@ -1,5 +1,11 @@
 'use strict';
 
+try {
+  importScripts('passkeysProxyExperiment.js');
+} catch (_) {
+  // passkeys proxy experiment is only available when included in the extension package
+}
+
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;
 const CLIENT_NAME = 'Chrome';
@@ -504,6 +510,49 @@ async function clearSensitiveRuntimeState(reason = 'clear') {
   await clearPendingCredentialState();
   await clearPendingPasskeyState(reason);
   await clearClipboardState();
+}
+
+async function setupPasskeyProxy() {
+  const experiment = globalThis.KeePassBrowserBridgePasskeysProxyExperiment;
+  if (!experiment) return { attached: false };
+
+  if (!experiment.isAvailable()) return { attached: false };
+
+  await teardownPasskeyProxy();
+
+  const handlers = experiment.createBridgeRequestHandlers({
+    bridgeCall: async (method, payload) => {
+      const response = await bridgeCall(method, payload, true);
+      return response && response.Payload ? JSON.parse(response.Payload) : {};
+    }
+  });
+
+  const lifecycle = experiment.createLifecycle({
+    onCreateRequest: handlers.onCreateRequest,
+    onGetRequest: handlers.onGetRequest,
+    onRequestCanceled: handlers.onRequestCanceled
+  });
+
+  globalThis.KeePassBrowserBridgePasskeysProxyLifecycle = lifecycle;
+
+  try {
+    const result = await lifecycle.attach();
+    return result;
+  } catch (error) {
+    globalThis.KeePassBrowserBridgePasskeysProxyLifecycle = null;
+    throw error;
+  }
+}
+
+async function teardownPasskeyProxy() {
+  const lifecycle = globalThis.KeePassBrowserBridgePasskeysProxyLifecycle;
+  globalThis.KeePassBrowserBridgePasskeysProxyLifecycle = null;
+  if (!lifecycle) return;
+  try {
+    await lifecycle.detach();
+  } catch (_) {
+    // Experimental passkey detach must not block cleanup.
+  }
 }
 
 async function clearPendingPasskeyState(reason) {
