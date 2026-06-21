@@ -30,10 +30,11 @@ namespace KeePassBrowserBridge.Bridge
             Func<PwDatabase> databaseProvider,
             Action<PairingSession> pairingSessionCreated,
             Action<PwDatabase> databaseChanged,
-            Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null)
+            Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null,
+            Func<bool> passkeysEnabled = null)
             : this(pairingService, trustedClients, credentialQueryService, credentialMutationService,
                 new PasskeyService(), new PasskeyCredentialLookupService(), new PasskeyPendingSessionStore(),
-                databaseProvider, delegate { return BridgeSettings.PasskeysEnabled; },
+                databaseProvider, passkeysEnabled ?? new Func<bool>(() => BridgeSettings.PasskeysEnabled),
                 pairingSessionCreated, databaseChanged, passkeyApproval)
         {
         }

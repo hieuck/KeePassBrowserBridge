@@ -44,7 +44,8 @@ namespace KeePassBrowserBridge
                 delegate { return (m_host == null) ? null : m_host.Database; },
                 OnPairingSessionCreated,
                 SaveDatabaseAfterMutation,
-                ShowPasskeyApprovalPrompt);
+                ShowPasskeyApprovalPrompt,
+                delegate { return IsPasskeyEnabled(); });
             SubscribeKeePassLifecycleEvents();
 
             if (IsEnabled()) StartServer(false);
@@ -74,6 +75,14 @@ namespace KeePassBrowserBridge
 
             root.DropDownItems.Add(new ToolStripSeparator());
 
+            ToolStripMenuItem passkeyItem = new ToolStripMenuItem("Passkey Support (Experimental)");
+            passkeyItem.CheckOnClick = true;
+            passkeyItem.Checked = IsPasskeyEnabled();
+            passkeyItem.Click += OnTogglePasskeys;
+            root.DropDownItems.Add(passkeyItem);
+
+            root.DropDownItems.Add(new ToolStripSeparator());
+
             ToolStripMenuItem updateItem = new ToolStripMenuItem("Check for Updates...");
             updateItem.Click += OnCheckForUpdates;
             root.DropDownItems.Add(updateItem);
@@ -98,6 +107,20 @@ namespace KeePassBrowserBridge
             {
                 string status = enabled ? "enabled" : "disabled";
                 MessageBox.Show("Browser integration is now " + status + ".",
+                    BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void OnTogglePasskeys(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = sender as ToolStripMenuItem;
+            bool enabled = item != null && item.Checked;
+            m_host.CustomConfig.SetBool(BridgeSettings.PasskeysConfigKey, enabled);
+            SaveConfig();
+
+            if (enabled)
+            {
+                MessageBox.Show("Passkey support is now enabled.\r\n\r\nRestart the browser extension to activate WebAuthn proxy support.",
                     BridgeSettings.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
@@ -143,6 +166,11 @@ namespace KeePassBrowserBridge
         private bool IsEnabled()
         {
             return (m_host != null && m_host.CustomConfig.GetBool(BridgeSettings.EnabledConfigKey, false));
+        }
+
+        private bool IsPasskeyEnabled()
+        {
+            return m_host != null && m_host.CustomConfig.GetBool(BridgeSettings.PasskeysConfigKey, false);
         }
 
         private void SaveConfig()
