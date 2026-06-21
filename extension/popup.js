@@ -61,6 +61,8 @@ let currentEntries = [];
 let visibleEntries = [];
 let currentState = { locked: false };
 let detailEntry = null;
+let activeFilter = 'All';
+
 let trustedBrowserClients = [];
 let bridgePasskeysEnabled = false;
 let pairingExpiryTimer = null;
@@ -546,6 +548,7 @@ async function queryLogins() {
   elements.currentUrl.textContent = result.url || '';
   currentEntries = sortCredentialEntries(result.entries || []);
   elements.loginSearch.value = '';
+  activeFilter = 'All';
   await renderResults(currentEntries);
   setMessage(result.entries && result.entries.length
     ? `${result.entries.length} login(s) found.`
@@ -1150,7 +1153,12 @@ async function renderResults(entries) {
   const showPasswords = await shouldShowPasswordsInPopup();
   visibleEntries = filterEntries(currentEntries, elements.loginSearch.value);
 
+  const filteredEntries = activeFilter === 'All' ? visibleEntries : visibleEntries.filter(e => e.Group === activeFilter);
+
+  updateFilterBar(currentEntries);
+
   if (!currentEntries.length) {
+    document.getElementById('filterBar')?.classList.add('hidden');
     renderNoLoginsEmptyState();
     return;
   }
@@ -1160,11 +1168,25 @@ async function renderResults(entries) {
     return;
   }
 
+  if (visibleEntries.length && !filteredEntries.length) {
+    const empty = document.createElement('div');
+    empty.className = 'login-empty';
+    const title = document.createElement('div');
+    title.className = 'login-empty-title';
+    title.textContent = 'No logins in this group.';
+    const hint = document.createElement('div');
+    hint.className = 'login-empty-hint';
+    hint.textContent = 'Try selecting a different group.';
+    empty.append(title, hint);
+    elements.results.append(empty);
+    return;
+  }
+
   const avatarColors = ['#175cd3', '#b42318', '#067647', '#b54708', '#6941c6', '#363f72', '#c01048', '#4a90e2'];
-  const maxUsage = Math.max(...visibleEntries.map((e) => Number(e.UsageCount || 0)), 0);
+  const maxUsage = Math.max(...filteredEntries.map((e) => Number(e.UsageCount || 0)), 0);
 
   const grouped = {};
-  for (const entry of visibleEntries) {
+  for (const entry of filteredEntries) {
     const group = entry.Group || 'Other';
     if (!grouped[group]) grouped[group] = [];
     grouped[group].push(entry);
@@ -1405,6 +1427,7 @@ function showDetailView(entry) {
   detailEntry = entry;
   document.querySelector('.vault-list').classList.add('hidden');
   document.querySelector('.search-wrapper').classList.add('hidden');
+  document.getElementById('filterBar')?.classList.add('hidden');
   document.querySelector('.password-generator')?.classList.add('hidden');
   const detail = document.querySelector('.detail-view');
   detail.classList.remove('hidden');
@@ -1480,6 +1503,7 @@ function hideDetailView() {
   document.querySelector('.detail-view').classList.add('hidden');
   document.querySelector('.vault-list').classList.remove('hidden');
   document.querySelector('.search-wrapper').classList.remove('hidden');
+  document.getElementById('filterBar')?.classList.remove('hidden');
 }
 
 function renderClients(clients) {
@@ -1614,6 +1638,46 @@ function updateSearchVisibility() {
   }
 }
 
+function updateFilterBar(entries) {
+  const bar = document.getElementById('filterBar');
+  if (!bar) return;
+  const groups = [...new Set(entries.map(e => e.Group).filter(Boolean))];
+  if (groups.length <= 1) {
+    bar.classList.add('hidden');
+    return;
+  }
+  bar.classList.remove('hidden');
+
+  const allChip = bar.querySelector('.filter-chip-all');
+  if (allChip) {
+    allChip.classList.toggle('active', activeFilter === 'All');
+    allChip.onclick = () => setFilter('All');
+  }
+
+  const chips = document.getElementById('filterChips');
+  chips.innerHTML = '';
+  const displayGroups = groups.map(g => {
+    const parts = g.split('/');
+    return { full: g, short: parts[parts.length - 1] };
+  }).sort((a, b) => a.short.localeCompare(b.short));
+  for (const group of displayGroups) {
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip' + (activeFilter === group.full ? ' active' : '');
+    chip.dataset.group = group.full;
+    chip.textContent = group.short;
+    chip.addEventListener('click', () => setFilter(group.full));
+    chips.appendChild(chip);
+  }
+}
+
+function setFilter(group) {
+  activeFilter = group;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  const activeChip = document.querySelector(`.filter-chip[data-group="${group}"]`) || document.querySelector('.filter-chip-all');
+  if (activeChip) activeChip.classList.add('active');
+  renderResults(currentEntries);
+}
+
 function filterEntries(entries, query) {
   const words = String(query || '')
     .toLowerCase()
@@ -1648,6 +1712,7 @@ function showCreateForm(url, pageCredential) {
   visibleEntries = [];
   elements.loginSearch.classList.add('hidden');
   elements.loginSearch.value = '';
+  document.getElementById('filterBar')?.classList.add('hidden');
   const form = document.createElement('form');
   form.className = 'create-form edit-form';
   form.innerHTML = `

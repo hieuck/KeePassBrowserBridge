@@ -1220,7 +1220,40 @@ test('popup has smooth view transitions with CSS animations', async ({ page }) =
   await expect(detailView).toHaveCSS('transition', /opacity|transform/);
 });
 
-test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
+  test('popup shows filter chips for credential groups', async ({ page }) => {
+    const entries = [
+      { Title: 'GitHub', UserName: 'dev', Group: 'Root/Work', Url: 'https://github.com', Password: 'p1' },
+      { Title: 'Gmail', UserName: 'me', Group: 'Root/Personal', Url: 'https://gmail.com', Password: 'p2' },
+      { Title: 'AWS', UserName: 'admin', Group: 'Root/Work', Url: 'https://aws.com', Password: 'p3' }
+    ];
+    await page.evaluate((data) => { window.__kbbPopupEntries = data; }, entries);
+    await page.locator('#queryLogins').click();
+
+    const filterBar = page.locator('#filterBar');
+    await expect(filterBar).toBeVisible();
+
+    const chips = page.locator('.filter-chip');
+    await expect(chips).toHaveCount(3);
+
+    await expect(page.locator('.filter-chip-all')).toContainText('All');
+    await expect(page.locator('.filter-chip-all')).toHaveClass(/active/);
+
+    const workChip = page.locator('.filter-chip[data-group="Root/Work"]');
+    await expect(workChip).toContainText('Work');
+    await workChip.click();
+
+    await expect(workChip).toHaveClass(/active/);
+
+    const items = page.locator('.credential-item');
+    await expect(items).toHaveCount(2);
+    await expect(items.first()).toContainText('GitHub');
+    await expect(items.nth(1)).toContainText('AWS');
+
+    await page.locator('.filter-chip-all').click();
+    await expect(page.locator('.credential-item')).toHaveCount(3);
+  });
+
+  test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
     await page.locator('#showSettings').click();
     await page.locator('#listClients').click();
     await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
