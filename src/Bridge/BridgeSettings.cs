@@ -20,7 +20,12 @@ namespace KeePassBrowserBridge.Bridge
 
         public static bool PasskeysEnabled
         {
-            get { return string.Equals(s_passkeysConfigValue, "true", System.StringComparison.OrdinalIgnoreCase); }
+            get
+            {
+                if (s_passkeysConfigValue == null) return true;
+                bool result;
+                return !bool.TryParse(s_passkeysConfigValue, out result) || result;
+            }
         }
     }
 }

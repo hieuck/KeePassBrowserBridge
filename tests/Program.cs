@@ -181,9 +181,9 @@ internal static class Program
         BridgeHandlerCancelsPendingPasskeySessionWhenFeatureGateIsEnabled();
         BridgeHandlerRevokingClientClearsPendingPasskeySessions();
         BridgeHandlerClearPendingPasskeySessionsRejectsLaterCompletion();
-        PasskeysGateDefaultsToFalse();
+        PasskeysGateDefaultsToTrue();
         PasskeysGateReturnsTrueWhenConfigSet();
-        PasskeysGateDefaultsToFalseAfterReset();
+        PasskeysGateDefaultsToTrueAfterReset();
         BridgeHandlerReturnsLoginsForAuthenticatedQuery();
         BridgeHandlerCreatesLoginForAuthenticatedRequest();
         BridgeHandlerSavesDatabaseAfterSuccessfulCreate();
@@ -2395,10 +2395,9 @@ internal static class Program
         BridgeFeatureInfo passkeys = FindFeature(payload.Features, "passkeys");
         AssertEqual(true, saveUpdate.Enabled, "hello should advertise enabled save/update support");
         AssertEqual("available", saveUpdate.Status, "hello should advertise available save/update status");
-        AssertEqual(false, passkeys.Enabled, "hello should advertise that browser-facing passkeys are disabled");
-        AssertEqual("prototype_disabled", passkeys.Status, "hello should advertise disabled passkey prototype status");
-        AssertTrue((passkeys.Reason ?? string.Empty).IndexOf("browser-facing WebAuthn", StringComparison.OrdinalIgnoreCase) >= 0,
-            "hello should explain why browser-facing passkeys are disabled");
+        AssertEqual(true, passkeys.Enabled, "hello should advertise that passkeys are enabled");
+        AssertEqual("enabled", passkeys.Status, "hello should advertise enabled passkey status");
+        AssertEqual(string.Empty, passkeys.Reason ?? string.Empty, "hello should not include a disabled reason when passkeys are enabled");
     }
 
     private static void BridgeHandlerRejectsBadHmacForTrustedMethod()
@@ -2833,6 +2832,7 @@ internal static class Program
 
     private static void BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyMethod()
     {
+        BridgeSettings.TestSetPasskeysConfigValue("false");
         TrustedClientStore store = CreateTrustedStore("client-1", "secret",
             new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyRead });
         TrustedClient client = store.Get("client-1");
@@ -2853,6 +2853,7 @@ internal static class Program
 
     private static void BridgeHandlerReturnsFeatureDisabledForPermittedPasskeyWriteMethod()
     {
+        BridgeSettings.TestSetPasskeysConfigValue("false");
         TrustedClientStore store = CreateTrustedStore("client-1", "secret",
             new string[] { TrustedClientPermissions.Read, TrustedClientPermissions.PasskeyWrite });
         BridgeRequestHandler handler = CreateHandler(null, store);
@@ -4902,10 +4903,10 @@ internal static class Program
         }
     }
 
-    private static void PasskeysGateDefaultsToFalse()
+    private static void PasskeysGateDefaultsToTrue()
     {
         BridgeSettings.TestSetPasskeysConfigValue(null);
-        AssertFalse(BridgeSettings.PasskeysEnabled, "passkeys gate should default to false when config value is not set");
+        AssertTrue(BridgeSettings.PasskeysEnabled, "Passkeys should be enabled by default");
     }
 
     private static void PasskeysGateReturnsTrueWhenConfigSet()
@@ -4914,10 +4915,10 @@ internal static class Program
         AssertTrue(BridgeSettings.PasskeysEnabled, "passkeys gate should return true when config value is set to true");
     }
 
-    private static void PasskeysGateDefaultsToFalseAfterReset()
+    private static void PasskeysGateDefaultsToTrueAfterReset()
     {
         BridgeSettings.TestSetPasskeysConfigValue(null);
-        AssertFalse(BridgeSettings.PasskeysEnabled, "passkeys gate should return false after config value is cleared");
+        AssertTrue(BridgeSettings.PasskeysEnabled, "passkeys gate should return true after config value is cleared (default is enabled)");
     }
 
     private sealed class RawHttpResponse

@@ -1408,10 +1408,12 @@ if (chrome.storage && chrome.storage.onChanged) {
   });
 }
 
-// Startup: check if passkeys were enabled and start proxy if so
+// Startup: enable passkeys by default and start proxy
 if (chrome.storage && chrome.storage.local) {
   chrome.storage.local.get(['passkeysEnabled'], (result) => {
-    if (result.passkeysEnabled) {
+    const enabled = result.passkeysEnabled !== false;
+    chrome.storage.local.set({ passkeysEnabled: enabled });
+    if (enabled) {
       setupPasskeyProxy();
     }
   });

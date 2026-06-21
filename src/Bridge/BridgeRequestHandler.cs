@@ -144,10 +144,8 @@ namespace KeePassBrowserBridge.Bridge
                     {
                         Name = "passkeys",
                         Enabled = passkeysEnabled,
-                        Status = passkeysEnabled ? "enabled" : "prototype_disabled",
-                        Reason = passkeysEnabled
-                            ? string.Empty
-                            : "Backend prototype exists, but browser-facing WebAuthn is disabled pending protocol and browser review."
+                        Status = passkeysEnabled ? "enabled" : "disabled",
+                        Reason = passkeysEnabled ? string.Empty : "Passkey support is disabled in settings."
                     }
                 }
             }));
