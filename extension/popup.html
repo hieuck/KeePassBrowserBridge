@@ -45,7 +45,6 @@
 
       <div class="toolbar secondary-toolbar">
         <button id="listClients" class="secondary" type="button">Trusted Browsers</button>
-        <button id="lockBridge" class="secondary" type="button">Lock</button>
       </div>
 
       <div id="clientsPanel" class="clients hidden"></div>
@@ -100,6 +99,13 @@
         <a id="releasesLink" href="#" target="_blank" rel="noreferrer">GitHub Releases</a>
       </div>
     </section>
+
+    <div class="bottom-toolbar">
+      <button class="toolbar-btn" id="lockBridge" title="Lock/unlock credential access">🔒 <span>Lock</span></button>
+      <button class="toolbar-btn" id="showSites" title="Site-specific auto-fill overrides">🌐 <span>Sites</span></button>
+      <button class="toolbar-btn" id="showClients" title="Trusted browsers">👥 <span>Clients</span></button>
+      <button class="toolbar-btn" id="showAbout" title="About KeePass Browser Bridge">ℹ <span>About</span></button>
+    </div>
 
     <footer id="message" class="message"></footer>
   </main>

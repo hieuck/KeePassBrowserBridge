@@ -404,11 +404,11 @@ test.describe('KeePassBrowserBridge Extension', () => {
   });
 
   test('locks and unlocks credential access from the popup', async ({ page }) => {
-    await expect(page.locator('#lockBridge')).toHaveText('Lock');
+    await expect(page.locator('#lockBridge')).toContainText('Lock');
 
     await page.locator('#lockBridge').click();
 
-    await expect(page.locator('#lockBridge')).toHaveText('Unlock');
+    await expect(page.locator('#lockBridge')).toContainText('Unlock');
     await expect(page.locator('#statusBadge')).toHaveText('Locked');
     await expect(page.locator('#message')).toHaveText('KeePass Bridge is locked.');
     await expect(page.locator('#queryLogins')).toBeDisabled();
@@ -422,7 +422,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await page.locator('#lockBridge').click();
 
-    await expect(page.locator('#lockBridge')).toHaveText('Lock');
+    await expect(page.locator('#lockBridge')).toContainText('Lock');
     await expect(page.locator('#statusBadge')).toHaveText('Paired');
     await expect(page.locator('#message')).toHaveText('KeePass Bridge is unlocked.');
     await expect(page.locator('#queryLogins')).toBeEnabled();
@@ -1062,7 +1062,15 @@ test.describe('KeePassBrowserBridge Extension', () => {
   await expect(page.locator('#message')).toHaveText('Login filled.');
 });
 
-test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
+  test('popup renders with redesigned bottom toolbar', async ({ page }) => {
+    await page.goto('/extension/popup.html');
+    await expect(page.locator('.bottom-toolbar')).toBeVisible();
+    const toolbarButtons = page.locator('.bottom-toolbar button');
+    const count = await toolbarButtons.count();
+    expect(count).toBeGreaterThanOrEqual(3);
+  });
+
+  test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
     await page.locator('#listClients').click();
     await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
     await expect(page.locator('[data-permission="passkeyWrite"]')).toHaveCount(0);

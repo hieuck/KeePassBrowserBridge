@@ -81,6 +81,10 @@ function init() {
     elements.passkeyToggle.addEventListener('change', () => runAction(togglePasskeys));
   }
 
+  document.getElementById('showSites')?.addEventListener('click', () => runAction(toggleSiteAutoFill));
+  document.getElementById('showClients')?.addEventListener('click', () => runAction(listClients));
+  document.getElementById('showAbout')?.addEventListener('click', () => runAction(showAbout));
+
   syncPairingCodeState();
   runAction(renderAbout);
   runAction(refreshState);
@@ -267,7 +271,8 @@ async function setAutoSubmit() {
 }
 
 async function toggleLocked() {
-  const state = await send({ type: 'KBB_SET_LOCKED', locked: elements.lockBridge.textContent !== 'Unlock' });
+  const lockLabel = elements.lockBridge?.querySelector('span')?.textContent?.trim() || elements.lockBridge.textContent;
+  const state = await send({ type: 'KBB_SET_LOCKED', locked: lockLabel !== 'Unlock' });
   renderState(await hydrateStatePermissions(state));
   setMessage(state.locked ? 'KeePass Bridge is locked.' : 'KeePass Bridge is unlocked.');
 }
@@ -809,6 +814,11 @@ function renderPasskeySection(about) {
   }
 }
 
+async function showAbout() {
+  await refreshAboutMetadata();
+  document.querySelector('.about')?.scrollIntoView({ behavior: 'smooth' });
+}
+
 async function checkUpdates() {
   const result = await send({ type: 'KBB_CHECK_UPDATES' });
   if (result.updateAvailable) {
@@ -828,7 +838,12 @@ function renderState(state) {
   if (elements.passkeySection && elements.passkeySection.style.display !== 'none') {
     elements.passkeyToggle.checked = Boolean(state.passkeysEnabled);
   }
-  elements.lockBridge.textContent = state.locked ? 'Unlock' : 'Lock';
+  const lockSpan = elements.lockBridge?.querySelector('span');
+  if (lockSpan) {
+    lockSpan.textContent = state.locked ? 'Unlock' : 'Lock';
+  } else {
+    elements.lockBridge.textContent = state.locked ? 'Unlock' : 'Lock';
+  }
   const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
   if (!pairingActive) {
