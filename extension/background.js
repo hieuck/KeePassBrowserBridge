@@ -562,7 +562,10 @@ async function setupPasskeyProxy() {
   const lifecycle = experiment.createLifecycle({
     onCreateRequest: handlers.onCreateRequest,
     onGetRequest: handlers.onGetRequest,
-    onRequestCanceled: handlers.onRequestCanceled
+    onRequestCanceled: handlers.onRequestCanceled,
+    resolveTrustedOrigin: typeof experiment.createTrustedOriginResolver === 'function'
+      ? experiment.createTrustedOriginResolver()
+      : undefined
   });
 
   globalThis.KeePassBrowserBridgePasskeysProxyLifecycle = lifecycle;

@@ -1502,4 +1502,153 @@ assert.equal(sentMessage.fieldRole, 'password', 'generated passwords should fill
   assert.equal(passkeyCleanupCalls.at(-1), 'custom-reason', 'clearPendingPasskeyState should forward the reason to the stored lifecycle');
 }
 
+// --- Passkey Proxy E2E Integration ---
+
+function createWebAuthnEvent() {
+  const listeners = [];
+  return {
+    addListener(fn) { listeners.push(fn); },
+    removeListener(fn) {
+      const idx = listeners.indexOf(fn);
+      if (idx >= 0) listeners.splice(idx, 1);
+    },
+    emit(...args) { listeners.slice().forEach(fn => fn(...args)); },
+    hasListeners() { return listeners.length > 0; }
+  };
+}
+
+{
+  // Save existing lifecycle for cleanup
+  const savedLifecycle = sandbox.KeePassBrowserBridgePasskeysProxyLifecycle;
+
+  // Load the real passkeys proxy experiment into the sandbox
+  const expSource = fs.readFileSync(
+    new URL('../../extension/passkeysProxyExperiment.js', import.meta.url), 'utf8'
+  );
+  vm.runInContext(expSource, sandbox, { filename: 'passkeysProxyExperiment.js' });
+
+  const experiment = sandbox.KeePassBrowserBridgePasskeysProxyExperiment;
+  assert.ok(experiment, 'experiment module should be loaded into sandbox');
+  assert.equal(typeof experiment.createLifecycle, 'function', 'experiment should export createLifecycle');
+  assert.equal(typeof experiment.createBridgeRequestHandlers, 'function', 'experiment should export createBridgeRequestHandlers');
+  assert.equal(typeof experiment.createTrustedOriginResolver, 'function', 'experiment should export createTrustedOriginResolver');
+
+  // Add mock webAuthenticationProxy with event emitters
+  const onCreateEvent = createWebAuthnEvent();
+  const onGetEvent = createWebAuthnEvent();
+  const onIsUvpaaEvent = createWebAuthnEvent();
+  const onCancelEvent = createWebAuthnEvent();
+
+  sandbox.chrome.webAuthenticationProxy = {
+    attach: async () => ({ attached: true }),
+    detach: async () => {},
+    completeCreateRequest: async () => {},
+    completeGetRequest: async () => {},
+    completeIsUvpaaRequest: async () => {},
+    onCreateRequest: onCreateEvent,
+    onGetRequest: onGetEvent,
+    onIsUvpaaRequest: onIsUvpaaEvent,
+    onRequestCanceled: onCancelEvent
+  };
+
+  // Add webNavigation for origin resolution used by createTrustedOriginResolver
+  sandbox.chrome.webNavigation = {
+    getFrame: async () => ({ url: 'https://example.com/login' })
+  };
+
+  // Add permissions for setPasskeysEnabled
+  sandbox.chrome.permissions = {
+    request: async () => true,
+    remove: async () => true
+  };
+
+  // E2E: create request flow fires passkeys.create.begin bridge call
+  {
+    requests.length = 0;
+    const setupResult = await sandbox.setupPasskeyProxy();
+    assert.ok(setupResult.attached, 'setupPasskeyProxy should attach the proxy');
+    assert.ok(sandbox.KeePassBrowserBridgePasskeysProxyLifecycle, 'lifecycle should be stored');
+    assert.ok(onCreateEvent.hasListeners(), 'create listener should be registered on webAuthenticationProxy');
+    assert.ok(onGetEvent.hasListeners(), 'get listener should be registered on webAuthenticationProxy');
+
+    // Fire a WebAuthn create request event
+    onCreateEvent.emit({
+      requestId: 42,
+      requestDetailsJson: JSON.stringify({
+        rp: { id: 'example.com', name: 'Example' },
+        user: { id: 'YWxpY2U', name: 'alice@example.com', displayName: 'Alice' },
+        challenge: 'MDEyMzQ1Njc4OWFiY2RlZg',
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        attestation: 'none'
+      }),
+      origin: 'https://example.com',
+      tabId: 1
+    });
+
+    await new Promise(r => setTimeout(r, 100));
+
+    const createCall = requests.find(r => r.Method === 'passkeys.create.begin');
+    assert.ok(createCall, 'onCreateRequest should trigger passkeys.create.begin bridge call');
+
+    if (createCall) {
+      const payload = JSON.parse(createCall.Payload);
+      assert.equal(payload.WebAuthnRequestId, '42', 'bridge payload should include request ID as string');
+      assert.equal(payload.RpId, 'example.com', 'bridge payload should include the relying party ID');
+      assert.equal(payload.Origin, 'https://example.com', 'bridge payload should include the trusted origin');
+      assert.equal(payload.Challenge, 'MDEyMzQ1Njc4OWFiY2RlZg', 'bridge payload should include the challenge');
+    }
+  }
+
+  // E2E: get request flow fires passkeys.get.begin bridge call
+  {
+    requests.length = 0;
+
+    onGetEvent.emit({
+      requestId: 43,
+      requestDetailsJson: JSON.stringify({
+        rpId: 'example.com',
+        challenge: 'MDEyMzQ1Njc4OWFiY2RlZg'
+      }),
+      origin: 'https://example.com',
+      tabId: 1
+    });
+
+    await new Promise(r => setTimeout(r, 100));
+
+    const getCall = requests.find(r => r.Method === 'passkeys.get.begin');
+    assert.ok(getCall, 'onGetRequest should trigger passkeys.get.begin bridge call');
+
+    if (getCall) {
+      const payload = JSON.parse(getCall.Payload);
+      assert.equal(payload.WebAuthnRequestId, '43', 'get bridge payload should include request ID');
+      assert.equal(payload.RpId, 'example.com', 'get bridge payload should include RP ID');
+    }
+  }
+
+  // E2E: lifecycle cleanup on teardown
+  {
+    await sandbox.teardownPasskeyProxy();
+    assert.equal(sandbox.KeePassBrowserBridgePasskeysProxyLifecycle, null, 'lifecycle should be null after teardown');
+    assert.equal(onCreateEvent.hasListeners(), false, 'teardown should remove create request listener');
+    assert.equal(onGetEvent.hasListeners(), false, 'teardown should remove get request listener');
+    assert.equal(onIsUvpaaEvent.hasListeners(), false, 'teardown should remove isUvpaa request listener');
+    assert.equal(onCancelEvent.hasListeners(), false, 'teardown should remove cancel request listener');
+  }
+
+  // Clean up injected chrome APIs
+  delete sandbox.chrome.webAuthenticationProxy;
+  delete sandbox.chrome.webNavigation;
+  delete sandbox.chrome.permissions;
+  delete sandbox.KeePassBrowserBridgePasskeysProxyExperiment;
+  sandbox.KeePassBrowserBridgePasskeysProxyLifecycle = savedLifecycle;
+}
+
+// --- KBB_SET_PASSKEYS_ENABLED message handling ---
+
+{
+  const bgSource = fs.readFileSync(new URL('../../extension/background.js', import.meta.url), 'utf8');
+  assert.ok(bgSource.includes("case 'KBB_SET_PASSKEYS_ENABLED':"), 'background handleMessage should have a KBB_SET_PASSKEYS_ENABLED case');
+  assert.ok(bgSource.includes('function setPasskeysEnabled'), 'background should define setPasskeysEnabled function');
+}
+
 console.log('Background tests passed.');
