@@ -35,7 +35,10 @@ const elements = {
   currentUrl: document.getElementById('currentUrl'),
   loginSearch: document.getElementById('loginSearch'),
   results: document.getElementById('results'),
-  message: document.getElementById('message')
+  message: document.getElementById('message'),
+  passkeySection: document.getElementById('passkeySection'),
+  passkeyToggle: document.getElementById('passkeyToggle'),
+  passkeyStatus: document.getElementById('passkeyStatus')
 };
 
 let currentEntries = [];
@@ -65,6 +68,7 @@ function init() {
   elements.cancelPair.addEventListener('click', () => runAction(cancelPair));
   elements.pairingCode.addEventListener('input', syncPairingCodeState);
   elements.pairingCode.addEventListener('keydown', handlePairingCodeKeydown);
+  elements.passkeyToggle.addEventListener('change', () => runAction(togglePasskeys));
   elements.queryLogins.addEventListener('click', () => runAction(queryLogins));
   elements.newLogin.addEventListener('click', () => runAction(beginCreateLogin));
   elements.toggleSiteAutoFill.addEventListener('click', () => runAction(toggleSiteAutoFill));
@@ -767,7 +771,37 @@ async function refreshAboutMetadata() {
   } else {
     bridgePasskeysEnabled = passkeysEnabled;
   }
+  renderPasskeySection(about);
   return about;
+}
+
+async function togglePasskeys() {
+  const enabled = elements.passkeyToggle.checked;
+  try {
+    const result = await send({ type: 'KBB_SET_PASSKEYS_ENABLED', enabled });
+    elements.passkeyToggle.checked = result.passkeysEnabled === true;
+    elements.passkeyStatus.textContent = result.passkeysEnabled ? 'Passkeys are active' : 'Passkeys disabled';
+  } catch (error) {
+    elements.passkeyToggle.checked = !enabled;
+    elements.passkeyStatus.textContent = 'Failed: ' + (error.message || 'unknown error');
+  }
+}
+
+function renderPasskeySection(about) {
+  if (!about.pluginFeatures || !about.pluginFeatures.passkeys) {
+    elements.passkeySection.style.display = 'none';
+    return;
+  }
+  elements.passkeySection.style.display = '';
+  elements.passkeyToggle.checked = currentState.passkeysEnabled === true;
+  const status = about.pluginPasskeysStatus;
+  if (status === 'enabled') {
+    elements.passkeyStatus.textContent = 'Passkeys are active';
+  } else if (status === 'prototype_disabled') {
+    elements.passkeyStatus.textContent = 'Backend ready — enable above to activate WebAuthn';
+  } else {
+    elements.passkeyStatus.textContent = 'Passkeys are disabled';
+  }
 }
 
 async function checkUpdates() {
@@ -786,6 +820,9 @@ function renderState(state) {
   elements.endpoint.value = state.endpoint || '';
   elements.autoFill.checked = Boolean(state.autoFillEnabled);
   elements.autoSubmit.checked = Boolean(state.autoSubmitEnabled);
+  if (elements.passkeySection.style.display !== 'none') {
+    elements.passkeyToggle.checked = Boolean(state.passkeysEnabled);
+  }
   elements.lockBridge.textContent = state.locked ? 'Unlock' : 'Lock';
   const pairingActive = !state.paired && Boolean(state.pairingSessionId);
   elements.pairingPanel.classList.toggle('hidden', !pairingActive);
