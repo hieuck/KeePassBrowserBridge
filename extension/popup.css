@@ -560,5 +560,38 @@ input {
 .passkey-section .section-header { font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text); margin-bottom: var(--space-xs); }
 .status-text { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 
+/* ---- Password Generator ---- */
+.password-generator {
+  padding: var(--space-md);
+  margin: var(--space-sm) var(--space-lg);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.gen-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); }
+.gen-header span { font-weight: 600; }
+.gen-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--color-text-secondary); }
+.gen-password-row { display: flex; gap: var(--space-xs); margin-bottom: var(--space-md); }
+.generated-password {
+  flex: 1; padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  font-family: 'SF Mono', 'Fira Code', monospace; font-size: var(--font-size-lg);
+  text-align: center; background: var(--color-bg); color: var(--color-text);
+}
+.gen-refresh-btn {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-primary-subtle); color: var(--color-primary);
+  border: none; border-radius: var(--radius-md); cursor: pointer; font-size: 18px;
+}
+.gen-options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.gen-option { display: flex; align-items: center; gap: var(--space-sm); font-size: var(--font-size-sm); color: var(--color-text); }
+.gen-option input[type="range"] { flex: 1; }
+.gen-length-value { min-width: 24px; text-align: center; font-weight: 600; }
+.gen-actions { display: flex; gap: var(--space-sm); }
+.gen-actions .btn-autofill { flex: 1; }
+.gen-actions .btn-copy { flex: 0 0 auto; }
+
 /* ---- Utility ---- */
 .hidden { display: none !important; }

@@ -85,10 +85,46 @@
     <div class="action-bar">
       <button id="queryLogins" class="btn-primary" type="button">Find Logins</button>
       <button id="newLogin" class="btn-secondary" type="button">+ New Login</button>
+      <button id="generatePassword" class="btn-secondary" type="button">🔑</button>
     </div>
 
     <!-- Vault list -->
     <div class="vault-list" id="results"></div>
+
+    <!-- Password generator panel -->
+    <div class="password-generator hidden">
+      <div class="gen-header">
+        <span>🔑 Password Generator</span>
+        <button class="gen-close" type="button">&times;</button>
+      </div>
+      <div class="gen-password-row">
+        <input class="generated-password" type="text" readonly spellcheck="false">
+        <button class="gen-refresh-btn" title="Generate new">↻</button>
+      </div>
+      <div class="gen-options">
+        <div class="gen-option">
+          <label>Length</label>
+          <input class="gen-length" type="range" min="8" max="64" value="20">
+          <span class="gen-length-value">20</span>
+        </div>
+        <div class="gen-option">
+          <label><input class="gen-uppercase" type="checkbox" checked> A-Z</label>
+        </div>
+        <div class="gen-option">
+          <label><input class="gen-lowercase" type="checkbox" checked> a-z</label>
+        </div>
+        <div class="gen-option">
+          <label><input class="gen-digits" type="checkbox" checked> 0-9</label>
+        </div>
+        <div class="gen-option">
+          <label><input class="gen-symbols" type="checkbox"> !@#$%</label>
+        </div>
+      </div>
+      <div class="gen-actions">
+        <button class="gen-copy-btn btn-copy">📋 Copy</button>
+        <button class="gen-fill-btn btn-autofill">⬇ Fill & Close</button>
+      </div>
+    </div>
 
     <!-- Passkey section -->
     <section id="passkeySection" class="settings-section passkey-section" style="display:none">

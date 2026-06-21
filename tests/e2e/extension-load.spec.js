@@ -1157,6 +1157,15 @@ test.describe('KeePassBrowserBridge Extension', () => {
   await expect(secondGroupItems).toHaveCount(2);
 });
 
+test('popup has password generator panel', async ({ page }) => {
+  await page.locator('#generatePassword').click();
+  await expect(page.locator('.password-generator')).toBeVisible();
+  await expect(page.locator('.generated-password')).toBeVisible();
+  await expect(page.locator('.gen-length')).toBeVisible();
+  await expect(page.locator('.gen-copy-btn')).toBeVisible();
+  await expect(page.locator('.gen-fill-btn')).toBeVisible();
+});
+
 test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
     await page.locator('#showSettings').click();
     await page.locator('#listClients').click();

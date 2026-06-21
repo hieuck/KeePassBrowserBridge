@@ -105,9 +105,84 @@ function init() {
     elements.showAbout.addEventListener('click', () => runAction(showAbout));
   }
 
+  // Password generator
+  document.getElementById('generatePassword')?.addEventListener('click', toggleGenerator);
+  document.querySelector('.gen-close')?.addEventListener('click', hideGenerator);
+  document.querySelector('.gen-refresh-btn')?.addEventListener('click', refreshGeneratedPassword);
+  document.querySelector('.gen-copy-btn')?.addEventListener('click', copyGeneratedPassword);
+  document.querySelector('.gen-fill-btn')?.addEventListener('click', fillGeneratedPassword);
+  document.querySelector('.gen-length')?.addEventListener('input', refreshGeneratedPassword);
+  document.querySelectorAll('.gen-options input[type="checkbox"]').forEach(cb => cb.addEventListener('change', refreshGeneratedPassword));
+
   syncPairingCodeState();
   runAction(renderAbout);
   runAction(refreshState);
+}
+
+let currentGeneratedPassword = '';
+
+function generatePassword(length = 20, useUpper = true, useLower = true, useDigits = true, useSymbols = false) {
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const digits = '0123456789';
+  const symbols = '!@#$%^&*()_+~|}{[]:;?><,./-=';
+  let chars = '';
+  if (useUpper) chars += upper;
+  if (useLower) chars += lower;
+  if (useDigits) chars += digits;
+  if (useSymbols) chars += symbols;
+  if (!chars) chars = lower + digits;
+
+  let password = '';
+  const array = new Uint32Array(length);
+  crypto.getRandomValues(array);
+  for (let i = 0; i < length; i++) {
+    password += chars[array[i] % chars.length];
+  }
+  return password;
+}
+
+function toggleGenerator() {
+  const gen = document.querySelector('.password-generator');
+  if (gen.classList.contains('hidden')) {
+    gen.classList.remove('hidden');
+    refreshGeneratedPassword();
+  } else {
+    gen.classList.add('hidden');
+  }
+}
+
+function hideGenerator() {
+  document.querySelector('.password-generator').classList.add('hidden');
+}
+
+function refreshGeneratedPassword() {
+  const len = parseInt(document.querySelector('.gen-length').value, 10) || 20;
+  document.querySelector('.gen-length-value').textContent = len;
+  const upper = document.querySelector('.gen-uppercase').checked;
+  const lower = document.querySelector('.gen-lowercase').checked;
+  const digits = document.querySelector('.gen-digits').checked;
+  const symbols = document.querySelector('.gen-symbols').checked;
+  currentGeneratedPassword = generatePassword(len, upper, lower, digits, symbols);
+  document.querySelector('.generated-password').value = currentGeneratedPassword;
+}
+
+function copyGeneratedPassword() {
+  navigator.clipboard.writeText(currentGeneratedPassword).then(() => {
+    setMessage('Password copied');
+  });
+}
+
+function fillGeneratedPassword() {
+  runAction(async () => {
+    await send({
+      type: 'KBB_FILL_LOGIN',
+      credential: { Password: currentGeneratedPassword },
+      fieldRole: 'password'
+    });
+    setMessage('Password filled into focused field.');
+    hideGenerator();
+  });
 }
 
 function toggleSettingsPanel() {
@@ -1713,14 +1788,6 @@ function wirePasswordVisibilityToggle(form) {
     toggle.textContent = visible ? 'Show' : 'Hide';
     passwordInput.focus();
   });
-}
-
-function generatePassword(length) {
-  const targetLength = Math.max(12, Number(length || 20));
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*-_=+';
-  const bytes = new Uint8Array(targetLength);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join('');
 }
 
 async function runAction(action) {

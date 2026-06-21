@@ -204,6 +204,9 @@ const fakeDocument = {
     return elements[id];
   },
   addEventListener() {},
+  querySelector(selector) {
+    return null;
+  },
   querySelectorAll(selector) {
     if (selector === 'button') {
       return [elements.saveEndpoint, elements.checkStatus, elements.beginPair, elements.listClients, elements.lockBridge, elements.pastePairingCode, elements.completePair, elements.cancelPair, elements.queryLogins, elements.newLogin, elements.toggleSiteAutoFill, elements.toggleSiteAutoSubmit, elements.checkUpdates];
