@@ -1281,17 +1281,22 @@ async function renderResults(entries) {
       fill.className = 'btn-autofill';
       fill.textContent = '✓ Autofill';
       fill.addEventListener('click', () => runAction(() => fillLogin(entry)));
-
       actions.append(fill);
 
+      const copyActions = document.createElement('div');
+      copyActions.className = 'item-copy-actions';
+
       if (entry.UserName) {
-        actions.append(createCopyButton('Copy U', 'username', entry.UserName, 'btn-copy'));
+        copyActions.append(createCopyButton('Copy U', 'username', entry.UserName, 'btn-copy'));
       }
       if (entry.Password) {
-        actions.append(createCopyButton('Copy P', 'password', entry.Password, 'btn-copy'));
+        copyActions.append(createCopyButton('Copy P', 'password', entry.Password, 'btn-copy'));
       }
       if (entry.OneTimePassword) {
-        actions.append(createCopyButton('OTP', 'OTP', entry.OneTimePassword, 'btn-copy'));
+        copyActions.append(createCopyButton('OTP', 'OTP', entry.OneTimePassword, 'btn-copy'));
+      }
+      if (copyActions.children.length) {
+        actions.append(copyActions);
       }
       item.append(actions);
 
