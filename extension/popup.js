@@ -1225,6 +1225,29 @@ async function renderResults(entries) {
 
       info.append(title, subtitle);
       if (meta.textContent) info.append(meta);
+
+      if (entry.Password) {
+        const strength = getPasswordStrength(entry.Password);
+        const strengthRow = document.createElement('div');
+        strengthRow.className = 'strength-row';
+        strengthRow.innerHTML = '<div class="strength-bar" style="width:' + strength.width + ';background:' + strength.color + '"></div><span class="strength-label" style="color:' + strength.color + '">' + strength.label + '</span>';
+        info.append(strengthRow);
+      }
+
+      const metaParts = [];
+      if (entry.LastUsed) {
+        metaParts.push('<span class="last-used">\uD83D\uDD50 ' + getRelativeTime(entry.LastUsed) + '</span>');
+      }
+      if (entry.UsageCount && entry.UsageCount > 0) {
+        metaParts.push('<span class="usage-count">\uD83D\uDD04 ' + entry.UsageCount + 'x</span>');
+      }
+      if (metaParts.length) {
+        const metaRow = document.createElement('div');
+        metaRow.className = 'item-metarow';
+        metaRow.innerHTML = metaParts.join(' \u00B7 ');
+        info.append(metaRow);
+      }
+
       main.append(avatar, info);
       item.append(main);
 
@@ -1392,7 +1415,11 @@ function showDetailView(entry) {
   avatar.textContent = (entry.Title || '?')[0].toUpperCase();
 
   document.getElementById('detailTitle').textContent = entry.Title || '(Untitled)';
-  document.getElementById('detailSubtitle').textContent = entry.Group || '';
+  const detailMetaParts = [];
+  if (entry.Group) detailMetaParts.push(entry.Group);
+  if (entry.LastUsed) detailMetaParts.push('Last used ' + getRelativeTime(entry.LastUsed));
+  if (entry.UsageCount && entry.UsageCount > 0) detailMetaParts.push(entry.UsageCount + ' uses');
+  document.getElementById('detailSubtitle').textContent = detailMetaParts.filter(Boolean).join(' · ');
 
   const fields = document.getElementById('detailFields');
   fields.innerHTML = '';
@@ -1400,6 +1427,14 @@ function showDetailView(entry) {
   addDetailField(fields, 'Username', entry.UserName || '(not set)');
   if (entry.Password) {
     addDetailField(fields, 'Password', '•'.repeat(Math.min(entry.Password.length, 20)));
+    const strength = getPasswordStrength(entry.Password);
+    const strengthRow = document.createElement('div');
+    strengthRow.className = 'strength-row';
+    strengthRow.style.marginTop = '4px';
+    strengthRow.style.marginBottom = '12px';
+    strengthRow.innerHTML = '<div class="strength-bar" style="width:' + strength.width + ';background:' + strength.color + ';max-width:120px"></div><span style="font-size:12px;font-weight:600;color:' + strength.color + '">' + strength.label + '</span>';
+    const passwordField = fields.querySelector('.detail-field:last-child');
+    if (passwordField) passwordField.after(strengthRow);
   }
   if (entry.Url) addDetailField(fields, 'URL', entry.Url);
   if (entry.OneTimePassword) addDetailField(fields, 'TOTP', entry.OneTimePassword);
@@ -1958,6 +1993,45 @@ function showLoading() {
 function hideLoading() {
   const overlay = document.querySelector('.loading-overlay');
   if (overlay) overlay.classList.add('hidden');
+}
+
+function getPasswordStrength(password) {
+  if (!password) return { score: 0, label: 'None', color: '#e0e0e0', width: '0%' };
+
+  let score = 0;
+
+  if (password.length >= 8) score += 25;
+  if (password.length >= 12) score += 15;
+  if (password.length >= 16) score += 10;
+  if (password.length >= 20) score += 10;
+
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 15;
+  if (/\d/.test(password)) score += 10;
+  if (/[^a-zA-Z0-9]/.test(password)) score += 15;
+
+  if (password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password)) score += 10;
+
+  score = Math.min(100, Math.max(0, score));
+
+  if (score >= 80) return { score, label: 'Strong', color: '#2ecc71', width: score + '%' };
+  if (score >= 50) return { score, label: 'Medium', color: '#f39c12', width: score + '%' };
+  return { score, label: 'Weak', color: '#e74c3c', width: Math.max(10, score) + '%' };
+}
+
+function getRelativeTime(utcMs) {
+  if (!utcMs || utcMs <= 0) return '';
+  const now = Date.now();
+  const diff = now - utcMs;
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  const months = Math.floor(days / 30);
+
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return mins + 'm ago';
+  if (hours < 24) return hours + 'h ago';
+  if (days < 30) return days + 'd ago';
+  return months + 'mo ago';
 }
 
 function escapeHtml(text) {

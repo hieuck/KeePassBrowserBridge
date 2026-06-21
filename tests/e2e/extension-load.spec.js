@@ -59,6 +59,8 @@ test.describe('KeePassBrowserBridge Extension', () => {
           OneTimePassword: '123456',
           Url: 'https://example.com/login',
           Group: 'Accounts/Work',
+          UsageCount: 10,
+          LastUsed: Date.now() - 3600000,
           CustomFields: [
             { Name: 'Tenant', Value: 'staging', IsProtected: false },
             { Name: 'Environment', Value: 'dev', IsProtected: false }
@@ -1193,6 +1195,17 @@ test('popup has password generator panel', async ({ page }) => {
   await expect(page.locator('.gen-length')).toBeVisible();
   await expect(page.locator('.gen-copy-btn')).toBeVisible();
   await expect(page.locator('.gen-fill-btn')).toBeVisible();
+});
+
+test('credential items show password strength indicator', async ({ page }) => {
+  await page.locator('#queryLogins').click();
+
+  const strengthBars = page.locator('.strength-bar');
+  const count = await strengthBars.count();
+  expect(count).toBeGreaterThan(0);
+
+  const lastUsed = page.locator('.last-used');
+  await expect(lastUsed.first()).toBeVisible();
 });
 
 test('popup has smooth view transitions with CSS animations', async ({ page }) => {

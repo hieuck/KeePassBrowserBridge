@@ -307,6 +307,32 @@ input {
   color: var(--color-text-secondary);
   margin-top: 1px;
 }
+.strength-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 4px;
+}
+.strength-bar {
+  height: 4px;
+  border-radius: 2px;
+  flex: 1;
+  max-width: 80px;
+  transition: width 0.3s ease;
+}
+.strength-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.item-metarow {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  margin-top: 3px;
+}
+.usage-count { opacity: 0.8; }
+.last-used { opacity: 0.8; }
 
 .item-actions {
   display: flex;
