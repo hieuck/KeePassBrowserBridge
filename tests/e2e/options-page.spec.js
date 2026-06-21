@@ -7,6 +7,7 @@ async function installOptionsStorage(page, initial = {}) {
     const passkeysEnabled = Boolean(store.__passkeysEnabled);
     delete store.__bridgeHelloFails;
     delete store.__passkeysEnabled;
+    store.passkeysEnabled = passkeysEnabled;
     const messages = [];
     const trustedClients = [
       {
@@ -87,6 +88,7 @@ async function installOptionsStorage(page, initial = {}) {
           }
 
           if (message.type === 'KBB_GET_ABOUT') {
+            const passkeysEnabled = window.__kbbOptionsPasskeysEnabled === true;
             return Promise.resolve({
               ok: true,
               response: {
@@ -96,7 +98,10 @@ async function installOptionsStorage(page, initial = {}) {
                 browserId: 'abcdefghijklmnopabcdefghijklmnop',
                 repositoryUrl: 'https://github.com/hieuck/KeePassBrowserBridge',
                 releasesUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases',
-                pluginPasskeysEnabled: window.__kbbOptionsPasskeysEnabled === true
+                pluginPasskeysEnabled: passkeysEnabled,
+                pluginPasskeysStatus: passkeysEnabled ? 'enabled' : 'prototype_disabled',
+                pluginFeatures: passkeysEnabled ? { passkeys: true } : {},
+                pluginFeatureDetails: passkeysEnabled ? { passkeys: { status: 'enabled' } } : {}
               }
             });
           }
@@ -110,6 +115,14 @@ async function installOptionsStorage(page, initial = {}) {
                 updateAvailable: true,
                 releaseUrl: 'https://github.com/hieuck/KeePassBrowserBridge/releases/tag/v0.10.0'
               }
+            });
+          }
+
+          if (message.type === 'KBB_SET_PASSKEYS_ENABLED') {
+            store.passkeysEnabled = Boolean(message.enabled);
+            return Promise.resolve({
+              ok: true,
+              response: { passkeysEnabled: Boolean(message.enabled) }
             });
           }
 
@@ -575,6 +588,27 @@ test.describe('options page settings', () => {
     const stored = await page.evaluate(() => window.__kbbOptionsStore);
     expect(stored.endpoint).toBe('http://127.0.0.1:19455/bridge');
     expect(stored.autoFillEnabled).toBe(true);
+  });
+
+  test('shows passkey toggle in options and sends KBB_SET_PASSKEYS_ENABLED message', async ({ page }) => {
+    await installOptionsStorage(page, {
+      __passkeysEnabled: true,
+      passkeysEnabled: true
+    });
+
+    await page.goto('/extension/options.html');
+
+    const passkeySection = page.locator('#passkeySection');
+    await expect(passkeySection).toBeVisible();
+    await expect(page.locator('#passkeyToggle')).toBeVisible();
+    await expect(page.locator('#passkeyToggle')).toBeChecked();
+    await expect(page.locator('#passkeyStatus')).toHaveText('Passkeys are active');
+
+    await page.locator('#passkeyToggle').uncheck();
+    await expect(page.locator('#passkeyStatus')).toHaveText('Passkeys disabled');
+
+    const messages = await page.evaluate(() => window.__kbbOptionsMessages.map((msg) => msg.type));
+    expect(messages).toContain('KBB_SET_PASSKEYS_ENABLED');
   });
 
   test('rejects imported settings with invalid security timeouts', async ({ page }) => {

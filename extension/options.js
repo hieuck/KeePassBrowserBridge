@@ -63,7 +63,10 @@ const elements = {
   releasesLink: document.getElementById('releasesLink'),
   checkUpdates: document.getElementById('checkUpdates'),
   saveSettings: document.getElementById('saveSettings'),
-  message: document.getElementById('message')
+  message: document.getElementById('message'),
+  passkeySection: document.getElementById('passkeySection'),
+  passkeyToggle: document.getElementById('passkeyToggle'),
+  passkeyStatus: document.getElementById('passkeyStatus')
 };
 
 document.addEventListener('DOMContentLoaded', init);
@@ -80,7 +83,10 @@ function init() {
   elements.checkBridgeStatus.addEventListener('click', () => runAction(checkBridgeStatus));
   elements.refreshTrustedBrowsers.addEventListener('click', () => runAction(listTrustedBrowsers));
   elements.checkUpdates.addEventListener('click', () => runAction(checkUpdates));
-  
+  if (elements.passkeyToggle) {
+    elements.passkeyToggle.addEventListener('change', () => runAction(togglePasskeys));
+  }
+
   loadSettings();
   runAction(renderAbout);
 }
@@ -702,7 +708,40 @@ async function refreshAboutMetadata() {
   } else {
     bridgePasskeysEnabled = passkeysEnabled;
   }
+  renderPasskeySection(about);
   return about;
+}
+
+async function togglePasskeys() {
+  const enabled = elements.passkeyToggle.checked;
+  try {
+    const result = await send({ type: 'KBB_SET_PASSKEYS_ENABLED', enabled });
+    elements.passkeyToggle.checked = result.passkeysEnabled === true;
+    elements.passkeyStatus.textContent = result.passkeysEnabled ? 'Passkeys are active' : 'Passkeys disabled';
+  } catch (error) {
+    elements.passkeyToggle.checked = !enabled;
+    elements.passkeyStatus.textContent = 'Failed: ' + (error.message || 'unknown error');
+  }
+}
+
+function renderPasskeySection(about) {
+  if (!elements.passkeySection) return;
+  if (!about.pluginFeatures || !about.pluginFeatures.passkeys) {
+    elements.passkeySection.style.display = 'none';
+    return;
+  }
+  elements.passkeySection.style.display = '';
+  chrome.storage.local.get(['passkeysEnabled'], (result) => {
+    elements.passkeyToggle.checked = result.passkeysEnabled === true;
+  });
+  const status = about.pluginPasskeysStatus;
+  if (status === 'enabled') {
+    elements.passkeyStatus.textContent = 'Passkeys are active';
+  } else if (status === 'prototype_disabled') {
+    elements.passkeyStatus.textContent = 'Backend ready — enable in the extension popup to activate WebAuthn.';
+  } else {
+    elements.passkeyStatus.textContent = 'Passkeys are disabled';
+  }
 }
 
 async function checkUpdates() {
