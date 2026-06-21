@@ -1157,6 +1157,23 @@ test.describe('KeePassBrowserBridge Extension', () => {
   await expect(secondGroupItems).toHaveCount(2);
 });
 
+test('clicking credential item shows detail view with all fields', async ({ page }) => {
+  await page.locator('#queryLogins').click();
+
+  await page.locator('.credential-item').first().click();
+
+  await expect(page.locator('.detail-view')).toBeVisible();
+  await expect(page.locator('.detail-title')).toBeVisible();
+  await expect(page.locator('.detail-field').first()).toBeVisible();
+  await expect(page.locator('.detail-fields')).not.toBeEmpty();
+  await expect(page.locator('.detail-fill-btn')).toBeVisible();
+  await expect(page.locator('.detail-back-btn')).toBeVisible();
+
+  await page.locator('.detail-back-btn').click();
+  await expect(page.locator('.detail-view')).toBeHidden();
+  await expect(page.locator('.vault-list')).not.toBeHidden();
+});
+
 test('popup has password generator panel', async ({ page }) => {
   await page.locator('#generatePassword').click();
   await expect(page.locator('.password-generator')).toBeVisible();

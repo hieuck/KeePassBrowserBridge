@@ -60,6 +60,7 @@ const elements = {
 let currentEntries = [];
 let visibleEntries = [];
 let currentState = { locked: false };
+let detailEntry = null;
 let trustedBrowserClients = [];
 let bridgePasskeysEnabled = false;
 let pairingExpiryTimer = null;
@@ -105,6 +106,17 @@ function init() {
     elements.showAbout.addEventListener('click', () => runAction(showAbout));
   }
 
+  // Detail view
+  document.querySelector('.detail-back-btn')?.addEventListener('click', hideDetailView);
+  elements.results.addEventListener('click', (e) => {
+    const item = e.target.closest('.credential-item');
+    if (!item) return;
+    if (e.target.closest('button, input, select, textarea, a')) return;
+    const idx = parseInt(item.dataset.entryIdx, 10);
+    if (!isNaN(idx) && idx >= 0 && idx < currentEntries.length) {
+      showDetailView(currentEntries[idx]);
+    }
+  });
   // Password generator
   document.getElementById('generatePassword')?.addEventListener('click', toggleGenerator);
   document.querySelector('.gen-close')?.addEventListener('click', hideGenerator);
@@ -1159,6 +1171,7 @@ async function renderResults(entries) {
     for (const entry of groupEntries) {
       const item = document.createElement('div');
       item.className = 'credential-item';
+      item.dataset.entryIdx = currentEntries.indexOf(entry);
 
       const main = document.createElement('div');
       main.className = 'item-main';
@@ -1348,6 +1361,75 @@ function createFieldFillButton(text, entry, fieldRole) {
   button.textContent = text;
   button.addEventListener('click', () => runAction(() => fillLogin(entry, fieldRole)));
   return button;
+}
+
+function showDetailView(entry) {
+  detailEntry = entry;
+  document.querySelector('.vault-list').classList.add('hidden');
+  document.querySelector('.search-wrapper').classList.add('hidden');
+  document.querySelector('.password-generator')?.classList.add('hidden');
+  const detail = document.querySelector('.detail-view');
+  detail.classList.remove('hidden');
+
+  const avatarColors = ['#4a90e2', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#34495e', '#e91e63', '#00bcd4'];
+  const avatar = document.getElementById('detailAvatar');
+  avatar.style.backgroundColor = avatarColors[(entry.Title || '').length % avatarColors.length];
+  avatar.textContent = (entry.Title || '?')[0].toUpperCase();
+
+  document.getElementById('detailTitle').textContent = entry.Title || '(Untitled)';
+  document.getElementById('detailSubtitle').textContent = entry.Group || '';
+
+  const fields = document.getElementById('detailFields');
+  fields.innerHTML = '';
+
+  addDetailField(fields, 'Username', entry.UserName || '(not set)');
+  if (entry.Password) {
+    addDetailField(fields, 'Password', '•'.repeat(Math.min(entry.Password.length, 20)));
+  }
+  if (entry.Url) addDetailField(fields, 'URL', entry.Url);
+  if (entry.OneTimePassword) addDetailField(fields, 'TOTP', entry.OneTimePassword);
+
+  for (const field of entry.CustomFields || []) {
+    if (!field.IsProtected) {
+      addDetailField(fields, field.Name, field.Value);
+    }
+  }
+
+  document.querySelector('.detail-fill-btn').onclick = () => runAction(() => {
+    fillLogin(entry);
+    hideDetailView();
+  });
+}
+
+function addDetailField(container, label, value) {
+  const field = document.createElement('div');
+  field.className = 'detail-field';
+  const labelEl = document.createElement('div');
+  labelEl.className = 'detail-field-label';
+  labelEl.textContent = label;
+  const row = document.createElement('div');
+  row.className = 'detail-field-row';
+  const val = document.createElement('div');
+  val.className = 'detail-field-value';
+  val.textContent = value;
+  row.append(val);
+  if (label !== 'Password') {
+    const copy = document.createElement('button');
+    copy.className = 'btn-copy';
+    copy.textContent = '📋';
+    copy.title = 'Copy';
+    copy.style.flex = '0 0 auto';
+    copy.addEventListener('click', () => runAction(() => copyToClipboard(label.toLowerCase(), value)));
+    row.append(copy);
+  }
+  field.append(labelEl, row);
+  container.append(field);
+}
+
+function hideDetailView() {
+  document.querySelector('.detail-view').classList.add('hidden');
+  document.querySelector('.vault-list').classList.remove('hidden');
+  document.querySelector('.search-wrapper').classList.remove('hidden');
 }
 
 function renderClients(clients) {
