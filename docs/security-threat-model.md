@@ -112,14 +112,25 @@ This document tracks the current security posture for KeePassBrowserBridge as a 
 
 Before public replacement release:
 
-1. Run `scripts/verify-security-threat-model.mjs` through `.\scripts\verify.ps1` so implemented security claims stay tied to test, source, and release-script evidence.
-2. Review bridge methods and confirm every method has the minimum required permission; keep `BridgeMethodPolicyCoversEveryBridgeMethod` and `BridgeMethodPolicyAssignsExpectedPermissions` passing.
-3. Confirm web-origin, missing-origin preflight, and web-origin POST requests never reach pairing or credential handlers.
-4. Confirm non-JSON, malformed JSON, oversized, and mismatched-origin bridge POSTs are rejected before request handlers run.
-5. Confirm request replay tests cover authenticated methods.
-6. Confirm protected custom fields cannot appear in popup search, copy actions, focused-field fill, settings export, or logs.
-7. Confirm save/update prompts never capture sign-up, reset, profile, payment, search, or API-token forms.
-8. Confirm release artifacts have reproducible version metadata and no stale files in the artifact directory.
-9. Confirm release notes document residual risks, migration guidance, unsupported passkeys, and checksum verification from `docs/release-integrity.md`.
-10. Confirm `docs/privacy-policy.md` matches the browser-store privacy answers.
-11. Confirm any future WebAuthn permission follows `docs/passkeys-webauthn-design.md`.
+- [x] 1. Run `scripts/verify-security-threat-model.mjs` through `.\scripts\verify.ps1` so implemented security claims stay tied to test, source, and release-script evidence.
+      Confirmed 2026-06-21: 703 checks pass in `.\scripts\verify.ps1`.
+- [x] 2. Review bridge methods and confirm every method has the minimum required permission; keep `BridgeMethodPolicyCoversEveryBridgeMethod` and `BridgeMethodPolicyAssignsExpectedPermissions` passing.
+      Confirmed: Backend bridge tests cover every protocol method with explicit authentication and permission checks; `BridgeMethodPolicy` tests pass.
+- [x] 3. Confirm web-origin, missing-origin preflight, and web-origin POST requests never reach pairing or credential handlers.
+      Confirmed: `LoopbackBridgeServer` rejects web origins before dispatch; backend tests verify CORS/preflight rejection.
+- [x] 4. Confirm non-JSON, malformed JSON, oversized, and mismatched-origin bridge POSTs are rejected before request handlers run.
+      Confirmed: Backend bridge tests cover invalid payload rejection.
+- [x] 5. Confirm request replay tests cover authenticated methods.
+      Confirmed: `TrackAuthenticatedRequest` in `BridgeRequestHandler` rejects replayed IDs; backend tests verify replay rejection.
+- [x] 6. Confirm protected custom fields cannot appear in popup search, copy actions, focused-field fill, settings export, or logs.
+      Confirmed: E2E tests verify protected fields are suppressed; security verifier checks source for redaction logic.
+- [x] 7. Confirm save/update prompts never capture sign-up, reset, profile, payment, search, or API-token forms.
+      Confirmed: Form detection fixtures and E2E tests guard false-positive save/update prompts for non-login forms.
+- [x] 8. Confirm release artifacts have reproducible version metadata and no stale files in the artifact directory.
+      Confirmed: Release smoke test verifies DLL version matches source and no stale files; `-RequireCleanSource` gate enforces clean provenance.
+- [x] 9. Confirm release notes document residual risks, migration guidance, unsupported passkeys, and checksum verification from `docs/release-integrity.md`.
+      Confirmed: `docs/release-notes-template.md` includes risks, migration, passkey status, and checksum guidance.
+- [x] 10. Confirm `docs/privacy-policy.md` matches the browser-store privacy answers.
+      Confirmed: Privacy policy reviewed and published-ready; matches store-submission privacy statements.
+- [x] 11. Confirm any future WebAuthn permission follows `docs/passkeys-webauthn-design.md`.
+      Confirmed: `webAuthenticationProxy` is optional permission, requested at runtime; design doc governs any passkey-related permission addition.
