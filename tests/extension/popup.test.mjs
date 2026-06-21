@@ -40,6 +40,7 @@ class Element {
     this.children = [];
     this.innerHTML = '';
     this.dataset = {};
+    this.style = {};
     this.classList = new ClassList();
     this.listeners = new Map();
   }

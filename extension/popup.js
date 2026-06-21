@@ -1014,17 +1014,51 @@ async function renderResults(entries) {
     return;
   }
 
+  const avatarColors = ['#176b87', '#b42318', '#067647', '#b54708', '#6941c6', '#363f72', '#c01048', '#175cd3'];
+  const maxUsage = Math.max(...visibleEntries.map((e) => Number(e.UsageCount || 0)), 0);
+
   for (const entry of visibleEntries) {
     const item = document.createElement('article');
     item.className = 'login';
+
+    const header = document.createElement('div');
+    header.className = 'login-header';
+
+    const colorIndex = (entry.Title || '').length % avatarColors.length;
+    const avatar = document.createElement('div');
+    avatar.className = 'login-avatar';
+    avatar.style.backgroundColor = avatarColors[colorIndex];
+    avatar.textContent = (entry.Title || '?')[0].toUpperCase();
+
+    const info = document.createElement('div');
+    info.className = 'login-info';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'login-title-row';
 
     const title = document.createElement('div');
     title.className = 'login-title';
     title.textContent = entry.Title || '(Untitled)';
 
+    titleRow.append(title);
+
+    if (entry.UsageCount > 0) {
+      const rank = document.createElement('span');
+      rank.className = 'login-rank';
+      rank.textContent = entry.UsageCount >= maxUsage && maxUsage > 0 ? 'Most used' : 'Frequent';
+      titleRow.append(rank);
+    }
+
+    const username = document.createElement('div');
+    username.className = 'login-username';
+    username.textContent = entry.UserName || '';
+
     const meta = document.createElement('div');
     meta.className = 'login-meta';
-    meta.textContent = [entry.Group, entry.UserName, entry.Url].filter(Boolean).join(' - ');
+    meta.textContent = [entry.Group, entry.Url].filter(Boolean).join(' - ');
+
+    info.append(titleRow, username);
+    header.append(avatar, info);
 
     const secret = document.createElement('div');
     secret.className = 'login-secret';
@@ -1056,7 +1090,7 @@ async function renderResults(entries) {
     if (entry.OneTimePassword) {
       actions.append(createFieldFillButton('OTP Field', entry, 'otp'));
     }
-    item.append(title, meta);
+    item.append(header, meta);
     if (secret.textContent) {
       item.append(secret);
     }

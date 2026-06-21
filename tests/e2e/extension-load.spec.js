@@ -366,7 +366,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await expect(page.locator('#currentUrl')).toHaveText('https://example.com/login');
     await expect(page.locator('.login-title')).toHaveText('Example');
-    await expect(page.locator('.login-meta')).toContainText('alice@example.com');
+    await expect(page.locator('.login-username')).toContainText('alice@example.com');
     await expect(page.locator('.login-meta')).toContainText('Accounts/Work');
     await expect(page.locator('#message')).toHaveText('1 login(s) found.');
   });
@@ -854,7 +854,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await expect(page.locator('#message')).toHaveText('Entry updated.');
     await expect(page.locator('.login-title')).toHaveText('Example Updated');
-    await expect(page.locator('.login-meta')).toContainText('updated@example.com');
+    await expect(page.locator('.login-username')).toContainText('updated@example.com');
     await expect(page.locator('.login-meta')).toContainText('https://example.com/account');
 
     const updateMessage = await page.evaluate(() => window.__kbbPopupMessages.find((message) => message.type === 'KBB_UPDATE_LOGIN'));
@@ -1015,7 +1015,54 @@ test.describe('KeePassBrowserBridge Extension', () => {
     });
   });
 
-  test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
+  test('renders credential list with entry avatars and prominent username', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__kbbPopupEntries = [
+      {
+        EntryId: 'entry-1',
+        Title: 'Example',
+        UserName: 'alice@example.com',
+        Password: 'secret-password',
+        Url: 'https://example.com/login',
+        Group: 'Accounts/Work',
+        UsageCount: 50
+      },
+      {
+        EntryId: 'entry-2',
+        Title: 'Test',
+        UserName: 'bob@example.com',
+        Password: 'secret2',
+        Url: 'https://test.com',
+        Group: 'Personal',
+        UsageCount: 1
+      }
+    ];
+  });
+
+  await page.locator('#queryLogins').click();
+
+  await expect(page.locator('.login-avatar')).toHaveCount(2);
+
+  await expect(page.locator('.login-avatar').first()).toHaveText('E');
+  await expect(page.locator('.login-avatar').first()).toHaveCSS('background-color', 'rgb(23, 92, 211)');
+
+  await expect(page.locator('.login-avatar').nth(1)).toHaveText('T');
+
+  await expect(page.locator('.login-username').first()).toHaveText('alice@example.com');
+  await expect(page.locator('.login-username').nth(1)).toHaveText('bob@example.com');
+
+  await expect(page.locator('.login-rank')).toHaveCount(2);
+  await expect(page.locator('.login-rank').first()).toHaveText('Most used');
+
+  await expect(page.locator('.login-meta').first()).toContainText('Accounts/Work');
+  await expect(page.locator('.login-meta').first()).toContainText('https://example.com/login');
+  await expect(page.locator('.login-meta').first()).not.toContainText('alice@example.com');
+
+  await page.locator('.fill-login-btn').first().click();
+  await expect(page.locator('#message')).toHaveText('Login filled.');
+});
+
+test('gates passkey permission controls in the popup on bridge feature discovery', async ({ page }) => {
     await page.locator('#listClients').click();
     await expect(page.locator('[data-permission="passkeyRead"]')).toHaveCount(0);
     await expect(page.locator('[data-permission="passkeyWrite"]')).toHaveCount(0);
