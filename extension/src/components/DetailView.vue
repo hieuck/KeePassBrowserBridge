@@ -1,120 +1,71 @@
 <template>
-  <div class="detail-view" :class="{ hidden: !entry }">
-    <div class="detail-header">
-      <button class="detail-back-btn" type="button" @click="$emit('back')">← Back</button>
-    </div>
-    <div class="detail-body">
-      <div class="detail-avatar-section">
-        <div class="detail-avatar" :style="avatarStyle">{{ avatarLetter }}</div>
-        <div>
-          <div class="detail-title" id="detailTitle">{{ entryTitle }}</div>
-          <div class="detail-subtitle" id="detailSubtitle">{{ entrySubtitle }}</div>
-        </div>
+  <div class="detail-view" :data-testid="'detail-view'">
+    <BaseButton variant="primary" block :leading-icon="'check'" @click="$emit('fill', entry, 'form')">
+      Fill form
+    </BaseButton>
+    <div v-if="entry.UserName || entry.Password || entry.OneTimePassword" class="detail-view__fields">
+      <div v-if="entry.UserName" class="detail-view__field">
+        <span class="detail-view__field-label">Username</span>
+        <span class="detail-view__field-value">{{ entry.UserName }}</span>
+        <button type="button" class="detail-view__icon-btn" aria-label="Copy username" @click="$emit('copy', 'username', entry.UserName)">
+          <Icon name="copy" :size="14" />
+        </button>
       </div>
-      <div class="detail-fields" id="detailFields">
-        <template v-for="field in detailFields" :key="field.label">
-          <div class="detail-field">
-            <div class="detail-field-label">{{ field.label }}</div>
-            <div class="detail-field-row">
-              <div class="detail-field-value">{{ field.value }}</div>
-              <button v-if="field.copyable" class="btn-copy" type="button" title="Copy" @click="field.copy">📋</button>
-            </div>
-          </div>
-          <div v-if="field.strength" class="strength-row" style="margin-top:4px;margin-bottom:12px">
-            <div class="strength-bar" :style="{ width: field.strength.width, background: field.strength.color, maxWidth: '120px' }"></div>
-            <span style="font-size:12px;font-weight:600;color:field.strength.color">{{ field.strength.label }}</span>
-          </div>
-        </template>
+      <div v-if="entry.Password" class="detail-view__field">
+        <span class="detail-view__field-label">Password</span>
+        <span class="detail-view__field-value">{{ showPassword ? entry.Password : '••••••••' }}</span>
+        <button type="button" class="detail-view__icon-btn" :aria-label="showPassword ? 'Hide password' : 'Show password'" @click="showPassword = !showPassword">
+          <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="14" />
+        </button>
+        <button type="button" class="detail-view__icon-btn" aria-label="Copy password" @click="$emit('copy', 'password', entry.Password)">
+          <Icon name="copy" :size="14" />
+        </button>
+      </div>
+      <div v-if="entry.OneTimePassword" class="detail-view__field">
+        <span class="detail-view__field-label">OTP</span>
+        <span class="detail-view__field-value">{{ entry.OneTimePassword }}</span>
+        <button type="button" class="detail-view__icon-btn" aria-label="Copy OTP" @click="$emit('copy', 'otp', entry.OneTimePassword)">
+          <Icon name="copy" :size="14" />
+        </button>
       </div>
     </div>
-    <div class="detail-actions">
-      <button class="detail-fill-btn btn-autofill" type="button" @click="$emit('fill', entry)">✓ Autofill</button>
+    <div v-if="customFieldRows.length" class="detail-view__custom">
+      <div class="detail-view__custom-header">Custom fields ({{ customFieldRows.length }})</div>
+      <div v-for="row in customFieldRows" :key="row.Name" class="detail-view__field">
+        <span class="detail-view__field-label">{{ row.Name }}</span>
+        <span class="detail-view__field-value">{{ row.IsProtected ? '••••••••' : row.Value }}</span>
+        <button v-if="!row.IsProtected" type="button" class="detail-view__icon-btn" :aria-label="`Copy ${row.Name}`" @click="$emit('copy', row.Name, row.Value)">
+          <Icon name="copy" :size="14" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
+import Icon from './Icon.vue';
+import BaseButton from './BaseButton.vue';
 
 const props = defineProps({
-  entry: { type: Object, default: null }
+  entry: { type: Object, required: true },
 });
 
-const emit = defineEmits(['back', 'fill']);
+const emit = defineEmits(['fill', 'copy']);
+const showPassword = ref(false);
 
-const AVATAR_COLORS = ['#4a90e2', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#34495e', '#e91e63', '#00bcd4'];
-
-const avatarLetter = computed(() => (props.entry ? (props.entry.Title || '?')[0].toUpperCase() : '?'));
-
-const avatarStyle = computed(() => {
-  if (!props.entry) return {};
-  const colorIndex = (props.entry.Title || '').length % AVATAR_COLORS.length;
-  return { backgroundColor: AVATAR_COLORS[colorIndex] };
-});
-
-const entryTitle = computed(() => (props.entry ? (props.entry.Title || '(Untitled)') : ''));
-
-const entrySubtitle = computed(() => {
-  if (!props.entry) return '';
-  const parts = [];
-  if (props.entry.Group) parts.push(props.entry.Group);
-  if (props.entry.LastUsed) parts.push('Last used ' + getRelativeTime(props.entry.LastUsed));
-  if (props.entry.UsageCount && props.entry.UsageCount > 0) parts.push(props.entry.UsageCount + ' uses');
-  return parts.filter(Boolean).join(' · ');
-});
-
-function getRelativeTime(utcMs) {
-  if (!utcMs || utcMs <= 0) return '';
-  const now = Date.now();
-  const diff = now - utcMs;
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  const months = Math.floor(days / 30);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return mins + 'm ago';
-  if (hours < 24) return hours + 'h ago';
-  if (days < 30) return days + 'd ago';
-  return months + 'mo ago';
-}
-
-function getPasswordStrength(password) {
-  if (!password) return { score: 0, label: 'None', color: '#e0e0e0', width: '0%' };
-  let score = 0;
-  if (password.length >= 8) score += 25;
-  if (password.length >= 12) score += 15;
-  if (password.length >= 16) score += 10;
-  if (password.length >= 20) score += 10;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 15;
-  if (/\d/.test(password)) score += 10;
-  if (/[^a-zA-Z0-9]/.test(password)) score += 15;
-  if (password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password)) score += 10;
-  score = Math.min(100, Math.max(0, score));
-  if (score >= 80) return { score, label: 'Strong', color: '#2ecc71', width: score + '%' };
-  if (score >= 50) return { score, label: 'Medium', color: '#f39c12', width: score + '%' };
-  return { score, label: 'Weak', color: '#e74c3c', width: Math.max(10, score) + '%' };
-}
-
-const detailFields = computed(() => {
-  if (!props.entry) return [];
-  const fields = [];
-  fields.push({ label: 'Username', value: props.entry.UserName || '(not set)', copyable: true, copy: () => emit('copy', 'username', props.entry.UserName) });
-  if (props.entry.Password) {
-    const strength = getPasswordStrength(props.entry.Password);
-    fields.push({
-      label: 'Password',
-      value: '•'.repeat(Math.min(props.entry.Password.length, 20)),
-      copyable: false,
-      strength
-    });
-  }
-  if (props.entry.Url) fields.push({ label: 'URL', value: props.entry.Url, copyable: true, copy: () => emit('copy', 'url', props.entry.Url) });
-  if (props.entry.OneTimePassword) fields.push({ label: 'TOTP', value: props.entry.OneTimePassword, copyable: true, copy: () => emit('copy', 'otp', props.entry.OneTimePassword) });
-  for (const field of props.entry.CustomFields || []) {
-    if (!field.IsProtected) {
-      fields.push({ label: field.Name, value: field.Value, copyable: true, copy: () => emit('copy', field.Name.toLowerCase(), field.Value) });
-    }
-  }
-  return fields;
+const customFieldRows = computed(() => {
+  return (props.entry.CustomFields || []).filter(f => f && !f.IsProtected && f.Name);
 });
 </script>
+
+<style scoped>
+.detail-view { display: flex; flex-direction: column; gap: var(--space-3); }
+.detail-view__fields, .detail-view__custom { display: flex; flex-direction: column; gap: var(--space-1); }
+.detail-view__field { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg); border-radius: var(--radius-sm); }
+.detail-view__field-label { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); min-width: 60px; flex-shrink: 0; }
+.detail-view__field-value { flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-mono); }
+.detail-view__icon-btn { background: transparent; border: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); flex-shrink: 0; transition: background var(--transition-fast), color var(--transition-fast); }
+.detail-view__icon-btn:hover { background: var(--color-surface); color: var(--color-accent); }
+.detail-view__custom-header { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-1); }
+</style>

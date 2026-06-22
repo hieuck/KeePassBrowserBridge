@@ -7,6 +7,7 @@
         class="kbb-toast"
         :class="`kbb-toast--${t.variant || 'info'}`"
         role="status"
+        data-testid="toast"
         :aria-live="t.variant === 'error' ? 'assertive' : 'polite'"
       >
         <Icon :name="variantIcon(t.variant)" :size="16" />

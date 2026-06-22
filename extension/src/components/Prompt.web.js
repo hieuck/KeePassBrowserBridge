@@ -3,8 +3,6 @@ import { ICONS } from '../../icons.js';
 const PROMPT_STYLES = `
 :host {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
   z-index: 2147483647;
   width: 360px;
   max-width: calc(100vw - 32px);
@@ -17,6 +15,11 @@ const PROMPT_STYLES = `
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   animation: slideIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:host([data-position="bottom-right"]) {
+  bottom: 16px;
+  right: 16px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -145,6 +148,69 @@ const PROMPT_STYLES = `
   transition: --progress 30s linear;
 }
 
+.prompt-editable-input {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  background: #ffffff;
+  color: #1a1a1a;
+  box-sizing: border-box;
+  margin-top: 2px;
+}
+
+.prompt-editable-input:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: -1px;
+}
+
+.prompt-editable-select {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  background: #ffffff;
+  color: #1a1a1a;
+  box-sizing: border-box;
+  margin-top: 2px;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.prompt-editable-select:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: -1px;
+}
+
+.prompt-editable-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #586069;
+  margin-bottom: 4px;
+}
+
+.prompt-editable-group {
+  margin-bottom: 10px;
+}
+
+.prompt-field-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 6px;
+}
+
+.prompt-field-row:last-child {
+  margin-bottom: 0;
+}
+
 @media (prefers-color-scheme: dark) {
   :host { color: #f0f0f0; background: #24292e; border-color: #444d56; }
   .prompt-header { border-color: #444d56; }
@@ -153,6 +219,9 @@ const PROMPT_STYLES = `
   .prompt-action--secondary { border-color: #444d56; color: #f0f0f0; }
   .prompt-action--secondary:hover { background: #2f363d; }
   .prompt-action--danger { color: #f97583; }
+  .prompt-editable-input { background: #1a1a1a; border-color: #444d56; color: #f0f0f0; }
+  .prompt-editable-select { background: #1a1a1a; border-color: #444d56; color: #f0f0f0; }
+  .prompt-editable-label { color: #cbd5e1; }
 }
 `;
 
@@ -166,21 +235,23 @@ function escapeHtml(s) {
 
 class KbbSavePrompt extends HTMLElement {
   static get observedAttributes() {
-    return ['name', 'username', 'password', 'url'];
+    return ['name', 'username', 'password', 'url', 'title', 'folder', 'folders'];
   }
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this._autoDismissTimer = null;
+    this._editingTitle = '';
+    this._editingUrl = '';
+    this._editingFolder = '';
   }
 
   connectedCallback() {
     this._render();
     this._startAutoDismiss();
-    this.shadowRoot.querySelector('.prompt-header__close')?.addEventListener('click', () => this._dismiss());
-    this.shadowRoot.querySelector('[data-action="save"]')?.addEventListener('click', () => this._save());
-    this.shadowRoot.querySelector('[data-action="never"]')?.addEventListener('click', () => this._never());
+    this._bindEvents();
+    this._applyPosition();
   }
 
   disconnectedCallback() {
@@ -194,11 +265,42 @@ class KbbSavePrompt extends HTMLElement {
     if (this.isConnected) this._render();
   }
 
+  _applyPosition() {
+    if (!this.isConnected) return;
+    const pos = this.getAttribute('data-position');
+    if (!pos || pos === 'bottom-right') return;
+    const top = this.getAttribute('data-top');
+    const right = this.getAttribute('data-right');
+    if (top) this.style.top = top;
+    if (right) this.style.right = right;
+  }
+
+  _bindEvents() {
+    this.shadowRoot.querySelector('.prompt-header__close')?.addEventListener('click', () => this._dismiss());
+    this.shadowRoot.querySelector('[data-action="save"]')?.addEventListener('click', () => this._save());
+    this.shadowRoot.querySelector('[data-action="never"]')?.addEventListener('click', () => this._never());
+  }
+
   _render() {
     const name = this.getAttribute('name') || '';
     const username = this.getAttribute('username') || '';
     const password = this.getAttribute('password') || '';
     const url = this.getAttribute('url') || '';
+    const title = this.getAttribute('title') || name || '';
+    const folder = this.getAttribute('folder') || '';
+    let folders = [];
+    try {
+      const raw = this.getAttribute('folders');
+      if (raw) folders = JSON.parse(raw);
+    } catch {}
+    if (!Array.isArray(folders)) folders = [];
+
+    const folderOptions = folders.map(f => {
+      const val = typeof f === 'string' ? f : (f.value || f.name || '');
+      const label = typeof f === 'string' ? f : (f.label || f.name || val);
+      const sel = val === folder ? ' selected' : '';
+      return `<option value="${escapeHtml(val)}"${sel}>${escapeHtml(label)}</option>`;
+    }).join('');
 
     this.shadowRoot.innerHTML = `
       <style>${PROMPT_STYLES}</style>
@@ -211,9 +313,22 @@ class KbbSavePrompt extends HTMLElement {
       </div>
       <div class="prompt-body">
         ${name ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${escapeHtml(name)}</span></div>` : ''}
-        ${url ? `<div class="prompt-field"><span class="prompt-field__label">URL</span><span class="prompt-field__value">${escapeHtml(url)}</span></div>` : ''}
         ${username ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${escapeHtml(username)}</span></div>` : ''}
         ${password ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${'•'.repeat(Math.min(password.length, 12))}</span></div>` : ''}
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">Title</label>
+          <input type="text" class="prompt-editable-input" data-field="title" value="${escapeHtml(title)}" placeholder="Login title" />
+        </div>
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">URL</label>
+          <input type="text" class="prompt-editable-input" data-field="url" value="${escapeHtml(url)}" placeholder="https://" />
+        </div>
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">Folder</label>
+          <select class="prompt-editable-select" data-field="folder">
+            ${folderOptions}
+          </select>
+        </div>
       </div>
       <div class="prompt-actions">
         <button type="button" class="prompt-action prompt-action--danger" data-action="never">Never for this site</button>
@@ -228,14 +343,24 @@ class KbbSavePrompt extends HTMLElement {
     this._autoDismissTimer = setTimeout(() => this._dismiss(), 30000);
   }
 
+  _getFieldValue(selector) {
+    const el = this.shadowRoot.querySelector(selector);
+    return el ? el.value : '';
+  }
+
   _save() {
+    const title = this._getFieldValue('[data-field="title"]') || this.getAttribute('name') || '';
+    const url = this._getFieldValue('[data-field="url"]') || this.getAttribute('url') || '';
+    const folder = this._getFieldValue('[data-field="folder"]') || '';
     this.dispatchEvent(new CustomEvent('kbb-save', {
       bubbles: true, composed: true,
       detail: {
-        name: this.getAttribute('name'),
+        name: title,
+        title,
         username: this.getAttribute('username'),
         password: this.getAttribute('password'),
-        url: this.getAttribute('url'),
+        url,
+        folder,
       },
     }));
     this.remove();
@@ -257,7 +382,7 @@ class KbbSavePrompt extends HTMLElement {
 
 class KbbUpdatePrompt extends HTMLElement {
   static get observedAttributes() {
-    return ['name', 'username', 'password', 'old-username'];
+    return ['name', 'username', 'password', 'old-username', 'title', 'folder', 'folders'];
   }
 
   constructor() {
@@ -269,9 +394,8 @@ class KbbUpdatePrompt extends HTMLElement {
   connectedCallback() {
     this._render();
     this._startAutoDismiss();
-    this.shadowRoot.querySelector('.prompt-header__close')?.addEventListener('click', () => this._dismiss());
-    this.shadowRoot.querySelector('[data-action="update"]')?.addEventListener('click', () => this._update());
-    this.shadowRoot.querySelector('[data-action="skip"]')?.addEventListener('click', () => this._skip());
+    this._bindEvents();
+    this._applyPosition();
   }
 
   disconnectedCallback() {
@@ -285,10 +409,41 @@ class KbbUpdatePrompt extends HTMLElement {
     if (this.isConnected) this._render();
   }
 
+  _applyPosition() {
+    if (!this.isConnected) return;
+    const pos = this.getAttribute('data-position');
+    if (!pos || pos === 'bottom-right') return;
+    const top = this.getAttribute('data-top');
+    const right = this.getAttribute('data-right');
+    if (top) this.style.top = top;
+    if (right) this.style.right = right;
+  }
+
+  _bindEvents() {
+    this.shadowRoot.querySelector('.prompt-header__close')?.addEventListener('click', () => this._dismiss());
+    this.shadowRoot.querySelector('[data-action="update"]')?.addEventListener('click', () => this._update());
+    this.shadowRoot.querySelector('[data-action="skip"]')?.addEventListener('click', () => this._skip());
+  }
+
   _render() {
     const name = this.getAttribute('name') || '';
     const oldUsername = this.getAttribute('old-username') || '';
     const newUsername = this.getAttribute('username') || '';
+    const password = this.getAttribute('password') || '';
+    const url = this.getAttribute('url') || '';
+    const title = this.getAttribute('title') || name || '';
+    let folders = [];
+    try {
+      const raw = this.getAttribute('folders');
+      if (raw) folders = JSON.parse(raw);
+    } catch {}
+    if (!Array.isArray(folders)) folders = [];
+
+    const folderOptions = folders.map(f => {
+      const val = typeof f === 'string' ? f : (f.value || f.name || '');
+      const label = typeof f === 'string' ? f : (f.label || f.name || val);
+      return `<option value="${escapeHtml(val)}">${escapeHtml(label)}</option>`;
+    }).join('');
 
     this.shadowRoot.innerHTML = `
       <style>${PROMPT_STYLES}</style>
@@ -309,6 +464,15 @@ class KbbUpdatePrompt extends HTMLElement {
           <span class="prompt-field__label">To</span>
           <span class="prompt-field__value">${escapeHtml(newUsername)}</span>
         </div>
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">New Password</label>
+          <input type="text" class="prompt-editable-input" data-field="username" value="${escapeHtml(newUsername)}" placeholder="Username" />
+        </div>
+        ${password ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${'•'.repeat(Math.min(password.length, 12))}</span></div>` : ''}
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">URL</label>
+          <input type="text" class="prompt-editable-input" data-field="url" value="${escapeHtml(url)}" placeholder="https://" />
+        </div>
       </div>
       <div class="prompt-actions">
         <button type="button" class="prompt-action prompt-action--secondary" data-action="skip">Not now</button>
@@ -323,13 +487,21 @@ class KbbUpdatePrompt extends HTMLElement {
     this._autoDismissTimer = setTimeout(() => this._dismiss(), 30000);
   }
 
+  _getFieldValue(selector) {
+    const el = this.shadowRoot.querySelector(selector);
+    return el ? el.value : '';
+  }
+
   _update() {
+    const username = this._getFieldValue('[data-field="username"]') || this.getAttribute('username') || '';
+    const url = this._getFieldValue('[data-field="url"]') || this.getAttribute('url') || '';
     this.dispatchEvent(new CustomEvent('kbb-update', {
       bubbles: true, composed: true,
       detail: {
         name: this.getAttribute('name'),
-        username: this.getAttribute('username'),
+        username,
         password: this.getAttribute('password'),
+        url,
       },
     }));
     this.remove();

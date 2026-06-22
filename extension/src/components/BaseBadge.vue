@@ -1,5 +1,5 @@
 <template>
-  <span class="kbb-badge" :class="`kbb-badge--${variant}`">
+  <span class="kbb-badge" :class="`kbb-badge--${variant}`" data-testid="badge">
     <slot />
   </span>
 </template>

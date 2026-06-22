@@ -8,13 +8,14 @@
     tabindex="0"
     role="button"
     :aria-expanded="expanded"
+    :data-testid="'credential-card'"
   >
     <BaseAvatar :name="entry.Title" :url="entry.Url" size="md" class="credential-card__avatar" />
     <div class="credential-card__info">
       <div class="credential-card__title">{{ entry.Title || '(Untitled)' }}</div>
       <div v-if="entry.UserName" class="credential-card__subtitle">{{ entry.UserName }}</div>
       <div v-if="metaText" class="credential-card__meta">
-        <BaseBadge v-if="entry.UsageCount > 0" variant="accent">★ {{ entry.UsageCount }}x</BaseBadge>
+        <BaseBadge v-if="entry.UsageCount > 0" variant="accent">&#9733; {{ entry.UsageCount }}x</BaseBadge>
         <span v-if="entry.LastUsed">{{ formatRelativeTime(entry.LastUsed) }}</span>
       </div>
     </div>
@@ -23,42 +24,11 @@
     </button>
 
     <div v-if="expanded" class="credential-card__detail" @click.stop>
-      <BaseButton variant="primary" block :leading-icon="'check'" @click="fill('form')">
-        Fill form
-      </BaseButton>
-      <div v-if="entry.UserName || entry.Password || entry.OneTimePassword" class="credential-card__fields">
-        <div v-if="entry.UserName" class="credential-card__field">
-          <span class="credential-card__field-label">Username</span>
-          <span class="credential-card__field-value">{{ entry.UserName }}</span>
-          <button type="button" class="credential-card__icon-btn" aria-label="Copy username" @click="$emit('copy', 'username', entry.UserName)">
-            <Icon name="copy" :size="14" />
-          </button>
-        </div>
-        <div v-if="entry.Password" class="credential-card__field">
-          <span class="credential-card__field-label">Password</span>
-          <span class="credential-card__field-value">••••••••</span>
-          <button type="button" class="credential-card__icon-btn" aria-label="Copy password" @click="$emit('copy', 'password', entry.Password)">
-            <Icon name="copy" :size="14" />
-          </button>
-        </div>
-        <div v-if="entry.OneTimePassword" class="credential-card__field">
-          <span class="credential-card__field-label">OTP</span>
-          <span class="credential-card__field-value">{{ entry.OneTimePassword }}</span>
-          <button type="button" class="credential-card__icon-btn" aria-label="Copy OTP" @click="$emit('copy', 'otp', entry.OneTimePassword)">
-            <Icon name="copy" :size="14" />
-          </button>
-        </div>
-      </div>
-      <div v-if="customFieldRows.length" class="credential-card__custom">
-        <div class="credential-card__custom-header">Custom fields ({{ customFieldRows.length }})</div>
-        <div v-for="row in customFieldRows" :key="row.Name" class="credential-card__field">
-          <span class="credential-card__field-label">{{ row.Name }}</span>
-          <span class="credential-card__field-value">{{ row.IsProtected ? '••••••••' : row.Value }}</span>
-          <button v-if="!row.IsProtected" type="button" class="credential-card__icon-btn" :aria-label="`Copy ${row.Name}`" @click="$emit('copy', row.Name, row.Value)">
-            <Icon name="copy" :size="14" />
-          </button>
-        </div>
-      </div>
+      <DetailView
+        :entry="entry"
+        @fill="(...args) => $emit('fill', ...args)"
+        @copy="(...args) => $emit('copy', ...args)"
+      />
       <div class="credential-card__actions">
         <BaseButton v-if="canEdit" variant="secondary" size="sm" :leading-icon="'edit'" @click="$emit('edit', entry)">
           Edit
@@ -74,6 +44,7 @@ import Icon from '../components/Icon.vue';
 import BaseAvatar from '../components/BaseAvatar.vue';
 import BaseBadge from '../components/BaseBadge.vue';
 import BaseButton from '../components/BaseButton.vue';
+import DetailView from '../components/DetailView.vue';
 import { formatRelativeTime } from '../../shared/formatters.js';
 
 const props = defineProps({
@@ -87,17 +58,9 @@ const metaText = computed(() => {
   return [props.entry.Group, props.entry.Url].filter(Boolean).join(' · ');
 });
 
-const customFieldRows = computed(() => {
-  return (props.entry.CustomFields || []).filter(f => f && !f.IsProtected && f.Name);
-});
-
 function onCardClick(event) {
   if (event.target.closest('button, input, select, textarea, a, [role="menuitem"]')) return;
   emit('toggle', props.entry);
-}
-
-function fill(fieldRole) {
-  emit('fill', props.entry, fieldRole);
 }
 </script>
 

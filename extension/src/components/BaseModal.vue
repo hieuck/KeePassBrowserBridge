@@ -5,6 +5,7 @@
       class="kbb-modal-overlay"
       role="dialog"
       aria-modal="true"
+      data-testid="modal"
       :aria-labelledby="titleId"
       @click.self="onBackdropClick"
     >

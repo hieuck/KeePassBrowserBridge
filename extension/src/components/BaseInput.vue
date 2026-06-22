@@ -18,6 +18,7 @@
         :max="max"
         :aria-invalid="!!error"
         :aria-describedby="error ? errorId : (description ? descriptionId : undefined)"
+        :data-testid="`input-${slugifiedLabel}`"
         class="kbb-input"
         @input="onInput"
         @blur="$emit('blur')"
@@ -81,6 +82,7 @@ const effectiveType = computed(() => {
 
 const generatedId = useId();
 const inputId = computed(() => `kbb-input-${generatedId}`);
+const slugifiedLabel = computed(() => (props.label || '').toLowerCase().replace(/\s+/g, '-') || 'input');
 const errorId = computed(() => `${inputId.value}-error`);
 const descriptionId = computed(() => `${inputId.value}-description`);
 

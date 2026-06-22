@@ -14,11 +14,45 @@ const PICKER_STYLES = `
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   min-width: 280px;
   max-width: 400px;
-  max-height: 320px;
+  max-height: 420px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e1e4e8;
+  background: #f6f8fa;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.picker-header__title {
+  flex: 1;
+}
+
+.picker-header__close {
+  background: transparent;
+  border: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+}
+
+.picker-header__close:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+
+.picker-header__close svg { width: 14px; height: 14px; fill: currentColor; }
 
 .picker-search {
   padding: 8px 10px;
@@ -119,6 +153,49 @@ const PICKER_STYLES = `
   text-overflow: ellipsis;
 }
 
+.picker-expanded {
+  padding: 4px 12px 8px 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.picker-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.picker-action {
+  padding: 3px 8px;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #1a1a1a;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 120ms, border-color 120ms;
+}
+
+.picker-action:hover {
+  background: #f6f8fa;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.picker-custom-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #586069;
+  letter-spacing: 0.04em;
+  margin: 2px 0;
+}
+
 .picker-empty {
   padding: 20px;
   text-align: center;
@@ -139,11 +216,16 @@ const PICKER_STYLES = `
     background: #24292e;
     border-color: #444d56;
   }
+  .picker-header { background: #1a1a1a; border-color: #444d56; }
   .picker-search { background: #1a1a1a; border-color: #444d56; }
   .picker-item:hover, .picker-item--active { background: #2f363d; }
   .picker-item--selected { background: rgba(56, 139, 253, 0.2); }
   .picker-empty { color: #cbd5e1; }
   .picker-username { color: #cbd5e1; }
+  .picker-action { background: #2f363d; border-color: #444d56; color: #f0f0f0; }
+  .picker-action:hover { background: #3b4450; border-color: #60a5fa; color: #60a5fa; }
+  .picker-custom-header { color: #cbd5e1; }
+  .picker-expanded { border-color: #444d56; }
 }
 `;
 
@@ -158,6 +240,7 @@ class KbbPicker extends HTMLElement {
     this._activeIndex = -1;
     this._credentials = [];
     this._search = '';
+    this._expandedIndex = -1;
     this._boundOnKeyDown = this._onKeyDown.bind(this);
     this._boundOnClickOutside = this._onClickOutside.bind(this);
   }
@@ -215,12 +298,21 @@ class KbbPicker extends HTMLElement {
 
   _render() {
     const placeholder = this.getAttribute('placeholder') || 'Search credentials…';
-    const showSearch = this.getAttribute('show-search') !== 'false';
+    const rawShowSearch = this.getAttribute('show-search');
+    const showSearch = rawShowSearch !== null ? rawShowSearch !== 'false' : this._credentials.length > 4;
     const filtered = this._filtered;
     this._activeIndex = filtered.length > 0 ? 0 : -1;
 
+    const headerDomain = this._getHeaderDomain();
+
     this.shadowRoot.innerHTML = `
       <style>${PICKER_STYLES}</style>
+      <div class="picker-header">
+        <span class="picker-header__title">${filtered.length} login${filtered.length !== 1 ? 's' : ''}${headerDomain ? ` for ${this._escapeHtml(headerDomain)}` : ''}</span>
+        <button type="button" class="picker-header__close" aria-label="Close picker">
+          <span aria-hidden="true">${ICONS.close || '✕'}</span>
+        </button>
+      </div>
       ${showSearch ? `
         <div class="picker-search">
           <span class="picker-icon" aria-hidden="true">${ICONS.search || ''}</span>
@@ -239,18 +331,53 @@ class KbbPicker extends HTMLElement {
       </ul>
     `;
 
+    this.shadowRoot.querySelector('.picker-header__close')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._emitClose();
+    });
+
     this.shadowRoot.querySelector('.picker-search-input')?.addEventListener('input', (e) => {
       this._search = e.target.value;
+      this._expandedIndex = -1;
       this._activeIndex = 0;
       this._render();
       this.shadowRoot.querySelector('.picker-search-input')?.focus();
     });
 
     this.shadowRoot.querySelectorAll('.picker-item').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
         const idx = Number(el.dataset.index);
+        if (idx === this._expandedIndex) {
+          this._expandedIndex = -1;
+          this._render();
+          return;
+        }
+        this._expandedIndex = idx;
+        this._render();
+      });
+    });
+
+    this.shadowRoot.querySelectorAll('.picker-action').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = Number(el.dataset.index);
+        const action = el.dataset.action;
         const cred = filtered[idx];
-        if (cred) this._emitFill(cred);
+        if (!cred) return;
+        if (action === 'fill-form') {
+          const payload = { ...cred };
+          payload._fillRole = 'form';
+          this._emitFill(payload);
+        } else if (action === 'fill-username') {
+          this._emitFillForTarget(cred, 'username');
+        } else if (action === 'copy-username') {
+          this._emitCopy(cred, 'username');
+        } else if (action === 'fill-password') {
+          this._emitFillForTarget(cred, 'password');
+        } else if (action === 'copy-password') {
+          this._emitCopy(cred, 'password');
+        }
       });
     });
 
@@ -259,12 +386,23 @@ class KbbPicker extends HTMLElement {
     }
   }
 
+  _getHeaderDomain() {
+    const urls = this._credentials.map(c => c.url).filter(Boolean);
+    if (urls.length === 0) return '';
+    try {
+      const hostnames = urls.map(u => { try { return new URL(u).hostname; } catch { return null; } }).filter(Boolean);
+      const unique = [...new Set(hostnames)];
+      return unique[0] || '';
+    } catch { return ''; }
+  }
+
   _renderItem(cred, index) {
     const initial = (cred.name || cred.username || '?').charAt(0).toUpperCase();
     const favicon = cred.url ? this._faviconUrl(cred.url) : null;
     const avatar = favicon
       ? `<img class="picker-avatar picker-avatar--favicon" src="${favicon}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${initial}</div>'" />`
       : `<div class="picker-avatar">${initial}</div>`;
+    const isExpanded = index === this._expandedIndex;
     return `
       <li
         class="picker-item${index === this._activeIndex ? ' picker-item--active' : ''}${cred.selected ? ' picker-item--selected' : ''}"
@@ -278,6 +416,24 @@ class KbbPicker extends HTMLElement {
           <div class="picker-name">${this._escapeHtml(cred.name || '(no name)')}</div>
           ${cred.username ? `<div class="picker-username">${this._escapeHtml(cred.username)}</div>` : ''}
         </div>
+        <span class="picker-icon" style="transition: transform 120ms;${isExpanded ? ' transform: rotate(180deg);' : ''}" aria-hidden="true">${ICONS['chevron-down'] || ''}</span>
+      </li>
+      ${isExpanded ? this._renderExpanded(cred, index) : ''}
+    `;
+  }
+
+  _renderExpanded(cred, index) {
+    const hasCustomFields = cred.customFields && Array.isArray(cred.customFields) && cred.customFields.length > 0;
+    return `
+      <li class="picker-expanded" role="presentation">
+        <div class="picker-action-row">
+          <button type="button" class="picker-action" data-index="${index}" data-action="fill-form">Fill form</button>
+          ${cred.username ? `<button type="button" class="picker-action" data-index="${index}" data-action="fill-username">Fill user</button>` : ''}
+          ${cred.username ? `<button type="button" class="picker-action" data-index="${index}" data-action="copy-username">Copy user</button>` : ''}
+          ${cred.password ? `<button type="button" class="picker-action" data-index="${index}" data-action="fill-password">Fill pass</button>` : ''}
+          ${cred.password ? `<button type="button" class="picker-action" data-index="${index}" data-action="copy-password">Copy pass</button>` : ''}
+        </div>
+        ${hasCustomFields ? `<div class="picker-custom-header">Custom fields (${cred.customFields.length})</div>` : ''}
       </li>
     `;
   }
@@ -317,21 +473,30 @@ class KbbPicker extends HTMLElement {
       e.preventDefault();
       e.stopPropagation();
       this._activeIndex = Math.min(this._activeIndex + 1, filtered.length - 1);
+      this._expandedIndex = -1;
       this._highlightActive();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       e.stopPropagation();
       this._activeIndex = Math.max(this._activeIndex - 1, 0);
+      this._expandedIndex = -1;
       this._highlightActive();
     } else if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
       const cred = filtered[this._activeIndex];
-      if (cred) this._emitFill(cred);
+      if (cred) {
+        this._emitFill(cred);
+      }
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      this._emitClose();
+      if (this._expandedIndex >= 0) {
+        this._expandedIndex = -1;
+        this._render();
+      } else {
+        this._emitClose();
+      }
     }
   }
 
@@ -346,6 +511,22 @@ class KbbPicker extends HTMLElement {
       bubbles: true,
       composed: true,
       detail: { credential: cred },
+    }));
+  }
+
+  _emitFillForTarget(cred, role) {
+    this.dispatchEvent(new CustomEvent('kbb-fill', {
+      bubbles: true,
+      composed: true,
+      detail: { credential: cred, fieldRole: role },
+    }));
+  }
+
+  _emitCopy(cred, field) {
+    this.dispatchEvent(new CustomEvent('kbb-copy', {
+      bubbles: true,
+      composed: true,
+      detail: { credential: cred, field },
     }));
   }
 

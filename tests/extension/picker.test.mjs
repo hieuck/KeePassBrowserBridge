@@ -30,6 +30,7 @@ test.describe('kbb-picker Web Component', () => {
   test('filters credentials by search input', async ({ page }) => {
     const result = await page.evaluate(() => {
       const picker = document.createElement('kbb-picker');
+      picker.setAttribute('show-search', 'true');
       picker.credentials = [
         { name: 'GitHub', username: 'octocat' },
         { name: 'GitLab', username: 'root' },

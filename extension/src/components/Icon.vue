@@ -4,6 +4,7 @@
     :class="{ 'kbb-icon-spin': spin }"
     v-html="svg"
     :aria-hidden="true"
+    :data-testid="`icon-${name}`"
   />
 </template>
 

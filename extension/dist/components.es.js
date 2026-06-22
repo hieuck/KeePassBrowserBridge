@@ -1,4 +1,4 @@
-const p = {
+const g = {
   key: "M10.5 0a4.5 4.5 0 1 1-3.18 7.68L2 13l-1.5 1.5L2 16l1.5-1.5L5 13l5.32-5.32A4.5 4.5 0 0 1 10.5 0zm-2 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z",
   lock: "M3 7V5a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm2 0h6V5a3 3 0 0 0-6 0v2z",
   "lock-open": "M3 7V5a5 5 0 0 1 9.9-1H11a3 3 0 0 0-5 1v2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm0 2v6h10V9H3z",
@@ -21,11 +21,11 @@ const p = {
   user: "M10.561 8.073a6.005 6.005 0 0 1 3.432 5.142.75.75 0 1 1-1.498.07 4.5 4.5 0 0 0-8.99 0 .75.75 0 0 1-1.498-.07 6.004 6.004 0 0 1 3.431-5.142 3.999 3.999 0 1 0 5.123 0zM10.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
   "user-plus": "M5.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3 6.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0zM7.5 9a4.5 4.5 0 0 0-3.83 2.146.75.75 0 1 0 1.276.79A3 3 0 0 1 7.5 11h.75a.75.75 0 0 0 0-1.5H7.5zM10 4.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75zM13 8.75a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0v-2.5z"
 };
-function h(r, e) {
+function v(r, e) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
 }
 const s = Object.fromEntries(
-  Object.entries(p).map(([r, e]) => [r, h(r, e)])
+  Object.entries(g).map(([r, e]) => [r, v(r, e)])
 );
 s.key;
 s.lock;
@@ -48,7 +48,7 @@ s["shield-check"];
 s.globe;
 s.user;
 s["user-plus"];
-function u(r = "kbb") {
+function _(r = "kbb") {
   if (!(typeof customElements > "u"))
     for (const [e, t] of Object.entries(s)) {
       const i = `${r}-icon-${e}`;
@@ -62,7 +62,7 @@ function u(r = "kbb") {
       customElements.define(i, a);
     }
 }
-class m extends HTMLElement {
+class k extends HTMLElement {
   static get observedAttributes() {
     return ["variant", "size", "type", "disabled", "loading", "block", "leading-icon", "trailing-icon"];
   }
@@ -83,15 +83,15 @@ class m extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-click", { bubbles: !0, detail: { original: e } }));
   }
   render() {
-    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", i = this.getAttribute("type") || "button", a = this.hasAttribute("block"), o = this.hasAttribute("loading"), n = this.hasAttribute("disabled") || o, c = this.textContent.trim();
-    this.innerHTML = `<button type="${i}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${a ? " kbb-btn--block" : ""}${o ? " kbb-btn--loading" : ""}" ${n ? "disabled" : ""} aria-busy="${o}" aria-disabled="${n}"><span class="kbb-btn__label">${b(c)}</span></button>`;
+    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", i = this.getAttribute("type") || "button", a = this.hasAttribute("block"), l = this.hasAttribute("loading"), n = this.hasAttribute("disabled") || l, u = this.textContent.trim();
+    this.innerHTML = `<button type="${i}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${a ? " kbb-btn--block" : ""}${l ? " kbb-btn--loading" : ""}" ${n ? "disabled" : ""} aria-busy="${l}" aria-disabled="${n}"><span class="kbb-btn__label">${x(u)}</span></button>`;
   }
 }
-function b(r) {
+function x(r) {
   return String(r || "").replace(/[&<>"']/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[e]);
 }
-typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", m);
-const f = `
+typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", k);
+const y = `
 :host {
   position: absolute;
   z-index: 2147483647;
@@ -105,11 +105,45 @@ const f = `
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   min-width: 280px;
   max-width: 400px;
-  max-height: 320px;
+  max-height: 420px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e1e4e8;
+  background: #f6f8fa;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.picker-header__title {
+  flex: 1;
+}
+
+.picker-header__close {
+  background: transparent;
+  border: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+}
+
+.picker-header__close:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+
+.picker-header__close svg { width: 14px; height: 14px; fill: currentColor; }
 
 .picker-search {
   padding: 8px 10px;
@@ -210,6 +244,49 @@ const f = `
   text-overflow: ellipsis;
 }
 
+.picker-expanded {
+  padding: 4px 12px 8px 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.picker-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.picker-action {
+  padding: 3px 8px;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #1a1a1a;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 120ms, border-color 120ms;
+}
+
+.picker-action:hover {
+  background: #f6f8fa;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.picker-custom-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #586069;
+  letter-spacing: 0.04em;
+  margin: 2px 0;
+}
+
 .picker-empty {
   padding: 20px;
   text-align: center;
@@ -230,19 +307,24 @@ const f = `
     background: #24292e;
     border-color: #444d56;
   }
+  .picker-header { background: #1a1a1a; border-color: #444d56; }
   .picker-search { background: #1a1a1a; border-color: #444d56; }
   .picker-item:hover, .picker-item--active { background: #2f363d; }
   .picker-item--selected { background: rgba(56, 139, 253, 0.2); }
   .picker-empty { color: #cbd5e1; }
   .picker-username { color: #cbd5e1; }
+  .picker-action { background: #2f363d; border-color: #444d56; color: #f0f0f0; }
+  .picker-action:hover { background: #3b4450; border-color: #60a5fa; color: #60a5fa; }
+  .picker-custom-header { color: #cbd5e1; }
+  .picker-expanded { border-color: #444d56; }
 }
 `;
-class v extends HTMLElement {
+class w extends HTMLElement {
   static get observedAttributes() {
     return ["credentials", "placeholder", "show-search", "position"];
   }
   constructor() {
-    super(), this.attachShadow({ mode: "open" }), this._activeIndex = -1, this._credentials = [], this._search = "", this._boundOnKeyDown = this._onKeyDown.bind(this), this._boundOnClickOutside = this._onClickOutside.bind(this);
+    super(), this.attachShadow({ mode: "open" }), this._activeIndex = -1, this._credentials = [], this._search = "", this._expandedIndex = -1, this._boundOnKeyDown = this._onKeyDown.bind(this), this._boundOnClickOutside = this._onClickOutside.bind(this);
   }
   connectedCallback() {
     this._render(), this._upgradeProperty("credentials"), document.addEventListener("keydown", this._boundOnKeyDown, !0), document.addEventListener("mousedown", this._boundOnClickOutside, !0);
@@ -281,11 +363,19 @@ class v extends HTMLElement {
     );
   }
   _render() {
-    var a;
-    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search") !== "false", i = this._filtered;
-    this._activeIndex = i.length > 0 ? 0 : -1, this.shadowRoot.innerHTML = `
-      <style>${f}</style>
-      ${t ? `
+    var n, u;
+    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search"), i = t !== null ? t !== "false" : this._credentials.length > 4, a = this._filtered;
+    this._activeIndex = a.length > 0 ? 0 : -1;
+    const l = this._getHeaderDomain();
+    this.shadowRoot.innerHTML = `
+      <style>${y}</style>
+      <div class="picker-header">
+        <span class="picker-header__title">${a.length} login${a.length !== 1 ? "s" : ""}${l ? ` for ${this._escapeHtml(l)}` : ""}</span>
+        <button type="button" class="picker-header__close" aria-label="Close picker">
+          <span aria-hidden="true">${s.close || "✕"}</span>
+        </button>
+      </div>
+      ${i ? `
         <div class="picker-search">
           <span class="picker-icon" aria-hidden="true">${s.search || ""}</span>
           <input
@@ -298,21 +388,54 @@ class v extends HTMLElement {
         </div>
       ` : ""}
       <ul class="picker-list" role="listbox" aria-label="Credentials">
-        ${i.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
-        ${i.map((o, n) => this._renderItem(o, n)).join("")}
+        ${a.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
+        ${a.map((o, c) => this._renderItem(o, c)).join("")}
       </ul>
-    `, (a = this.shadowRoot.querySelector(".picker-search-input")) == null || a.addEventListener("input", (o) => {
-      var n;
-      this._search = o.target.value, this._activeIndex = 0, this._render(), (n = this.shadowRoot.querySelector(".picker-search-input")) == null || n.focus();
+    `, (n = this.shadowRoot.querySelector(".picker-header__close")) == null || n.addEventListener("click", (o) => {
+      o.stopPropagation(), this._emitClose();
+    }), (u = this.shadowRoot.querySelector(".picker-search-input")) == null || u.addEventListener("input", (o) => {
+      var c;
+      this._search = o.target.value, this._expandedIndex = -1, this._activeIndex = 0, this._render(), (c = this.shadowRoot.querySelector(".picker-search-input")) == null || c.focus();
     }), this.shadowRoot.querySelectorAll(".picker-item").forEach((o) => {
-      o.addEventListener("click", () => {
-        const n = Number(o.dataset.index), c = i[n];
-        c && this._emitFill(c);
+      o.addEventListener("click", (c) => {
+        c.stopPropagation();
+        const m = Number(o.dataset.index);
+        if (m === this._expandedIndex) {
+          this._expandedIndex = -1, this._render();
+          return;
+        }
+        this._expandedIndex = m, this._render();
+      });
+    }), this.shadowRoot.querySelectorAll(".picker-action").forEach((o) => {
+      o.addEventListener("click", (c) => {
+        c.stopPropagation();
+        const m = Number(o.dataset.index), h = o.dataset.action, d = a[m];
+        if (d)
+          if (h === "fill-form") {
+            const b = { ...d };
+            b._fillRole = "form", this._emitFill(b);
+          } else h === "fill-username" ? this._emitFillForTarget(d, "username") : h === "copy-username" ? this._emitCopy(d, "username") : h === "fill-password" ? this._emitFillForTarget(d, "password") : h === "copy-password" && this._emitCopy(d, "password");
       });
     }), this._activeIndex >= 0 && this._highlightActive();
   }
+  _getHeaderDomain() {
+    const e = this._credentials.map((t) => t.url).filter(Boolean);
+    if (e.length === 0) return "";
+    try {
+      const t = e.map((a) => {
+        try {
+          return new URL(a).hostname;
+        } catch {
+          return null;
+        }
+      }).filter(Boolean);
+      return [...new Set(t)][0] || "";
+    } catch {
+      return "";
+    }
+  }
   _renderItem(e, t) {
-    const i = (e.name || e.username || "?").charAt(0).toUpperCase(), a = e.url ? this._faviconUrl(e.url) : null, o = a ? `<img class="picker-avatar picker-avatar--favicon" src="${a}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${i}</div>'" />` : `<div class="picker-avatar">${i}</div>`;
+    const i = (e.name || e.username || "?").charAt(0).toUpperCase(), a = e.url ? this._faviconUrl(e.url) : null, l = a ? `<img class="picker-avatar picker-avatar--favicon" src="${a}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${i}</div>'" />` : `<div class="picker-avatar">${i}</div>`, n = t === this._expandedIndex;
     return `
       <li
         class="picker-item${t === this._activeIndex ? " picker-item--active" : ""}${e.selected ? " picker-item--selected" : ""}"
@@ -321,11 +444,28 @@ class v extends HTMLElement {
         data-index="${t}"
         tabindex="${t === this._activeIndex ? "0" : "-1"}"
       >
-        ${o}
+        ${l}
         <div class="picker-info">
           <div class="picker-name">${this._escapeHtml(e.name || "(no name)")}</div>
           ${e.username ? `<div class="picker-username">${this._escapeHtml(e.username)}</div>` : ""}
         </div>
+        <span class="picker-icon" style="transition: transform 120ms;${n ? " transform: rotate(180deg);" : ""}" aria-hidden="true">${s["chevron-down"] || ""}</span>
+      </li>
+      ${n ? this._renderExpanded(e, t) : ""}
+    `;
+  }
+  _renderExpanded(e, t) {
+    const i = e.customFields && Array.isArray(e.customFields) && e.customFields.length > 0;
+    return `
+      <li class="picker-expanded" role="presentation">
+        <div class="picker-action-row">
+          <button type="button" class="picker-action" data-index="${t}" data-action="fill-form">Fill form</button>
+          ${e.username ? `<button type="button" class="picker-action" data-index="${t}" data-action="fill-username">Fill user</button>` : ""}
+          ${e.username ? `<button type="button" class="picker-action" data-index="${t}" data-action="copy-username">Copy user</button>` : ""}
+          ${e.password ? `<button type="button" class="picker-action" data-index="${t}" data-action="fill-password">Fill pass</button>` : ""}
+          ${e.password ? `<button type="button" class="picker-action" data-index="${t}" data-action="copy-password">Copy pass</button>` : ""}
+        </div>
+        ${i ? `<div class="picker-custom-header">Custom fields (${e.customFields.length})</div>` : ""}
       </li>
     `;
   }
@@ -351,14 +491,14 @@ class v extends HTMLElement {
     if (!this.isConnected) return;
     const t = this._filtered;
     if (e.key === "ArrowDown")
-      e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.min(this._activeIndex + 1, t.length - 1), this._highlightActive();
+      e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.min(this._activeIndex + 1, t.length - 1), this._expandedIndex = -1, this._highlightActive();
     else if (e.key === "ArrowUp")
-      e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.max(this._activeIndex - 1, 0), this._highlightActive();
+      e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.max(this._activeIndex - 1, 0), this._expandedIndex = -1, this._highlightActive();
     else if (e.key === "Enter") {
       e.preventDefault(), e.stopPropagation();
       const i = t[this._activeIndex];
       i && this._emitFill(i);
-    } else e.key === "Escape" && (e.preventDefault(), e.stopPropagation(), this._emitClose());
+    } else e.key === "Escape" && (e.preventDefault(), e.stopPropagation(), this._expandedIndex >= 0 ? (this._expandedIndex = -1, this._render()) : this._emitClose());
   }
   _onClickOutside(e) {
     this.contains(e.target) || this._emitClose();
@@ -370,6 +510,20 @@ class v extends HTMLElement {
       detail: { credential: e }
     }));
   }
+  _emitFillForTarget(e, t) {
+    this.dispatchEvent(new CustomEvent("kbb-fill", {
+      bubbles: !0,
+      composed: !0,
+      detail: { credential: e, fieldRole: t }
+    }));
+  }
+  _emitCopy(e, t) {
+    this.dispatchEvent(new CustomEvent("kbb-copy", {
+      bubbles: !0,
+      composed: !0,
+      detail: { credential: e, field: t }
+    }));
+  }
   _emitClose() {
     this.dispatchEvent(new CustomEvent("kbb-close", {
       bubbles: !0,
@@ -377,8 +531,8 @@ class v extends HTMLElement {
     }));
   }
 }
-customElements.get("kbb-picker") || customElements.define("kbb-picker", v);
-const d = `
+customElements.get("kbb-picker") || customElements.define("kbb-picker", w);
+const f = `
 :host {
   position: fixed;
   bottom: 16px;
@@ -533,10 +687,10 @@ const d = `
   .prompt-action--danger { color: #f97583; }
 }
 `;
-function l(r) {
+function p(r) {
   return String(r).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-class g extends HTMLElement {
+class $ extends HTMLElement {
   static get observedAttributes() {
     return ["name", "username", "password", "url"];
   }
@@ -556,7 +710,7 @@ class g extends HTMLElement {
   _render() {
     const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", i = this.getAttribute("password") || "", a = this.getAttribute("url") || "";
     this.shadowRoot.innerHTML = `
-      <style>${d}</style>
+      <style>${f}</style>
       <div class="prompt-header" role="region" aria-label="Save login">
         <span class="prompt-header__icon" aria-hidden="true">${s.key || ""}</span>
         <span class="prompt-header__title">Save this login?</span>
@@ -565,9 +719,9 @@ class g extends HTMLElement {
         </button>
       </div>
       <div class="prompt-body">
-        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${l(e)}</span></div>` : ""}
-        ${a ? `<div class="prompt-field"><span class="prompt-field__label">URL</span><span class="prompt-field__value">${l(a)}</span></div>` : ""}
-        ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${l(t)}</span></div>` : ""}
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${p(e)}</span></div>` : ""}
+        ${a ? `<div class="prompt-field"><span class="prompt-field__label">URL</span><span class="prompt-field__value">${p(a)}</span></div>` : ""}
+        ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${p(t)}</span></div>` : ""}
         ${i ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(i.length, 12))}</span></div>` : ""}
       </div>
       <div class="prompt-actions">
@@ -603,7 +757,7 @@ class g extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-class _ extends HTMLElement {
+class E extends HTMLElement {
   static get observedAttributes() {
     return ["name", "username", "password", "old-username"];
   }
@@ -623,7 +777,7 @@ class _ extends HTMLElement {
   _render() {
     const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", i = this.getAttribute("username") || "";
     this.shadowRoot.innerHTML = `
-      <style>${d}</style>
+      <style>${f}</style>
       <div class="prompt-header" role="region" aria-label="Update login">
         <span class="prompt-header__icon" aria-hidden="true">${s.shield || ""}</span>
         <span class="prompt-header__title">Update existing login?</span>
@@ -632,14 +786,14 @@ class _ extends HTMLElement {
         </button>
       </div>
       <div class="prompt-body">
-        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${l(e)}</span></div>` : ""}
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${p(e)}</span></div>` : ""}
         <div class="prompt-field">
           <span class="prompt-field__label">From</span>
-          <span class="prompt-field__value">${l(t)}</span>
+          <span class="prompt-field__value">${p(t)}</span>
         </div>
         <div class="prompt-field">
           <span class="prompt-field__label">To</span>
-          <span class="prompt-field__value">${l(i)}</span>
+          <span class="prompt-field__value">${p(i)}</span>
         </div>
       </div>
       <div class="prompt-actions">
@@ -670,6 +824,6 @@ class _ extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", g);
-customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", _);
-u("kbb");
+customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", $);
+customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", E);
+_("kbb");

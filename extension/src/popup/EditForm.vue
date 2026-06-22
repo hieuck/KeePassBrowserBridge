@@ -2,15 +2,29 @@
   <form class="form" @submit.prevent="onSave">
     <header class="form__header">
       <h2>Editing {{ entry.Title }}</h2>
-      <button type="button" class="form__close" aria-label="Close form" @click="$emit('cancel')">
+      <button type="button" class="form__close" aria-label="Close form" @click="onCancel">
         <Icon name="close" :size="16" />
       </button>
     </header>
     <div class="form__body">
-      <BaseInput v-model="form.Title" label="Title" required />
-      <BaseInput v-model="form.Url" label="URL" type="url" />
+      <BaseInput v-model="form.Title" label="Title" required :error="errors.Title" @input="errors.Title = ''" />
+      <BaseInput v-model="form.Url" label="URL" type="url" :error="errors.Url" @input="errors.Url = ''" />
       <BaseInput v-model="form.UserName" label="Username" />
       <BaseInput v-model="form.Password" label="Password" type="password" show-toggle />
+      <div class="form__password-actions">
+        <button type="button" class="form__generate-btn" @click="showGenerator = !showGenerator">
+          <Icon name="key" :size="14" /> {{ showGenerator ? 'Hide' : 'Generate' }} strong password
+        </button>
+      </div>
+      <PasswordGenerator
+        v-if="showGenerator"
+        :visible="showGenerator"
+        :password="generatedPassword"
+        @fill-password="useGeneratedPassword"
+        @close="showGenerator = false"
+        @refresh="refreshPassword"
+        @copy="copyPassword"
+      />
       <BaseInput v-model="form.Group" label="Folder" />
       <div class="form__custom">
         <div class="form__custom-header">
@@ -29,31 +43,102 @@
       </div>
     </div>
     <footer class="form__footer">
-      <BaseButton variant="ghost" @click="$emit('cancel')">Cancel</BaseButton>
+      <span v-if="dirty" class="form__dirty-dot" title="Unsaved changes">&#9679;</span>
+      <BaseButton variant="ghost" @click="onCancel">Cancel</BaseButton>
       <BaseButton variant="primary" type="submit" :disabled="!canSave">Save changes</BaseButton>
     </footer>
   </form>
 </template>
 
 <script setup>
-import { reactive, computed, watch } from 'vue';
+import { reactive, computed, onMounted, onUnmounted } from 'vue';
 import Icon from '../components/Icon.vue';
 import BaseInput from '../components/BaseInput.vue';
 import BaseButton from '../components/BaseButton.vue';
+import PasswordGenerator from '../components/PasswordGenerator.vue';
+import { isValidUrl, isNonEmpty } from '../../shared/validators.js';
 
 const props = defineProps({ entry: { type: Object, required: true } });
 const emit = defineEmits(['save', 'cancel']);
 
-const form = reactive({
+const original = {
   Title: props.entry.Title || '',
   Url: props.entry.Url || '',
   UserName: props.entry.UserName || '',
   Password: props.entry.Password || '',
   Group: props.entry.Group || '',
   CustomFields: JSON.parse(JSON.stringify(props.entry.CustomFields || [])),
+};
+
+const form = reactive({
+  Title: original.Title,
+  Url: original.Url,
+  UserName: original.UserName,
+  Password: original.Password,
+  Group: original.Group,
+  CustomFields: JSON.parse(JSON.stringify(props.entry.CustomFields || [])),
 });
 
-const canSave = computed(() => Boolean(form.Title.trim()));
+const errors = reactive({ Title: '', Url: '' });
+const showGenerator = ref(false);
+const generatedPassword = ref('');
+
+const isDirty = computed(() => {
+  if (form.Title !== original.Title) return true;
+  if (form.Url !== original.Url) return true;
+  if (form.UserName !== original.UserName) return true;
+  if (form.Password !== original.Password) return true;
+  if (form.Group !== original.Group) return true;
+  const origLen = original.CustomFields.length;
+  const formLen = form.CustomFields.length;
+  if (origLen !== formLen) return true;
+  for (let i = 0; i < origLen; i++) {
+    const o = original.CustomFields[i];
+    const f = form.CustomFields[i];
+    if (o.Name !== f.Name || o.Value !== f.Value) return true;
+  }
+  return false;
+});
+
+const dirty = computed(isDirty);
+
+const isValid = computed(() => {
+  errors.Title = '';
+  errors.Url = '';
+  let valid = true;
+  if (!isNonEmpty(form.Title)) {
+    errors.Title = 'Title is required';
+    valid = false;
+  }
+  if (form.Url && !isValidUrl(form.Url)) {
+    errors.Url = 'Invalid URL format';
+    valid = false;
+  }
+  return valid;
+});
+
+function refreshPassword() {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+  let result = '';
+  const len = 20;
+  const arr = new Uint32Array(len);
+  crypto.getRandomValues(arr);
+  for (let i = 0; i < len; i++) {
+    result += chars[arr[i] % chars.length];
+  }
+  generatedPassword.value = result;
+}
+
+function useGeneratedPassword() {
+  form.Password = generatedPassword.value;
+  showGenerator.value = false;
+}
+
+function copyPassword() {
+  navigator.clipboard.writeText(generatedPassword.value).catch(() => {});
+}
+
+const canSave = computed(() => dirty.value && isValid.value && Boolean(form.Title.trim()));
 
 function addCustomField() {
   form.CustomFields.push({ Name: '', Value: '', IsProtected: false });
@@ -61,6 +146,26 @@ function addCustomField() {
 
 function removeCustomField(idx) {
   form.CustomFields.splice(idx, 1);
+}
+
+function onKeydown(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    if (canSave.value) onSave();
+  }
+  if (e.key === 'Escape' && dirty.value) {
+    e.preventDefault();
+    if (confirm('You have unsaved changes. Discard them?')) {
+      emit('cancel');
+    }
+  }
+}
+
+function onCancel() {
+  if (dirty.value) {
+    if (!confirm('You have unsaved changes. Discard them?')) return;
+  }
+  emit('cancel');
 }
 
 function onSave() {
@@ -74,6 +179,15 @@ function onSave() {
     CustomFields: form.CustomFields.filter(f => f.Name.trim()),
   });
 }
+
+onMounted(() => {
+  document.addEventListener('keydown', onKeydown);
+  refreshPassword();
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown);
+});
 </script>
 
 <style scoped>

@@ -15,7 +15,7 @@
     />
     <main class="vault-list" id="results">
       <template v-if="loading">
-        <div v-for="i in 3" :key="i" class="skeleton-card" />
+        <SkeletonCard v-for="i in 3" :key="i" />
       </template>
       <template v-else-if="visibleEntries.length === 0">
         <EmptyState
@@ -82,6 +82,7 @@ import BottomToolbar from './BottomToolbar.vue';
 import StatusBar from './StatusBar.vue';
 import NewLoginForm from './NewLoginForm.vue';
 import EditForm from './EditForm.vue';
+import SkeletonCard from './SkeletonCard.vue';
 
 const bridge = useBridge();
 const { theme, setTheme } = useTheme();
@@ -242,6 +243,4 @@ onMounted(() => {
 <style scoped>
 .popup { display: flex; flex-direction: column; min-height: 500px; max-height: 600px; }
 .vault-list { flex: 1; overflow-y: auto; }
-.skeleton-card { height: 64px; margin: var(--space-2) var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); animation: kbb-pulse 1.5s ease-in-out infinite; }
-@keyframes kbb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 </style>

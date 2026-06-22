@@ -11,6 +11,7 @@
       :class="{ 'kbb-toggle__switch--on': modelValue }"
       :aria-checked="modelValue"
       :aria-label="ariaLabel || label"
+      :data-testid="`toggle-${slugifiedLabel}`"
       :disabled="disabled"
       @click="toggle"
     >
@@ -20,6 +21,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   label: { type: String, default: '' },
@@ -28,6 +31,7 @@ const props = defineProps({
   ariaLabel: { type: String, default: '' },
 });
 const emit = defineEmits(['update:modelValue']);
+const slugifiedLabel = computed(() => (props.label || '').toLowerCase().replace(/\s+/g, '-') || 'toggle');
 
 function toggle() {
   if (props.disabled) return;

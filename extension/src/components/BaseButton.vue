@@ -10,6 +10,7 @@
     :disabled="disabled || loading"
     :aria-disabled="disabled || loading"
     :aria-busy="loading"
+    :data-testid="`btn-${variant}`"
     @click="onClick"
   >
     <Icon v-if="loading" name="key" :size="iconSize" spin class="kbb-btn__spinner" />

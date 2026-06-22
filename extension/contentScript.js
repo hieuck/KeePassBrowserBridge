@@ -851,6 +851,44 @@ function installInlineFillButtons() {
     window.__keepassBrowserBridgeInlineTargets.add(otpInput);
   }
 }
+function createInlineButton(input) {
+  const btn = document.createElement('button');
+  btn.className = 'kbb-inline-button';
+  btn.setAttribute('aria-label', 'Open KeePass picker');
+  btn.setAttribute('type', 'button');
+  btn.textContent = 'K';
+  btn.style.cssText = `
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    background: #2563eb;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483646;
+    padding: 0;
+    line-height: 1;
+    transition: transform 120ms ease, background 120ms ease;
+  `;
+  btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-50%) scale(1.1)'; });
+  btn.addEventListener('mouseleave', () => { btn.style.transform = 'translateY(-50%) scale(1)'; });
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    showInlinePickerForInput(input);
+  });
+  return btn;
+}
+
 function attachInlineButton(input, role) {
   const button = document.createElement("button");
   button.type = "button";
@@ -1275,6 +1313,27 @@ function closeInlinePicker() {
   }
   window.__keepassBrowserBridgeActivePicker = null;
 }
+function anchorPositionNearForm(credential) {
+  // Try to find the form that was just submitted
+  const passwordInput = findSubmittedPasswordInput(document);
+  const usernameInput = findUsernameInput(passwordInput);
+  const form = (passwordInput && passwordInput.form) ||
+    (usernameInput && usernameInput.form) ||
+    null;
+  if (!form) return {};
+
+  const rect = form.getBoundingClientRect();
+  const viewWidth = window.innerWidth;
+  const gap = 16;
+  const promptWidth = 360;
+  const right = Math.max(gap, viewWidth - rect.right + gap);
+  return {
+    "data-position": "anchored",
+    "data-top": Math.max(gap, rect.top + 8) + "px",
+    "data-right": right + "px",
+  };
+}
+
 function showSaveLoginPrompt(credential) {
   const key = credentialKey(credential);
   const activePrompt = document.querySelector("kbb-save-prompt");
@@ -1289,10 +1348,31 @@ function showSaveLoginPrompt(credential) {
   prompt.setAttribute("url", credential.url || "");
   prompt.setAttribute("username", credential.userName || "");
   prompt.setAttribute("password", credential.password || "");
+
+  // Apply anchored position
+  const pos = anchorPositionNearForm(credential);
+  if (pos["data-position"]) {
+    prompt.setAttribute("data-position", pos["data-position"]);
+    prompt.setAttribute("data-top", pos["data-top"]);
+    prompt.setAttribute("data-right", pos["data-right"]);
+  }
+
+  // Pass folder options if available
+  const folderAttr = prompt.getAttribute("data-folders");
+  if (!folderAttr) {
+    const groups = collectAvailableGroups();
+    if (groups.length > 0) {
+      prompt.setAttribute("folders", JSON.stringify(groups));
+    }
+  }
+  if (credential.group) {
+    prompt.setAttribute("folder", credential.group);
+  }
+
   prompt.addEventListener("kbb-save", (event) => {
     const detail = (event && event.detail) || {};
     createLogin({
-      Title: detail.name || credential.title || titleFromCredentialUrl(credential.url) || "",
+      Title: detail.title || detail.name || credential.title || titleFromCredentialUrl(credential.url) || "",
       Url: detail.url || credential.url || "",
       UserName: detail.username || credential.userName || "",
       Password: detail.password || credential.password || "",
@@ -1308,6 +1388,19 @@ function showSaveLoginPrompt(credential) {
 
   const mountTarget = document.body || document.documentElement;
   if (mountTarget) mountTarget.appendChild(prompt);
+}
+
+function collectAvailableGroups() {
+  // Collect unique group names from existing entries if available
+  try {
+    const entries = window.__keepassBrowserBridgeEntries;
+    if (Array.isArray(entries)) {
+      const groups = new Set();
+      entries.forEach(e => { if (e.Group) groups.add(e.Group); });
+      return Array.from(groups).sort();
+    }
+  } catch {}
+  return [];
 }
 function createLogin(login) {
   if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
@@ -1372,13 +1465,29 @@ function showUpdateLoginPrompt(entry, credential) {
   prompt.setAttribute("old-username", (entry && entry.UserName) || "");
   prompt.setAttribute("username", credential.userName || (entry && entry.UserName) || "");
   prompt.setAttribute("password", credential.password || "");
+  prompt.setAttribute("url", (entry && entry.Url) || credential.url || "");
+
+  // Apply anchored position
+  const pos = anchorPositionNearForm(credential);
+  if (pos["data-position"]) {
+    prompt.setAttribute("data-position", pos["data-position"]);
+    prompt.setAttribute("data-top", pos["data-top"]);
+    prompt.setAttribute("data-right", pos["data-right"]);
+  }
+
+  // Pass folder options
+  const groups = collectAvailableGroups();
+  if (groups.length > 0) {
+    prompt.setAttribute("folders", JSON.stringify(groups));
+  }
+
   prompt.addEventListener("kbb-update", (event) => {
     const detail = (event && event.detail) || {};
     updateLogin({
       EntryId: entry && entry.EntryId,
       PageUrl: credential.url,
       Title: detail.name || (entry && entry.Title) || titleFromCredentialUrl(credential.url) || "",
-      Url: (entry && entry.Url) || credential.url || "",
+      Url: detail.url || (entry && entry.Url) || credential.url || "",
       UserName: detail.username || credential.userName || (entry && entry.UserName) || "",
       Password: detail.password || credential.password || "",
     });
@@ -1419,8 +1528,8 @@ function applyPickerStyle(picker) {
   picker.style.font =
     '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 }
-function positionInlinePicker(button, picker) {
-  const rect = button.getBoundingClientRect();
+function positionInlinePicker(anchor, picker) {
+  const rect = anchor.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const desiredWidth = 360;
@@ -1441,15 +1550,93 @@ function positionInlinePicker(button, picker) {
   picker.style.top = `${top}px`;
   picker.style.maxHeight = `${maxHeight}px`;
 }
+function showInlinePickerForInput(input) {
+  const pageUrl = credentialPageUrl();
+  chrome.runtime.sendMessage({
+    type: "KBB_QUERY_FOR_URL",
+    url: pageUrl,
+  }).then((result) => {
+    if (!result || !result.ok) throw new Error(result && result.error ? result.error : "KeePass query failed.");
+    const entries = result.response && Array.isArray(result.response.entries) ? result.response.entries : [];
+    if (entries.length === 0) {
+      showInlineEmptyPicker(input);
+      return;
+    }
+    showInlinePickerForEntries(input, entries);
+  }).catch((error) => {
+    showInlineErrorPicker(input, error && error.message ? error.message : String(error));
+  });
+}
+
+function showInlinePickerForEntries(targetInput, entries) {
+  entries = sortCredentialEntries(entries || []);
+  const items = entries.map((entry) => ({
+    name: entry.Title || "(Untitled)",
+    username: entry.UserName || "",
+    url: entry.Url || "",
+    group: entry.Group || "",
+    password: entry.Password || "",
+    oneTimePassword: entry.OneTimePassword || "",
+    customFields: entry.CustomFields || [],
+    entryId: entry.EntryId || "",
+    selected: Boolean(entry.selected),
+    _entry: entry,
+  }));
+  const mountPicker = () => {
+    if (!customElements.get("kbb-picker")) return false;
+    const picker = document.createElement("kbb-picker");
+    picker.setAttribute("placeholder", "Search KeePass logins…");
+    picker.setAttribute("aria-label", `${items.length} KeePass logins`);
+    picker.addEventListener("kbb-fill", (event) => {
+      const detail = event.detail || {};
+      const cred = detail.credential || {};
+      const entry = cred._entry;
+      if (!entry) return;
+      event.preventDefault();
+      event.stopPropagation();
+      rememberMultiStepCredentialIfNeeded(fillCredentialForButton({ __kbbTargetInput: targetInput, dataset: { kbbFillRole: detail.fieldRole || "form" } }, entry), entry);
+      acknowledgeFilledEntry(entry);
+      closeInlinePicker();
+    });
+    picker.addEventListener("kbb-copy", (event) => {
+      const detail = event.detail || {};
+      const cred = detail.credential || {};
+      const field = detail.field || "";
+      const value = field === "username" ? cred.username : field === "password" ? cred.password : "";
+      if (value) {
+        navigator.clipboard.writeText(value).catch(() => {});
+      }
+      closeInlinePicker();
+    });
+    picker.addEventListener("kbb-close", () => { closeInlinePicker(); });
+    document.documentElement.appendChild(picker);
+    window.__keepassBrowserBridgeActivePicker = picker;
+    picker.credentials = items;
+    positionInlinePicker(targetInput, picker);
+    requestAnimationFrame(() => positionInlinePicker(targetInput, picker));
+    const searchInput = picker.shadowRoot && picker.shadowRoot.querySelector ? picker.shadowRoot.querySelector(".picker-search-input") : null;
+    if (searchInput && searchInput.focus) { searchInput.focus(); } else if (picker.focus) { picker.focus(); }
+    return true;
+  };
+  if (mountPicker()) return;
+  if (customElements.whenDefined) {
+    customElements.whenDefined("kbb-picker").then(() => { if (!window.__keepassBrowserBridgeActivePicker) mountPicker(); }).catch(() => {});
+  }
+  ensureInlinePickerComponent().then(() => { if (!window.__keepassBrowserBridgeActivePicker) mountPicker(); }).catch(() => {});
+}
+
 function setInlineButtonState(button, state) {
+  button.classList.remove("kbb-inline-btn--success", "kbb-inline-btn--error");
   if (state === "ok") {
     button.textContent = "OK";
     button.style.background = "#067647";
     button.style.color = "#ffffff";
+    button.classList.add("kbb-inline-btn--success");
   } else if (state === "!") {
     button.textContent = "!";
     button.style.background = "#b42318";
     button.style.color = "#ffffff";
+    button.classList.add("kbb-inline-btn--error");
   } else {
     button.textContent = state;
     button.style.background = "#4a90e2";
@@ -1458,8 +1645,9 @@ function setInlineButtonState(button, state) {
   window.setTimeout(() => {
     if (document.documentElement.contains(button)) {
       button.textContent = "K";
-      button.style.background = "#4a90e2";
+      button.style.background = "#2563eb";
       button.style.color = "#ffffff";
+      button.classList.remove("kbb-inline-btn--success", "kbb-inline-btn--error");
     }
   }, 1600);
 }

@@ -3,6 +3,7 @@
     class="kbb-avatar"
     :class="`kbb-avatar--${size}`"
     :style="{ backgroundColor: imageLoaded && src ? 'transparent' : backgroundColor }"
+    data-testid="avatar"
   >
     <img
       v-if="src"
