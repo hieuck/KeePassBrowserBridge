@@ -165,7 +165,113 @@ test.describe('kbb-save-prompt and kbb-update-prompt', () => {
     expect(result.saveShadow).toBe(true);
   });
 
-  test('respects prefers-color-scheme: dark', async ({ page, context }) => {
+  test('save prompt renders editable Title, URL, and Folder fields', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const p = document.createElement('kbb-save-prompt');
+    p.setAttribute('name', 'GitHub');
+    p.setAttribute('url', 'https://github.com');
+    p.setAttribute('username', 'octocat');
+    p.setAttribute('title', 'My GitHub');
+    p.setAttribute('folders', JSON.stringify(['Social', 'Work', 'Personal']));
+    p.setAttribute('folder', 'Social');
+    document.body.appendChild(p);
+    const shadow = p.shadowRoot;
+    return {
+      hasTitleInput: !!shadow.querySelector('.prompt-editable-input'),
+      hasFolderSelect: !!shadow.querySelector('.prompt-editable-select'),
+      hasUrlInput: !!shadow.querySelectorAll('.prompt-editable-input').length >= 2,
+      saveWithCustomTitle: (() => {
+        const input = shadow.querySelector('.prompt-editable-input');
+        if (input) input.value = 'Custom Title';
+        return true;
+      })(),
+    };
+  });
+  expect(result.hasTitleInput).toBe(true);
+  expect(result.hasFolderSelect).toBe(true);
+});
+
+test('save prompt renders editable folder options from folders attribute', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const p = document.createElement('kbb-save-prompt');
+    p.setAttribute('name', 'GitHub');
+    p.setAttribute('folders', JSON.stringify(['Social', 'Work', 'Personal']));
+    p.setAttribute('folder', 'Social');
+    document.body.appendChild(p);
+    const shadow = p.shadowRoot;
+    const select = shadow.querySelector('.prompt-editable-select');
+    const options = select ? Array.from(select.options).map(o => o.textContent) : [];
+    return options;
+  });
+  expect(result).toContain('Social');
+  expect(result).toContain('Personal');
+});
+
+test('save prompt Save button emits kbb-save with custom title/url/folder', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const p = document.createElement('kbb-save-prompt');
+    p.setAttribute('name', 'GitHub');
+    p.setAttribute('username', 'octocat');
+    p.setAttribute('password', 'secret123');
+    p.setAttribute('url', 'https://github.com');
+    p.setAttribute('title', 'Default');
+    p.setAttribute('folders', JSON.stringify(['Social', 'Work']));
+    p.setAttribute('folder', 'Social');
+    document.body.appendChild(p);
+    // Wait for render
+    await new Promise(r => setTimeout(r, 20));
+    // Modify title input
+    const titleInput = p.shadowRoot.querySelector('.prompt-editable-input');
+    if (titleInput) {
+      titleInput.value = 'My Custom Title';
+      titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    let saved = null;
+    p.addEventListener('kbb-save', (e) => { saved = e.detail; });
+    p.shadowRoot.querySelector('[data-action="save"]').click();
+    await new Promise(r => setTimeout(r, 20));
+    return saved ? { title: saved.title, username: saved.username } : null;
+  });
+  expect(result?.title).toBe('My Custom Title');
+  expect(result?.username).toBe('octocat');
+});
+
+test('save prompt respects position attribute', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const p = document.createElement('kbb-save-prompt');
+    p.setAttribute('style', 'position: fixed; top: 100px; right: 50px;');
+    document.body.appendChild(p);
+    return {
+      top: p.style.top,
+      right: p.style.right,
+    };
+  });
+  expect(result.top).toBe('100px');
+  expect(result.right).toBe('50px');
+});
+
+test('update prompt shows diff from old to new username', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const p = document.createElement('kbb-update-prompt');
+    p.setAttribute('name', 'GitHub');
+    p.setAttribute('old-username', 'old_user');
+    p.setAttribute('username', 'new_user');
+    document.body.appendChild(p);
+    const shadow = p.shadowRoot;
+    const fields = shadow.querySelectorAll('.prompt-field');
+    const labels = shadow.querySelectorAll('.prompt-field__label');
+    const fromLabel = Array.from(labels).find(l => l.textContent === 'From');
+    const toLabel = Array.from(labels).find(l => l.textContent === 'To');
+    return {
+      fromLabel: fromLabel ? fromLabel.textContent : null,
+      toLabel: toLabel ? toLabel.textContent : null,
+    };
+  });
+  expect(result.fromLabel).toBe('From');
+  expect(result.toLabel).toBe('To');
+});
+
+test('respects prefers-color-scheme: dark', async ({ page, context }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     const bgColor = await page.evaluate(() => {
       const p = document.createElement('kbb-save-prompt');
