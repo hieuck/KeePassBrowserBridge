@@ -4,7 +4,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgeInlineTargets = new WeakSet();
   window.__keepassBrowserBridgeActivePicker = null;
   window.__keepassBrowserBridgePickerReady = null;
-  window.__keepassBrowserBridgeMutationPrompt = null;
+  window.__keepassBrowserBridgePromptReady = null;
   window.__keepassBrowserBridgeBootAt = Date.now();
   window.__keepassBrowserBridgeLastCredentialKey = "";
   window.__keepassBrowserBridgeLastCredentialAt = 0;
@@ -118,7 +118,13 @@ function installRootEventListeners(root) {
         if (
           target.closest(
             ".kbb-save-prompt, .kbb-update-prompt, .kbb-inline-picker, .kbb-inline-button",
-          )
+          ) ||
+          (typeof event.composedPath === "function" &&
+            event.composedPath().some((node) => {
+              if (!node || !node.tagName) return false;
+              const tag = String(node.tagName || "").toLowerCase();
+              return tag === "kbb-save-prompt" || tag === "kbb-update-prompt";
+            }))
         ) {
           return;
         }
@@ -198,7 +204,13 @@ function captureCredentialEnterKey(event) {
   if (
     target.closest(
       ".kbb-save-prompt, .kbb-update-prompt, .kbb-inline-picker, .kbb-inline-button",
-    )
+    ) ||
+    (typeof event.composedPath === "function" &&
+      event.composedPath().some((node) => {
+        if (!node || !node.tagName) return false;
+        const tag = String(node.tagName || "").toLowerCase();
+        return tag === "kbb-save-prompt" || tag === "kbb-update-prompt";
+      }))
   ) {
     return;
   }
@@ -1602,128 +1614,56 @@ function closeInlinePicker() {
 }
 function showSaveLoginPrompt(credential) {
   const key = credentialKey(credential);
-  const activePrompt = window.__keepassBrowserBridgeMutationPrompt;
-  if (
-    activePrompt &&
-    activePrompt.classList &&
-    activePrompt.classList.contains("kbb-save-prompt") &&
-    activePrompt.dataset.credentialKey === key
-  ) {
+  const activePrompt = document.querySelector("kbb-save-prompt");
+  if (activePrompt && activePrompt.dataset.credentialKey === key) {
     return;
   }
-  closeMutationPrompt();
-  const prompt = document.createElement("div");
-  prompt.className = "kbb-save-prompt";
+  document.querySelectorAll("kbb-save-prompt").forEach((el) => el.remove());
+
+  const prompt = document.createElement("kbb-save-prompt");
   prompt.dataset.credentialKey = key;
-  applySavePromptStyle(prompt);
-  const title = document.createElement("div");
-  title.textContent = "Save login to KeePass?";
-  title.style.fontWeight = "700";
-  title.style.marginBottom = "8px";
-  const fields = document.createElement("div");
-  fields.style.display = "grid";
-  fields.style.gap = "7px";
-  const titleInput = createPromptInput("title", "Title", credential.title || titleFromCredentialUrl(credential.url));
-  const groupInput = createPromptInput("group", "Group", credential.group || "");
-  const usernameInput = createPromptInput("userName", "Username", credential.userName || "");
-  const urlInput = createPromptInput("url", "URL", credential.url || "");
-  const otpInput = createPromptInput("otp", "TOTP secret", credential.otp || "");
-  fields.appendChild(titleInput.label);
-  fields.appendChild(groupInput.label);
-  fields.appendChild(usernameInput.label);
-  fields.appendChild(urlInput.label);
-  fields.appendChild(otpInput.label);
-  const errorMessage = createPromptErrorMessage();
-  const actions = document.createElement("div");
-  actions.style.display = "flex";
-  actions.style.justifyContent = "flex-end";
-  actions.style.gap = "8px";
-  actions.style.marginTop = "10px";
-  const dismiss = document.createElement("button");
-  dismiss.type = "button";
-  dismiss.textContent = "Not now";
-  applyPromptButtonStyle(dismiss, false);
-  dismiss.addEventListener("click", closeMutationPrompt);
-  const save = document.createElement("button");
-  save.type = "button";
-  save.textContent = "Save";
-  applyPromptButtonStyle(save, true);
-  save.addEventListener("click", async () => {
-    save.disabled = true;
-    save.textContent = "Saving...";
-    clearPromptError(errorMessage);
-    const login = {
-      Title: titleInput.input.value,
-      Group: groupInput.input.value,
-      Url: urlInput.input.value,
-      UserName: usernameInput.input.value,
-      Password: credential.password || "",
-    };
-    addOptionalSecret(login, "Otp", otpInput.input.value);
-    const result = await chrome.runtime.sendMessage({
-      type: "KBB_CREATE_LOGIN",
-      login,
+  prompt.setAttribute("name", credential.title || titleFromCredentialUrl(credential.url) || "");
+  prompt.setAttribute("url", credential.url || "");
+  prompt.setAttribute("username", credential.userName || "");
+  prompt.setAttribute("password", credential.password || "");
+  prompt.addEventListener("kbb-save", (event) => {
+    const detail = (event && event.detail) || {};
+    createLogin({
+      Title: detail.name || credential.title || titleFromCredentialUrl(credential.url) || "",
+      Url: detail.url || credential.url || "",
+      UserName: detail.username || credential.userName || "",
+      Password: detail.password || credential.password || "",
     });
-    if (result && result.ok && result.response && result.response.Success) {
-      save.textContent = "Saved";
-      window.setTimeout(closeMutationPrompt, 900);
-    } else {
-      save.disabled = false;
-      save.textContent = "Retry";
-      showPromptError(errorMessage, mutationResponseError(result, "KeePass entry could not be saved."));
-    }
   });
-  actions.appendChild(dismiss);
-  actions.appendChild(save);
-  prompt.appendChild(title);
-  prompt.appendChild(fields);
-  prompt.appendChild(errorMessage);
-  prompt.appendChild(actions);
-  document.documentElement.appendChild(prompt);
-  window.__keepassBrowserBridgeMutationPrompt = prompt;
+  prompt.addEventListener("kbb-never", (event) => {
+    const detail = (event && event.detail) || {};
+    addNeverSaveUrl(detail.url || credential.url || "");
+  });
+  prompt.addEventListener("kbb-dismiss", () => {
+    /* silent dismiss */
+  });
+
+  const mountTarget = document.body || document.documentElement;
+  if (mountTarget) mountTarget.appendChild(prompt);
 }
-function createPromptInput(name, text, value) {
-  const label = document.createElement("label");
-  label.textContent = text;
-  label.style.display = "grid";
-  label.style.gap = "3px";
-  label.style.color = "#667085";
-  label.style.font =
-    '600 12px/1.25 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  const input = document.createElement("input");
-  input.name = name;
-  input.value = value || "";
-  input.type = name === "url" ? "url" : name === "password" || name === "otp" ? "password" : "text";
-  input.spellcheck = false;
-  applyPromptInputStyle(input);
-  label.appendChild(input);
-  return { label, input };
+function createLogin(login) {
+  if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
+    return;
+  }
+  try {
+    chrome.runtime.sendMessage({ type: "KBB_CREATE_LOGIN", login });
+  } catch (error) {
+    /* best-effort; bridge errors surface in manual extension flows */
+  }
 }
-function createPromptCheckbox(name, text, checked) {
-  const label = document.createElement("label");
-  label.style.display = "flex";
-  label.style.alignItems = "center";
-  label.style.gap = "7px";
-  label.style.color = "#667085";
-  label.style.font =
-    '600 12px/1.25 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  const input = document.createElement("input");
-  input.name = name;
-  input.type = "checkbox";
-  input.checked = Boolean(checked);
-  input.style.margin = "0";
-  input.style.width = "16px";
-  input.style.height = "16px";
-  input.style.minWidth = "16px";
-  input.style.minHeight = "16px";
-  label.appendChild(input);
-  label.appendChild(document.createTextNode(text));
-  return { label, input };
-}
-function addOptionalSecret(payload, name, value) {
-  const trimmed = String(value || "").trim();
-  if (trimmed) {
-    payload[name] = trimmed;
+function addNeverSaveUrl(url) {
+  if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
+    return;
+  }
+  try {
+    chrome.runtime.sendMessage({ type: "KBB_NEVER_SAVE_URL", url: String(url || "") });
+  } catch (error) {
+    /* best-effort; persistence is implemented opportunistically by the background */
   }
 }
 function titleFromCredentialUrl(url) {
@@ -1761,162 +1701,44 @@ function accessibleAncestorPageUrl() {
   return "";
 }
 function showUpdateLoginPrompt(entry, credential) {
-  closeMutationPrompt();
-  const prompt = document.createElement("div");
-  prompt.className = "kbb-update-prompt";
-  applySavePromptStyle(prompt);
-  const title = document.createElement("div");
-  title.textContent = "Update KeePass password?";
-  title.style.fontWeight = "700";
-  title.style.marginBottom = "8px";
-  const fields = document.createElement("div");
-  fields.style.display = "grid";
-  fields.style.gap = "7px";
-  const titleInput = createPromptInput("title", "Title", entry.Title || titleFromCredentialUrl(credential.url));
-  const groupInput = createPromptInput("group", "Group", entry.Group || "");
-  const urlInput = createPromptInput("url", "URL", entry.Url || credential.url || "");
-  const usernameInput = createPromptInput("userName", "Username", credential.userName || entry.UserName || "");
-  const passwordInput = createPromptInput("password", "Password", credential.password || "");
-  const otpInput = createPromptInput("otp", "TOTP secret", credential.otp || "");
-  const clearOtpInput = createPromptCheckbox("clearOtp", "Clear TOTP secret", false);
-  fields.appendChild(titleInput.label);
-  fields.appendChild(groupInput.label);
-  fields.appendChild(urlInput.label);
-  fields.appendChild(usernameInput.label);
-  fields.appendChild(passwordInput.label);
-  fields.appendChild(otpInput.label);
-  fields.appendChild(clearOtpInput.label);
-  const errorMessage = createPromptErrorMessage();
-  const actions = document.createElement("div");
-  actions.style.display = "flex";
-  actions.style.justifyContent = "flex-end";
-  actions.style.gap = "8px";
-  actions.style.marginTop = "10px";
-  const dismiss = document.createElement("button");
-  dismiss.type = "button";
-  dismiss.textContent = "Not now";
-  applyPromptButtonStyle(dismiss, false);
-  dismiss.addEventListener("click", closeMutationPrompt);
-  const update = document.createElement("button");
-  update.type = "button";
-  update.textContent = "Update";
-  applyPromptButtonStyle(update, true);
-  update.addEventListener("click", async () => {
-    update.disabled = true;
-    update.textContent = "Updating...";
-    clearPromptError(errorMessage);
-    const login = {
-      EntryId: entry.EntryId,
+  document.querySelectorAll("kbb-update-prompt").forEach((el) => el.remove());
+
+  const prompt = document.createElement("kbb-update-prompt");
+  prompt.dataset.entryId = entry && entry.EntryId ? String(entry.EntryId) : "";
+  prompt.setAttribute("name", (entry && entry.Title) || titleFromCredentialUrl(credential.url) || "");
+  prompt.setAttribute("old-username", (entry && entry.UserName) || "");
+  prompt.setAttribute("username", credential.userName || (entry && entry.UserName) || "");
+  prompt.setAttribute("password", credential.password || "");
+  prompt.addEventListener("kbb-update", (event) => {
+    const detail = (event && event.detail) || {};
+    updateLogin({
+      EntryId: entry && entry.EntryId,
       PageUrl: credential.url,
-      Title: titleInput.input.value,
-      Group: groupInput.input.value,
-      Url: urlInput.input.value,
-      UserName: usernameInput.input.value,
-      Password: passwordInput.input.value,
-      ClearOtp: clearOtpInput.input.checked,
-    };
-    if (!login.ClearOtp) {
-      addOptionalSecret(login, "Otp", otpInput.input.value);
-    }
-    const result = await chrome.runtime.sendMessage({
-      type: "KBB_UPDATE_LOGIN",
-      login,
+      Title: detail.name || (entry && entry.Title) || titleFromCredentialUrl(credential.url) || "",
+      Url: (entry && entry.Url) || credential.url || "",
+      UserName: detail.username || credential.userName || (entry && entry.UserName) || "",
+      Password: detail.password || credential.password || "",
     });
-    if (result && result.ok && result.response && result.response.Success) {
-      update.textContent = "Updated";
-      window.setTimeout(closeMutationPrompt, 900);
-    } else {
-      update.disabled = false;
-      update.textContent = "Retry";
-      showPromptError(errorMessage, mutationResponseError(result, "KeePass entry could not be updated."));
-    }
   });
-  actions.appendChild(dismiss);
-  actions.appendChild(update);
-  prompt.appendChild(title);
-  prompt.appendChild(fields);
-  prompt.appendChild(errorMessage);
-  prompt.appendChild(actions);
-  document.documentElement.appendChild(prompt);
-  window.__keepassBrowserBridgeMutationPrompt = prompt;
+  prompt.addEventListener("kbb-skip", () => {
+    /* silent skip */
+  });
+  prompt.addEventListener("kbb-dismiss", () => {
+    /* silent dismiss */
+  });
+
+  const mountTarget = document.body || document.documentElement;
+  if (mountTarget) mountTarget.appendChild(prompt);
 }
-function createPromptErrorMessage() {
-  const message = document.createElement("div");
-  message.className = "kbb-prompt-error";
-  message.setAttribute("role", "alert");
-  message.style.display = "none";
-  message.style.marginTop = "8px";
-  message.style.padding = "7px 8px";
-  message.style.border = "1px solid #f3b4ad";
-  message.style.borderRadius = "6px";
-  message.style.background = "#fff5f4";
-  message.style.color = "#b42318";
-  message.style.font =
-    '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  return message;
-}
-function showPromptError(target, message) {
-  if (!target) return;
-  target.textContent = message;
-  target.style.display = "block";
-}
-function clearPromptError(target) {
-  if (!target) return;
-  target.textContent = "";
-  target.style.display = "none";
-}
-function mutationResponseError(result, fallback) {
-  if (!result) return fallback;
-  if (result.error) return result.error;
-  if (result.response && result.response.Error) return result.response.Error;
-  if (result.response && result.response.ErrorCode) return result.response.ErrorCode;
-  return fallback;
-}
-function closeMutationPrompt() {
-  const prompt = window.__keepassBrowserBridgeMutationPrompt;
-  if (prompt && prompt.parentElement) prompt.parentElement.removeChild(prompt);
-  window.__keepassBrowserBridgeMutationPrompt = null;
-}
-function applySavePromptStyle(prompt) {
-  prompt.style.position = "fixed";
-  prompt.style.right = "16px";
-  prompt.style.bottom = "16px";
-  prompt.style.zIndex = "2147483647";
-  prompt.style.width = "300px";
-  prompt.style.maxWidth = "calc(100vw - 32px)";
-  prompt.style.padding = "12px";
-  prompt.style.border = "1px solid #d7dde5";
-  prompt.style.borderRadius = "8px";
-  prompt.style.background = "#ffffff";
-  prompt.style.color = "#1f2933";
-  prompt.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.12)";
-  prompt.style.font =
-    '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-}
-function applyPromptButtonStyle(button, primary) {
-  button.style.margin = "0";
-  button.style.minHeight = "30px";
-  button.style.padding = "0 10px";
-  button.style.border = primary ? "1px solid #4a90e2" : "1px solid #d7dde5";
-  button.style.borderRadius = "6px";
-  button.style.background = primary ? "#4a90e2" : "#ffffff";
-  button.style.color = primary ? "#ffffff" : "#1f2933";
-  button.style.font =
-    '13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  button.style.cursor = "pointer";
-}
-function applyPromptInputStyle(input) {
-  input.style.width = "100%";
-  input.style.minHeight = "30px";
-  input.style.boxSizing = "border-box";
-  input.style.border = "1px solid #cbd5e1";
-  input.style.borderRadius = "6px";
-  input.style.padding = "0 8px";
-  input.style.background = "#ffffff";
-  input.style.color = "#1f2933";
-  input.style.font =
-    '13px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  input.style.outline = "none";
+function updateLogin(login) {
+  if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
+    return;
+  }
+  try {
+    chrome.runtime.sendMessage({ type: "KBB_UPDATE_LOGIN", login });
+  } catch (error) {
+    /* best-effort; bridge errors surface in manual extension flows */
+  }
 }
 function applyPickerStyle(picker) {
   picker.style.position = "fixed";
@@ -2234,9 +2056,29 @@ function ensureInlinePickerComponent() {
     });
   return window.__keepassBrowserBridgePickerReady;
 }
+function ensurePromptComponent() {
+  if (window.__keepassBrowserBridgePromptReady) {
+    return window.__keepassBrowserBridgePromptReady;
+  }
+  const getUrl = (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getURL)
+    || (typeof browser !== "undefined" && browser.runtime && browser.runtime.getURL);
+  if (!getUrl) {
+    window.__keepassBrowserBridgePromptReady = Promise.reject(new Error("Extension URL unavailable"));
+    return window.__keepassBrowserBridgePromptReady;
+  }
+  const moduleUrl = getUrl("src/components/Prompt.web.js");
+  window.__keepassBrowserBridgePromptReady = import(moduleUrl)
+    .then(() => true)
+    .catch((error) => {
+      window.__keepassBrowserBridgePromptReady = null;
+      throw error;
+    });
+  return window.__keepassBrowserBridgePromptReady;
+}
 if (typeof window !== "undefined" && typeof customElements !== "undefined") {
   try {
     ensureInlinePickerComponent();
+    ensurePromptComponent();
   } catch (error) {
     // best-effort preload; will retry on demand
   }

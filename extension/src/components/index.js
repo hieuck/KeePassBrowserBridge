@@ -5,4 +5,5 @@ registerIcons('kbb');
 // Web Component versions of Base* components
 import './BaseButton.web.js';
 import './Picker.web.js';
+import './Prompt.web.js';
 // Future: import './BaseInput.web.js', './BaseToggle.web.js', etc.
