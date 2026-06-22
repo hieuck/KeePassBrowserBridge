@@ -115,4 +115,77 @@ test.describe('Options page v2', () => {
     const focused = await page.evaluate(() => document.activeElement?.className || '');
     expect(focused).toMatch(/options-(sidebar|page__theme)/);
   });
+
+  test('sidebar tabs have proper labels', async ({ page }) => {
+    const tabs = page.locator('.options-sidebar__tab');
+    const count = await tabs.count();
+    expect(count).toBe(7);
+    const labels = ['General', 'Bridge', 'Auto-fill', 'Sites', 'Clients', 'Passkeys', 'About'];
+    for (let i = 0; i < count; i++) {
+      await expect(tabs.nth(i)).toContainText(labels[i]);
+    }
+  });
+
+  test('sidebar nav has proper ARIA label', async ({ page }) => {
+    const nav = page.locator('nav[aria-label="Settings navigation"]');
+    await expect(nav).toBeVisible();
+  });
+
+  test('after clicking Bridge tab, theme toggle still visible', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'Bridge' }).click();
+    const themeBtn = page.locator('.options-page__theme-btn');
+    await expect(themeBtn).toBeVisible();
+  });
+
+  test('test connection button on bridge tab is interactive', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'Bridge' }).click();
+    const testBtn = page.locator('button', { hasText: 'Test connection' });
+    await expect(testBtn).toBeEnabled();
+  });
+
+  test('auto-fill toggles are visible and interactive', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'Auto-fill' }).click();
+    const firstToggle = page.locator('[role="switch"]').first();
+    await expect(firstToggle).toBeVisible();
+    await expect(firstToggle).toBeEnabled();
+  });
+
+  test('sites tab with site rule input has proper placeholder', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'Sites' }).click();
+    const input = page.locator('input[placeholder="example.com"]');
+    await expect(input).toHaveAttribute('placeholder', 'example.com');
+  });
+
+  test('about tab shows KeePass Browser Bridge title', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'About' }).click();
+    await expect(page.locator('.section-card__title', { hasText: 'KeePass Browser Bridge' })).toBeVisible();
+  });
+
+  test('about tab export logs button is enabled', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'About' }).click();
+    const exportBtn = page.locator('button', { hasText: 'Export logs' });
+    await expect(exportBtn).toBeEnabled();
+  });
+
+  test('sidebar navigation has proper ARIA attributes', async ({ page }) => {
+    const nav = page.locator('nav[aria-label="Settings navigation"]');
+    await expect(nav).toBeVisible();
+  });
+
+  test('general tab appearance section shows theme toggle', async ({ page }) => {
+    await expect(page.locator('.section-card__title', { hasText: 'Appearance' })).toBeVisible();
+    const themeBtn = page.locator('.options-page__theme-btn');
+    await expect(themeBtn).toBeVisible();
+  });
+
+  test('auto-fill tab shows auto-submit toggle', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'Auto-fill' }).click();
+    const toggles = page.locator('[role="switch"]');
+    await expect(toggles).toHaveCount(2);
+  });
+
+  test('sites tab add button renders', async ({ page }) => {
+    await page.locator('.options-sidebar__tab', { hasText: 'Sites' }).click();
+    await expect(page.locator('button', { hasText: 'Add' })).toBeVisible();
+  });
 });

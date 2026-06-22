@@ -325,7 +325,7 @@ class KbbSavePrompt extends HTMLElement {
         </div>
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">Folder</label>
-          <select class="prompt-editable-select" data-field="folder">
+          <select class="prompt-editable-select" data-field="folder" aria-label="Folder">
             ${folderOptions}
           </select>
         </div>

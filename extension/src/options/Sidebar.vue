@@ -1,5 +1,5 @@
 <template>
-  <nav class="options-sidebar" aria-label="Settings navigation">
+  <nav class="options-sidebar" aria-label="Settings navigation" role="tablist">
     <button
       v-for="tab in tabs"
       :key="tab.id"
@@ -7,6 +7,8 @@
       class="options-sidebar__tab"
       :class="{ 'options-sidebar__tab--active': active === tab.id }"
       :aria-current="active === tab.id ? 'page' : undefined"
+      :aria-selected="active === tab.id ? 'true' : 'false'"
+      role="tab"
       @click="$emit('select', tab.id)"
     >
       <Icon :name="tab.icon" :size="16" />

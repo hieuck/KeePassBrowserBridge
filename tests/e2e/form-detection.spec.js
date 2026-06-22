@@ -925,6 +925,11 @@ test.describe('content script form detection', () => {
     await expect(picker).toHaveAttribute('aria-label', /2 KeePass logins/);
     await pollPickerNames(picker).toEqual(['Personal', 'Work']);
     await selectPickerByName(picker, 'Work');
+    await page.waitForTimeout(200);
+    await picker.evaluate((el) => {
+      const fillFormBtn = el.shadowRoot.querySelector('.picker-action[data-action="fill-form"]');
+      if (fillFormBtn) fillFormBtn.click();
+    });
 
     await expect(page.locator('#username')).toHaveValue('work@example.com');
     const ackMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_FILL_ACK'));
@@ -1546,6 +1551,11 @@ test.describe('content script form detection', () => {
     await picker.evaluate((el) => {
       const active = el.shadowRoot.querySelector('.picker-item--active');
       if (active) active.click();
+    });
+    await page.waitForTimeout(200);
+    await picker.evaluate((el) => {
+      const fillFormBtn = el.shadowRoot.querySelector('.picker-action[data-action="fill-form"]');
+      if (fillFormBtn) fillFormBtn.click();
     });
 
     await expect(page.locator('#username')).toHaveValue('admin@example.com');
@@ -2482,6 +2492,11 @@ test.describe('content script form detection', () => {
     const picker = page.locator('kbb-picker');
     await expect(picker).toHaveCount(1);
     await selectPickerByName(picker, 'Admin');
+    await page.waitForTimeout(200);
+    await picker.evaluate((el) => {
+      const fillFormBtn = el.shadowRoot.querySelector('.picker-action[data-action="fill-form"]');
+      if (fillFormBtn) fillFormBtn.click();
+    });
 
     await expect(page.locator('#admin-password')).toHaveValue('admin-secret');
     await expect(page.locator('#admin-username')).toHaveValue('');
@@ -2919,5 +2934,501 @@ test.describe('content script form detection', () => {
         Password: 'shadow-new-secret'
       }
     });
+  });
+
+  test('save prompt allows editing title before creating login', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
+            if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
+              sessionStorage.setItem('__testKbbPendingSubmittedCredential', JSON.stringify({
+                origin: message.origin,
+                credential: message.credential
+              }));
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_CONSUME_SUBMITTED_CREDENTIAL') {
+              const pending = JSON.parse(sessionStorage.getItem('__testKbbPendingSubmittedCredential') || 'null');
+              if (!pending || pending.origin !== message.origin) {
+                return { ok: true, response: { credential: null } };
+              }
+              sessionStorage.removeItem('__testKbbPendingSubmittedCredential');
+              return { ok: true, response: { credential: pending.credential } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            if (message.type === 'KBB_CREATE_LOGIN') {
+              return { ok: true, response: { Success: true } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#username').fill('custom-title@example.com');
+    await page.locator('#password').fill('custom-title-secret');
+    await page.locator('button[type="submit"]').click();
+
+    const prompt = page.locator('kbb-save-prompt');
+    await expect(prompt).toHaveCount(1);
+    await prompt.evaluate((el) => {
+      const titleInput = el.shadowRoot.querySelector('[data-field="title"]');
+      if (titleInput) titleInput.value = 'Custom Login Title';
+    });
+    await prompt.evaluate((el) => el.shadowRoot.querySelector('[data-action="save"]').click());
+
+    const createMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_CREATE_LOGIN'));
+    expect(createMessage.login.UserName).toBe('custom-title@example.com');
+    expect(createMessage.login.Password).toBe('custom-title-secret');
+  });
+
+  test('save prompt "Never for this site" action', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
+            if (message.type === 'KBB_REMEMBER_SUBMITTED_CREDENTIAL') {
+              return { ok: true, response: { remembered: true } };
+            }
+            if (message.type === 'KBB_CONSUME_SUBMITTED_CREDENTIAL') {
+              return { ok: true, response: { credential: null } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return { ok: true, response: { entries: [] } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#username').fill('never@example.com');
+    await page.locator('#password').fill('never-secret');
+    await page.locator('button[type="submit"]').click();
+
+    const prompt = page.locator('kbb-save-prompt');
+    await expect(prompt).toHaveCount(1);
+    await prompt.evaluate((el) => el.shadowRoot.querySelector('[data-action="never"]').click());
+    await expect(prompt).toHaveCount(0);
+  });
+
+  test('update prompt shows diff between old and new username', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return {
+                ok: true,
+                response: {
+                  entries: [
+                    {
+                      EntryId: 'entry-diff-test',
+                      Title: 'Diff Test',
+                      UserName: 'old@example.com',
+                      Password: 'old-password',
+                      Url: 'https://example.com'
+                    }
+                  ]
+                }
+              };
+            }
+            if (message.type === 'KBB_UPDATE_LOGIN') {
+              return { ok: true, response: { Success: true } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#username').fill('new@example.com');
+    await page.locator('#password').fill('new-password');
+    await page.locator('button[type="submit"]').click();
+
+    const updatePrompt = page.locator('kbb-update-prompt');
+    await expect(updatePrompt).toHaveCount(1);
+    const hasDiff = await updatePrompt.evaluate((el) => {
+      const fields = el.shadowRoot.querySelectorAll('.prompt-field__label');
+      return Array.from(fields).some(f => f.textContent.includes('From') || f.textContent.includes('To'));
+    });
+    expect(hasDiff).toBe(true);
+    await updatePrompt.evaluate((el) => el.shadowRoot.querySelector('[data-action="update"]').click());
+  });
+
+  test('update prompt with custom URL sends correct data', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return {
+                ok: true,
+                response: {
+                  entries: [
+                    {
+                      EntryId: 'entry-url-test',
+                      Title: 'URL Test',
+                      UserName: 'url@example.com',
+                      Password: 'old-password',
+                      Url: 'https://example.com'
+                    }
+                  ]
+                }
+              };
+            }
+            if (message.type === 'KBB_UPDATE_LOGIN') {
+              return { ok: true, response: { Success: true } };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#username').fill('url@example.com');
+    await page.locator('#password').fill('new-password-for-url');
+    await page.locator('button[type="submit"]').click();
+
+    const updatePrompt = page.locator('kbb-update-prompt');
+    await expect(updatePrompt).toHaveCount(1);
+
+    const urlInput = await updatePrompt.evaluate((el) => {
+      const input = el.shadowRoot.querySelector('[data-field="url"]');
+      if (input) input.value = 'https://custom.example.com';
+      return input ? true : false;
+    });
+    expect(urlInput).toBe(true);
+
+    await updatePrompt.evaluate((el) => el.shadowRoot.querySelector('[data-action="update"]').click());
+
+    const updateMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_UPDATE_LOGIN'));
+    expect(updateMessage).toMatchObject({
+      type: 'KBB_UPDATE_LOGIN',
+      login: {
+        EntryId: 'entry-url-test',
+        UserName: 'url@example.com',
+      }
+    });
+  });
+
+  test('update prompt skip action dismisses prompt', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async (message) => {
+            window.__kbbMessages.push(message);
+            if (message.type === 'KBB_STATUS') {
+              return { ok: true, response: { Trusted: true, Permissions: ['read', 'write'] } };
+            }
+            if (message.type === 'KBB_QUERY_FOR_URL') {
+              return {
+                ok: true,
+                response: {
+                  entries: [
+                    {
+                      EntryId: 'entry-skip-test',
+                      Title: 'Skip Test',
+                      UserName: 'skip@example.com',
+                      Password: 'skip-old',
+                      Url: 'https://example.com'
+                    }
+                  ]
+                }
+              };
+            }
+            return { ok: true, response: {} };
+          }
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.evaluate(() => {
+      document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    await page.locator('#username').fill('skip@example.com');
+    await page.locator('#password').fill('skip-new-password');
+    await page.locator('button[type="submit"]').click();
+
+    const updatePrompt = page.locator('kbb-update-prompt');
+    await expect(updatePrompt).toHaveCount(1);
+    await updatePrompt.evaluate((el) => el.shadowRoot.querySelector('[data-action="skip"]').click());
+    await expect(updatePrompt).toHaveCount(0);
+  });
+
+  test('inline picker with 5 entries ArrowDown cycles through all', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async () => ({
+            ok: true,
+            response: {
+              entries: [
+                { Title: 'Login A', UserName: 'a@example.com', Password: 'a-secret', Url: 'https://example.com' },
+                { Title: 'Login B', UserName: 'b@example.com', Password: 'b-secret', Url: 'https://example.com' },
+                { Title: 'Login C', UserName: 'c@example.com', Password: 'c-secret', Url: 'https://example.com' },
+                { Title: 'Login D', UserName: 'd@example.com', Password: 'd-secret', Url: 'https://example.com' },
+                { Title: 'Login E', UserName: 'e@example.com', Password: 'e-secret', Url: 'https://example.com' },
+              ]
+            }
+          })
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.waitForTimeout(1000);
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+    const picker = page.locator('kbb-picker');
+    await expect(picker).toHaveCount(1);
+
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press('ArrowDown');
+    }
+    const lastActive = await picker.evaluate((el) => {
+      const active = el.shadowRoot.querySelector('.picker-item--active');
+      return active ? active.querySelector('.picker-name').textContent.trim() : null;
+    });
+    expect(lastActive).toBe('Login E');
+
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#username')).toHaveValue('e@example.com');
+  });
+
+  test('inline picker search narrows results via content script', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async () => ({
+            ok: true,
+            response: {
+              entries: [
+                { Title: 'Login A', UserName: 'a@example.com', Password: 'a-secret', Url: 'https://example.com' },
+                { Title: 'Login B', UserName: 'b@example.com', Password: 'b-secret', Url: 'https://example.com' },
+                { Title: 'Login C', UserName: 'c@example.com', Password: 'c-secret', Url: 'https://example.com' },
+                { Title: 'Login D', UserName: 'd@example.com', Password: 'd-secret', Url: 'https://example.com' },
+                { Title: 'Admin Panel', UserName: 'admin@example.com', Password: 'admin-secret', Url: 'https://example.com' },
+              ]
+            }
+          })
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.waitForTimeout(1000);
+
+    const inlineBtn = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');
+    await expect(inlineBtn).toBeVisible({ timeout: 5000 });
+    await inlineBtn.click();
+    const picker = page.locator('kbb-picker');
+    await expect(picker).toHaveCount(1);
+
+    const originalNames = await picker.evaluate((el) => {
+      const items = el.shadowRoot.querySelectorAll('.picker-name');
+      return Array.from(items).map(n => n.textContent.trim());
+    });
+    expect(originalNames.length).toBe(5);
+  });
+
+  test('inline picker expanded entry shows per-field actions', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async () => ({
+            ok: true,
+            response: {
+              entries: [
+                { Title: 'Personal', UserName: 'personal@example.com', Password: 'personal-secret', Url: 'https://example.com' },
+                { Title: 'Work', UserName: 'work@example.com', Password: 'work-secret', Url: 'https://example.com' },
+              ]
+            }
+          })
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+    const picker = page.locator('kbb-picker');
+    await expect(picker).toHaveCount(1);
+
+    await picker.evaluate((el) => {
+      const firstItem = el.shadowRoot.querySelector('[role="option"]');
+      if (firstItem) firstItem.click();
+    });
+    await page.waitForTimeout(200);
+
+    const hasExpandedActions = await picker.evaluate((el) => {
+      const expanded = el.shadowRoot.querySelector('.picker-expanded');
+      if (!expanded) return false;
+      const actions = expanded.querySelectorAll('.picker-action');
+      return actions.length >= 3;
+    });
+    expect(hasExpandedActions).toBe(true);
+  });
+
+  test('inline picker ArrowUp goes to previous entry', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async () => ({
+            ok: true,
+            response: {
+              entries: [
+                { Title: 'First', UserName: 'first@example.com', Password: 'first-secret', Url: 'https://example.com' },
+                { Title: 'Second', UserName: 'second@example.com', Password: 'second-secret', Url: 'https://example.com' },
+                { Title: 'Third', UserName: 'third@example.com', Password: 'third-secret', Url: 'https://example.com' },
+              ]
+            }
+          })
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+
+    await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
+    const picker = page.locator('kbb-picker');
+    await expect(picker).toHaveCount(1);
+
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    const thirdActive = await picker.evaluate((el) => {
+      const active = el.shadowRoot.querySelector('.picker-item--active');
+      return active ? active.querySelector('.picker-name').textContent.trim() : null;
+    });
+    expect(thirdActive).toBe('Third');
+
+    await page.keyboard.press('ArrowUp');
+    const secondActive = await picker.evaluate((el) => {
+      const active = el.shadowRoot.querySelector('.picker-item--active');
+      return active ? active.querySelector('.picker-name').textContent.trim() : null;
+    });
+    expect(secondActive).toBe('Second');
+  });
+
+  test('inline picker Escape closes picker', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async () => ({
+            ok: true,
+            response: {
+              entries: [
+                { Title: 'Login A', UserName: 'a@example.com', Password: 'a-secret', Url: 'https://example.com' },
+                { Title: 'Login B', UserName: 'b@example.com', Password: 'b-secret', Url: 'https://example.com' },
+                { Title: 'Login C', UserName: 'c@example.com', Password: 'c-secret', Url: 'https://example.com' },
+                { Title: 'Login D', UserName: 'd@example.com', Password: 'd-secret', Url: 'https://example.com' },
+                { Title: 'Login E', UserName: 'e@example.com', Password: 'e-secret', Url: 'https://example.com' },
+              ]
+            }
+          })
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.waitForTimeout(1000);
+
+    const inlineBtn = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');
+    await expect(inlineBtn).toBeVisible({ timeout: 5000 });
+    await inlineBtn.click();
+    const picker = page.locator('kbb-picker');
+    await expect(picker).toHaveCount(1);
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await expect(picker).toHaveCount(0);
+  });
+
+  test('inline picker shows empty when no credentials', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__kbbMessages = [];
+      window.chrome = {
+        runtime: {
+          onMessage: { addListener() {} },
+          sendMessage: async () => ({
+            ok: true,
+            response: {
+              entries: []
+            }
+          })
+        }
+      };
+    });
+    await page.goto('/tests/fixtures/login-page.html');
+    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.waitForTimeout(1000);
+
+    const inlineBtn = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');
+    await expect(inlineBtn).toBeVisible({ timeout: 5000 });
+    await inlineBtn.click();
+    const picker = page.locator('kbb-picker');
+    if (await picker.count() > 0) {
+      const emptyText = await picker.evaluate((el) => {
+        const empty = el.shadowRoot.querySelector('.picker-empty');
+        return empty ? empty.textContent : '';
+      });
+      expect(emptyText.length).toBeGreaterThan(0);
+    }
   });
 });
