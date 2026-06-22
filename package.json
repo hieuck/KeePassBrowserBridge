@@ -25,6 +25,7 @@
     "ci": "npm run lint && npm run test && npm run test:coverage && npm run test:e2e:chromium"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@playwright/test": "^1.40.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitest/coverage-v8": "^1.0.0",

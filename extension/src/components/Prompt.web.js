@@ -28,13 +28,6 @@ const PROMPT_STYLES = `
   to { transform: translateX(0); opacity: 1; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :host { color: #f0f0f0; background: #24292e; border-color: #444d56; }
-  .prompt-header { border-color: #444d56; }
-  .prompt-field { background: #1a1a1a; border-color: #444d56; }
-  .prompt-action--secondary { color: #adbac7; }
-}
-
 .prompt-header {
   display: flex;
   align-items: center;
@@ -94,10 +87,6 @@ const PROMPT_STYLES = `
   min-width: 56px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .prompt-field__label { color: #8b949e; }
-}
-
 .prompt-field__value {
   flex: 1;
   font-family: ui-monospace, SFMono-Regular, monospace;
@@ -145,11 +134,6 @@ const PROMPT_STYLES = `
 
 .prompt-action--danger:hover { background: rgba(215, 58, 73, 0.1); }
 
-@media (prefers-color-scheme: dark) {
-  .prompt-action--secondary { border-color: #444d56; color: #f0f0f0; }
-  .prompt-action--secondary:hover { background: #2f363d; }
-}
-
 .prompt-action:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
@@ -159,6 +143,16 @@ const PROMPT_STYLES = `
   height: 2px;
   background: linear-gradient(to right, #2563eb var(--progress, 100%), transparent var(--progress, 100%));
   transition: --progress 30s linear;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host { color: #f0f0f0; background: #24292e; border-color: #444d56; }
+  .prompt-header { border-color: #444d56; }
+  .prompt-field { background: #1a1a1a; border-color: #444d56; }
+  .prompt-field__label { color: #cbd5e1; }
+  .prompt-action--secondary { border-color: #444d56; color: #f0f0f0; }
+  .prompt-action--secondary:hover { background: #2f363d; }
+  .prompt-action--danger { color: #f97583; }
 }
 `;
 

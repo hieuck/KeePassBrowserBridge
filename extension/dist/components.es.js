@@ -1,4 +1,4 @@
-const l = {
+const p = {
   key: "M10.5 0a4.5 4.5 0 1 1-3.18 7.68L2 13l-1.5 1.5L2 16l1.5-1.5L5 13l5.32-5.32A4.5 4.5 0 0 1 10.5 0zm-2 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z",
   lock: "M3 7V5a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm2 0h6V5a3 3 0 0 0-6 0v2z",
   "lock-open": "M3 7V5a5 5 0 0 1 9.9-1H11a3 3 0 0 0-5 1v2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm0 2v6h10V9H3z",
@@ -21,48 +21,48 @@ const l = {
   user: "M10.561 8.073a6.005 6.005 0 0 1 3.432 5.142.75.75 0 1 1-1.498.07 4.5 4.5 0 0 0-8.99 0 .75.75 0 0 1-1.498-.07 6.004 6.004 0 0 1 3.431-5.142 3.999 3.999 0 1 0 5.123 0zM10.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
   "user-plus": "M5.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3 6.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0zM7.5 9a4.5 4.5 0 0 0-3.83 2.146.75.75 0 1 0 1.276.79A3 3 0 0 1 7.5 11h.75a.75.75 0 0 0 0-1.5H7.5zM10 4.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75zM13 8.75a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0v-2.5z"
 };
-function h(c, e) {
+function h(r, e) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
 }
-const i = Object.fromEntries(
-  Object.entries(l).map(([c, e]) => [c, h(c, e)])
+const s = Object.fromEntries(
+  Object.entries(p).map(([r, e]) => [r, h(r, e)])
 );
-i.key;
-i.lock;
-i["lock-open"];
-i.unlock;
-i.copy;
-i.check;
-i.edit;
-i.pencil;
-i.plus;
-i.trash;
-i.search;
-i.filter;
-i.close;
-i["chevron-down"];
-i.eye;
-i["eye-off"];
-i.shield;
-i["shield-check"];
-i.globe;
-i.user;
-i["user-plus"];
-function d(c = "kbb") {
+s.key;
+s.lock;
+s["lock-open"];
+s.unlock;
+s.copy;
+s.check;
+s.edit;
+s.pencil;
+s.plus;
+s.trash;
+s.search;
+s.filter;
+s.close;
+s["chevron-down"];
+s.eye;
+s["eye-off"];
+s.shield;
+s["shield-check"];
+s.globe;
+s.user;
+s["user-plus"];
+function u(r = "kbb") {
   if (!(typeof customElements > "u"))
-    for (const [e, t] of Object.entries(i)) {
-      const a = `${c}-icon-${e}`;
-      if (customElements.get(a)) continue;
-      class s extends HTMLElement {
+    for (const [e, t] of Object.entries(s)) {
+      const i = `${r}-icon-${e}`;
+      if (customElements.get(i)) continue;
+      class a extends HTMLElement {
         connectedCallback() {
-          const r = this.getAttribute("size") || 16;
-          this.innerHTML = t.replace('width="16"', `width="${r}"`).replace('height="16"', `height="${r}"`);
+          const n = this.getAttribute("size") || 16;
+          this.innerHTML = t.replace('width="16"', `width="${n}"`).replace('height="16"', `height="${n}"`);
         }
       }
-      customElements.define(a, s);
+      customElements.define(i, a);
     }
 }
-class p extends HTMLElement {
+class m extends HTMLElement {
   static get observedAttributes() {
     return ["variant", "size", "type", "disabled", "loading", "block", "leading-icon", "trailing-icon"];
   }
@@ -83,15 +83,15 @@ class p extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-click", { bubbles: !0, detail: { original: e } }));
   }
   render() {
-    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", a = this.getAttribute("type") || "button", s = this.hasAttribute("block"), n = this.hasAttribute("loading"), r = this.hasAttribute("disabled") || n, o = this.textContent.trim();
-    this.innerHTML = `<button type="${a}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${s ? " kbb-btn--block" : ""}${n ? " kbb-btn--loading" : ""}" ${r ? "disabled" : ""} aria-busy="${n}" aria-disabled="${r}"><span class="kbb-btn__label">${u(o)}</span></button>`;
+    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", i = this.getAttribute("type") || "button", a = this.hasAttribute("block"), o = this.hasAttribute("loading"), n = this.hasAttribute("disabled") || o, c = this.textContent.trim();
+    this.innerHTML = `<button type="${i}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${a ? " kbb-btn--block" : ""}${o ? " kbb-btn--loading" : ""}" ${n ? "disabled" : ""} aria-busy="${o}" aria-disabled="${n}"><span class="kbb-btn__label">${b(c)}</span></button>`;
   }
 }
-function u(c) {
-  return String(c || "").replace(/[&<>"']/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[e]);
+function b(r) {
+  return String(r || "").replace(/[&<>"']/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[e]);
 }
-typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", p);
-const b = `
+typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", m);
+const f = `
 :host {
   position: absolute;
   z-index: 2147483647;
@@ -109,18 +109,6 @@ const b = `
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-@media (prefers-color-scheme: dark) {
-  :host {
-    color: #f0f0f0;
-    background: #24292e;
-    border-color: #444d56;
-  }
-  .picker-search { background: #1a1a1a; border-color: #444d56; }
-  .picker-item:hover, .picker-item--active { background: #2f363d; }
-  .picker-item--selected { background: rgba(56, 139, 253, 0.2); }
-  .picker-empty { color: #8b949e; }
 }
 
 .picker-search {
@@ -222,10 +210,6 @@ const b = `
   text-overflow: ellipsis;
 }
 
-@media (prefers-color-scheme: dark) {
-  .picker-username { color: #8b949e; }
-}
-
 .picker-empty {
   padding: 20px;
   text-align: center;
@@ -239,8 +223,21 @@ const b = `
   flex-shrink: 0;
   fill: currentColor;
 }
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    color: #f0f0f0;
+    background: #24292e;
+    border-color: #444d56;
+  }
+  .picker-search { background: #1a1a1a; border-color: #444d56; }
+  .picker-item:hover, .picker-item--active { background: #2f363d; }
+  .picker-item--selected { background: rgba(56, 139, 253, 0.2); }
+  .picker-empty { color: #cbd5e1; }
+  .picker-username { color: #cbd5e1; }
+}
 `;
-class f extends HTMLElement {
+class v extends HTMLElement {
   static get observedAttributes() {
     return ["credentials", "placeholder", "show-search", "position"];
   }
@@ -253,11 +250,11 @@ class f extends HTMLElement {
   disconnectedCallback() {
     document.removeEventListener("keydown", this._boundOnKeyDown, !0), document.removeEventListener("mousedown", this._boundOnClickOutside, !0);
   }
-  attributeChangedCallback(e, t, a) {
-    if (t !== a) {
+  attributeChangedCallback(e, t, i) {
+    if (t !== i) {
       if (e === "credentials")
         try {
-          this._credentials = JSON.parse(a || "[]");
+          this._credentials = JSON.parse(i || "[]");
         } catch {
           this._credentials = [];
         }
@@ -284,13 +281,13 @@ class f extends HTMLElement {
     );
   }
   _render() {
-    var s;
-    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search") !== "false", a = this._filtered;
-    this._activeIndex = a.length > 0 ? 0 : -1, this.shadowRoot.innerHTML = `
-      <style>${b}</style>
+    var a;
+    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search") !== "false", i = this._filtered;
+    this._activeIndex = i.length > 0 ? 0 : -1, this.shadowRoot.innerHTML = `
+      <style>${f}</style>
       ${t ? `
         <div class="picker-search">
-          <span class="picker-icon" aria-hidden="true">${i.search || ""}</span>
+          <span class="picker-icon" aria-hidden="true">${s.search || ""}</span>
           <input
             type="text"
             class="picker-search-input"
@@ -301,21 +298,21 @@ class f extends HTMLElement {
         </div>
       ` : ""}
       <ul class="picker-list" role="listbox" aria-label="Credentials">
-        ${a.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
-        ${a.map((n, r) => this._renderItem(n, r)).join("")}
+        ${i.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
+        ${i.map((o, n) => this._renderItem(o, n)).join("")}
       </ul>
-    `, (s = this.shadowRoot.querySelector(".picker-search-input")) == null || s.addEventListener("input", (n) => {
-      var r;
-      this._search = n.target.value, this._activeIndex = 0, this._render(), (r = this.shadowRoot.querySelector(".picker-search-input")) == null || r.focus();
-    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((n) => {
-      n.addEventListener("click", () => {
-        const r = Number(n.dataset.index), o = a[r];
-        o && this._emitFill(o);
+    `, (a = this.shadowRoot.querySelector(".picker-search-input")) == null || a.addEventListener("input", (o) => {
+      var n;
+      this._search = o.target.value, this._activeIndex = 0, this._render(), (n = this.shadowRoot.querySelector(".picker-search-input")) == null || n.focus();
+    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((o) => {
+      o.addEventListener("click", () => {
+        const n = Number(o.dataset.index), c = i[n];
+        c && this._emitFill(c);
       });
     }), this._activeIndex >= 0 && this._highlightActive();
   }
   _renderItem(e, t) {
-    const a = (e.name || e.username || "?").charAt(0).toUpperCase(), s = e.url ? this._faviconUrl(e.url) : null, n = s ? `<img class="picker-avatar picker-avatar--favicon" src="${s}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${a}</div>'" />` : `<div class="picker-avatar">${a}</div>`;
+    const i = (e.name || e.username || "?").charAt(0).toUpperCase(), a = e.url ? this._faviconUrl(e.url) : null, o = a ? `<img class="picker-avatar picker-avatar--favicon" src="${a}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${i}</div>'" />` : `<div class="picker-avatar">${i}</div>`;
     return `
       <li
         class="picker-item${t === this._activeIndex ? " picker-item--active" : ""}${e.selected ? " picker-item--selected" : ""}"
@@ -324,7 +321,7 @@ class f extends HTMLElement {
         data-index="${t}"
         tabindex="${t === this._activeIndex ? "0" : "-1"}"
       >
-        ${n}
+        ${o}
         <div class="picker-info">
           <div class="picker-name">${this._escapeHtml(e.name || "(no name)")}</div>
           ${e.username ? `<div class="picker-username">${this._escapeHtml(e.username)}</div>` : ""}
@@ -344,8 +341,8 @@ class f extends HTMLElement {
   }
   _highlightActive() {
     const e = this.shadowRoot.querySelectorAll(".picker-item");
-    e.forEach((a, s) => {
-      a.classList.toggle("picker-item--active", s === this._activeIndex), a.setAttribute("aria-selected", s === this._activeIndex), a.setAttribute("tabindex", s === this._activeIndex ? "0" : "-1");
+    e.forEach((i, a) => {
+      i.classList.toggle("picker-item--active", a === this._activeIndex), i.setAttribute("aria-selected", a === this._activeIndex), i.setAttribute("tabindex", a === this._activeIndex ? "0" : "-1");
     });
     const t = e[this._activeIndex];
     t && t.scrollIntoView({ block: "nearest" });
@@ -359,8 +356,8 @@ class f extends HTMLElement {
       e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.max(this._activeIndex - 1, 0), this._highlightActive();
     else if (e.key === "Enter") {
       e.preventDefault(), e.stopPropagation();
-      const a = t[this._activeIndex];
-      a && this._emitFill(a);
+      const i = t[this._activeIndex];
+      i && this._emitFill(i);
     } else e.key === "Escape" && (e.preventDefault(), e.stopPropagation(), this._emitClose());
   }
   _onClickOutside(e) {
@@ -380,5 +377,299 @@ class f extends HTMLElement {
     }));
   }
 }
-customElements.get("kbb-picker") || customElements.define("kbb-picker", f);
-d("kbb");
+customElements.get("kbb-picker") || customElements.define("kbb-picker", v);
+const d = `
+:host {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  animation: slideIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host { animation: none; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.prompt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e1e4e8;
+  font-weight: 600;
+}
+
+.prompt-header__icon {
+  width: 18px;
+  height: 18px;
+  fill: var(--accent, #2563eb);
+  flex-shrink: 0;
+}
+
+.prompt-header__title { flex: 1; }
+
+.prompt-header__close {
+  background: transparent;
+  border: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.prompt-header__close:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+.prompt-header__close svg { width: 14px; height: 14px; fill: currentColor; }
+
+.prompt-body {
+  padding: 12px 14px;
+}
+
+.prompt-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.prompt-field__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #586069;
+  min-width: 56px;
+}
+
+.prompt-field__value {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prompt-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 14px;
+  justify-content: flex-end;
+}
+
+.prompt-action {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  transition: background 120ms, border-color 120ms;
+}
+
+.prompt-action--primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.prompt-action--primary:hover { background: #1d4ed8; }
+
+.prompt-action--secondary {
+  border-color: #e1e4e8;
+  color: #1a1a1a;
+}
+
+.prompt-action--secondary:hover { background: #f6f8fa; }
+
+.prompt-action--danger {
+  color: #d73a49;
+}
+
+.prompt-action--danger:hover { background: rgba(215, 58, 73, 0.1); }
+
+.prompt-action:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.prompt-progress {
+  height: 2px;
+  background: linear-gradient(to right, #2563eb var(--progress, 100%), transparent var(--progress, 100%));
+  transition: --progress 30s linear;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host { color: #f0f0f0; background: #24292e; border-color: #444d56; }
+  .prompt-header { border-color: #444d56; }
+  .prompt-field { background: #1a1a1a; border-color: #444d56; }
+  .prompt-field__label { color: #cbd5e1; }
+  .prompt-action--secondary { border-color: #444d56; color: #f0f0f0; }
+  .prompt-action--secondary:hover { background: #2f363d; }
+  .prompt-action--danger { color: #f97583; }
+}
+`;
+function l(r) {
+  return String(r).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+class g extends HTMLElement {
+  static get observedAttributes() {
+    return ["name", "username", "password", "url"];
+  }
+  constructor() {
+    super(), this.attachShadow({ mode: "open" }), this._autoDismissTimer = null;
+  }
+  connectedCallback() {
+    var e, t, i;
+    this._render(), this._startAutoDismiss(), (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="save"]')) == null || t.addEventListener("click", () => this._save()), (i = this.shadowRoot.querySelector('[data-action="never"]')) == null || i.addEventListener("click", () => this._never());
+  }
+  disconnectedCallback() {
+    this._autoDismissTimer && (clearTimeout(this._autoDismissTimer), this._autoDismissTimer = null);
+  }
+  attributeChangedCallback() {
+    this.isConnected && this._render();
+  }
+  _render() {
+    const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", i = this.getAttribute("password") || "", a = this.getAttribute("url") || "";
+    this.shadowRoot.innerHTML = `
+      <style>${d}</style>
+      <div class="prompt-header" role="region" aria-label="Save login">
+        <span class="prompt-header__icon" aria-hidden="true">${s.key || ""}</span>
+        <span class="prompt-header__title">Save this login?</span>
+        <button type="button" class="prompt-header__close" aria-label="Close">
+          <span aria-hidden="true">${s.close || ""}</span>
+        </button>
+      </div>
+      <div class="prompt-body">
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${l(e)}</span></div>` : ""}
+        ${a ? `<div class="prompt-field"><span class="prompt-field__label">URL</span><span class="prompt-field__value">${l(a)}</span></div>` : ""}
+        ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${l(t)}</span></div>` : ""}
+        ${i ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(i.length, 12))}</span></div>` : ""}
+      </div>
+      <div class="prompt-actions">
+        <button type="button" class="prompt-action prompt-action--danger" data-action="never">Never for this site</button>
+        <button type="button" class="prompt-action prompt-action--primary" data-action="save">Save</button>
+      </div>
+      <div class="prompt-progress" style="--progress: 100%"></div>
+    `;
+  }
+  _startAutoDismiss() {
+    this._autoDismissTimer && clearTimeout(this._autoDismissTimer), this._autoDismissTimer = setTimeout(() => this._dismiss(), 3e4);
+  }
+  _save() {
+    this.dispatchEvent(new CustomEvent("kbb-save", {
+      bubbles: !0,
+      composed: !0,
+      detail: {
+        name: this.getAttribute("name"),
+        username: this.getAttribute("username"),
+        password: this.getAttribute("password"),
+        url: this.getAttribute("url")
+      }
+    })), this.remove();
+  }
+  _never() {
+    this.dispatchEvent(new CustomEvent("kbb-never", {
+      bubbles: !0,
+      composed: !0,
+      detail: { url: this.getAttribute("url") }
+    })), this.remove();
+  }
+  _dismiss() {
+    this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
+  }
+}
+class _ extends HTMLElement {
+  static get observedAttributes() {
+    return ["name", "username", "password", "old-username"];
+  }
+  constructor() {
+    super(), this.attachShadow({ mode: "open" }), this._autoDismissTimer = null;
+  }
+  connectedCallback() {
+    var e, t, i;
+    this._render(), this._startAutoDismiss(), (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="update"]')) == null || t.addEventListener("click", () => this._update()), (i = this.shadowRoot.querySelector('[data-action="skip"]')) == null || i.addEventListener("click", () => this._skip());
+  }
+  disconnectedCallback() {
+    this._autoDismissTimer && (clearTimeout(this._autoDismissTimer), this._autoDismissTimer = null);
+  }
+  attributeChangedCallback() {
+    this.isConnected && this._render();
+  }
+  _render() {
+    const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", i = this.getAttribute("username") || "";
+    this.shadowRoot.innerHTML = `
+      <style>${d}</style>
+      <div class="prompt-header" role="region" aria-label="Update login">
+        <span class="prompt-header__icon" aria-hidden="true">${s.shield || ""}</span>
+        <span class="prompt-header__title">Update existing login?</span>
+        <button type="button" class="prompt-header__close" aria-label="Close">
+          <span aria-hidden="true">${s.close || ""}</span>
+        </button>
+      </div>
+      <div class="prompt-body">
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${l(e)}</span></div>` : ""}
+        <div class="prompt-field">
+          <span class="prompt-field__label">From</span>
+          <span class="prompt-field__value">${l(t)}</span>
+        </div>
+        <div class="prompt-field">
+          <span class="prompt-field__label">To</span>
+          <span class="prompt-field__value">${l(i)}</span>
+        </div>
+      </div>
+      <div class="prompt-actions">
+        <button type="button" class="prompt-action prompt-action--secondary" data-action="skip">Not now</button>
+        <button type="button" class="prompt-action prompt-action--primary" data-action="update">Update</button>
+      </div>
+      <div class="prompt-progress" style="--progress: 100%"></div>
+    `;
+  }
+  _startAutoDismiss() {
+    this._autoDismissTimer && clearTimeout(this._autoDismissTimer), this._autoDismissTimer = setTimeout(() => this._dismiss(), 3e4);
+  }
+  _update() {
+    this.dispatchEvent(new CustomEvent("kbb-update", {
+      bubbles: !0,
+      composed: !0,
+      detail: {
+        name: this.getAttribute("name"),
+        username: this.getAttribute("username"),
+        password: this.getAttribute("password")
+      }
+    })), this.remove();
+  }
+  _skip() {
+    this.dispatchEvent(new CustomEvent("kbb-skip", { bubbles: !0, composed: !0 })), this.remove();
+  }
+  _dismiss() {
+    this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
+  }
+}
+customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", g);
+customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", _);
+u("kbb");
