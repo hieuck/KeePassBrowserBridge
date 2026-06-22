@@ -5,7 +5,7 @@ const e2eBaseURL = `http://127.0.0.1:${e2ePort}`;
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: ['**/e2e/**/*.spec.js', '**/extension/design-tokens.test.mjs'],
+  testMatch: ['**/e2e/**/*.spec.js', '**/extension/**/*.test.mjs'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

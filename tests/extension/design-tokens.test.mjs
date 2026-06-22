@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const designTokensPath = path.join(__dirname, '../../extension/design-tokens.css');
+const css = fs.readFileSync(designTokensPath, 'utf-8');
 
 test('design-tokens.css defines all required tokens', () => {
-  const css = fs.readFileSync(
-    path.join(process.cwd(), 'extension/design-tokens.css'),
-    'utf-8'
-  );
   const required = [
     '--color-bg', '--color-surface', '--color-text',
     '--color-text-secondary', '--color-text-muted', '--color-border',
@@ -28,10 +30,6 @@ test('design-tokens.css defines all required tokens', () => {
 });
 
 test('design-tokens.css has both light and dark theme', () => {
-  const css = fs.readFileSync(
-    path.join(process.cwd(), 'extension/design-tokens.css'),
-    'utf-8'
-  );
   const lightMatch = css.match(/:root\s*\{([^}]+)\}/);
   const darkMatch = css.match(/:root\[data-theme="dark"\]\s*\{([^}]+)\}/);
   expect(lightMatch).not.toBeNull();
