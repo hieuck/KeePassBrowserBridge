@@ -71,7 +71,8 @@ test.describe('Popup v2 keyboard navigation', () => {
     const card = page.locator('.credential-card').first();
     await card.click();
     await expect(card).toHaveAttribute('aria-expanded', 'true');
-    await card.click();
+    // Click the chevron button specifically (not the detail area which has @click.stop)
+    await card.locator('.credential-card__chevron').click();
     await expect(card).toHaveAttribute('aria-expanded', 'false');
   });
 
