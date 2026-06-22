@@ -1,78 +1,42 @@
 <template>
   <div>
-    <div class="settings-section">
-      <h2>About</h2>
-
-      <div class="about-grid">
-        <span>Extension</span>
-        <strong id="aboutVersion">{{ version }}</strong>
-        <span>Plugin</span>
-        <strong id="aboutPluginVersion">{{ pluginVersion }}</strong>
-        <span>Browser ID</span>
-        <code id="aboutBrowserId">{{ browserId }}</code>
-        <span>Project</span>
-        <a id="repositoryLink" :href="repositoryUrl" target="_blank" rel="noreferrer">Repository</a>
-        <span>Updates</span>
-        <a id="releasesLink" :href="releasesUrl" target="_blank" rel="noreferrer">GitHub Releases</a>
+    <SectionCard title="KeePass Browser Bridge" description="Bridge between KeePass and your browser.">
+      <div class="about-row">
+        <span class="about-label">Version</span>
+        <span class="about-value">{{ version }}</span>
       </div>
-
-      <div class="about-actions">
-        <button id="checkUpdates" type="button" class="btn-secondary" @click="checkUpdates">Check updates</button>
-        <p class="settings-hint">Manual installs are updated from GitHub Releases. Store builds update through the browser's extension store.</p>
+      <div class="about-row">
+        <span class="about-label">GitHub</span>
+        <a class="about-value about-value--link" :href="repoUrl" target="_blank" rel="noopener">{{ repoUrl }}</a>
       </div>
-    </div>
+      <div class="about-row">
+        <span class="about-label">Plugin version</span>
+        <span class="about-value">{{ pluginVersion }}</span>
+      </div>
+    </SectionCard>
+    <SectionCard title="Logs" description="Export logs for debugging.">
+      <BaseButton variant="secondary" @click="exportLogs">Export logs</BaseButton>
+    </SectionCard>
   </div>
 </template>
 
-<script>
-import { send } from '../utils.js';
+<script setup>
+import SectionCard from '../SectionCard.vue';
+import BaseButton from '../../components/BaseButton.vue';
 
-export default {
-  emits: ['show-message'],
-  data() {
-    return {
-      version: '...',
-      pluginVersion: 'Unavailable',
-      browserId: 'Unknown',
-      repositoryUrl: '#',
-      releasesUrl: '#'
-    };
-  },
-  mounted() {
-    this.loadAbout();
-  },
-  methods: {
-    async loadAbout() {
-      try {
-        const about = await send({ type: 'KBB_GET_ABOUT' });
-        this.version = about.version || 'Unknown';
-        this.pluginVersion = about.pluginVersion || 'Unavailable';
-        this.browserId = about.browserId || 'Unknown';
-        this.repositoryUrl = about.repositoryUrl || '#';
-        this.releasesUrl = about.releasesUrl || '#';
-      } catch (err) {
-        this.$emit('show-message', err && err.message ? err.message : String(err), 'error');
-      }
-    },
-    async checkUpdates() {
-      try {
-        const result = await send({ type: 'KBB_CHECK_UPDATES' });
-        if (result.updateAvailable) {
-          this.releasesUrl = result.releaseUrl || this.releasesUrl;
-          this.$emit('show-message',
-            `Update ${result.latestVersion} is available. Open GitHub Releases to install it.`,
-            'success'
-          );
-          return;
-        }
-        this.$emit('show-message',
-          `KeePass Browser Bridge ${result.currentVersion} is up to date.`,
-          'success'
-        );
-      } catch (err) {
-        this.$emit('show-message', err && err.message ? err.message : String(err), 'error');
-      }
-    }
-  }
-};
+const version = '2.0.0';
+const pluginVersion = '2.0.0';
+const repoUrl = 'https://github.com/hieuck/KeePassBrowserBridge';
+
+function exportLogs() {
+  // Placeholder; real implementation would download a log file
+}
 </script>
+
+<style scoped>
+.about-row { display: flex; gap: var(--space-3); padding: var(--space-1) 0; font-size: var(--text-sm); }
+.about-label { width: 140px; color: var(--color-text-secondary); font-weight: 600; }
+.about-value { flex: 1; color: var(--color-text); }
+.about-value--link { color: var(--color-accent); text-decoration: none; word-break: break-all; }
+.about-value--link:hover { text-decoration: underline; }
+</style>

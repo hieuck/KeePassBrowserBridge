@@ -1,139 +1,74 @@
 <template>
   <div>
-    <div class="settings-section">
-      <h2>Site Overrides</h2>
-
-      <div class="setting-group">
-        <label for="siteOverrideHost">Host</label>
-        <div class="site-override-editor">
-          <input id="siteOverrideHost" type="text" placeholder="example.com" autocomplete="off" v-model="newHost">
-          <button id="addSiteOverride" type="button" class="btn-secondary" @click="addOverride">Add</button>
-        </div>
-        <p class="settings-hint">Override auto-fill behavior for a host and its subdomains.</p>
+    <SectionCard title="Per-site rules" description="Control auto-fill behavior for specific sites.">
+      <div v-if="rules.length === 0" class="sites-empty">
+        <p>No site-specific rules. Auto-fill behavior follows the global settings.</p>
       </div>
-
-      <div class="setting-group">
-        <label class="toggle-row" for="siteOverrideAutoFill">
-          <span class="toggle-label">
-            <span class="toggle-label-text">Allow auto-fill on this host</span>
-          </span>
-          <span class="toggle-switch">
-            <input id="siteOverrideAutoFill" type="checkbox" v-model="newAutoFill">
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          </span>
-        </label>
-        <label class="toggle-row" for="siteOverrideAutoSubmit">
-          <span class="toggle-label">
-            <span class="toggle-label-text">Auto-submit on this host</span>
-          </span>
-          <span class="toggle-switch">
-            <input id="siteOverrideAutoSubmit" type="checkbox" v-model="newAutoSubmit">
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          </span>
-        </label>
-      </div>
-
-      <div id="siteOverrideList" class="site-override-list" aria-live="polite">
-        <p v-if="!siteOverrides.length" class="site-override-empty">No site overrides configured.</p>
-        <div
-          v-for="rule in siteOverrides"
-          :key="rule.host"
-          class="site-override-row"
-          :data-host="rule.host"
-        >
-          <div>
-            <span class="site-override-host">{{ rule.host }}</span>
-            <span class="site-override-meta">
-              {{ rule.autoFillEnabled ? 'auto-fill allowed' : 'auto-fill disabled' }}
-              /
-              {{ rule.autoSubmitEnabled ? 'auto-submit enabled' : 'auto-submit disabled' }}
-            </span>
-          </div>
-          <button
-            type="button"
-            class="secondary"
-            data-action="remove-site-override"
-            @click="removeOverride(rule.host)"
-          >Remove</button>
+      <div v-else class="sites-list">
+        <div v-for="rule in rules" :key="rule.host" class="sites-rule">
+          <div class="sites-rule__host">{{ rule.host }}</div>
+          <BaseToggle
+            :model-value="rule.enabled"
+            @update:model-value="(v) => updateRule(rule.host, v)"
+            label="Auto-fill"
+          />
+          <button type="button" class="sites-rule__remove" @click="removeRule(rule.host)">
+            <Icon name="trash" :size="14" />
+          </button>
         </div>
       </div>
-    </div>
-
-    <div class="settings-section">
-      <h2>URL Matching</h2>
-
-      <label class="toggle-row" for="strictUrlMatching">
-        <span class="toggle-label">
-          <span class="toggle-label-text">Strict URL matching</span>
-          <span class="toggle-hint">Only match exact domain. Disable to match subdomains</span>
-        </span>
-        <span class="toggle-switch">
-          <input id="strictUrlMatching" type="checkbox"
-            :checked="strictUrlMatching" @change="$emit('update:strict-url-matching', $event.target.checked)">
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        </span>
-      </label>
-
-      <label class="toggle-row" for="regexUrlMatching">
-        <span class="toggle-label">
-          <span class="toggle-label-text">Regex URL matching</span>
-          <span class="toggle-hint">Allow regular expressions in entry URLs for advanced matching</span>
-        </span>
-        <span class="toggle-switch">
-          <input id="regexUrlMatching" type="checkbox"
-            :checked="regexUrlMatching" @change="$emit('update:regex-url-matching', $event.target.checked)">
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        </span>
-      </label>
-    </div>
+      <div class="sites-add">
+        <BaseInput v-model="newHost" placeholder="example.com" />
+        <BaseButton variant="primary" size="sm" @click="addRule">Add</BaseButton>
+      </div>
+    </SectionCard>
   </div>
 </template>
 
-<script>
-import { normalizeHost, normalizeSiteOverrides } from '../utils.js';
+<script setup>
+import { ref, computed } from 'vue';
+import SectionCard from '../SectionCard.vue';
+import BaseInput from '../../components/BaseInput.vue';
+import BaseButton from '../../components/BaseButton.vue';
+import BaseToggle from '../../components/BaseToggle.vue';
+import Icon from '../../components/Icon.vue';
 
-export default {
-  props: {
-    siteOverrides: { type: Array, default: () => [] },
-    strictUrlMatching: Boolean,
-    regexUrlMatching: Boolean
-  },
-  emits: [
-    'update:site-overrides',
-    'update:strict-url-matching',
-    'update:regex-url-matching',
-    'show-message'
-  ],
-  data() {
-    return {
-      newHost: '',
-      newAutoFill: true,
-      newAutoSubmit: false
-    };
-  },
-  methods: {
-    addOverride() {
-      const host = normalizeHost(this.newHost);
-      if (!host) {
-        this.$emit('show-message', 'Enter a valid host.', 'error');
-        return;
-      }
-      const rules = [...this.siteOverrides];
-      const nextRule = { host, autoFillEnabled: this.newAutoFill, autoSubmitEnabled: this.newAutoSubmit };
-      const idx = rules.findIndex((r) => r.host === host);
-      if (idx >= 0) {
-        rules[idx] = nextRule;
-      } else {
-        rules.push(nextRule);
-      }
-      this.$emit('update:site-overrides', rules);
-      this.newHost = '';
-      this.newAutoFill = true;
-      this.newAutoSubmit = false;
-    },
-    removeOverride(host) {
-      this.$emit('update:site-overrides', this.siteOverrides.filter((r) => r.host !== host));
-    }
-  }
-};
+const props = defineProps({ settings: { type: Object, required: true } });
+const emit = defineEmits(['save', 'reset']);
+
+const newHost = ref('');
+
+const rules = computed(() => {
+  const sites = props.settings.siteRules || {};
+  return Object.entries(sites).map(([host, enabled]) => ({ host, enabled }));
+});
+
+function updateRule(host, enabled) {
+  const updated = { ...(props.settings.siteRules || {}), [host]: enabled };
+  emit('save', { siteRules: updated });
+}
+
+function removeRule(host) {
+  const updated = { ...(props.settings.siteRules || {}) };
+  delete updated[host];
+  emit('save', { siteRules: updated });
+}
+
+function addRule() {
+  const host = newHost.value.trim();
+  if (!host) return;
+  const updated = { ...(props.settings.siteRules || {}), [host]: true };
+  emit('save', { siteRules: updated });
+  newHost.value = '';
+}
 </script>
+
+<style scoped>
+.sites-empty { color: var(--color-text-secondary); font-size: var(--text-sm); }
+.sites-list { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3); }
+.sites-rule { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); }
+.sites-rule__host { flex: 1; font-family: var(--font-mono); font-size: var(--text-sm); }
+.sites-rule__remove { background: transparent; border: none; color: var(--color-danger); cursor: pointer; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); }
+.sites-rule__remove:hover { background: var(--color-danger-subtle); }
+.sites-add { display: flex; gap: var(--space-2); }
+</style>
