@@ -258,8 +258,37 @@ onMounted(() => {
     });
   }
 
+  if (window.location.search.includes('demo=1')) {
+    loadDemoEntries();
+    return;
+  }
+
   refreshState();
 });
+
+function loadDemoEntries() {
+  const demo = [
+    { Uuid: 'a1', EntryId: 'a1', Title: 'Facebook', Url: 'https://www.facebook.com/login', UserName: 'user@example.com', Password: 'P@ssw0rd!2024', OneTimePassword: '', LastUsed: '2026-06-21T10:00:00Z', UsageCount: 12, Group: 'Social',
+      CustomFields: [
+        { Name: 'URL Messenger', Value: 'https://m.me/login', Type: 'Text' },
+        { Name: '*something', Value: 'special-token-abc123', Type: 'Text' },
+        { Name: 'Recovery Email', Value: 'recovery@example.com', Type: 'Text' },
+        { Name: 'Backup Code', Value: '12345-67890', Type: 'Text' },
+      ] },
+    { Uuid: 'b2', EntryId: 'b2', Title: 'GitHub', Url: 'https://github.com/login', UserName: 'octocat', Password: 'hunter2hunter2', OneTimePassword: '123456', LastUsed: '2026-06-20T15:00:00Z', UsageCount: 47, Group: 'Work' },
+    { Uuid: 'c3', EntryId: 'c3', Title: 'AWS Console', Url: 'https://console.aws.amazon.com', UserName: 'admin@company.com', Password: 'AWSP@ss!2024', LastUsed: '2026-06-19T08:30:00Z', UsageCount: 88, Group: 'Work' },
+    { Uuid: 'd4', EntryId: 'd4', Title: 'Gmail', Url: 'https://mail.google.com', UserName: 'me@gmail.com', Password: 'MyP@ss2024', LastUsed: '2026-06-18T12:00:00Z', UsageCount: 145, Group: 'Personal' },
+    { Uuid: 'e5', EntryId: 'e5', Title: 'forum.aigato.vn', Url: 'https://forum.aigato.vn/login', UserName: 'hieuck', Password: 'aigato!2026', LastUsed: '2026-06-22T01:00:00Z', UsageCount: 5, Group: 'Forums' },
+  ];
+  currentEntries.value = sortEntries(demo);
+  paired.value = true;
+  locked.value = false;
+  permissions.value = ['read', 'write', 'manageClients'];
+  currentUrlText.value = 'https://www.facebook.com/login';
+  statusText.value = 'Paired (demo)';
+  statusKind.value = '';
+  setMessage(`${currentEntries.value.length} demo login(s) loaded.`);
+}
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboardShortcuts);

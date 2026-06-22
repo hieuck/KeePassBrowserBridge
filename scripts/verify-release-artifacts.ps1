@@ -114,6 +114,11 @@ function Assert-ExtensionZip {
             "background.js",
             "contentScript.js",
             "customFields.js",
+            "design-tokens.css",
+            "dist/options.js",
+            "dist/popup.css",
+            "dist/popup.js",
+            "dist/runtime-dom.esm-bundler.js",
             "httpAuth.js",
             "icons/icon-16.png",
             "icons/icon-48.png",
@@ -123,7 +128,8 @@ function Assert-ExtensionZip {
             "options.js",
             "popup.css",
             "popup.html",
-            "popup.js"
+            "popup.js",
+            "shared-components.js"
         )
 
         if ($Browser -eq "chrome") {
@@ -159,7 +165,7 @@ function Assert-ExtensionZip {
 
         Assert-ZipEntrySet -Browser $Browser -Expected $expectedEntryNames -Actual $entryNames
 
-        foreach ($required in @("manifest.json", "background.js", "popup.html", "popup.js", "popup.css", "options.html", "options.js", "options.css", "contentScript.js", "customFields.js", "httpAuth.js", "icons/icon-16.png", "icons/icon-48.png", "icons/icon-128.png")) {
+        foreach ($required in @("manifest.json", "background.js", "popup.html", "popup.js", "popup.css", "dist/popup.js", "dist/popup.css", "dist/options.js", "design-tokens.css", "shared-components.js", "options.html", "options.js", "options.css", "contentScript.js", "customFields.js", "httpAuth.js", "icons/icon-16.png", "icons/icon-48.png", "icons/icon-128.png")) {
             if ($entryNames -notcontains $required) {
                 throw "$Browser extension package is missing required file: $required"
             }

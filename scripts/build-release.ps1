@@ -376,6 +376,11 @@ $commonExtensionFiles = @(
     "background.js",
     "contentScript.js",
     "customFields.js",
+    "design-tokens.css",
+    "dist\options.js",
+    "dist\popup.css",
+    "dist\popup.js",
+    "dist\runtime-dom.esm-bundler.js",
     "httpAuth.js",
     "icons\icon-16.png",
     "icons\icon-48.png",
@@ -385,7 +390,8 @@ $commonExtensionFiles = @(
     "options.js",
     "popup.css",
     "popup.html",
-    "popup.js"
+    "popup.js",
+    "shared-components.js"
 )
 $chromeExtensionFiles = $commonExtensionFiles + @(
     "compat.js",

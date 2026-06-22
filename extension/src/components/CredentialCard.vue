@@ -33,7 +33,7 @@
         </template>
       </div>
     </div>
-    <button type="button" class="btn-copy" :disabled="!canEdit" @click.stop="$emit('edit', entry)">✎ Edit</button>
+    <button type="button" class="btn-edit" :disabled="!canEdit" @click.stop="$emit('edit', entry)">✎ Edit</button>
   </div>
 </template>
 

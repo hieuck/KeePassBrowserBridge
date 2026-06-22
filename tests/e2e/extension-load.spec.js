@@ -854,7 +854,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('edits and saves an existing login through the background contract', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-edit', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -897,7 +897,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('omits blank TOTP secret when editing a popup login', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-edit', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -911,7 +911,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('can clear an existing TOTP secret when editing a popup login', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-edit', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -931,7 +931,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
   test('generates a new password while editing an existing login', async ({ page }) => {
     await page.locator('#queryLogins').click();
-    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-edit', { hasText: 'Edit' }).click();
 
     const form = page.locator('.edit-form');
     await expect(form).toBeVisible();
@@ -964,7 +964,7 @@ test.describe('KeePassBrowserBridge Extension', () => {
 
     await createForm.locator('[data-action="cancel"]').click();
     await page.locator('#queryLogins').click();
-    await page.locator('.credential-item .btn-copy', { hasText: 'Edit' }).click();
+    await page.locator('.credential-item .btn-edit', { hasText: 'Edit' }).click();
 
     const editForm = page.locator('.edit-form').last();
     await expect(editForm.locator('[name="password"]')).toHaveAttribute('type', 'password');
