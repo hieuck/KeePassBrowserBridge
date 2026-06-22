@@ -3,6 +3,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   window.__keepassBrowserBridgeContentScriptLoaded = true;
   window.__keepassBrowserBridgeInlineTargets = new WeakSet();
   window.__keepassBrowserBridgeActivePicker = null;
+  window.__keepassBrowserBridgePickerReady = null;
   window.__keepassBrowserBridgeMutationPrompt = null;
   window.__keepassBrowserBridgeBootAt = Date.now();
   window.__keepassBrowserBridgeLastCredentialKey = "";
@@ -1048,137 +1049,31 @@ function createInlinePickerCloseButton() {
 function showInlinePicker(button, entries) {
   closeInlinePicker();
   entries = sortCredentialEntries(entries || []);
-  const picker = document.createElement("div");
-  picker.className = "kbb-inline-picker";
-  picker.setAttribute("role", "menu");
-  applyPickerStyle(picker);
-  const header = document.createElement("div");
-  header.textContent = `${entries.length} KeePass logins`;
-  header.style.padding = "8px 10px";
-  header.style.borderBottom = "1px solid #d7dde5";
-  header.style.color = "#667085";
-  header.style.font =
-    '600 12px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  picker.appendChild(header);
-  const items = [];
-  let empty = null;
-  if (entries.length > 6) {
-    const search = document.createElement("input");
-    search.type = "search";
-    search.className = "kbb-inline-picker-search";
-    search.placeholder = "Search logins";
-    search.setAttribute("aria-label", "Search KeePass logins");
-    applyPickerSearchStyle(search);
-    search.addEventListener("mousedown", (event) => event.stopPropagation());
-    search.addEventListener("input", () => {
-      filterInlinePickerItems(items, empty, search.value);
-      positionInlinePicker(button, picker);
-    });
-    search.addEventListener("keydown", (event) =>
-      handlePickerSearchKeydown(event, button, picker, items, empty, search),
-    );
-    picker.appendChild(search);
-    empty = createInlinePickerEmptyState(() => {
-      clearInlinePickerSearch(search, items, empty, button, picker);
-    });
-    empty.style.display = "none";
-    picker.appendChild(empty);
-  }
-  const maxInitialItems = 5;
-  let showMoreButton = null;
-  for (const [index, entry] of entries.entries()) {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.setAttribute("role", "menuitem");
-    item.title = "Fill from KeePass";
-    item.dataset.kbbEntryTitle = entry.Title || "";
-    item.dataset.kbbSearchText = inlinePickerSearchText(entry);
-    if (index >= maxInitialItems) {
-      item.dataset.kbbInitiallyHidden = "true";
+  const items = entries.map((entry) => ({
+    name: entry.Title || "(Untitled)",
+    username: entry.UserName || "",
+    url: entry.Url || "",
+    group: entry.Group || "",
+    password: entry.Password || "",
+    oneTimePassword: entry.OneTimePassword || "",
+    customFields: entry.CustomFields || [],
+    entryId: entry.EntryId || "",
+    selected: Boolean(entry.selected),
+    _entry: entry,
+  }));
+  const mountPicker = () => {
+    if (!customElements.get("kbb-picker")) {
+      return false;
     }
-    applyPickerItemStyle(item);
-    if (index >= maxInitialItems) {
-      item.style.display = "none";
-    }
-    const title = document.createElement("div");
-    title.textContent = entry.Title || "(Untitled)";
-    title.style.fontWeight = "600";
-    title.style.fontSize = "13px";
-    title.style.marginBottom = "1px";
-    title.style.overflow = "hidden";
-    title.style.textOverflow = "ellipsis";
-    title.style.whiteSpace = "nowrap";
-    const detail = document.createElement("div");
-    detail.textContent = [entry.Group, entry.UserName || entry.Url || ""].filter(Boolean).join(" - ");
-    detail.style.color = "#667085";
-    detail.style.fontSize = "12px";
-    detail.style.overflow = "hidden";
-    detail.style.textOverflow = "ellipsis";
-    detail.style.whiteSpace = "nowrap";
-    const actions = document.createElement("div");
-    actions.style.display = "flex";
-    actions.style.flexWrap = "wrap";
-    actions.style.gap = "4px";
-    actions.style.marginTop = "7px";
-    const fillFormBtn = createPickerActionButton("✓ Fill form", "form", button, entry);
-    fillFormBtn.style.flex = "1 1 100%";
-    fillFormBtn.style.fontWeight = "600";
-    fillFormBtn.style.background = "#4a90e2";
-    fillFormBtn.style.color = "#ffffff";
-    fillFormBtn.style.borderColor = "#4a90e2";
-    actions.appendChild(fillFormBtn);
-    if (entry.UserName) {
-      const userBtn = createPickerActionButton("Fill user", "username", button, entry);
-      userBtn.style.flex = "1 1 0";
-      userBtn.style.minWidth = "0";
-      userBtn.style.width = "calc(50% - 2px)";
-      const copyUser = createPickerActionButton("Copy user", "copy-username", button, entry);
-      copyUser.style.flex = "1 1 0";
-      copyUser.style.minWidth = "0";
-      copyUser.style.width = "calc(50% - 2px)";
-      actions.appendChild(userBtn);
-      actions.appendChild(copyUser);
-    }
-    if (entry.Password) {
-      const passBtn = createPickerActionButton("Fill pass", "password", button, entry);
-      passBtn.style.flex = "1 1 0";
-      passBtn.style.minWidth = "0";
-      passBtn.style.width = "calc(50% - 2px)";
-      const copyPass = createPickerActionButton("Copy pass", "copy-password", button, entry);
-      copyPass.style.flex = "1 1 0";
-      copyPass.style.minWidth = "0";
-      copyPass.style.width = "calc(50% - 2px)";
-      actions.appendChild(passBtn);
-      actions.appendChild(copyPass);
-    }
-    if (entry.OneTimePassword) {
-      const otpBtn = createPickerActionButton("Fill OTP", "otp", button, entry);
-      otpBtn.style.flex = "1 1 0";
-      otpBtn.style.minWidth = "0";
-      otpBtn.style.width = "calc(50% - 2px)";
-      const copyOtp = createPickerActionButton("Copy OTP", "copy-otp", button, entry);
-      copyOtp.style.flex = "1 1 0";
-      copyOtp.style.minWidth = "0";
-      copyOtp.style.width = "calc(50% - 2px)";
-      actions.appendChild(otpBtn);
-      actions.appendChild(copyOtp);
-    }
-    const visibleCustomFields = (entry.CustomFields || []).filter(
-      (field) => field && field.IsProtected !== true && field.Name && typeof field.Value === "string"
-    );
-    if (visibleCustomFields.length > 0) {
-      const customGroup = createPickerCustomFieldGroup(button, entry, visibleCustomFields);
-      actions.appendChild(customGroup);
-    }
-    item.appendChild(title);
-    item.appendChild(detail);
-    item.appendChild(actions);
-    item.addEventListener("mousedown", (event) => event.preventDefault());
-    item.addEventListener("keydown", (event) =>
-      handlePickerItemKeydown(event, button, picker, items),
-    );
-    item.addEventListener("click", (event) => {
-      if (event.target.closest('[data-kbb-action]')) return;
+    const picker = document.createElement("kbb-picker");
+    picker.setAttribute("placeholder", "Search KeePass logins…");
+    picker.setAttribute("show-search", String(items.length > 6));
+    picker.setAttribute("aria-label", `${items.length} KeePass logins`);
+    picker.addEventListener("kbb-fill", (event) => {
+      const detail = event.detail || {};
+      const cred = detail.credential || {};
+      const entry = cred._entry;
+      if (!entry) return;
       event.preventDefault();
       event.stopPropagation();
       rememberMultiStepCredentialIfNeeded(fillCredentialForButton(button, entry), entry);
@@ -1186,32 +1081,38 @@ function showInlinePicker(button, entries) {
       closeInlinePicker();
       setInlineButtonState(button, "ok");
     });
-    picker.appendChild(item);
-    items.push(item);
-  }
-  if (entries.length > maxInitialItems) {
-    showMoreButton = document.createElement("button");
-    showMoreButton.type = "button";
-    showMoreButton.dataset.kbbAction = "show-more";
-    showMoreButton.textContent = `Show ${entries.length - maxInitialItems} more`;
-    applyPickerShowMoreStyle(showMoreButton);
-    showMoreButton.addEventListener("mousedown", (event) => event.preventDefault());
-    showMoreButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      for (const item of items) {
-        item.dataset.kbbInitiallyHidden = "false";
-        item.style.display = "block";
-      }
-      showMoreButton.remove();
-      positionInlinePicker(button, picker);
+    picker.addEventListener("kbb-close", () => {
+      closeInlinePicker();
     });
-    picker.appendChild(showMoreButton);
+    document.documentElement.appendChild(picker);
+    window.__keepassBrowserBridgeActivePicker = picker;
+    picker.credentials = items;
+    positionInlinePicker(button, picker);
+    requestAnimationFrame(() => positionInlinePicker(button, picker));
+    const searchInput = picker.shadowRoot && picker.shadowRoot.querySelector
+      ? picker.shadowRoot.querySelector(".picker-search-input")
+      : null;
+    if (searchInput && searchInput.focus) {
+      searchInput.focus();
+    } else if (picker.focus) {
+      picker.focus();
+    }
+    return true;
+  };
+  if (mountPicker()) return;
+  if (customElements.whenDefined) {
+    customElements
+      .whenDefined("kbb-picker")
+      .then(() => {
+        if (!window.__keepassBrowserBridgeActivePicker) mountPicker();
+      })
+      .catch(() => {});
   }
-  document.documentElement.appendChild(picker);
-  positionInlinePicker(button, picker);
-  window.__keepassBrowserBridgeActivePicker = picker;
-  focusInlinePickerStart(picker, items);
+  ensureInlinePickerComponent()
+    .then(() => {
+      if (!window.__keepassBrowserBridgeActivePicker) mountPicker();
+    })
+    .catch(() => {});
 }
 function createPickerActionButton(label, action, sourceButton, entry) {
   const actionButton = document.createElement("span");
@@ -2313,4 +2214,30 @@ function referencedElementText(input, attributeName) {
 }
 function stringEquals(left, right) {
   return String(left || "").toLowerCase() === String(right || "").toLowerCase();
+}
+function ensureInlinePickerComponent() {
+  if (window.__keepassBrowserBridgePickerReady) {
+    return window.__keepassBrowserBridgePickerReady;
+  }
+  const getUrl = (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getURL)
+    || (typeof browser !== "undefined" && browser.runtime && browser.runtime.getURL);
+  if (!getUrl) {
+    window.__keepassBrowserBridgePickerReady = Promise.reject(new Error("Extension URL unavailable"));
+    return window.__keepassBrowserBridgePickerReady;
+  }
+  const moduleUrl = getUrl("src/components/Picker.web.js");
+  window.__keepassBrowserBridgePickerReady = import(moduleUrl)
+    .then(() => true)
+    .catch((error) => {
+      window.__keepassBrowserBridgePickerReady = null;
+      throw error;
+    });
+  return window.__keepassBrowserBridgePickerReady;
+}
+if (typeof window !== "undefined" && typeof customElements !== "undefined") {
+  try {
+    ensureInlinePickerComponent();
+  } catch (error) {
+    // best-effort preload; will retry on demand
+  }
 }

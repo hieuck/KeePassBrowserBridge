@@ -1,4 +1,4 @@
-const h = {
+const l = {
   key: "M10.5 0a4.5 4.5 0 1 1-3.18 7.68L2 13l-1.5 1.5L2 16l1.5-1.5L5 13l5.32-5.32A4.5 4.5 0 0 1 10.5 0zm-2 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z",
   lock: "M3 7V5a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm2 0h6V5a3 3 0 0 0-6 0v2z",
   "lock-open": "M3 7V5a5 5 0 0 1 9.9-1H11a3 3 0 0 0-5 1v2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm0 2v6h10V9H3z",
@@ -21,48 +21,48 @@ const h = {
   user: "M10.561 8.073a6.005 6.005 0 0 1 3.432 5.142.75.75 0 1 1-1.498.07 4.5 4.5 0 0 0-8.99 0 .75.75 0 0 1-1.498-.07 6.004 6.004 0 0 1 3.431-5.142 3.999 3.999 0 1 0 5.123 0zM10.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
   "user-plus": "M5.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3 6.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0zM7.5 9a4.5 4.5 0 0 0-3.83 2.146.75.75 0 1 0 1.276.79A3 3 0 0 1 7.5 11h.75a.75.75 0 0 0 0-1.5H7.5zM10 4.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75zM13 8.75a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0v-2.5z"
 };
-function r(e, t) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${t}"/></svg>`;
+function h(c, e) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
 }
-const a = Object.fromEntries(
-  Object.entries(h).map(([e, t]) => [e, r(e, t)])
+const i = Object.fromEntries(
+  Object.entries(l).map(([c, e]) => [c, h(c, e)])
 );
-a.key;
-a.lock;
-a["lock-open"];
-a.unlock;
-a.copy;
-a.check;
-a.edit;
-a.pencil;
-a.plus;
-a.trash;
-a.search;
-a.filter;
-a.close;
-a["chevron-down"];
-a.eye;
-a["eye-off"];
-a.shield;
-a["shield-check"];
-a.globe;
-a.user;
-a["user-plus"];
-function b(e = "kbb") {
+i.key;
+i.lock;
+i["lock-open"];
+i.unlock;
+i.copy;
+i.check;
+i.edit;
+i.pencil;
+i.plus;
+i.trash;
+i.search;
+i.filter;
+i.close;
+i["chevron-down"];
+i.eye;
+i["eye-off"];
+i.shield;
+i["shield-check"];
+i.globe;
+i.user;
+i["user-plus"];
+function d(c = "kbb") {
   if (!(typeof customElements > "u"))
-    for (const [t, i] of Object.entries(a)) {
-      const n = `${e}-icon-${t}`;
-      if (customElements.get(n)) continue;
-      class c extends HTMLElement {
+    for (const [e, t] of Object.entries(i)) {
+      const a = `${c}-icon-${e}`;
+      if (customElements.get(a)) continue;
+      class s extends HTMLElement {
         connectedCallback() {
-          const l = this.getAttribute("size") || 16;
-          this.innerHTML = i.replace('width="16"', `width="${l}"`).replace('height="16"', `height="${l}"`);
+          const r = this.getAttribute("size") || 16;
+          this.innerHTML = t.replace('width="16"', `width="${r}"`).replace('height="16"', `height="${r}"`);
         }
       }
-      customElements.define(n, c);
+      customElements.define(a, s);
     }
 }
-class d extends HTMLElement {
+class p extends HTMLElement {
   static get observedAttributes() {
     return ["variant", "size", "type", "disabled", "loading", "block", "leading-icon", "trailing-icon"];
   }
@@ -75,20 +75,310 @@ class d extends HTMLElement {
   attributeChangedCallback() {
     this.render();
   }
-  onClick(t) {
+  onClick(e) {
     if (this.hasAttribute("disabled") || this.hasAttribute("loading")) {
-      t.preventDefault(), t.stopPropagation();
+      e.preventDefault(), e.stopPropagation();
       return;
     }
-    this.dispatchEvent(new CustomEvent("kbb-click", { bubbles: !0, detail: { original: t } }));
+    this.dispatchEvent(new CustomEvent("kbb-click", { bubbles: !0, detail: { original: e } }));
   }
   render() {
-    const t = this.getAttribute("variant") || "secondary", i = this.getAttribute("size") || "md", n = this.getAttribute("type") || "button", c = this.hasAttribute("block"), s = this.hasAttribute("loading"), l = this.hasAttribute("disabled") || s, o = this.textContent.trim();
-    this.innerHTML = `<button type="${n}" class="kbb-btn kbb-btn--${t} kbb-btn--${i}${c ? " kbb-btn--block" : ""}${s ? " kbb-btn--loading" : ""}" ${l ? "disabled" : ""} aria-busy="${s}" aria-disabled="${l}"><span class="kbb-btn__label">${u(o)}</span></button>`;
+    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", a = this.getAttribute("type") || "button", s = this.hasAttribute("block"), n = this.hasAttribute("loading"), r = this.hasAttribute("disabled") || n, o = this.textContent.trim();
+    this.innerHTML = `<button type="${a}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${s ? " kbb-btn--block" : ""}${n ? " kbb-btn--loading" : ""}" ${r ? "disabled" : ""} aria-busy="${n}" aria-disabled="${r}"><span class="kbb-btn__label">${u(o)}</span></button>`;
   }
 }
-function u(e) {
-  return String(e || "").replace(/[&<>"']/g, (t) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[t]);
+function u(c) {
+  return String(c || "").replace(/[&<>"']/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[e]);
 }
-typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", d);
-b("kbb");
+typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", p);
+const b = `
+:host {
+  position: absolute;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  max-width: 400px;
+  max-height: 320px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    color: #f0f0f0;
+    background: #24292e;
+    border-color: #444d56;
+  }
+  .picker-search { background: #1a1a1a; border-color: #444d56; }
+  .picker-item:hover, .picker-item--active { background: #2f363d; }
+  .picker-item--selected { background: rgba(56, 139, 253, 0.2); }
+  .picker-empty { color: #8b949e; }
+}
+
+.picker-search {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e1e4e8;
+  background: #f6f8fa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.picker-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  color: inherit;
+}
+
+.picker-list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.picker-item:hover,
+.picker-item--active {
+  background: #f6f8fa;
+}
+
+.picker-item--selected {
+  background: rgba(56, 139, 253, 0.1);
+}
+
+.picker-item:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.picker-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #e1e4e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: #586069;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .picker-avatar { background: #444d56; color: #adbac7; }
+}
+
+.picker-avatar--favicon {
+  object-fit: contain;
+  background: #ffffff;
+  padding: 4px;
+}
+
+.picker-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.picker-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-username {
+  font-size: 12px;
+  color: #586069;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-color-scheme: dark) {
+  .picker-username { color: #8b949e; }
+}
+
+.picker-empty {
+  padding: 20px;
+  text-align: center;
+  color: #586069;
+  font-size: 13px;
+}
+
+.picker-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+`;
+class f extends HTMLElement {
+  static get observedAttributes() {
+    return ["credentials", "placeholder", "show-search", "position"];
+  }
+  constructor() {
+    super(), this.attachShadow({ mode: "open" }), this._activeIndex = -1, this._credentials = [], this._search = "", this._boundOnKeyDown = this._onKeyDown.bind(this), this._boundOnClickOutside = this._onClickOutside.bind(this);
+  }
+  connectedCallback() {
+    this._render(), this._upgradeProperty("credentials"), document.addEventListener("keydown", this._boundOnKeyDown, !0), document.addEventListener("mousedown", this._boundOnClickOutside, !0);
+  }
+  disconnectedCallback() {
+    document.removeEventListener("keydown", this._boundOnKeyDown, !0), document.removeEventListener("mousedown", this._boundOnClickOutside, !0);
+  }
+  attributeChangedCallback(e, t, a) {
+    if (t !== a) {
+      if (e === "credentials")
+        try {
+          this._credentials = JSON.parse(a || "[]");
+        } catch {
+          this._credentials = [];
+        }
+      this.isConnected && this._render();
+    }
+  }
+  _upgradeProperty(e) {
+    if (Object.prototype.hasOwnProperty.call(this, e)) {
+      const t = this[e];
+      delete this[e], this[e] = t;
+    }
+  }
+  set credentials(e) {
+    this._credentials = Array.isArray(e) ? e : [], this.isConnected && this._render();
+  }
+  get credentials() {
+    return this._credentials;
+  }
+  get _filtered() {
+    if (!this._search) return this._credentials;
+    const e = this._search.toLowerCase();
+    return this._credentials.filter(
+      (t) => (t.name || "").toLowerCase().includes(e) || (t.username || "").toLowerCase().includes(e) || (t.url || "").toLowerCase().includes(e)
+    );
+  }
+  _render() {
+    var s;
+    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search") !== "false", a = this._filtered;
+    this._activeIndex = a.length > 0 ? 0 : -1, this.shadowRoot.innerHTML = `
+      <style>${b}</style>
+      ${t ? `
+        <div class="picker-search">
+          <span class="picker-icon" aria-hidden="true">${i.search || ""}</span>
+          <input
+            type="text"
+            class="picker-search-input"
+            placeholder="${this._escapeHtml(e)}"
+            aria-label="Search credentials"
+            value="${this._escapeHtml(this._search)}"
+          />
+        </div>
+      ` : ""}
+      <ul class="picker-list" role="listbox" aria-label="Credentials">
+        ${a.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
+        ${a.map((n, r) => this._renderItem(n, r)).join("")}
+      </ul>
+    `, (s = this.shadowRoot.querySelector(".picker-search-input")) == null || s.addEventListener("input", (n) => {
+      var r;
+      this._search = n.target.value, this._activeIndex = 0, this._render(), (r = this.shadowRoot.querySelector(".picker-search-input")) == null || r.focus();
+    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((n) => {
+      n.addEventListener("click", () => {
+        const r = Number(n.dataset.index), o = a[r];
+        o && this._emitFill(o);
+      });
+    }), this._activeIndex >= 0 && this._highlightActive();
+  }
+  _renderItem(e, t) {
+    const a = (e.name || e.username || "?").charAt(0).toUpperCase(), s = e.url ? this._faviconUrl(e.url) : null, n = s ? `<img class="picker-avatar picker-avatar--favicon" src="${s}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${a}</div>'" />` : `<div class="picker-avatar">${a}</div>`;
+    return `
+      <li
+        class="picker-item${t === this._activeIndex ? " picker-item--active" : ""}${e.selected ? " picker-item--selected" : ""}"
+        role="option"
+        aria-selected="${t === this._activeIndex}"
+        data-index="${t}"
+        tabindex="${t === this._activeIndex ? "0" : "-1"}"
+      >
+        ${n}
+        <div class="picker-info">
+          <div class="picker-name">${this._escapeHtml(e.name || "(no name)")}</div>
+          ${e.username ? `<div class="picker-username">${this._escapeHtml(e.username)}</div>` : ""}
+        </div>
+      </li>
+    `;
+  }
+  _faviconUrl(e) {
+    try {
+      return `https://www.google.com/s2/favicons?domain=${new URL(e).hostname}&sz=32`;
+    } catch {
+      return null;
+    }
+  }
+  _escapeHtml(e) {
+    return String(e).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  _highlightActive() {
+    const e = this.shadowRoot.querySelectorAll(".picker-item");
+    e.forEach((a, s) => {
+      a.classList.toggle("picker-item--active", s === this._activeIndex), a.setAttribute("aria-selected", s === this._activeIndex), a.setAttribute("tabindex", s === this._activeIndex ? "0" : "-1");
+    });
+    const t = e[this._activeIndex];
+    t && t.scrollIntoView({ block: "nearest" });
+  }
+  _onKeyDown(e) {
+    if (!this.isConnected) return;
+    const t = this._filtered;
+    if (e.key === "ArrowDown")
+      e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.min(this._activeIndex + 1, t.length - 1), this._highlightActive();
+    else if (e.key === "ArrowUp")
+      e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.max(this._activeIndex - 1, 0), this._highlightActive();
+    else if (e.key === "Enter") {
+      e.preventDefault(), e.stopPropagation();
+      const a = t[this._activeIndex];
+      a && this._emitFill(a);
+    } else e.key === "Escape" && (e.preventDefault(), e.stopPropagation(), this._emitClose());
+  }
+  _onClickOutside(e) {
+    this.contains(e.target) || this._emitClose();
+  }
+  _emitFill(e) {
+    this.dispatchEvent(new CustomEvent("kbb-fill", {
+      bubbles: !0,
+      composed: !0,
+      detail: { credential: e }
+    }));
+  }
+  _emitClose() {
+    this.dispatchEvent(new CustomEvent("kbb-close", {
+      bubbles: !0,
+      composed: !0
+    }));
+  }
+}
+customElements.get("kbb-picker") || customElements.define("kbb-picker", f);
+d("kbb");
