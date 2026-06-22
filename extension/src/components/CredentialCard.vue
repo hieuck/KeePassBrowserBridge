@@ -29,11 +29,21 @@
         <span class="field-value">{{ field.IsProtected ? '••••••••' : field.Value }}</span>
         <template v-if="!field.IsProtected">
           <button type="button" class="field-fill-btn" :title="'Fill focused field with ' + field.Name" @click.stop="$emit('fill', entry, 'custom', field.Name)">Fill {{ field.Name }}</button>
-          <button type="button" class="copy-btn" title="Copy to clipboard" @click.stop="$emit('copy', field.Name, field.Value)">📋</button>
+          <button type="button" class="copy-btn" title="Copy to clipboard" @click.stop="$emit('copy', field.Name, field.Value)">
+            <svg class="btn-icon-svg" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path>
+              <path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
+            </svg>
+          </button>
         </template>
       </div>
     </div>
-    <button type="button" class="btn-edit" :disabled="!canEdit" @click.stop="$emit('edit', entry)">✎ Edit</button>
+    <button type="button" class="btn-edit" :disabled="!canEdit" @click.stop="$emit('edit', entry)">
+      <svg class="btn-icon-svg" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <path fill="currentColor" d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.236L2.677 14.17l-.93.93.93-.93 8.51-8.51-1.998-1.997Z"></path>
+      </svg>
+      <span>Edit</span>
+    </button>
   </div>
 </template>
 
