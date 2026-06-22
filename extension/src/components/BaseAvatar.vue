@@ -20,14 +20,14 @@
 import { computed, ref } from 'vue';
 
 const PALETTE = [
-  '#175cd3',
-  '#b42318',
-  '#067647',
-  '#b54708',
-  '#6941c6',
-  '#363f72',
-  '#c01048',
-  '#4a90e2',
+  'var(--color-accent)',
+  'var(--color-danger)',
+  'var(--color-success)',
+  'var(--color-warning)',
+  '#7c3aed',
+  '#0891b2',
+  '#be185d',
+  '#65a30d',
 ];
 
 const props = defineProps({

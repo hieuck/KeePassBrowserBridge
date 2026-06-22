@@ -104,7 +104,7 @@ function toggle() {
   background: white;
   border-radius: 50%;
   transition: transform var(--transition-fast);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 .kbb-toggle__switch--on .kbb-toggle__thumb {
   transform: translateX(16px);

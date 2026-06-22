@@ -90,7 +90,7 @@ onUnmounted(() => {
 .kbb-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: color-mix(in srgb, var(--color-text) 50%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;

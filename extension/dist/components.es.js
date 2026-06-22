@@ -1,4 +1,4 @@
-const g = {
+const f = {
   key: "M10.5 0a4.5 4.5 0 1 1-3.18 7.68L2 13l-1.5 1.5L2 16l1.5-1.5L5 13l5.32-5.32A4.5 4.5 0 0 1 10.5 0zm-2 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z",
   lock: "M3 7V5a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm2 0h6V5a3 3 0 0 0-6 0v2z",
   "lock-open": "M3 7V5a5 5 0 0 1 9.9-1H11a3 3 0 0 0-5 1v2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm0 2v6h10V9H3z",
@@ -21,48 +21,48 @@ const g = {
   user: "M10.561 8.073a6.005 6.005 0 0 1 3.432 5.142.75.75 0 1 1-1.498.07 4.5 4.5 0 0 0-8.99 0 .75.75 0 0 1-1.498-.07 6.004 6.004 0 0 1 3.431-5.142 3.999 3.999 0 1 0 5.123 0zM10.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
   "user-plus": "M5.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3 6.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0zM7.5 9a4.5 4.5 0 0 0-3.83 2.146.75.75 0 1 0 1.276.79A3 3 0 0 1 7.5 11h.75a.75.75 0 0 0 0-1.5H7.5zM10 4.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75zM13 8.75a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0v-2.5z"
 };
-function v(r, e) {
+function g(c, e) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
 }
-const s = Object.fromEntries(
-  Object.entries(g).map(([r, e]) => [r, v(r, e)])
+const a = Object.fromEntries(
+  Object.entries(f).map(([c, e]) => [c, g(c, e)])
 );
-s.key;
-s.lock;
-s["lock-open"];
-s.unlock;
-s.copy;
-s.check;
-s.edit;
-s.pencil;
-s.plus;
-s.trash;
-s.search;
-s.filter;
-s.close;
-s["chevron-down"];
-s.eye;
-s["eye-off"];
-s.shield;
-s["shield-check"];
-s.globe;
-s.user;
-s["user-plus"];
-function _(r = "kbb") {
+a.key;
+a.lock;
+a["lock-open"];
+a.unlock;
+a.copy;
+a.check;
+a.edit;
+a.pencil;
+a.plus;
+a.trash;
+a.search;
+a.filter;
+a.close;
+a["chevron-down"];
+a.eye;
+a["eye-off"];
+a.shield;
+a["shield-check"];
+a.globe;
+a.user;
+a["user-plus"];
+function x(c = "kbb") {
   if (!(typeof customElements > "u"))
-    for (const [e, t] of Object.entries(s)) {
-      const i = `${r}-icon-${e}`;
-      if (customElements.get(i)) continue;
-      class a extends HTMLElement {
+    for (const [e, t] of Object.entries(a)) {
+      const r = `${c}-icon-${e}`;
+      if (customElements.get(r)) continue;
+      class o extends HTMLElement {
         connectedCallback() {
           const n = this.getAttribute("size") || 16;
           this.innerHTML = t.replace('width="16"', `width="${n}"`).replace('height="16"', `height="${n}"`);
         }
       }
-      customElements.define(i, a);
+      customElements.define(r, o);
     }
 }
-class k extends HTMLElement {
+class _ extends HTMLElement {
   static get observedAttributes() {
     return ["variant", "size", "type", "disabled", "loading", "block", "leading-icon", "trailing-icon"];
   }
@@ -83,26 +83,57 @@ class k extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-click", { bubbles: !0, detail: { original: e } }));
   }
   render() {
-    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", i = this.getAttribute("type") || "button", a = this.hasAttribute("block"), l = this.hasAttribute("loading"), n = this.hasAttribute("disabled") || l, u = this.textContent.trim();
-    this.innerHTML = `<button type="${i}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${a ? " kbb-btn--block" : ""}${l ? " kbb-btn--loading" : ""}" ${n ? "disabled" : ""} aria-busy="${l}" aria-disabled="${n}"><span class="kbb-btn__label">${x(u)}</span></button>`;
+    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", r = this.getAttribute("type") || "button", o = this.hasAttribute("block"), d = this.hasAttribute("loading"), n = this.hasAttribute("disabled") || d, i = this.textContent.trim();
+    this.innerHTML = `<button type="${r}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${o ? " kbb-btn--block" : ""}${d ? " kbb-btn--loading" : ""}" ${n ? "disabled" : ""} aria-busy="${d}" aria-disabled="${n}"><span class="kbb-btn__label">${k(i)}</span></button>`;
   }
 }
-function x(r) {
-  return String(r || "").replace(/[&<>"']/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[e]);
+function k(c) {
+  return String(c || "").replace(/[&<>"']/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[e]);
 }
-typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", k);
+typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", _);
 const y = `
 :host {
+  --color-bg: #fafbfc;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #586069;
+  --color-text-muted: #8b949e;
+  --color-border: #e1e4e8;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-subtle: #dbeafe;
+  --color-success: #10b981;
+  --color-danger: #d73a49;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
   position: absolute;
   z-index: 2147483647;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 14px;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
   line-height: 1.4;
-  color: #1a1a1a;
-  background: #ffffff;
-  border: 1px solid #e1e4e8;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   min-width: 280px;
   max-width: 400px;
   max-height: 420px;
@@ -111,15 +142,26 @@ const y = `
   flex-direction: column;
 }
 
+@media (prefers-color-scheme: dark) {
+  :host {
+    --color-bg: #0f172a;
+    --color-surface: #1e293b;
+    --color-text: #f0f0f0;
+    --color-text-secondary: #8b949e;
+    --color-text-muted: #cbd5e1;
+    --color-border: #334155;
+  }
+}
+
 .picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e1e4e8;
-  background: #f6f8fa;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 
 .picker-header__title {
@@ -135,20 +177,20 @@ const y = `
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: inherit;
   opacity: 0.6;
   padding: 0;
 }
 
-.picker-header__close:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+.picker-header__close:hover { opacity: 1; background: var(--color-bg); }
 
 .picker-header__close svg { width: 14px; height: 14px; fill: currentColor; }
 
 .picker-search {
-  padding: 8px 10px;
-  border-bottom: 1px solid #e1e4e8;
-  background: #f6f8fa;
+  padding: var(--space-2) 10px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -168,14 +210,14 @@ const y = `
   overflow-y: auto;
   list-style: none;
   margin: 0;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
 }
 
 .picker-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
   user-select: none;
   border: none;
@@ -188,40 +230,40 @@ const y = `
 
 .picker-item:hover,
 .picker-item--active {
-  background: #f6f8fa;
+  background: var(--color-bg);
 }
 
 .picker-item--selected {
-  background: rgba(56, 139, 253, 0.1);
+  background: var(--color-accent-subtle);
 }
 
 .picker-item:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--color-accent);
   outline-offset: -2px;
 }
 
 .picker-avatar {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
-  background: #e1e4e8;
+  border-radius: var(--radius-md);
+  background: var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 12px;
-  color: #586069;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
 }
 
 @media (prefers-color-scheme: dark) {
-  .picker-avatar { background: #444d56; color: #adbac7; }
+  .picker-avatar { background: var(--color-border); color: var(--color-text-secondary); }
 }
 
 .picker-avatar--favicon {
   object-fit: contain;
-  background: #ffffff;
-  padding: 4px;
+  background: var(--color-surface);
+  padding: var(--space-1);
 }
 
 .picker-info {
@@ -237,19 +279,19 @@ const y = `
 }
 
 .picker-username {
-  font-size: 12px;
-  color: #586069;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .picker-expanded {
-  padding: 4px 12px 8px 50px;
+  padding: var(--space-1) var(--space-3) var(--space-2) 50px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  border-bottom: 1px solid #f0f0f0;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .picker-action-row {
@@ -259,39 +301,39 @@ const y = `
 }
 
 .picker-action {
-  padding: 3px 8px;
-  border: 1px solid #e1e4e8;
-  border-radius: 4px;
-  background: #ffffff;
-  font-size: 11px;
+  padding: 3px var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
   font-weight: 500;
   cursor: pointer;
-  color: #1a1a1a;
+  color: var(--color-text);
   white-space: nowrap;
   font-family: inherit;
-  transition: background 120ms, border-color 120ms;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .picker-action:hover {
-  background: #f6f8fa;
-  border-color: #2563eb;
-  color: #2563eb;
+  background: var(--color-bg);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .picker-custom-header {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  color: #586069;
+  color: var(--color-text-secondary);
   letter-spacing: 0.04em;
   margin: 2px 0;
 }
 
 .picker-empty {
-  padding: 20px;
+  padding: var(--space-5);
   text-align: center;
-  color: #586069;
-  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
 }
 
 .picker-icon {
@@ -302,21 +344,16 @@ const y = `
 }
 
 @media (prefers-color-scheme: dark) {
-  :host {
-    color: #f0f0f0;
-    background: #24292e;
-    border-color: #444d56;
-  }
-  .picker-header { background: #1a1a1a; border-color: #444d56; }
-  .picker-search { background: #1a1a1a; border-color: #444d56; }
-  .picker-item:hover, .picker-item--active { background: #2f363d; }
-  .picker-item--selected { background: rgba(56, 139, 253, 0.2); }
-  .picker-empty { color: #cbd5e1; }
-  .picker-username { color: #cbd5e1; }
-  .picker-action { background: #2f363d; border-color: #444d56; color: #f0f0f0; }
-  .picker-action:hover { background: #3b4450; border-color: #60a5fa; color: #60a5fa; }
-  .picker-custom-header { color: #cbd5e1; }
-  .picker-expanded { border-color: #444d56; }
+  .picker-header { background: var(--color-surface); border-color: var(--color-border); }
+  .picker-search { background: var(--color-surface); border-color: var(--color-border); }
+  .picker-item:hover, .picker-item--active { background: var(--color-surface); }
+  .picker-item--selected { background: var(--color-accent-subtle); }
+  .picker-empty { color: var(--color-text-muted); }
+  .picker-username { color: var(--color-text-muted); }
+  .picker-action { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
+  .picker-action:hover { background: var(--color-bg); border-color: var(--color-accent); color: var(--color-accent); }
+  .picker-custom-header { color: var(--color-text-muted); }
+  .picker-expanded { border-color: var(--color-border); }
 }
 `;
 class w extends HTMLElement {
@@ -332,11 +369,11 @@ class w extends HTMLElement {
   disconnectedCallback() {
     document.removeEventListener("keydown", this._boundOnKeyDown, !0), document.removeEventListener("mousedown", this._boundOnClickOutside, !0);
   }
-  attributeChangedCallback(e, t, i) {
-    if (t !== i) {
+  attributeChangedCallback(e, t, r) {
+    if (t !== r) {
       if (e === "credentials")
         try {
-          this._credentials = JSON.parse(i || "[]");
+          this._credentials = JSON.parse(r || "[]");
         } catch {
           this._credentials = [];
         }
@@ -363,21 +400,21 @@ class w extends HTMLElement {
     );
   }
   _render() {
-    var n, u;
-    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search"), i = t !== null ? t !== "false" : this._credentials.length > 4, a = this._filtered;
-    this._activeIndex = a.length > 0 ? 0 : -1;
-    const l = this._getHeaderDomain();
+    var n, i;
+    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search"), r = t !== null ? t !== "false" : this._credentials.length > 4, o = this._filtered;
+    this._activeIndex = o.length > 0 ? 0 : -1;
+    const d = this._getHeaderDomain();
     this.shadowRoot.innerHTML = `
       <style>${y}</style>
       <div class="picker-header">
-        <span class="picker-header__title">${a.length} login${a.length !== 1 ? "s" : ""}${l ? ` for ${this._escapeHtml(l)}` : ""}</span>
+        <span class="picker-header__title">${o.length} login${o.length !== 1 ? "s" : ""}${d ? ` for ${this._escapeHtml(d)}` : ""}</span>
         <button type="button" class="picker-header__close" aria-label="Close picker">
-          <span aria-hidden="true">${s.close || "✕"}</span>
+          <span aria-hidden="true">${a.close || "✕"}</span>
         </button>
       </div>
-      ${i ? `
+      ${r ? `
         <div class="picker-search">
-          <span class="picker-icon" aria-hidden="true">${s.search || ""}</span>
+          <span class="picker-icon" aria-hidden="true">${a.search || ""}</span>
           <input
             type="text"
             class="picker-search-input"
@@ -388,33 +425,33 @@ class w extends HTMLElement {
         </div>
       ` : ""}
       <ul class="picker-list" role="listbox" aria-label="Credentials">
-        ${a.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
-        ${a.map((o, c) => this._renderItem(o, c)).join("")}
+        ${o.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
+        ${o.map((l, s) => this._renderItem(l, s)).join("")}
       </ul>
-    `, (n = this.shadowRoot.querySelector(".picker-header__close")) == null || n.addEventListener("click", (o) => {
-      o.stopPropagation(), this._emitClose();
-    }), (u = this.shadowRoot.querySelector(".picker-search-input")) == null || u.addEventListener("input", (o) => {
-      var c;
-      this._search = o.target.value, this._expandedIndex = -1, this._activeIndex = 0, this._render(), (c = this.shadowRoot.querySelector(".picker-search-input")) == null || c.focus();
-    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((o) => {
-      o.addEventListener("click", (c) => {
-        c.stopPropagation();
-        const m = Number(o.dataset.index);
-        if (m === this._expandedIndex) {
+    `, (n = this.shadowRoot.querySelector(".picker-header__close")) == null || n.addEventListener("click", (l) => {
+      l.stopPropagation(), this._emitClose();
+    }), (i = this.shadowRoot.querySelector(".picker-search-input")) == null || i.addEventListener("input", (l) => {
+      var s;
+      this._search = l.target.value, this._expandedIndex = -1, this._activeIndex = 0, this._render(), (s = this.shadowRoot.querySelector(".picker-search-input")) == null || s.focus();
+    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((l) => {
+      l.addEventListener("click", (s) => {
+        s.stopPropagation();
+        const u = Number(l.dataset.index);
+        if (u === this._expandedIndex) {
           this._expandedIndex = -1, this._render();
           return;
         }
-        this._expandedIndex = m, this._render();
+        this._expandedIndex = u, this._render();
       });
-    }), this.shadowRoot.querySelectorAll(".picker-action").forEach((o) => {
-      o.addEventListener("click", (c) => {
-        c.stopPropagation();
-        const m = Number(o.dataset.index), h = o.dataset.action, d = a[m];
-        if (d)
-          if (h === "fill-form") {
-            const b = { ...d };
-            b._fillRole = "form", this._emitFill(b);
-          } else h === "fill-username" ? this._emitFillForTarget(d, "username") : h === "copy-username" ? this._emitCopy(d, "username") : h === "fill-password" ? this._emitFillForTarget(d, "password") : h === "copy-password" && this._emitCopy(d, "password");
+    }), this.shadowRoot.querySelectorAll(".picker-action").forEach((l) => {
+      l.addEventListener("click", (s) => {
+        s.stopPropagation();
+        const u = Number(l.dataset.index), b = l.dataset.action, h = o[u];
+        if (h)
+          if (b === "fill-form") {
+            const m = { ...h };
+            m._fillRole = "form", this._emitFill(m);
+          } else b === "fill-username" ? this._emitFillForTarget(h, "username") : b === "copy-username" ? this._emitCopy(h, "username") : b === "fill-password" ? this._emitFillForTarget(h, "password") : b === "copy-password" && this._emitCopy(h, "password");
       });
     }), this._activeIndex >= 0 && this._highlightActive();
   }
@@ -422,9 +459,9 @@ class w extends HTMLElement {
     const e = this._credentials.map((t) => t.url).filter(Boolean);
     if (e.length === 0) return "";
     try {
-      const t = e.map((a) => {
+      const t = e.map((o) => {
         try {
-          return new URL(a).hostname;
+          return new URL(o).hostname;
         } catch {
           return null;
         }
@@ -435,7 +472,7 @@ class w extends HTMLElement {
     }
   }
   _renderItem(e, t) {
-    const i = (e.name || e.username || "?").charAt(0).toUpperCase(), a = e.url ? this._faviconUrl(e.url) : null, l = a ? `<img class="picker-avatar picker-avatar--favicon" src="${a}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${i}</div>'" />` : `<div class="picker-avatar">${i}</div>`, n = t === this._expandedIndex;
+    const r = (e.name || e.username || "?").charAt(0).toUpperCase(), o = e.url ? this._faviconUrl(e.url) : null, d = o ? `<img class="picker-avatar picker-avatar--favicon" src="${o}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${r}</div>'" />` : `<div class="picker-avatar">${r}</div>`, n = t === this._expandedIndex;
     return `
       <li
         class="picker-item${t === this._activeIndex ? " picker-item--active" : ""}${e.selected ? " picker-item--selected" : ""}"
@@ -444,18 +481,18 @@ class w extends HTMLElement {
         data-index="${t}"
         tabindex="${t === this._activeIndex ? "0" : "-1"}"
       >
-        ${l}
+        ${d}
         <div class="picker-info">
           <div class="picker-name">${this._escapeHtml(e.name || "(no name)")}</div>
           ${e.username ? `<div class="picker-username">${this._escapeHtml(e.username)}</div>` : ""}
         </div>
-        <span class="picker-icon" style="transition: transform 120ms;${n ? " transform: rotate(180deg);" : ""}" aria-hidden="true">${s["chevron-down"] || ""}</span>
+        <span class="picker-icon" style="transition: transform 120ms;${n ? " transform: rotate(180deg);" : ""}" aria-hidden="true">${a["chevron-down"] || ""}</span>
       </li>
       ${n ? this._renderExpanded(e, t) : ""}
     `;
   }
   _renderExpanded(e, t) {
-    const i = e.customFields && Array.isArray(e.customFields) && e.customFields.length > 0;
+    const r = e.customFields && Array.isArray(e.customFields) && e.customFields.length > 0;
     return `
       <li class="picker-expanded" role="presentation">
         <div class="picker-action-row">
@@ -465,7 +502,7 @@ class w extends HTMLElement {
           ${e.password ? `<button type="button" class="picker-action" data-index="${t}" data-action="fill-password">Fill pass</button>` : ""}
           ${e.password ? `<button type="button" class="picker-action" data-index="${t}" data-action="copy-password">Copy pass</button>` : ""}
         </div>
-        ${i ? `<div class="picker-custom-header">Custom fields (${e.customFields.length})</div>` : ""}
+        ${r ? `<div class="picker-custom-header">Custom fields (${e.customFields.length})</div>` : ""}
       </li>
     `;
   }
@@ -481,8 +518,8 @@ class w extends HTMLElement {
   }
   _highlightActive() {
     const e = this.shadowRoot.querySelectorAll(".picker-item");
-    e.forEach((i, a) => {
-      i.classList.toggle("picker-item--active", a === this._activeIndex), i.setAttribute("aria-selected", a === this._activeIndex), i.setAttribute("tabindex", a === this._activeIndex ? "0" : "-1");
+    e.forEach((r, o) => {
+      r.classList.toggle("picker-item--active", o === this._activeIndex), r.setAttribute("aria-selected", o === this._activeIndex), r.setAttribute("tabindex", o === this._activeIndex ? "0" : "-1");
     });
     const t = e[this._activeIndex];
     t && t.scrollIntoView({ block: "nearest" });
@@ -496,8 +533,8 @@ class w extends HTMLElement {
       e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.max(this._activeIndex - 1, 0), this._expandedIndex = -1, this._highlightActive();
     else if (e.key === "Enter") {
       e.preventDefault(), e.stopPropagation();
-      const i = t[this._activeIndex];
-      i && this._emitFill(i);
+      const r = t[this._activeIndex];
+      r && this._emitFill(r);
     } else e.key === "Escape" && (e.preventDefault(), e.stopPropagation(), this._expandedIndex >= 0 ? (this._expandedIndex = -1, this._render()) : this._emitClose());
   }
   _onClickOutside(e) {
@@ -532,23 +569,71 @@ class w extends HTMLElement {
   }
 }
 customElements.get("kbb-picker") || customElements.define("kbb-picker", w);
-const f = `
+const v = `
 :host {
+  --color-bg: #fafbfc;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #586069;
+  --color-text-muted: #8b949e;
+  --color-border: #e1e4e8;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-subtle: #dbeafe;
+  --color-success: #10b981;
+  --color-danger: #d73a49;
+  --color-danger-subtle: #fee2e2;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
   position: fixed;
-  bottom: 16px;
-  right: 16px;
   z-index: 2147483647;
   width: 360px;
   max-width: calc(100vw - 32px);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 14px;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
   line-height: 1.4;
-  color: #1a1a1a;
-  background: #ffffff;
-  border: 1px solid #e1e4e8;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   animation: slideIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:host([data-position="bottom-right"]) {
+  bottom: 16px;
+  right: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    --color-bg: #0f172a;
+    --color-surface: #1e293b;
+    --color-text: #f0f0f0;
+    --color-text-secondary: #8b949e;
+    --color-text-muted: #cbd5e1;
+    --color-border: #334155;
+    --color-danger: #f97583;
+    --color-danger-subtle: #7f1d1d;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -563,16 +648,16 @@ const f = `
 .prompt-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #e1e4e8;
+  gap: var(--space-2);
+  padding: var(--space-3) 14px;
+  border-bottom: 1px solid var(--color-border);
   font-weight: 600;
 }
 
 .prompt-header__icon {
   width: 18px;
   height: 18px;
-  fill: var(--accent, #2563eb);
+  fill: var(--color-accent);
   flex-shrink: 0;
 }
 
@@ -587,35 +672,35 @@ const f = `
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: inherit;
   opacity: 0.6;
 }
 
-.prompt-header__close:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+.prompt-header__close:hover { opacity: 1; background: var(--color-bg); }
 .prompt-header__close svg { width: 14px; height: 14px; fill: currentColor; }
 
 .prompt-body {
-  padding: 12px 14px;
+  padding: var(--space-3) 14px;
 }
 
 .prompt-field {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 6px 10px;
-  background: #f6f8fa;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   margin-bottom: 6px;
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 
 .prompt-field__label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   text-transform: uppercase;
-  color: #586069;
+  color: var(--color-text-secondary);
   min-width: 56px;
 }
 
@@ -629,77 +714,141 @@ const f = `
 
 .prompt-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 0 14px 14px;
   justify-content: flex-end;
 }
 
 .prompt-action {
-  padding: 6px 12px;
+  padding: var(--space-1) var(--space-3);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font: inherit;
   font-weight: 500;
   cursor: pointer;
   background: transparent;
   color: inherit;
-  transition: background 120ms, border-color 120ms;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .prompt-action--primary {
-  background: #2563eb;
+  background: var(--color-accent);
   color: #ffffff;
 }
 
-.prompt-action--primary:hover { background: #1d4ed8; }
+.prompt-action--primary:hover { background: var(--color-accent-hover); }
 
 .prompt-action--secondary {
-  border-color: #e1e4e8;
-  color: #1a1a1a;
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
-.prompt-action--secondary:hover { background: #f6f8fa; }
+.prompt-action--secondary:hover { background: var(--color-bg); }
 
 .prompt-action--danger {
-  color: #d73a49;
+  color: var(--color-danger);
 }
 
-.prompt-action--danger:hover { background: rgba(215, 58, 73, 0.1); }
+.prompt-action--danger:hover { background: var(--color-danger-subtle); }
 
 .prompt-action:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
 .prompt-progress {
   height: 2px;
-  background: linear-gradient(to right, #2563eb var(--progress, 100%), transparent var(--progress, 100%));
+  background: linear-gradient(to right, var(--color-accent) var(--progress, 100%), transparent var(--progress, 100%));
   transition: --progress 30s linear;
 }
 
+.prompt-editable-input {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-base);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-sizing: border-box;
+  margin-top: 2px;
+}
+
+.prompt-editable-input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
+.prompt-editable-select {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-base);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-sizing: border-box;
+  margin-top: 2px;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.prompt-editable-select:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
+.prompt-editable-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.prompt-editable-group {
+  margin-bottom: 10px;
+}
+
+.prompt-field-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 6px;
+}
+
+.prompt-field-row:last-child {
+  margin-bottom: 0;
+}
+
 @media (prefers-color-scheme: dark) {
-  :host { color: #f0f0f0; background: #24292e; border-color: #444d56; }
-  .prompt-header { border-color: #444d56; }
-  .prompt-field { background: #1a1a1a; border-color: #444d56; }
-  .prompt-field__label { color: #cbd5e1; }
-  .prompt-action--secondary { border-color: #444d56; color: #f0f0f0; }
-  .prompt-action--secondary:hover { background: #2f363d; }
-  .prompt-action--danger { color: #f97583; }
+  .prompt-header { border-color: var(--color-border); }
+  .prompt-field { background: var(--color-surface); border-color: var(--color-border); }
+  .prompt-field__label { color: var(--color-text-muted); }
+  .prompt-action--secondary { border-color: var(--color-border); color: var(--color-text); }
+  .prompt-action--secondary:hover { background: var(--color-bg); }
+  .prompt-action--danger { color: var(--color-danger); }
+  .prompt-editable-input { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
+  .prompt-editable-select { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
+  .prompt-editable-label { color: var(--color-text-muted); }
 }
 `;
-function p(r) {
-  return String(r).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function p(c) {
+  return String(c).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 class $ extends HTMLElement {
   static get observedAttributes() {
-    return ["name", "username", "password", "url"];
+    return ["name", "username", "password", "url", "title", "folder", "folders"];
   }
   constructor() {
-    super(), this.attachShadow({ mode: "open" }), this._autoDismissTimer = null;
+    super(), this.attachShadow({ mode: "open" }), this._autoDismissTimer = null, this._editingTitle = "", this._editingUrl = "", this._editingFolder = "";
   }
   connectedCallback() {
-    var e, t, i;
-    this._render(), this._startAutoDismiss(), (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="save"]')) == null || t.addEventListener("click", () => this._save()), (i = this.shadowRoot.querySelector('[data-action="never"]')) == null || i.addEventListener("click", () => this._never());
+    this._render(), this._startAutoDismiss(), this._bindEvents(), this._applyPosition();
   }
   disconnectedCallback() {
     this._autoDismissTimer && (clearTimeout(this._autoDismissTimer), this._autoDismissTimer = null);
@@ -707,22 +856,57 @@ class $ extends HTMLElement {
   attributeChangedCallback() {
     this.isConnected && this._render();
   }
+  _applyPosition() {
+    if (!this.isConnected) return;
+    const e = this.getAttribute("data-position");
+    if (!e || e === "bottom-right") return;
+    const t = this.getAttribute("data-top"), r = this.getAttribute("data-right");
+    t && (this.style.top = t), r && (this.style.right = r);
+  }
+  _bindEvents() {
+    var e, t, r;
+    (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="save"]')) == null || t.addEventListener("click", () => this._save()), (r = this.shadowRoot.querySelector('[data-action="never"]')) == null || r.addEventListener("click", () => this._never());
+  }
   _render() {
-    const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", i = this.getAttribute("password") || "", a = this.getAttribute("url") || "";
+    const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", r = this.getAttribute("password") || "", o = this.getAttribute("url") || "", d = this.getAttribute("title") || e || "", n = this.getAttribute("folder") || "";
+    let i = [];
+    try {
+      const s = this.getAttribute("folders");
+      s && (i = JSON.parse(s));
+    } catch {
+    }
+    Array.isArray(i) || (i = []);
+    const l = i.map((s) => {
+      const u = typeof s == "string" ? s : s.value || s.name || "", b = typeof s == "string" ? s : s.label || s.name || u, h = u === n ? " selected" : "";
+      return `<option value="${p(u)}"${h}>${p(b)}</option>`;
+    }).join("");
     this.shadowRoot.innerHTML = `
-      <style>${f}</style>
+      <style>${v}</style>
       <div class="prompt-header" role="region" aria-label="Save login">
-        <span class="prompt-header__icon" aria-hidden="true">${s.key || ""}</span>
+        <span class="prompt-header__icon" aria-hidden="true">${a.key || ""}</span>
         <span class="prompt-header__title">Save this login?</span>
         <button type="button" class="prompt-header__close" aria-label="Close">
-          <span aria-hidden="true">${s.close || ""}</span>
+          <span aria-hidden="true">${a.close || ""}</span>
         </button>
       </div>
       <div class="prompt-body">
         ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${p(e)}</span></div>` : ""}
-        ${a ? `<div class="prompt-field"><span class="prompt-field__label">URL</span><span class="prompt-field__value">${p(a)}</span></div>` : ""}
         ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${p(t)}</span></div>` : ""}
-        ${i ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(i.length, 12))}</span></div>` : ""}
+        ${r ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(r.length, 12))}</span></div>` : ""}
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">Title</label>
+          <input type="text" class="prompt-editable-input" data-field="title" value="${p(d)}" placeholder="Login title" />
+        </div>
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">URL</label>
+          <input type="text" class="prompt-editable-input" data-field="url" value="${p(o)}" placeholder="https://" />
+        </div>
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">Folder</label>
+          <select class="prompt-editable-select" data-field="folder" aria-label="Folder">
+            ${l}
+          </select>
+        </div>
       </div>
       <div class="prompt-actions">
         <button type="button" class="prompt-action prompt-action--danger" data-action="never">Never for this site</button>
@@ -734,15 +918,22 @@ class $ extends HTMLElement {
   _startAutoDismiss() {
     this._autoDismissTimer && clearTimeout(this._autoDismissTimer), this._autoDismissTimer = setTimeout(() => this._dismiss(), 3e4);
   }
+  _getFieldValue(e) {
+    const t = this.shadowRoot.querySelector(e);
+    return t ? t.value : "";
+  }
   _save() {
+    const e = this._getFieldValue('[data-field="title"]') || this.getAttribute("name") || "", t = this._getFieldValue('[data-field="url"]') || this.getAttribute("url") || "", r = this._getFieldValue('[data-field="folder"]') || "";
     this.dispatchEvent(new CustomEvent("kbb-save", {
       bubbles: !0,
       composed: !0,
       detail: {
-        name: this.getAttribute("name"),
+        name: e,
+        title: e,
         username: this.getAttribute("username"),
         password: this.getAttribute("password"),
-        url: this.getAttribute("url")
+        url: t,
+        folder: r
       }
     })), this.remove();
   }
@@ -757,16 +948,15 @@ class $ extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-class E extends HTMLElement {
+class A extends HTMLElement {
   static get observedAttributes() {
-    return ["name", "username", "password", "old-username"];
+    return ["name", "username", "password", "old-username", "title", "folder", "folders"];
   }
   constructor() {
     super(), this.attachShadow({ mode: "open" }), this._autoDismissTimer = null;
   }
   connectedCallback() {
-    var e, t, i;
-    this._render(), this._startAutoDismiss(), (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="update"]')) == null || t.addEventListener("click", () => this._update()), (i = this.shadowRoot.querySelector('[data-action="skip"]')) == null || i.addEventListener("click", () => this._skip());
+    this._render(), this._startAutoDismiss(), this._bindEvents(), this._applyPosition();
   }
   disconnectedCallback() {
     this._autoDismissTimer && (clearTimeout(this._autoDismissTimer), this._autoDismissTimer = null);
@@ -774,15 +964,36 @@ class E extends HTMLElement {
   attributeChangedCallback() {
     this.isConnected && this._render();
   }
+  _applyPosition() {
+    if (!this.isConnected) return;
+    const e = this.getAttribute("data-position");
+    if (!e || e === "bottom-right") return;
+    const t = this.getAttribute("data-top"), r = this.getAttribute("data-right");
+    t && (this.style.top = t), r && (this.style.right = r);
+  }
+  _bindEvents() {
+    var e, t, r;
+    (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="update"]')) == null || t.addEventListener("click", () => this._update()), (r = this.shadowRoot.querySelector('[data-action="skip"]')) == null || r.addEventListener("click", () => this._skip());
+  }
   _render() {
-    const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", i = this.getAttribute("username") || "";
-    this.shadowRoot.innerHTML = `
-      <style>${f}</style>
+    const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", r = this.getAttribute("username") || "", o = this.getAttribute("password") || "", d = this.getAttribute("url") || "";
+    this.getAttribute("title");
+    let n = [];
+    try {
+      const i = this.getAttribute("folders");
+      i && (n = JSON.parse(i));
+    } catch {
+    }
+    Array.isArray(n) || (n = []), n.map((i) => {
+      const l = typeof i == "string" ? i : i.value || i.name || "", s = typeof i == "string" ? i : i.label || i.name || l;
+      return `<option value="${p(l)}">${p(s)}</option>`;
+    }).join(""), this.shadowRoot.innerHTML = `
+      <style>${v}</style>
       <div class="prompt-header" role="region" aria-label="Update login">
-        <span class="prompt-header__icon" aria-hidden="true">${s.shield || ""}</span>
+        <span class="prompt-header__icon" aria-hidden="true">${a.shield || ""}</span>
         <span class="prompt-header__title">Update existing login?</span>
         <button type="button" class="prompt-header__close" aria-label="Close">
-          <span aria-hidden="true">${s.close || ""}</span>
+          <span aria-hidden="true">${a.close || ""}</span>
         </button>
       </div>
       <div class="prompt-body">
@@ -793,7 +1004,16 @@ class E extends HTMLElement {
         </div>
         <div class="prompt-field">
           <span class="prompt-field__label">To</span>
-          <span class="prompt-field__value">${p(i)}</span>
+          <span class="prompt-field__value">${p(r)}</span>
+        </div>
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">New Password</label>
+          <input type="text" class="prompt-editable-input" data-field="username" value="${p(r)}" placeholder="Username" />
+        </div>
+        ${o ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(o.length, 12))}</span></div>` : ""}
+        <div class="prompt-editable-group">
+          <label class="prompt-editable-label">URL</label>
+          <input type="text" class="prompt-editable-input" data-field="url" value="${p(d)}" placeholder="https://" />
         </div>
       </div>
       <div class="prompt-actions">
@@ -806,14 +1026,20 @@ class E extends HTMLElement {
   _startAutoDismiss() {
     this._autoDismissTimer && clearTimeout(this._autoDismissTimer), this._autoDismissTimer = setTimeout(() => this._dismiss(), 3e4);
   }
+  _getFieldValue(e) {
+    const t = this.shadowRoot.querySelector(e);
+    return t ? t.value : "";
+  }
   _update() {
+    const e = this._getFieldValue('[data-field="username"]') || this.getAttribute("username") || "", t = this._getFieldValue('[data-field="url"]') || this.getAttribute("url") || "";
     this.dispatchEvent(new CustomEvent("kbb-update", {
       bubbles: !0,
       composed: !0,
       detail: {
         name: this.getAttribute("name"),
-        username: this.getAttribute("username"),
-        password: this.getAttribute("password")
+        username: e,
+        password: this.getAttribute("password"),
+        url: t
       }
     })), this.remove();
   }
@@ -825,5 +1051,5 @@ class E extends HTMLElement {
   }
 }
 customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", $);
-customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", E);
-_("kbb");
+customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", A);
+x("kbb");
