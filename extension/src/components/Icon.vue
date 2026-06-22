@@ -39,4 +39,9 @@ const svg = computed(() => {
 @keyframes kbb-spin {
   to { transform: rotate(360deg); }
 }
+@media (prefers-reduced-motion: reduce) {
+  .kbb-icon-spin {
+    animation: none;
+  }
+}
 </style>

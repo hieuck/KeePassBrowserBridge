@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -33,8 +32,19 @@ test('icons.js exports ICONS dict and registerIcons function', async () => {
   expect(typeof mod.registerIcons).toBe('function');
 });
 
-test('icons.js source file exists and exports registerIcons', () => {
-  const source = fs.readFileSync(iconsPath, 'utf-8');
-  expect(source).toContain('export function registerIcons');
-  expect(source).toContain('customElements.define');
+test('registerIcons defines Web Components that render SVG content', async ({ page }) => {
+  await page.goto('/tests/fixtures/empty.html');
+  const result = await page.evaluate(async () => {
+    const mod = await import('/extension/icons.js');
+    mod.registerIcons('kbb');
+    const ctor = customElements.get('kbb-icon-key');
+    if (!ctor) return { registered: false, hasSvg: false };
+    const el = document.createElement('kbb-icon-key');
+    document.body.appendChild(el);
+    const html = el.innerHTML;
+    document.body.removeChild(el);
+    return { registered: true, hasSvg: html.includes('<svg') };
+  });
+  expect(result.registered).toBe(true);
+  expect(result.hasSvg).toBe(true);
 });
