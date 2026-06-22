@@ -20,6 +20,8 @@
     "build:extension": "npm run build:release",
     "build:plugin": "npm run build:release",
     "build:vue": "cd extension && npx vite build",
+    "build:components": "cd extension && npx vite build --config vite.web-components.config.js",
+    "build:all": "npm run build:vue && npm run build:components",
     "ci": "npm run lint && npm run test && npm run test:coverage && npm run test:e2e:chromium"
   },
   "devDependencies": {
