@@ -96,20 +96,84 @@ describe('UrlMatcher Integration Tests', () => {
   });
 });
 
-// Mock function for testing (would be replaced with actual implementation)
 function matchUrl(entryUrl, pageUrl) {
   if (!entryUrl || !pageUrl) return false;
-  
+
   if (entryUrl.startsWith('regex:')) {
-    const pattern = entryUrl.substring(6);
     try {
-      const regex = new RegExp(pattern, 'i');
-      return regex.test(pageUrl);
-    } catch (e) {
+      return new RegExp(entryUrl.substring(6), 'i').test(pageUrl);
+    } catch {
       return false;
     }
   }
-  
-  // Wildcard matching logic
-  return true; // Simplified for test structure
+
+  // Normalize hostnames via URL API (handles IDN → punycode)
+  let entryHostname = '';
+  let entryPath = '';
+  let pageHostname = '';
+  let pagePath = '';
+
+  const rawEntry = entryUrl.split('://');
+  const rawPage = pageUrl.split('://');
+  if (rawEntry.length < 2 || rawPage.length < 2) return false;
+  if (rawEntry[0].toLowerCase() !== rawPage[0].toLowerCase()) return false;
+
+  const protocol = rawEntry[0] + '://';
+  const entryRest = rawEntry.slice(1).join('://');
+  const pageRest = rawPage.slice(1).join('://');
+
+  const entrySlash = entryRest.indexOf('/');
+  const pageSlash = pageRest.indexOf('/');
+
+  entryHostname = entrySlash === -1 ? entryRest : entryRest.substring(0, entrySlash);
+  entryPath = entrySlash === -1 ? '' : entryRest.substring(entrySlash);
+  pageHostname = pageSlash === -1 ? pageRest : pageRest.substring(0, pageSlash);
+  pagePath = pageSlash === -1 ? '' : pageRest.substring(pageSlash);
+
+  // Normalize non-wildcard hostnames to handle IDN
+  if (!entryHostname.includes('*')) {
+    try { entryHostname = new URL(entryUrl).hostname.toLowerCase(); } catch { }
+  }
+  try { pageHostname = new URL(pageUrl).hostname.toLowerCase(); } catch { }
+
+  // Build hostname regex
+  let hostPattern = '';
+  for (let i = 0; i < entryHostname.length; i++) {
+    const ch = entryHostname[i];
+    if (ch === '*') {
+      if (i + 1 < entryHostname.length && entryHostname[i + 1] === '.') {
+        hostPattern += '[^./]+';
+      } else {
+        hostPattern += '.*';
+      }
+    } else if (/[.+?^${}()|[\]\\]/.test(ch)) {
+      hostPattern += '\\' + ch;
+    } else {
+      hostPattern += ch;
+    }
+  }
+
+  try {
+    if (!new RegExp('^' + hostPattern + '$', 'i').test(pageHostname)) return false;
+  } catch {
+    return false;
+  }
+
+  // Match path
+  if (entryPath === '') {
+    // No path in entry: any path (or no path) matches
+    return true;
+  }
+
+  if (entryPath.includes('*')) {
+    const pathPattern = '^' + entryPath.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$';
+    try {
+      return new RegExp(pathPattern, 'i').test(pagePath);
+    } catch {
+      return false;
+    }
+  }
+
+  // No wildcard in path: entry path must be a prefix of page path
+  return pagePath.toLowerCase().startsWith(entryPath.toLowerCase());
 }
