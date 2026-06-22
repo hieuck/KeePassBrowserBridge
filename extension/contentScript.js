@@ -1118,29 +1118,57 @@ function showInlinePicker(button, entries) {
     const actions = document.createElement("div");
     actions.style.display = "flex";
     actions.style.flexWrap = "wrap";
-    actions.style.gap = "6px";
+    actions.style.gap = "4px";
     actions.style.marginTop = "7px";
-    actions.appendChild(createPickerActionButton("Fill", "form", button, entry));
+    const fillFormBtn = createPickerActionButton("✓ Fill form", "form", button, entry);
+    fillFormBtn.style.flex = "1 1 100%";
+    fillFormBtn.style.fontWeight = "600";
+    fillFormBtn.style.background = "#4a90e2";
+    fillFormBtn.style.color = "#ffffff";
+    fillFormBtn.style.borderColor = "#4a90e2";
+    actions.appendChild(fillFormBtn);
     if (entry.UserName) {
-      actions.appendChild(createPickerActionButton("User", "username", button, entry));
-      actions.appendChild(createPickerActionButton("Copy User", "copy-username", button, entry));
+      const userBtn = createPickerActionButton("Fill user", "username", button, entry);
+      userBtn.style.flex = "1 1 0";
+      userBtn.style.minWidth = "0";
+      userBtn.style.width = "calc(50% - 2px)";
+      const copyUser = createPickerActionButton("Copy user", "copy-username", button, entry);
+      copyUser.style.flex = "1 1 0";
+      copyUser.style.minWidth = "0";
+      copyUser.style.width = "calc(50% - 2px)";
+      actions.appendChild(userBtn);
+      actions.appendChild(copyUser);
     }
     if (entry.Password) {
-      actions.appendChild(createPickerActionButton("Pass", "password", button, entry));
-      actions.appendChild(createPickerActionButton("Copy Pass", "copy-password", button, entry));
+      const passBtn = createPickerActionButton("Fill pass", "password", button, entry);
+      passBtn.style.flex = "1 1 0";
+      passBtn.style.minWidth = "0";
+      passBtn.style.width = "calc(50% - 2px)";
+      const copyPass = createPickerActionButton("Copy pass", "copy-password", button, entry);
+      copyPass.style.flex = "1 1 0";
+      copyPass.style.minWidth = "0";
+      copyPass.style.width = "calc(50% - 2px)";
+      actions.appendChild(passBtn);
+      actions.appendChild(copyPass);
     }
     if (entry.OneTimePassword) {
-      actions.appendChild(createPickerActionButton("OTP", "otp", button, entry));
-      actions.appendChild(createPickerActionButton("Copy OTP", "copy-otp", button, entry));
+      const otpBtn = createPickerActionButton("Fill OTP", "otp", button, entry);
+      otpBtn.style.flex = "1 1 0";
+      otpBtn.style.minWidth = "0";
+      otpBtn.style.width = "calc(50% - 2px)";
+      const copyOtp = createPickerActionButton("Copy OTP", "copy-otp", button, entry);
+      copyOtp.style.flex = "1 1 0";
+      copyOtp.style.minWidth = "0";
+      copyOtp.style.width = "calc(50% - 2px)";
+      actions.appendChild(otpBtn);
+      actions.appendChild(copyOtp);
     }
-    for (const field of entry.CustomFields || []) {
-      if (!field || field.IsProtected === true || !field.Name || typeof field.Value !== "string") continue;
-      const custom = createPickerActionButton(field.Name, "custom-field", button, entry);
-      custom.dataset.kbbCustomField = field.Name;
-      actions.appendChild(custom);
-      const copyCustom = createPickerActionButton(`Copy ${field.Name}`, "copy-custom-field", button, entry);
-      copyCustom.dataset.kbbCustomField = field.Name;
-      actions.appendChild(copyCustom);
+    const visibleCustomFields = (entry.CustomFields || []).filter(
+      (field) => field && field.IsProtected !== true && field.Name && typeof field.Value === "string"
+    );
+    if (visibleCustomFields.length > 0) {
+      const customGroup = createPickerCustomFieldGroup(button, entry, visibleCustomFields);
+      actions.appendChild(customGroup);
     }
     item.appendChild(title);
     item.appendChild(detail);
@@ -1150,6 +1178,7 @@ function showInlinePicker(button, entries) {
       handlePickerItemKeydown(event, button, picker, items),
     );
     item.addEventListener("click", (event) => {
+      if (event.target.closest('[data-kbb-action]')) return;
       event.preventDefault();
       event.stopPropagation();
       rememberMultiStepCredentialIfNeeded(fillCredentialForButton(button, entry), entry);
@@ -1208,6 +1237,66 @@ function createPickerActionButton(label, action, sourceButton, entry) {
     if (event.key === "Enter" || event.key === " ") run(event);
   });
   return actionButton;
+}
+function createPickerCustomFieldGroup(sourceButton, entry, customFields) {
+  const group = document.createElement("div");
+  group.style.marginTop = "6px";
+  group.style.padding = "6px";
+  group.style.border = "1px solid #d7dde5";
+  group.style.borderRadius = "6px";
+  group.style.background = "#f7f8fa";
+  group.style.display = "flex";
+  group.style.flexDirection = "column";
+  group.style.gap = "4px";
+  const header = document.createElement("div");
+  header.style.fontSize = "11px";
+  header.style.fontWeight = "600";
+  header.style.color = "#667085";
+  header.style.textTransform = "uppercase";
+  header.style.letterSpacing = "0.04em";
+  header.style.marginBottom = "2px";
+  header.textContent = `Custom fields (${customFields.length})`;
+  group.appendChild(header);
+  const list = document.createElement("div");
+  list.style.display = "flex";
+  list.style.flexDirection = "column";
+  list.style.gap = "3px";
+  for (const field of customFields) {
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.gap = "4px";
+    // Verify that protected custom fields are still skipped
+    if (field.IsProtected === true) continue;
+    const fillBtn = createPickerActionButton("Fill", "custom-field", sourceButton, entry);
+    fillBtn.dataset.kbbCustomField = field.Name;
+    fillBtn.style.flex = "0 0 auto";
+    fillBtn.style.minWidth = "44px";
+    fillBtn.style.padding = "0 6px";
+    fillBtn.style.fontSize = "11px";
+    const copyBtn = createPickerActionButton("Copy", "copy-custom-field", sourceButton, entry);
+    copyBtn.dataset.kbbCustomField = field.Name;
+    copyBtn.style.flex = "0 0 auto";
+    copyBtn.style.minWidth = "48px";
+    copyBtn.style.padding = "0 6px";
+    copyBtn.style.fontSize = "11px";
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = field.Name;
+    nameSpan.style.fontSize = "12px";
+    nameSpan.style.color = "#1f2933";
+    nameSpan.style.fontWeight = "500";
+    nameSpan.style.flex = "1 1 auto";
+    nameSpan.style.minWidth = "0";
+    nameSpan.style.overflow = "hidden";
+    nameSpan.style.textOverflow = "ellipsis";
+    nameSpan.style.whiteSpace = "nowrap";
+    row.appendChild(fillBtn);
+    row.appendChild(copyBtn);
+    row.appendChild(nameSpan);
+    list.appendChild(row);
+  }
+  group.appendChild(list);
+  return group;
 }
 function handlePickerItemKeydown(event, sourceButton, picker, items) {
   if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -1931,16 +2020,16 @@ function applyPromptInputStyle(input) {
 function applyPickerStyle(picker) {
   picker.style.position = "fixed";
   picker.style.zIndex = "2147483647";
-  picker.style.width = "280px";
+  picker.style.width = "360px";
   picker.style.maxWidth = "calc(100vw - 16px)";
-  picker.style.maxHeight = "320px";
+  picker.style.maxHeight = "min(420px, calc(100vh - 32px))";
   picker.style.overflowY = "auto";
   picker.style.padding = "8px";
   picker.style.background = "#ffffff";
   picker.style.color = "#1f2933";
   picker.style.border = "1px solid #d7dde5";
   picker.style.borderRadius = "8px";
-  picker.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+  picker.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.16)";
   picker.style.font =
     '13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 }
@@ -1968,13 +2057,13 @@ function applyPickerItemStyle(item) {
   });
 }
 function applyPickerActionStyle(actionButton) {
-  actionButton.style.display = "inline-flex";
+  actionButton.style.display = "flex";
   actionButton.style.alignItems = "center";
   actionButton.style.justifyContent = "center";
-  actionButton.style.flex = "1 1 70px";
-  actionButton.style.minWidth = "58px";
-  actionButton.style.height = "24px";
-  actionButton.style.padding = "0 7px";
+  actionButton.style.minWidth = "0";
+  actionButton.style.maxWidth = "100%";
+  actionButton.style.height = "28px";
+  actionButton.style.padding = "0 8px";
   actionButton.style.border = "1px solid #d7dde5";
   actionButton.style.borderRadius = "6px";
   actionButton.style.background = "rgba(74, 144, 226, 0.08)";
@@ -1982,6 +2071,24 @@ function applyPickerActionStyle(actionButton) {
   actionButton.style.font =
     '600 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   actionButton.style.cursor = "pointer";
+  actionButton.style.overflow = "hidden";
+  actionButton.style.textOverflow = "ellipsis";
+  actionButton.style.whiteSpace = "nowrap";
+  actionButton.style.transition = "background 0.15s ease, color 0.15s ease, border-color 0.15s ease";
+  actionButton.addEventListener("mouseenter", () => {
+    if (actionButton.dataset.kbbAction !== "form") {
+      actionButton.style.background = "#4a90e2";
+      actionButton.style.color = "#ffffff";
+      actionButton.style.borderColor = "#4a90e2";
+    }
+  });
+  actionButton.addEventListener("mouseleave", () => {
+    if (actionButton.dataset.kbbAction !== "form") {
+      actionButton.style.background = "rgba(74, 144, 226, 0.08)";
+      actionButton.style.color = "#4a90e2";
+      actionButton.style.borderColor = "#d7dde5";
+    }
+  });
 }
 function applyPickerShowMoreStyle(button) {
   button.style.display = "block";
@@ -2015,19 +2122,25 @@ function applyPickerSearchStyle(search) {
 }
 function positionInlinePicker(button, picker) {
   const rect = button.getBoundingClientRect();
-  const width = Math.min(280, window.innerWidth - 16);
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const desiredWidth = 360;
+  const maxAllowedWidth = Math.max(220, viewportWidth - 16);
+  const width = Math.min(desiredWidth, maxAllowedWidth);
   const left = Math.max(
     8,
-    Math.min(window.innerWidth - width - 8, rect.right - width),
+    Math.min(viewportWidth - width - 8, rect.right - width),
   );
-  const below = rect.bottom + 8;
-  const top =
-    below + 320 < window.innerHeight
-      ? below
-      : Math.max(8, rect.top - Math.min(320, picker.scrollHeight || 320) - 8);
+  const naturalHeight = picker.scrollHeight || 320;
+  const maxHeight = Math.min(420, viewportHeight - 32);
+  const fitsBelow = rect.bottom + 8 + Math.min(naturalHeight, maxHeight) <= viewportHeight - 8;
+  const top = fitsBelow
+    ? rect.bottom + 8
+    : Math.max(8, rect.top - Math.min(naturalHeight, maxHeight) - 8);
   picker.style.width = `${width}px`;
   picker.style.left = `${left}px`;
   picker.style.top = `${top}px`;
+  picker.style.maxHeight = `${maxHeight}px`;
 }
 function setInlineButtonState(button, state) {
   if (state === "ok") {

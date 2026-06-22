@@ -828,10 +828,10 @@ test.describe('content script form detection', () => {
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
     await expect(page.locator('.kbb-inline-picker [data-kbb-entry-title="Work"]')).toContainText('Accounts/Work');
-    await page.getByRole('menuitem', { name: /Work/ }).click();
+    await page.locator('.kbb-inline-picker [data-kbb-entry-title="Work"] [data-kbb-action="form"]').click();
 
     await expect(page.locator('#username')).toHaveValue('work@example.com');
-    await expect(page.locator('#password')).toHaveValue('');
+    await expect(page.locator('#password')).toHaveValue('work-secret');
     const ackMessage = await page.evaluate(() => window.__kbbMessages.find((message) => message.type === 'KBB_FILL_ACK'));
     expect(ackMessage).toMatchObject({
       type: 'KBB_FILL_ACK',
