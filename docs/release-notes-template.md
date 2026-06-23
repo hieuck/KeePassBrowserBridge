@@ -2,17 +2,19 @@
 
 Use this template for GitHub Releases and browser-store update notes.
 
-## KeePass Browser Bridge <version>
+## KeePass Browser Bridge 2.0.0
 
-Release date: <YYYY-MM-DD>
+Release date: 2026-06-23
 
 KeePass Browser Bridge is a clean-room KeePass 2.x browser integration. It includes a KeePass plugin plus Chrome-family and Firefox extension packages.
 
 ## Highlights
 
-- <Short user-facing feature or fix>
-- <Short user-facing feature or fix>
-- <Short user-facing feature or fix>
+- **Complete UI redesign** with Ant Design Vue — modern, accessible, responsive popup and options page.
+- **Pairing flow** — new PairDialog guides users through connecting to KeePass.
+- **Settings Import/Export** — backup and restore extension settings from the About tab.
+- **CI/CD pipeline** — automated testing and release builds via GitHub Actions.
+- **228 tests passing, 0 failing** — comprehensive Playwright E2E + vitest coverage.
 
 ## Replacement Status
 
