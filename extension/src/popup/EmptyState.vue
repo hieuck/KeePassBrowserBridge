@@ -46,7 +46,7 @@ const actionLabel = computed(() => '+ Add your first login');
 
 <style scoped>
 .empty-state { text-align: center; padding: var(--space-10) var(--space-4); color: var(--color-text-secondary); }
-.empty-state__icon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin: 0 auto var(--space-3); background: var(--color-accent-subtle); border-radius: 50%; color: var(--color-accent); }
+.empty-state__icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; margin: 0 auto var(--space-4); background: linear-gradient(135deg, var(--color-accent-subtle) 0%, rgba(37,99,235,0.15) 100%); border-radius: var(--radius-xl); color: var(--color-accent); }
 .empty-state__title { font-size: var(--text-lg); font-weight: 600; color: var(--color-text); margin: 0 0 var(--space-1); }
-.empty-state__description { font-size: var(--text-sm); color: var(--color-text-secondary); margin: 0 0 var(--space-4); line-height: 1.5; }
+.empty-state__description { font-size: var(--text-sm); color: var(--color-text-secondary); margin: 0 0 var(--space-4); line-height: 1.5; max-width: 280px; margin-left: auto; margin-right: auto; }
 </style>
