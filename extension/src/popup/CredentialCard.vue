@@ -65,17 +65,17 @@ function onCardClick(event) {
 </script>
 
 <style scoped>
-.credential-card { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); margin: var(--space-2) var(--space-3); cursor: pointer; transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast); outline: none; box-shadow: var(--shadow-sm); }
+.credential-card { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); margin: var(--space-1) var(--space-3); cursor: pointer; transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast); outline: none; box-shadow: var(--shadow-sm); }
 .credential-card:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .credential-card:focus-visible { box-shadow: 0 0 0 2px var(--color-accent-subtle); border-color: var(--color-accent); }
 .credential-card--expanded { flex-direction: column; align-items: stretch; cursor: default; transform: none; box-shadow: var(--shadow-md); }
 .credential-card__avatar { flex-shrink: 0; }
 .credential-card__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.credential-card__title { font-size: var(--text-base); font-weight: 600; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.credential-card__title { font-size: var(--text-h3); font-weight: 600; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .credential-card__subtitle { font-size: var(--text-sm); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .credential-card__meta { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--color-text-muted); flex-wrap: wrap; }
-.credential-card__chevron { background: transparent; border: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); flex-shrink: 0; align-self: flex-start; margin-top: var(--space-1); transition: color var(--transition-fast); }
-.credential-card__chevron:hover { color: var(--color-text); }
+.credential-card__chevron { background: transparent; border: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); flex-shrink: 0; align-self: flex-start; margin-top: var(--space-1); transition: color var(--transition-fast), background var(--transition-fast); border-radius: var(--radius-sm); }
+.credential-card__chevron:hover { background: var(--color-bg); color: var(--color-text); }
 .credential-card__detail { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--space-3); }
 .credential-card__fields, .credential-card__custom { display: flex; flex-direction: column; gap: var(--space-1); }
 .credential-card__field { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg); border-radius: var(--radius-sm); }

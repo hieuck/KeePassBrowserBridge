@@ -40,19 +40,16 @@
         />
       </template>
     </main>
-    <BottomToolbar
+    <FooterBar
       :can-write="canWrite && !state.locked"
+      :state="state"
+      :theme="theme"
       @new-login="startNew"
       @settings="openSettings"
       @clients="openClients"
       @lock="lock"
-    />
-    <StatusBar
-      :state="state"
-      :theme="theme"
-      @toggle-theme="cycleTheme"
       @unlock="unlock"
-      @lock="lock"
+      @toggle-theme="cycleTheme"
     />
     <NewLoginForm
       v-if="formMode === 'new'"
@@ -79,8 +76,7 @@ import SearchBar from './SearchBar.vue';
 import FilterBar from '../components/FilterBar.vue';
 import CredentialCard from './CredentialCard.vue';
 import EmptyState from './EmptyState.vue';
-import BottomToolbar from './BottomToolbar.vue';
-import StatusBar from './StatusBar.vue';
+import FooterBar from './FooterBar.vue';
 import NewLoginForm from './NewLoginForm.vue';
 import EditForm from './EditForm.vue';
 import SkeletonCard from './SkeletonCard.vue';
@@ -250,11 +246,12 @@ onMounted(() => {
   background: var(--color-bg);
   width: 100%;
   overflow: hidden;
+  gap: 0;
 }
 .vault-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-3) 0;
+  padding: var(--space-1) 0 var(--space-2);
 }
 .vault-list::-webkit-scrollbar { width: 4px; }
 .vault-list::-webkit-scrollbar-track { background: transparent; }
