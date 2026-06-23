@@ -22,7 +22,7 @@ defineProps({ placeholder: { type: String, default: 'Search...' } });
 </script>
 
 <style scoped>
-.search-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); background: var(--color-surface); }
+.search-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--color-border); background: var(--color-surface); }
 .search-bar__icon { color: var(--color-text-secondary); }
 .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font: inherit; font-size: var(--text-md); color: var(--color-text); min-width: 0; }
 .search-bar__input::placeholder { color: var(--color-text-muted); }

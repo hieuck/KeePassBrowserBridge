@@ -21,7 +21,8 @@ const themeIcon = computed(() => ({ light: 'globe', dark: 'lock', system: 'eye' 
 </script>
 
 <style scoped>
-.popup-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); background: var(--color-surface); }
+.popup-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); background: var(--color-surface); position: relative; z-index: 1; }
+.popup-header__icon-btn { box-shadow: none; }
 .popup-header__brand { display: flex; align-items: center; gap: var(--space-2); }
 .popup-header__logo { color: var(--color-accent); }
 .popup-header__title { font-size: var(--text-md); font-weight: 700; color: var(--color-text); }

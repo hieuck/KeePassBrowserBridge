@@ -9,6 +9,7 @@
       placeholder="Search vault..."
     />
     <FilterBar
+      v-if="groups.length > 1"
       :groups="groups"
       :model-value="activeGroup"
       @update:model-value="(v) => activeGroup = v"
@@ -241,6 +242,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.popup { display: flex; flex-direction: column; min-height: 500px; max-height: 600px; }
-.vault-list { flex: 1; overflow-y: auto; }
+.popup {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  max-height: 600px;
+  background: var(--color-bg);
+  width: 100%;
+  overflow: hidden;
+}
+.vault-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3) 0;
+}
+.vault-list::-webkit-scrollbar { width: 4px; }
+.vault-list::-webkit-scrollbar-track { background: transparent; }
+.vault-list::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
 </style>
