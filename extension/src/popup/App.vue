@@ -1,5 +1,6 @@
 <template>
-  <div class="popup">
+  <a-config-provider :theme="antdThemeConfig">
+    <div class="popup">
     <PopupHeader />
     <SearchBar
       v-model="searchQuery"
@@ -60,10 +61,12 @@
       @cancel="formMode = null"
     />
   </div>
+</a-config-provider>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { theme as antdTheme } from 'ant-design-vue';
 import { useBridge } from '../composables/useBridge.js';
 import { useTheme } from '../composables/useTheme.js';
 import { useToast } from '../composables/useToast.js';
@@ -79,7 +82,17 @@ import EditForm from './EditForm.vue';
 import SkeletonCard from './SkeletonCard.vue';
 
 const bridge = useBridge();
-const { theme, setTheme } = useTheme();
+const { theme: appTheme, setTheme } = useTheme();
+const antdThemeConfig = computed(() => ({
+  algorithm: appTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+  token: {
+    colorPrimary: '#2563eb',
+    colorBgContainer: appTheme.value === 'dark' ? '#1e293b' : '#ffffff',
+    colorText: appTheme.value === 'dark' ? '#f1f5f9' : '#0f172a',
+    colorTextSecondary: appTheme.value === 'dark' ? '#cbd5e1' : '#475569',
+    borderRadius: 6,
+  },
+}));
 const { show: showToast } = useToast();
 
 const state = ref({ paired: false, locked: false });

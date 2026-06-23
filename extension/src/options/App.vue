@@ -1,4 +1,5 @@
 <template>
+  <a-config-provider :theme="antdThemeConfig">
   <div class="options-page">
     <header class="options-page__header">
       <div class="options-page__brand">
@@ -29,6 +30,7 @@
       </div>
     </footer>
   </div>
+  </a-config-provider>
 </template>
 
 <script setup>
@@ -50,9 +52,20 @@ import PasskeyTab from './tabs/PasskeyTab.vue';
 import AboutTab from './tabs/AboutTab.vue';
 import { useTheme } from '../composables/useTheme.js';
 import { useToast } from '../composables/useToast.js';
+import { theme as antdTheme } from 'ant-design-vue';
 import { getSettings, setSettings } from '../../shared/storage.js';
 
 const { theme, setTheme } = useTheme();
+const antdThemeConfig = computed(() => ({
+  algorithm: theme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+  token: {
+    colorPrimary: '#2563eb',
+    colorBgContainer: theme.value === 'dark' ? '#1e293b' : '#ffffff',
+    colorText: theme.value === 'dark' ? '#f1f5f9' : '#0f172a',
+    colorTextSecondary: theme.value === 'dark' ? '#cbd5e1' : '#475569',
+    borderRadius: 6,
+  },
+}));
 const { show: showToast } = useToast();
 
 const activeTab = ref('general');
