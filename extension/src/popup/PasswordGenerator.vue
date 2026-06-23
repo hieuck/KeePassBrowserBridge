@@ -2,33 +2,35 @@
   <div class="generator">
     <div class="generator__header">
       <span>Generated password</span>
-      <button type="button" class="generator__close" aria-label="Close generator" @click="$emit('close')">
-        <Icon name="close" :size="14" />
-      </button>
+      <a-button type="text" size="small" @click="$emit('close')" aria-label="Close generator">
+        <template #icon><CloseOutlined /></template>
+      </a-button>
     </div>
     <div class="generator__result">
-      <input type="text" readonly :value="password" class="generator__input" ref="inputEl" @focus="$event.target.select()" />
-      <BaseButton variant="secondary" size="sm" @click="regenerate" :leading-icon="'key'">Refresh</BaseButton>
+      <a-input :value="password" readonly ref="inputEl" @focus="$event.target.select()" />
+      <a-button size="small" @click="regenerate">
+        <template #icon><ReloadOutlined /></template>
+        Refresh
+      </a-button>
     </div>
     <div class="generator__options">
-      <label class="generator__label">
-        <span>Length: {{ length }}</span>
-        <input type="range" :min="8" :max="64" v-model.number="length" />
-      </label>
-      <label class="generator__label">
-        <input type="checkbox" v-model="useSymbols" /> Include symbols
-      </label>
+      <a-space direction="vertical" size="small" style="width: 100%">
+        <div class="generator__label"><span>Length: {{ length }}</span><a-slider :min="8" :max="64" v-model:value="length" style="flex:1" /></div>
+        <a-checkbox v-model:checked="useSymbols">Include symbols</a-checkbox>
+      </a-space>
     </div>
     <div class="generator__actions">
-      <BaseButton variant="primary" block :leading-icon="'copy'" @click="copy">Copy password</BaseButton>
+      <a-button type="primary" block @click="copy">
+        <template #icon><CopyOutlined /></template>
+        Copy password
+      </a-button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import Icon from '../components/Icon.vue';
-import BaseButton from '../components/BaseButton.vue';
+import { CloseOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons-vue';
 
 const emit = defineEmits(['close', 'select']);
 
@@ -73,12 +75,9 @@ async function copy() {
 </script>
 
 <style scoped>
-.generator { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); margin: var(--space-2) var(--space-3); }
+.generator { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
 .generator__header { display: flex; align-items: center; justify-content: space-between; font-size: var(--text-sm); font-weight: 600; }
-.generator__close { background: transparent; border: none; cursor: pointer; color: var(--color-text-secondary); }
 .generator__result { display: flex; gap: var(--space-2); }
-.generator__input { flex: 1; padding: var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--text-sm); background: var(--color-surface); }
 .generator__options { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); }
 .generator__label { display: flex; align-items: center; gap: var(--space-2); }
-.generator__label input[type="range"] { flex: 1; }
 </style>
