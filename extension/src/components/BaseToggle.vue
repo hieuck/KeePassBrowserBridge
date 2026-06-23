@@ -31,7 +31,7 @@ const props = defineProps({
   ariaLabel: { type: String, default: '' },
 });
 const emit = defineEmits(['update:modelValue']);
-const slugifiedLabel = computed(() => (props.label || '').toLowerCase().replace(/\s+/g, '-') || 'toggle');
+const slugifiedLabel = computed(() => String(props.label || '').toLowerCase().replace(/\s+/g, '-') || 'toggle');
 
 function toggle() {
   if (props.disabled) return;

@@ -60,7 +60,7 @@ const rootRef = ref(null);
 const listRef = ref(null);
 const uid = ref('');
 
-const testId = computed(() => props.label ? `select-${props.label.toLowerCase().replace(/\s+/g, '-')}` : 'select');
+const testId = computed(() => props.label ? `select-${String(props.label).toLowerCase().replace(/\s+/g, '-')}` : 'select');
 const labelId = computed(() => `${uid.value}-label`);
 const describedBy = computed(() => props.error ? `${uid.value}-error` : undefined);
 

@@ -82,7 +82,7 @@ const effectiveType = computed(() => {
 
 const generatedId = useId();
 const inputId = computed(() => `kbb-input-${generatedId}`);
-const slugifiedLabel = computed(() => (props.label || '').toLowerCase().replace(/\s+/g, '-') || 'input');
+const slugifiedLabel = computed(() => String(props.label || '').toLowerCase().replace(/\s+/g, '-') || 'input');
 const errorId = computed(() => `${inputId.value}-error`);
 const descriptionId = computed(() => `${inputId.value}-description`);
 
