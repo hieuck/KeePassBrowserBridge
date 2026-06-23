@@ -19,7 +19,10 @@ const f = {
   "shield-check": "M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-.918-.57l-.55-3.18a.75.75 0 0 1 .165-.673L1.5 6.124a.75.75 0 0 1 .418-1.28l4.21-.611L7.99.668A.75.75 0 0 1 8 .25Zm2.486 6.97a.75.75 0 0 0-1.06-1.06L6.5 9.44 5.03 7.97a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0z",
   globe: "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM2.5 8a5.5 5.5 0 0 1 9.591-3.886.531.531 0 0 0 .072.745.536.536 0 0 0-.116.084c-.17.166-.36.348-.484.538a.53.53 0 0 0-.066.36.532.532 0 0 1-.494.628.532.532 0 0 0-.36.066c-.19.124-.372.314-.538.484a.536.536 0 0 0-.084.116.531.531 0 0 0-.745.072A5.5 5.5 0 0 1 2.5 8Zm5.5 5.5a5.5 5.5 0 0 0 5.5-5.5.532.532 0 0 0-.36-.066.532.532 0 0 1-.628-.494.532.532 0 0 0-.066-.36c-.124-.19-.314-.372-.484-.538a.536.536 0 0 0-.116-.084.531.531 0 0 0-.745-.072A5.5 5.5 0 0 0 8 13.5Z",
   user: "M10.561 8.073a6.005 6.005 0 0 1 3.432 5.142.75.75 0 1 1-1.498.07 4.5 4.5 0 0 0-8.99 0 .75.75 0 0 1-1.498-.07 6.004 6.004 0 0 1 3.431-5.142 3.999 3.999 0 1 0 5.123 0zM10.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
-  "user-plus": "M5.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3 6.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0zM7.5 9a4.5 4.5 0 0 0-3.83 2.146.75.75 0 1 0 1.276.79A3 3 0 0 1 7.5 11h.75a.75.75 0 0 0 0-1.5H7.5zM10 4.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75zM13 8.75a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0v-2.5z"
+  "user-plus": "M5.5 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3 6.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0zM7.5 9a4.5 4.5 0 0 0-3.83 2.146.75.75 0 1 0 1.276.79A3 3 0 0 1 7.5 11h.75a.75.75 0 0 0 0-1.5H7.5zM10 4.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75zM13 8.75a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0v-2.5z",
+  sun: "M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM8 0a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V.75A.75.75 0 0 1 8 0zm0 13a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 13zM2.343 2.343a.75.75 0 0 1 1.061 0l1.06 1.061a.75.75 0 0 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 0-1.06zm9.193 9.193a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061zM16 8a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 16 8zM1.5 8.75a.75.75 0 0 1 0-1.5h1.5a.75.75 0 0 1 0 1.5h-1.5zm12.728-5.03a.75.75 0 0 1 0 1.06l-1.061 1.061a.75.75 0 1 1-1.06-1.06l1.06-1.061a.75.75 0 0 1 1.06 0zm-9.193 9.193a.75.75 0 0 1 0 1.06l-1.061 1.061a.75.75 0 1 1-1.06-1.061l1.06-1.061a.75.75 0 0 1 1.06 0z",
+  moon: "M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm0 14.5a6.5 6.5 0 0 1 0-13 6.5 6.5 0 0 1 0 13z",
+  monitor: "M2 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H2zm1 2h10v7H3V5zm4 10a1 1 0 0 0 1-1h2a1 1 0 0 0 1 1H7z"
 };
 function g(c, e) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
@@ -48,6 +51,9 @@ a["shield-check"];
 a.globe;
 a.user;
 a["user-plus"];
+a.sun;
+a.moon;
+a.monitor;
 function x(c = "kbb") {
   if (!(typeof customElements > "u"))
     for (const [e, t] of Object.entries(a)) {
@@ -446,12 +452,12 @@ class w extends HTMLElement {
     }), this.shadowRoot.querySelectorAll(".picker-action").forEach((l) => {
       l.addEventListener("click", (s) => {
         s.stopPropagation();
-        const u = Number(l.dataset.index), b = l.dataset.action, h = o[u];
+        const u = Number(l.dataset.index), m = l.dataset.action, h = o[u];
         if (h)
-          if (b === "fill-form") {
-            const m = { ...h };
-            m._fillRole = "form", this._emitFill(m);
-          } else b === "fill-username" ? this._emitFillForTarget(h, "username") : b === "copy-username" ? this._emitCopy(h, "username") : b === "fill-password" ? this._emitFillForTarget(h, "password") : b === "copy-password" && this._emitCopy(h, "password");
+          if (m === "fill-form") {
+            const b = { ...h };
+            b._fillRole = "form", this._emitFill(b);
+          } else m === "fill-username" ? this._emitFillForTarget(h, "username") : m === "copy-username" ? this._emitCopy(h, "username") : m === "fill-password" ? this._emitFillForTarget(h, "password") : m === "copy-password" && this._emitCopy(h, "password");
       });
     }), this._activeIndex >= 0 && this._highlightActive();
   }
@@ -877,8 +883,8 @@ class $ extends HTMLElement {
     }
     Array.isArray(i) || (i = []);
     const l = i.map((s) => {
-      const u = typeof s == "string" ? s : s.value || s.name || "", b = typeof s == "string" ? s : s.label || s.name || u, h = u === n ? " selected" : "";
-      return `<option value="${p(u)}"${h}>${p(b)}</option>`;
+      const u = typeof s == "string" ? s : s.value || s.name || "", m = typeof s == "string" ? s : s.label || s.name || u, h = u === n ? " selected" : "";
+      return `<option value="${p(u)}"${h}>${p(m)}</option>`;
     }).join("");
     this.shadowRoot.innerHTML = `
       <style>${v}</style>
