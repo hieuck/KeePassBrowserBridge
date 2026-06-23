@@ -374,24 +374,28 @@ $firefoxStagingDir = Join-Path $ArtifactsDir "_firefox-extension"
 $firefoxManifestPath = Join-Path $extensionDir "manifest.firefox.json"
 $commonExtensionFiles = @(
     "background.js",
+    "compat.js",
     "contentScript.js",
     "customFields.js",
     "design-tokens.css",
+    "dist\BaseInput.css",
+    "dist\BaseInput.js",
+    "dist\BaseBadge.css",
+    "dist\BaseBadge.js",
+    "dist\components.es.js",
+    "dist\options.css",
     "dist\options.js",
     "dist\popup.css",
     "dist\popup.js",
-    "dist\runtime-dom.esm-bundler.js",
     "httpAuth.js",
     "icons\icon-16.png",
     "icons\icon-48.png",
     "icons\icon-128.png",
+    "icons.js",
     "options.css",
     "options.html",
-    "options.js",
     "popup.css",
-    "popup.html",
-    "popup.js",
-    "shared-components.js"
+    "popup.html"
 )
 $chromeExtensionFiles = $commonExtensionFiles + @(
     "compat.js",
