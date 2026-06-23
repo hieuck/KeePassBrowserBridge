@@ -13,5 +13,4 @@ Thumbs.db
 /playwright-report
 /test-results
 
-# Build outputs
-extension/dist/
+# Test artifacts
