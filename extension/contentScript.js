@@ -997,7 +997,12 @@ async function fillFromInlineButton(button) {
     acknowledgeFilledEntry(entries[0]);
     setInlineButtonState(button, "ok");
   } catch (error) {
-    showInlineErrorPicker(button, error && error.message ? error.message : String(error));
+    const message = error && error.message ? error.message : String(error);
+    if (message.includes("'get'")) {
+      showInlineErrorPicker(button, "Browser API unavailable on this page.");
+    } else {
+      showInlineErrorPicker(button, message);
+    }
     setInlineButtonState(button, "!");
   }
 }

@@ -45,6 +45,11 @@
         return false;
       }
 
+      if (!navigator.credentials) {
+        console.warn('KBB: navigator.credentials not available');
+        return false;
+      }
+
       try {
         const credential = await navigator.credentials.get({
           publicKey: {
