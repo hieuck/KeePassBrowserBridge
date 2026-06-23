@@ -1,23 +1,12 @@
-import { ref } from 'vue';
-
-const toasts = ref([]);
-let counter = 0;
+import { message } from 'ant-design-vue';
 
 export function useToast() {
-  function show(message, options = {}) {
-    const id = ++counter;
-    const toast = { id, message, ...options };
-    toasts.value = [...toasts.value, toast];
-    if (options.duration !== 0) {
-      const duration = options.duration || 4000;
-      setTimeout(() => dismiss(id), duration);
-    }
-    return id;
+  function show(msg, options = {}) {
+    const duration = options.duration !== undefined ? options.duration / 1000 : 4;
+    const variant = options.variant || 'info';
+    const type = variant === 'error' ? 'error' : variant === 'success' ? 'success' : variant === 'warning' ? 'warning' : 'info';
+    message[type](msg, duration);
   }
 
-  function dismiss(id) {
-    toasts.value = toasts.value.filter(t => t.id !== id);
-  }
-
-  return { toasts, show, dismiss };
+  return { show };
 }
