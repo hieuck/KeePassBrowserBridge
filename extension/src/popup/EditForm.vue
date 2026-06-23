@@ -65,7 +65,7 @@
 <script setup>
 import { reactive, computed, ref, onMounted, onUnmounted } from 'vue';
 import { CloseOutlined, KeyOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
-import PasswordGenerator from '../components/PasswordGenerator.vue';
+import PasswordGenerator from './PasswordGenerator.vue';
 import { isValidUrl, isNonEmpty } from '../../shared/validators.js';
 
 const props = defineProps({ entry: { type: Object, required: true } });
