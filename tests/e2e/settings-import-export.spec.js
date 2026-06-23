@@ -6,7 +6,7 @@ test.describe('Settings Import/Export', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(OPTIONS_URL);
     await page.waitForSelector('.options-page', { timeout: 5000 });
-    await page.locator('.options-sidebar__tab', { hasText: 'About' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'About' }).click();
   });
 
   test('About tab shows Export and Import Settings buttons', async ({ page }) => {

@@ -39,7 +39,7 @@ test.describe('Theme switching', () => {
     await page.goto(OPTIONS_URL);
     await page.waitForSelector('.options-page', { timeout: 5000 });
 
-    const themeBtn = page.locator('.options-page__theme-btn');
+    const themeBtn = page.locator('.options-page__header button');
     await expect(themeBtn).toBeVisible();
 
     const initialTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));

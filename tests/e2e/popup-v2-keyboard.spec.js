@@ -117,7 +117,7 @@ test.describe('Popup v2 keyboard navigation', () => {
   });
 
   test('new login form shows when clicking new login button', async ({ page }) => {
-    const newBtn = page.locator('.bottom-toolbar__btn', { hasText: 'New Login' }).first();
+    const newBtn = page.locator('button[aria-label="Add new login"]');
     await expect(newBtn).toBeVisible();
     await newBtn.click();
     await page.waitForTimeout(300);
@@ -173,7 +173,7 @@ test.describe('Popup v2 keyboard navigation', () => {
     if (await lockBtn.count() > 0) {
       await lockBtn.click();
       await page.waitForTimeout(300);
-      const lockedState = page.locator('.status-bar--locked, [class*="locked"]');
+      const lockedState = page.locator('.ant-tag:has-text("Locked")');
       await expect(lockedState).toBeVisible();
     }
   });
@@ -194,7 +194,7 @@ test.describe('Popup v2 keyboard navigation', () => {
     });
     await page.goto('/extension/popup.html');
     await page.waitForTimeout(2000);
-    const badges = page.locator('.kbb-badge');
+    const badges = page.locator('.ant-tag');
     await expect(badges.first()).toContainText('5');
   });
 });
