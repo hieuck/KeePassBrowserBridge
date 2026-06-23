@@ -9,9 +9,9 @@
           <div class="clients-row__name">{{ client.name }}</div>
           <div class="clients-row__perms">{{ (client.permissions || []).join(', ') }}</div>
           <div class="clients-row__last">{{ formatDate(client.lastUsed) }}</div>
-          <button type="button" class="clients-row__remove" @click="revokeClient(client.id)">
-            <Icon name="trash" :size="14" />
-          </button>
+          <a-button size="small" danger type="text" @click="revokeClient(client.id)">
+            <template #icon><DeleteOutlined /></template>
+          </a-button>
         </div>
       </div>
     </SectionCard>
@@ -20,8 +20,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { DeleteOutlined } from '@ant-design/icons-vue';
 import SectionCard from '../SectionCard.vue';
-import Icon from '../../components/Icon.vue';
 
 const props = defineProps({ settings: { type: Object, required: true } });
 const emit = defineEmits(['save', 'reset']);
@@ -34,7 +34,6 @@ function formatDate(timestamp) {
 }
 
 function revokeClient(id) {
-  // Placeholder; real implementation would call KBB_REVOKE_CLIENT
   clients.value = clients.value.filter(c => c.id !== id);
 }
 
@@ -50,6 +49,4 @@ onMounted(() => {
 .clients-row__name { font-weight: 500; font-size: var(--text-sm); }
 .clients-row__perms { font-size: var(--text-xs); color: var(--color-text-secondary); }
 .clients-row__last { font-size: var(--text-xs); color: var(--color-text-muted); }
-.clients-row__remove { background: transparent; border: none; color: var(--color-danger); cursor: pointer; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); }
-.clients-row__remove:hover { background: var(--color-danger-subtle); }
 </style>

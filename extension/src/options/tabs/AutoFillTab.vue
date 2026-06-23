@@ -1,40 +1,27 @@
 <template>
   <div>
     <SectionCard title="Auto-fill" description="Automatically fill forms when only one login matches.">
-      <BaseToggle
-        :model-value="!!settings.autoFillEnabled"
-        @update:model-value="(v) => updateSetting('autoFillEnabled', v)"
-        label="Enable auto-fill"
-        description="Fill credentials when exactly one login matches the page URL"
-      />
-      <BaseToggle
-        :model-value="!!settings.autoSubmitEnabled"
-        @update:model-value="(v) => updateSetting('autoSubmitEnabled', v)"
-        label="Auto-submit form"
-        description="Submit form after filling credentials"
-      />
+      <a-form-item label="Enable auto-fill">
+        <a-switch :checked="!!settings.autoFillEnabled" @change="v => update('autoFillEnabled', v)" />
+        <span style="margin-left: 8px; color: var(--color-text-secondary);">Fill credentials when exactly one login matches</span>
+      </a-form-item>
+      <a-form-item label="Auto-submit form">
+        <a-switch :checked="!!settings.autoSubmitEnabled" @change="v => update('autoSubmitEnabled', v)" />
+      </a-form-item>
     </SectionCard>
     <SectionCard title="Fill delay" description="How long to wait before filling credentials.">
-      <BaseInput
-        :model-value="settings.autoFillDelayMs || 1200"
-        @update:model-value="(v) => updateSetting('autoFillDelayMs', v)"
-        type="number"
-        label="Delay (ms)"
-        description="Increase if pages load slowly"
-      />
+      <a-form-item label="Delay (ms)">
+        <a-input-number :value="settings.autoFillDelayMs || 1200" @change="v => update('autoFillDelayMs', v)" :min="200" :max="5000" :step="100" style="width: 120px" />
+      </a-form-item>
     </SectionCard>
   </div>
 </template>
 
 <script setup>
 import SectionCard from '../SectionCard.vue';
-import BaseInput from '../../components/BaseInput.vue';
-import BaseToggle from '../../components/BaseToggle.vue';
 
 const props = defineProps({ settings: { type: Object, required: true } });
 const emit = defineEmits(['save', 'reset']);
 
-function updateSetting(key, value) {
-  emit('save', { [key]: value });
-}
+function update(key, value) { emit('save', { [key]: value }); }
 </script>

@@ -1,33 +1,28 @@
 <template>
   <div>
     <SectionCard title="Appearance" description="Customize how the extension looks.">
-      <BaseInput
-        :model-value="settings.themePreference || 'system'"
-        @update:model-value="(v) => updateSetting('themePreference', v)"
-        label="Theme"
-        description="Light, dark, or follow system"
-      />
+      <a-form-item label="Theme">
+        <a-select :value="settings.themePreference || 'system'" @change="v => update('themePreference', v)" style="width: 200px">
+          <a-select-option value="light">Light</a-select-option>
+          <a-select-option value="dark">Dark</a-select-option>
+          <a-select-option value="system">System</a-select-option>
+        </a-select>
+      </a-form-item>
     </SectionCard>
     <SectionCard title="Auto-lock" description="Lock the bridge after a period of inactivity.">
-      <BaseInput
-        :model-value="settings.autoLockTimeoutMinutes || 0"
-        @update:model-value="(v) => updateSetting('autoLockTimeoutMinutes', v)"
-        type="number"
-        label="Auto-lock timeout (minutes)"
-        description="0 = never lock automatically"
-      />
+      <a-form-item label="Auto-lock timeout (minutes)">
+        <a-input-number :value="settings.autoLockTimeoutMinutes || 0" @change="v => update('autoLockTimeoutMinutes', v)" :min="0" style="width: 120px" />
+        <span style="margin-left: 8px; color: var(--color-text-secondary);">0 = never lock automatically</span>
+      </a-form-item>
     </SectionCard>
   </div>
 </template>
 
 <script setup>
 import SectionCard from '../SectionCard.vue';
-import BaseInput from '../../components/BaseInput.vue';
 
 const props = defineProps({ settings: { type: Object, required: true } });
 const emit = defineEmits(['save', 'reset']);
 
-function updateSetting(key, value) {
-  emit('save', { [key]: value });
-}
+function update(key, value) { emit('save', { [key]: value }); }
 </script>
