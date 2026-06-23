@@ -1,6 +1,6 @@
 # KeePass Browser Bridge
 
-Version 1.0.0
+Version 2.0.0
 
 Clean-room KeePass 2.x browser integration inspired by KeePassRPC, Kee, and KeePassXC-Browser.
 
@@ -25,14 +25,19 @@ KeePass Browser Bridge has two release artifacts:
 - Popup lock/unlock with optional auto-lock after inactivity.
 - Trusted browser listing and revocation from KeePass or extension.
 
-### UI/UX
-- Modern credential list with website favicons, folder grouping, and filter chips.
-- Credential detail view with all fields and inline actions.
-- Password health indicators — strength meter, last used time, usage count.
-- Built-in password generator with length slider and character options.
-- Toast notifications and loading states for all actions.
-- Dark mode with automatic system preference detection.
-- Smooth animations and hover effects throughout.
+### UI/UX (v2.0 Redesign)
+- **Unified design system** — CSS custom properties (design tokens) shared across all 5 surfaces: popup, options, inline picker, save prompt, update prompt.
+- **Vue 3 popup + options** — reactive components with Base* component library (14 components).
+- **Web Components** — in-page UI (picker, prompts) uses Shadow DOM for style isolation.
+- **Modern flat visual style** — clean typography, consistent spacing (4px grid), subtle shadows.
+- **Click-to-expand credential cards** — inline detail with fill, copy, show/hide password actions.
+- **Inline picker** — expandable entries with per-field actions (Fill user, Copy pass, etc.), keyboard navigation.
+- **Editable save/update prompts** — editable Title, URL, Folder fields before saving credentials.
+- **FilterBar** — group filter chips with overflow dropdown for 5+ groups.
+- **Skeleton loading** — pulse-animated placeholder cards during vault load.
+- **50 visual regression screenshots** — Playwright baseline snapshots per surface × light/dark × extended states.
+- **Full keyboard accessibility** — Tab, Arrow, Enter, Escape navigation throughout.
+- **WCAG 2.1 AA** — axe-core verified with 0 violations, contrast-fixed tokens.
 
 ### Passkeys/WebAuthn
 - WebAuthn Level 3 credential creation and assertion (enabled by default).
@@ -53,7 +58,8 @@ KeePass Browser Bridge has two release artifacts:
 - KeePass plugin DLL and PLGX artifacts.
 - SHA-256 checksum verified auto-update.
 - Optional GPG detached signatures.
-- 141 cross-browser E2E tests (Chromium + Firefox).
+- 259 cross-browser E2E + component + visual regression + a11y tests (Chromium + Firefox).
+- 90 unit tests (Vitest).
 
 ## Comparison
 
