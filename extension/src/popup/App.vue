@@ -145,6 +145,7 @@ const visibleEntries = computed(() => {
 
 const emptyStateVariant = computed(() => {
   if (!state.value.paired) return 'unpaired';
+  if (state.value.locked) return 'locked';
   if (searchQuery.value) return 'search';
   if (currentEntries.value.length === 0) return 'empty';
   return 'filter';
@@ -277,7 +278,7 @@ async function refreshState() {
       pairingExpiresAt.value = 0;
     }
 
-    // Show pair dialog if not paired
+    // Show pair dialog only if not paired
     if (!state.value.paired) showPairDialog.value = true;
 
     if (state.value.paired && !state.value.locked) {

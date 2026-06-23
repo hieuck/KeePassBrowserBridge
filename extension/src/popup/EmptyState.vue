@@ -26,11 +26,13 @@ const title = computed(() => {
   if (props.variant === 'search') return `No results for "${props.query}"`;
   if (props.variant === 'filter') return 'No matches in this group';
   if (props.variant === 'unpaired') return 'KeePass is not connected';
+  if (props.variant === 'locked') return 'KeePass is locked';
   return 'No logins yet';
 });
 
 const description = computed(() => {
-  if (props.variant === 'unpaired') return 'Open the extension popup and pair it with KeePass to get started.';
+  if (props.variant === 'unpaired') return 'Open KeePass and start pairing to connect.';
+  if (props.variant === 'locked') return 'Unlock KeePass from the popup to access your logins.';
   if (props.variant === 'empty') return 'Add your first login to get started.';
   if (props.variant === 'search') return 'Try a different search term.';
   return 'Select a different group or clear the filter.';
