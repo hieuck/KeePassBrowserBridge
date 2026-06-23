@@ -1,9 +1,6 @@
 <template>
   <div class="popup">
-    <PopupHeader
-      :theme="theme"
-      @toggle-theme="cycleTheme"
-    />
+    <PopupHeader />
     <SearchBar
       v-model="searchQuery"
       placeholder="Search vault..."
