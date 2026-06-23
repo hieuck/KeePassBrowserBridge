@@ -45,8 +45,8 @@ const actionLabel = computed(() => '+ Add your first login');
 </script>
 
 <style scoped>
-.empty-state { text-align: center; padding: var(--space-8) var(--space-4) var(--space-10); color: var(--color-text-secondary); }
-.empty-state__icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; margin: 0 auto var(--space-3); background: linear-gradient(135deg, var(--color-accent-subtle) 0%, rgba(37,99,235,0.12) 100%); border-radius: var(--radius-xl); color: var(--color-accent); }
+.empty-state { text-align: center; padding: var(--space-6) var(--space-4) var(--space-8); color: var(--color-text-secondary); }
+.empty-state__icon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin: 0 auto var(--space-3); background: linear-gradient(135deg, var(--color-accent-subtle) 0%, rgba(37,99,235,0.12) 100%); border-radius: var(--radius-lg); color: var(--color-accent); }
 .empty-state__title { font-size: var(--text-h2); font-weight: 600; color: var(--color-text); margin: 0 0 var(--space-1); }
-.empty-state__description { font-size: var(--text-sm); color: var(--color-text-secondary); margin: 0 auto var(--space-4); line-height: var(--line-loose); max-width: 280px; }
+.empty-state__description { font-size: var(--text-sm); color: var(--color-text-secondary); margin: 0 auto var(--space-4); line-height: var(--line-loose); max-width: 260px; }
 </style>

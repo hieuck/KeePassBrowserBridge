@@ -20,9 +20,11 @@ defineProps({
 </script>
 
 <style scoped>
-.section-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); margin-bottom: var(--space-4); }
+.section-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); margin-bottom: var(--space-4); box-shadow: var(--shadow-sm); }
 .section-card__header { padding: var(--space-4); border-bottom: 1px solid var(--color-border); }
-.section-card__title { font-size: var(--text-md); font-weight: 600; margin: 0 0 var(--space-1); }
+.section-card__title { font-size: var(--text-h3); font-weight: 600; margin: 0 0 var(--space-1); }
 .section-card__description { font-size: var(--text-sm); color: var(--color-text-secondary); margin: 0; }
 .section-card__body { padding: var(--space-4); }
+.section-card__body > :first-child { margin-top: 0; }
+.section-card__body > :last-child { margin-bottom: 0; }
 </style>

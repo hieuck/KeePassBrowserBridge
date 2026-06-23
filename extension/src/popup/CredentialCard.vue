@@ -78,10 +78,11 @@ function onCardClick(event) {
 .credential-card__chevron:hover { background: var(--color-bg); color: var(--color-text); }
 .credential-card__detail { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--space-3); }
 .credential-card__fields, .credential-card__custom { display: flex; flex-direction: column; gap: var(--space-1); }
-.credential-card__field { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg); border-radius: var(--radius-sm); }
+.credential-card__field { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); transition: background var(--transition-fast); }
+.credential-card__field:hover { background: var(--color-surface); }
 .credential-card__field-label { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); min-width: 60px; flex-shrink: 0; }
 .credential-card__field-value { flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-mono); }
-.credential-card__icon-btn { background: transparent; border: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); flex-shrink: 0; transition: background var(--transition-fast), color var(--transition-fast); }
+.credential-card__icon-btn { background: transparent; border: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); flex-shrink: 0; transition: background var(--transition-fast), color var(--transition-fast); }
 .credential-card__icon-btn:hover { background: var(--color-surface); color: var(--color-accent); }
 .credential-card__custom-header { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-1); }
 .credential-card__actions { display: flex; gap: var(--space-2); }

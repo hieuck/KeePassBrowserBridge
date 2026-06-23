@@ -14,7 +14,7 @@
       :model-value="activeGroup"
       @update:model-value="(v) => activeGroup = v"
     />
-    <main class="vault-list" id="results">
+    <main class="vault-list" id="results" role="region" aria-label="Credentials" aria-live="polite" :aria-busy="loading ? 'true' : 'false'">
       <template v-if="loading">
         <SkeletonCard v-for="i in 3" :key="i" />
       </template>
@@ -199,12 +199,14 @@ function openClients() {
 function lock() {
   bridge.setLocked(true).then(() => {
     state.value.locked = true;
+    showToast('KeePass locked', { variant: 'info', duration: 2000 });
   });
 }
 
 function unlock() {
   bridge.setLocked(false).then(() => {
     state.value.locked = false;
+    showToast('KeePass unlocked', { variant: 'success', duration: 2000 });
   });
 }
 

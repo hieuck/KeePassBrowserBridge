@@ -22,11 +22,11 @@ defineProps({ placeholder: { type: String, default: 'Search...' } });
 </script>
 
 <style scoped>
-.search-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); background: var(--color-surface); }
+.search-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); background: var(--color-surface); transition: background var(--transition-fast); }
+.search-bar:focus-within { background: var(--color-bg); }
 .search-bar__icon { color: var(--color-text-muted); }
 .search-bar__input { flex: 1; border: none; outline: none; background: transparent; font: inherit; font-size: var(--text-base); color: var(--color-text); min-width: 0; }
 .search-bar__input::placeholder { color: var(--color-text-muted); font-size: var(--text-base); }
-.search-bar__input:focus { outline: none; }
-.search-bar__clear { background: transparent; border: none; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); }
+.search-bar__clear { background: transparent; border: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); transition: background var(--transition-fast); }
 .search-bar__clear:hover { background: var(--color-bg); color: var(--color-text); }
 </style>
