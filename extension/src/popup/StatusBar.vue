@@ -39,8 +39,8 @@ const statusClass = computed(() => ({
 
 <style scoped>
 .status-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--color-border); background: var(--color-surface); font-size: var(--text-xs); color: var(--color-text-secondary); }
-.status-bar__lock-btn { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: var(--text-xs); color: var(--color-text); cursor: pointer; font-family: inherit; }
-.status-bar__lock-btn:hover { background: var(--color-bg); }
+.status-bar__lock-btn { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); background: transparent; border: none; border-radius: var(--radius-sm); font-size: var(--text-xs); color: var(--color-text-secondary); cursor: pointer; font-family: inherit; transition: background var(--transition-fast), color var(--transition-fast); }
+.status-bar__lock-btn:hover { background: var(--color-bg); color: var(--color-text); }
 .status-bar__lock-btn--unlock { color: var(--color-danger); border-color: var(--color-danger); }
 .status-bar__lock-btn--unlock:hover { background: var(--color-danger-subtle); }
 .status-bar__status { flex: 1; text-align: center; }
