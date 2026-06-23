@@ -6,7 +6,7 @@
       placeholder="Search vault..."
     />
     <FilterBar
-      v-if="groups.length > 1"
+      v-if="groups.length > 0"
       :groups="groups"
       :model-value="activeGroup"
       @update:model-value="(v) => activeGroup = v"
@@ -97,7 +97,7 @@ const canWrite = computed(() => permissions.value.includes('write'));
 
 const groups = computed(() => {
   const set = new Set(currentEntries.value.map(e => e.Group).filter(Boolean));
-  return ['All', ...Array.from(set).sort()];
+  return ['All', ...Array.from(set).sort()].map(name => ({ id: name, label: name }));
 });
 
 const visibleEntries = computed(() => {
