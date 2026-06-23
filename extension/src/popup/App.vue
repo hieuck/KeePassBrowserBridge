@@ -230,7 +230,7 @@ async function refreshState() {
   try {
     const settings = await getSettings();
     state.value = { paired: !!settings.clientId, locked: !!settings.locked };
-    permissions.value = settings.permissions || ['read'];
+    permissions.value = settings.permissions || (settings.clientId ? ['read', 'write', 'manageClients'] : ['read']);
     if (state.value.paired && !state.value.locked) {
       const result = await bridge.queryLogins();
       currentEntries.value = result.entries || [];
