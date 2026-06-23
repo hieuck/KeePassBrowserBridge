@@ -1,38 +1,38 @@
 <template>
   <footer class="footer-bar">
     <div class="footer-bar__left">
-      <button type="button" class="footer-bar__btn" :disabled="!canWrite" @click="$emit('new-login')" aria-label="Add new login">
-        <Icon name="plus" :size="16" />
+      <a-button type="text" size="small" :disabled="!canWrite" @click="$emit('new-login')" aria-label="Add new login" class="footer-bar__btn">
+        <template #icon><PlusOutlined /></template>
         <span class="footer-bar__label">New</span>
-      </button>
-      <button type="button" class="footer-bar__btn" @click="$emit('settings')" aria-label="Settings">
-        <Icon name="globe" :size="16" />
+      </a-button>
+      <a-button type="text" size="small" @click="$emit('settings')" aria-label="Settings" class="footer-bar__btn">
+        <template #icon><GlobalOutlined /></template>
         <span class="footer-bar__label">Settings</span>
-      </button>
-      <button type="button" class="footer-bar__btn" @click="$emit('clients')" aria-label="Clients">
-        <Icon name="user-plus" :size="16" />
+      </a-button>
+      <a-button type="text" size="small" @click="$emit('clients')" aria-label="Clients" class="footer-bar__btn">
+        <template #icon><UserAddOutlined /></template>
         <span class="footer-bar__label">Clients</span>
-      </button>
+      </a-button>
     </div>
     <div class="footer-bar__center">
-      <span class="footer-bar__status">{{ statusText }}</span>
+      <a-tag :color="statusColor">{{ statusText }}</a-tag>
     </div>
     <div class="footer-bar__right">
-      <button type="button" class="footer-bar__btn footer-bar__btn--lock" :class="{ 'footer-bar__btn--unlock': state.locked }" @click="state.locked ? $emit('unlock') : $emit('lock')" :aria-label="state.locked ? 'Unlock KeePass' : 'Lock KeePass'">
-        <Icon :name="state.locked ? 'lock-open' : 'lock'" :size="16" />
+      <a-button :type="state.locked ? 'text' : 'text'" :danger="state.locked" size="small" @click="state.locked ? $emit('unlock') : $emit('lock')" :aria-label="state.locked ? 'Unlock KeePass' : 'Lock KeePass'" class="footer-bar__btn">
+        <template #icon><component :is="state.locked ? UnlockOutlined : LockOutlined" /></template>
         <span class="footer-bar__label">{{ state.locked ? 'Unlock' : 'Lock' }}</span>
-      </button>
-      <button type="button" class="footer-bar__btn" :aria-label="`Theme: ${theme}`" @click="$emit('toggle-theme')">
-        <Icon :name="themeIcon" :size="16" />
+      </a-button>
+      <a-button type="text" size="small" :aria-label="`Theme: ${theme}`" @click="$emit('toggle-theme')" class="footer-bar__btn">
+        <template #icon><component :is="themeIconComponent" /></template>
         <span class="footer-bar__label">Theme</span>
-      </button>
+      </a-button>
     </div>
   </footer>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import Icon from '../components/Icon.vue';
+import { PlusOutlined, GlobalOutlined, UserAddOutlined, LockOutlined, UnlockOutlined, BulbOutlined, StarOutlined, DesktopOutlined } from '@ant-design/icons-vue';
 
 const props = defineProps({
   canWrite: { type: Boolean, default: false },
@@ -41,12 +41,21 @@ const props = defineProps({
 });
 defineEmits(['new-login', 'settings', 'clients', 'lock', 'unlock', 'toggle-theme']);
 
-const themeIcon = computed(() => ({ light: 'sun', dark: 'moon', system: 'monitor' })[props.theme] || 'sun');
+const themeIconComponent = computed(() => {
+  const map = { light: BulbOutlined, dark: StarOutlined, system: DesktopOutlined };
+  return map[props.theme] || BulbOutlined;
+});
 
 const statusText = computed(() => {
   if (!props.state.paired) return 'Not paired';
   if (props.state.locked) return 'Locked';
   return 'Paired';
+});
+
+const statusColor = computed(() => {
+  if (!props.state.paired) return 'default';
+  if (props.state.locked) return 'orange';
+  return 'green';
 });
 </script>
 
@@ -68,31 +77,16 @@ const statusText = computed(() => {
 .footer-bar__center {
   flex: 1;
   text-align: center;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 }
 .footer-bar__btn {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 2px;
   min-width: 44px;
   min-height: 44px;
-  padding: 4px 8px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font-family: inherit;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  height: auto !important;
+  padding: 4px 8px !important;
 }
-.footer-bar__btn:hover:not(:disabled) { background: var(--color-accent-subtle); color: var(--color-accent); }
-.footer-bar__btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.footer-bar__btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.footer-bar__btn:active:not(:disabled) { transform: scale(0.97); }
-.footer-bar__btn--unlock { color: var(--color-danger); }
-.footer-bar__btn--unlock:hover { background: var(--color-danger-subtle); }
 .footer-bar__label { font-size: 9px; line-height: 1; text-transform: uppercase; letter-spacing: 0.04em; }
 </style>

@@ -1,30 +1,38 @@
 <template>
-  <form class="form" @submit.prevent="onSave">
+  <div class="form">
     <header class="form__header">
       <h2>New login</h2>
-      <button type="button" class="form__close" aria-label="Close form" @click="$emit('cancel')">
-        <Icon name="close" :size="16" />
-      </button>
+      <a-button type="text" size="small" aria-label="Close form" @click="$emit('cancel')">
+        <template #icon><CloseOutlined /></template>
+      </a-button>
     </header>
-    <div class="form__body">
-      <BaseInput v-model="form.Title" label="Title" placeholder="e.g. Facebook" required />
-      <BaseInput v-model="form.Url" label="URL" type="url" placeholder="https://example.com" />
-      <BaseInput v-model="form.UserName" label="Username" />
-      <BaseInput v-model="form.Password" label="Password" type="password" show-toggle />
-      <BaseInput v-model="form.Group" label="Folder" placeholder="Optional" />
-    </div>
+    <a-form layout="vertical" :model="form" @finish="onSave" class="form__body">
+      <a-form-item label="Title" name="Title" :rules="[{ required: true, message: 'Title is required' }]">
+        <a-input v-model:value="form.Title" placeholder="e.g. Facebook" />
+      </a-form-item>
+      <a-form-item label="URL" name="Url">
+        <a-input v-model:value="form.Url" type="url" placeholder="https://example.com" />
+      </a-form-item>
+      <a-form-item label="Username" name="UserName">
+        <a-input v-model:value="form.UserName" />
+      </a-form-item>
+      <a-form-item label="Password" name="Password">
+        <a-input-password v-model:value="form.Password" />
+      </a-form-item>
+      <a-form-item label="Folder" name="Group">
+        <a-input v-model:value="form.Group" placeholder="Optional" />
+      </a-form-item>
+    </a-form>
     <footer class="form__footer">
-      <BaseButton variant="ghost" @click="$emit('cancel')">Cancel</BaseButton>
-      <BaseButton variant="primary" type="submit" :disabled="!canSave">Save</BaseButton>
+      <a-button @click="$emit('cancel')">Cancel</a-button>
+      <a-button type="primary" :disabled="!canSave" @click="onSave">Save</a-button>
     </footer>
-  </form>
+  </div>
 </template>
 
 <script setup>
 import { reactive, computed } from 'vue';
-import Icon from '../components/Icon.vue';
-import BaseInput from '../components/BaseInput.vue';
-import BaseButton from '../components/BaseButton.vue';
+import { CloseOutlined } from '@ant-design/icons-vue';
 
 const emit = defineEmits(['save', 'cancel']);
 
@@ -48,8 +56,6 @@ function onSave() {
 .form { display: flex; flex-direction: column; background: var(--color-surface); border-top: 1px solid var(--color-border); }
 .form__header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); }
 .form__header h2 { margin: 0; font-size: var(--text-md); font-weight: 600; }
-.form__close { background: transparent; border: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); }
-.form__close:hover { background: var(--color-bg); color: var(--color-text); }
-.form__body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); max-height: 400px; overflow-y: auto; }
+.form__body { padding: var(--space-4); max-height: 400px; overflow-y: auto; }
 .form__footer { display: flex; gap: var(--space-2); justify-content: flex-end; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); }
 </style>

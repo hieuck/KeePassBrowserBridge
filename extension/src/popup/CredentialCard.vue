@@ -10,17 +10,17 @@
     :aria-expanded="expanded"
     :data-testid="'credential-card'"
   >
-    <BaseAvatar :name="entry.Title" :url="entry.Url" size="md" class="credential-card__avatar" />
+    <a-avatar :src="faviconUrl" :size="32" class="credential-card__avatar">{{ entry.Title?.[0] || '?' }}</a-avatar>
     <div class="credential-card__info">
       <div class="credential-card__title">{{ entry.Title || '(Untitled)' }}</div>
       <div v-if="entry.UserName" class="credential-card__subtitle">{{ entry.UserName }}</div>
       <div v-if="metaText" class="credential-card__meta">
-        <BaseBadge v-if="entry.UsageCount > 0" variant="accent">&#9733; {{ entry.UsageCount }}x</BaseBadge>
+        <a-tag v-if="entry.UsageCount > 0" color="blue">&#9733; {{ entry.UsageCount }}x</a-tag>
         <span v-if="entry.LastUsed">{{ formatRelativeTime(entry.LastUsed) }}</span>
       </div>
     </div>
     <button type="button" class="credential-card__chevron" :aria-label="expanded ? 'Collapse' : 'Expand'" tabindex="-1" @click.stop="$emit('toggle', entry)">
-      <Icon name="chevron-down" :size="16" :style="{ transform: expanded ? 'rotate(180deg)' : 'none' }" />
+      <DownOutlined :style="{ transform: expanded ? 'rotate(180deg)' : 'none' }" />
     </button>
 
     <div v-if="expanded" class="credential-card__detail" @click.stop>
@@ -30,9 +30,10 @@
         @copy="(...args) => $emit('copy', ...args)"
       />
       <div class="credential-card__actions">
-        <BaseButton v-if="canEdit" variant="secondary" size="sm" :leading-icon="'edit'" @click="$emit('edit', entry)">
+        <a-button v-if="canEdit" size="small" @click="$emit('edit', entry)">
+          <template #icon><EditOutlined /></template>
           Edit
-        </BaseButton>
+        </a-button>
       </div>
     </div>
   </article>
@@ -40,10 +41,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import Icon from '../components/Icon.vue';
-import BaseAvatar from '../components/BaseAvatar.vue';
-import BaseBadge from '../components/BaseBadge.vue';
-import BaseButton from '../components/BaseButton.vue';
+import { DownOutlined, EditOutlined } from '@ant-design/icons-vue';
 import DetailView from '../components/DetailView.vue';
 import { formatRelativeTime } from '../../shared/formatters.js';
 
@@ -53,6 +51,17 @@ const props = defineProps({
   canEdit: { type: Boolean, default: false },
 });
 const emit = defineEmits(['toggle', 'fill', 'copy', 'edit']);
+
+const faviconUrl = computed(() => {
+  if (!props.entry.Url) return '';
+  try {
+    const u = new URL(props.entry.Url);
+    if (!u.hostname) return '';
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(u.hostname)}&sz=64`;
+  } catch {
+    return '';
+  }
+});
 
 const metaText = computed(() => {
   return [props.entry.Group, props.entry.Url].filter(Boolean).join(' · ');

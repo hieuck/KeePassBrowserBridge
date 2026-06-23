@@ -1,31 +1,32 @@
 <template>
   <div class="detail-view" :data-testid="'detail-view'">
-    <BaseButton variant="primary" block :leading-icon="'check'" @click="$emit('fill', entry, 'form')">
+    <a-button type="primary" block @click="$emit('fill', entry, 'form')">
+      <template #icon><CheckOutlined /></template>
       Fill form
-    </BaseButton>
+    </a-button>
     <div v-if="entry.UserName || entry.Password || entry.OneTimePassword" class="detail-view__fields">
       <div v-if="entry.UserName" class="detail-view__field">
         <span class="detail-view__field-label">Username</span>
         <span class="detail-view__field-value">{{ entry.UserName }}</span>
         <button type="button" class="detail-view__icon-btn" aria-label="Copy username" @click="$emit('copy', 'username', entry.UserName)">
-          <Icon name="copy" :size="14" />
+          <CopyOutlined />
         </button>
       </div>
       <div v-if="entry.Password" class="detail-view__field">
         <span class="detail-view__field-label">Password</span>
         <span class="detail-view__field-value">{{ showPassword ? entry.Password : '••••••••' }}</span>
         <button type="button" class="detail-view__icon-btn" :aria-label="showPassword ? 'Hide password' : 'Show password'" @click="showPassword = !showPassword">
-          <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="14" />
+          <component :is="showPassword ? EyeInvisibleOutlined : EyeOutlined" />
         </button>
         <button type="button" class="detail-view__icon-btn" aria-label="Copy password" @click="$emit('copy', 'password', entry.Password)">
-          <Icon name="copy" :size="14" />
+          <CopyOutlined />
         </button>
       </div>
       <div v-if="entry.OneTimePassword" class="detail-view__field">
         <span class="detail-view__field-label">OTP</span>
         <span class="detail-view__field-value">{{ entry.OneTimePassword }}</span>
         <button type="button" class="detail-view__icon-btn" aria-label="Copy OTP" @click="$emit('copy', 'otp', entry.OneTimePassword)">
-          <Icon name="copy" :size="14" />
+          <CopyOutlined />
         </button>
       </div>
     </div>
@@ -35,7 +36,7 @@
         <span class="detail-view__field-label">{{ row.Name }}</span>
         <span class="detail-view__field-value">{{ row.IsProtected ? '••••••••' : row.Value }}</span>
         <button v-if="!row.IsProtected" type="button" class="detail-view__icon-btn" :aria-label="`Copy ${row.Name}`" @click="$emit('copy', row.Name, row.Value)">
-          <Icon name="copy" :size="14" />
+          <CopyOutlined />
         </button>
       </div>
     </div>
@@ -44,8 +45,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import Icon from './Icon.vue';
-import BaseButton from './BaseButton.vue';
+import { CheckOutlined, CopyOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons-vue';
 
 const props = defineProps({
   entry: { type: Object, required: true },
