@@ -3,7 +3,7 @@
     <Icon name="search" :size="14" class="search-bar__icon" />
     <input
       v-model="modelValue"
-      type="search"
+      type="text"
       class="search-bar__input"
       :placeholder="placeholder"
       :aria-label="placeholder"
