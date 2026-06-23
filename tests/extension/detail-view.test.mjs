@@ -14,8 +14,8 @@ test('DetailView shows username row with copy button', () => {
 
 test('DetailView shows password row with show/hide toggle and copy button', () => {
   expect(source).toMatch(/Password/);
-  expect(source).toMatch(/eye/);
-  expect(source).toMatch(/eye-off/);
+  expect(source).toMatch(/EyeOutlined/);
+  expect(source).toMatch(/EyeInvisibleOutlined/);
 });
 
 test('DetailView has Fill form button', () => {

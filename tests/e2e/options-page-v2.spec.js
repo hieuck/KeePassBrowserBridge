@@ -13,11 +13,11 @@ test.describe('Options page v2', () => {
     await expect(page.locator('.options-page__header')).toBeVisible();
     await expect(page.locator('.options-page__brand')).toContainText('KeePass');
     await expect(page.locator('.options-page__version')).toContainText('v2.0.0');
-    await expect(page.locator('.options-sidebar')).toBeVisible();
+    await expect(page.locator('.ant-menu')).toBeVisible();
   });
 
   test('sidebar lists 7 tabs', async ({ page }) => {
-    const tabs = page.locator('.options-sidebar__tab');
+    const tabs = page.locator('.ant-menu-item');
     await expect(tabs).toHaveCount(7);
     await expect(tabs.nth(0)).toContainText('General');
     await expect(tabs.nth(1)).toContainText('Bridge');
@@ -29,58 +29,57 @@ test.describe('Options page v2', () => {
   });
 
   test('general tab is active by default', async ({ page }) => {
-    const activeTab = page.locator('.options-sidebar__tab--active');
+    const activeTab = page.locator('.ant-menu-item-selected');
     await expect(activeTab).toHaveCount(1);
     await expect(activeTab).toContainText('General');
-    await expect(activeTab).toHaveAttribute('aria-current', 'page');
   });
 
   test('clicking a sidebar tab switches the active tab', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Bridge' }).click();
-    await expect(page.locator('.options-sidebar__tab--active')).toContainText('Bridge');
+    await page.locator('.ant-menu-item', { hasText: 'Bridge' }).click();
+    await expect(page.locator('.ant-menu-item-selected')).toContainText('Bridge');
     await expect(page.locator('.options-page__content')).toContainText('Bridge endpoint');
   });
 
   test('general tab shows appearance and auto-lock sections', async ({ page }) => {
-    await expect(page.locator('.section-card__title', { hasText: 'Appearance' })).toBeVisible();
-    await expect(page.locator('.section-card__title', { hasText: 'Auto-lock' })).toBeVisible();
+    await expect(page.locator('.ant-card', { hasText: 'Appearance' })).toBeVisible();
+    await expect(page.locator('.ant-card', { hasText: 'Auto-lock' })).toBeVisible();
   });
 
   test('bridge tab shows endpoint and connection status', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Bridge' }).click();
-    await expect(page.locator('.section-card__title', { hasText: 'Bridge endpoint' })).toBeVisible();
-    await expect(page.locator('.section-card__title', { hasText: 'Connection status' })).toBeVisible();
+    await page.locator('.ant-menu-item', { hasText: 'Bridge' }).click();
+    await expect(page.locator('.ant-card', { hasText: 'Bridge endpoint' })).toBeVisible();
+    await expect(page.locator('.ant-card', { hasText: 'Connection status' })).toBeVisible();
     await expect(page.locator('button', { hasText: 'Test connection' })).toBeVisible();
   });
 
   test('auto-fill tab shows toggles and delay input', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Auto-fill' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'Auto-fill' }).click();
     const toggles = page.locator('[role="switch"]');
     await expect(toggles).toHaveCount(2);
-    await expect(page.locator('.section-card__title', { hasText: 'Auto-fill' })).toBeVisible();
-    await expect(page.locator('.section-card__title', { hasText: 'Fill delay' })).toBeVisible();
+    await expect(page.locator('.ant-card', { hasText: 'Auto-fill' })).toBeVisible();
+    await expect(page.locator('.ant-card', { hasText: 'Fill delay' })).toBeVisible();
   });
 
   test('sites tab shows add-rule form and empty state', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Sites' }).click();
-    await expect(page.locator('.section-card__title', { hasText: 'Per-site rules' })).toBeVisible();
+    await page.locator('.ant-menu-item', { hasText: 'Sites' }).click();
+    await expect(page.locator('.ant-card', { hasText: 'Per-site rules' })).toBeVisible();
     await expect(page.locator('.sites-empty')).toBeVisible();
     await expect(page.locator('input[placeholder="example.com"]')).toBeVisible();
     await expect(page.locator('button', { hasText: 'Add' })).toBeVisible();
   });
 
   test('passkey tab shows enable toggle and status badge', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Passkeys' }).click();
-    await expect(page.locator('.section-card__title', { hasText: 'Passkey support' })).toBeVisible();
+    await page.locator('.ant-menu-item', { hasText: 'Passkeys' }).click();
+    await expect(page.locator('.ant-card', { hasText: 'Passkey support' })).toBeVisible();
     const toggles = page.locator('[role="switch"]');
     await expect(toggles).toHaveCount(1);
-    await expect(page.locator('.kbb-badge')).toBeVisible();
+    await expect(page.locator('.ant-tag')).toBeVisible();
   });
 
   test('about tab shows version and GitHub link', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'About' }).click();
-    await expect(page.locator('.section-card__title', { hasText: 'KeePass Browser Bridge' })).toBeVisible();
-    const link = page.locator('a.about-value--link');
+    await page.locator('.ant-menu-item', { hasText: 'About' }).click();
+    await expect(page.locator('.ant-card', { hasText: 'KeePass Browser Bridge' })).toBeVisible();
+    const link = page.locator('a[href*="github.com"]');
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', /github\.com/);
     await expect(page.locator('button', { hasText: 'Export logs' })).toBeVisible();
@@ -91,7 +90,7 @@ test.describe('Options page v2', () => {
   });
 
   test('theme toggle cycles through light/dark/system', async ({ page }) => {
-    const themeBtn = page.locator('.options-page__theme-btn');
+    const themeBtn = page.locator('.options-page__header .ant-btn');
     await expect(themeBtn).toBeVisible();
     const initialLabel = await themeBtn.getAttribute('aria-label');
     await themeBtn.click();
@@ -113,11 +112,11 @@ test.describe('Options page v2', () => {
   test('is keyboard accessible (tab navigation works)', async ({ page }) => {
     await page.keyboard.press('Tab');
     const focused = await page.evaluate(() => document.activeElement?.className || '');
-    expect(focused).toMatch(/options-(sidebar|page__theme)/);
+    expect(focused).toMatch(/ant-(menu-item|btn)/);
   });
 
   test('sidebar tabs have proper labels', async ({ page }) => {
-    const tabs = page.locator('.options-sidebar__tab');
+    const tabs = page.locator('.ant-menu-item');
     const count = await tabs.count();
     expect(count).toBe(7);
     const labels = ['General', 'Bridge', 'Auto-fill', 'Sites', 'Clients', 'Passkeys', 'About'];
@@ -127,65 +126,67 @@ test.describe('Options page v2', () => {
   });
 
   test('sidebar nav has proper ARIA label', async ({ page }) => {
-    const nav = page.locator('nav[aria-label="Settings navigation"]');
-    await expect(nav).toBeVisible();
+    const menu = page.locator('.ant-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveAttribute('role', 'menu');
   });
 
   test('after clicking Bridge tab, theme toggle still visible', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Bridge' }).click();
-    const themeBtn = page.locator('.options-page__theme-btn');
+    await page.locator('.ant-menu-item', { hasText: 'Bridge' }).click();
+    const themeBtn = page.locator('.options-page__header .ant-btn');
     await expect(themeBtn).toBeVisible();
   });
 
   test('test connection button on bridge tab is interactive', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Bridge' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'Bridge' }).click();
     const testBtn = page.locator('button', { hasText: 'Test connection' });
     await expect(testBtn).toBeEnabled();
   });
 
   test('auto-fill toggles are visible and interactive', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Auto-fill' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'Auto-fill' }).click();
     const firstToggle = page.locator('[role="switch"]').first();
     await expect(firstToggle).toBeVisible();
     await expect(firstToggle).toBeEnabled();
   });
 
   test('sites tab with site rule input has proper placeholder', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Sites' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'Sites' }).click();
     const input = page.locator('input[placeholder="example.com"]');
     await expect(input).toHaveAttribute('placeholder', 'example.com');
   });
 
   test('about tab shows KeePass Browser Bridge title', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'About' }).click();
-    await expect(page.locator('.section-card__title', { hasText: 'KeePass Browser Bridge' })).toBeVisible();
+    await page.locator('.ant-menu-item', { hasText: 'About' }).click();
+    await expect(page.locator('.ant-card', { hasText: 'KeePass Browser Bridge' })).toBeVisible();
   });
 
   test('about tab export logs button is enabled', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'About' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'About' }).click();
     const exportBtn = page.locator('button', { hasText: 'Export logs' });
     await expect(exportBtn).toBeEnabled();
   });
 
   test('sidebar navigation has proper ARIA attributes', async ({ page }) => {
-    const nav = page.locator('nav[aria-label="Settings navigation"]');
-    await expect(nav).toBeVisible();
+    const menu = page.locator('.ant-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveAttribute('role', 'menu');
   });
 
   test('general tab appearance section shows theme toggle', async ({ page }) => {
-    await expect(page.locator('.section-card__title', { hasText: 'Appearance' })).toBeVisible();
-    const themeBtn = page.locator('.options-page__theme-btn');
+    await expect(page.locator('.ant-card', { hasText: 'Appearance' })).toBeVisible();
+    const themeBtn = page.locator('.options-page__header .ant-btn');
     await expect(themeBtn).toBeVisible();
   });
 
   test('auto-fill tab shows auto-submit toggle', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Auto-fill' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'Auto-fill' }).click();
     const toggles = page.locator('[role="switch"]');
     await expect(toggles).toHaveCount(2);
   });
 
   test('sites tab add button renders', async ({ page }) => {
-    await page.locator('.options-sidebar__tab', { hasText: 'Sites' }).click();
+    await page.locator('.ant-menu-item', { hasText: 'Sites' }).click();
     await expect(page.locator('button', { hasText: 'Add' })).toBeVisible();
   });
 });

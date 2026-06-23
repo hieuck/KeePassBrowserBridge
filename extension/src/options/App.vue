@@ -7,7 +7,7 @@
         <span>KeePass Bridge</span>
         <span class="options-page__version">v2.0.0</span>
       </div>
-      <a-button @click="cycleTheme">
+      <a-button @click="cycleTheme" :aria-label="`Theme: ${theme}`">
         <template #icon>
           <component :is="themeIconComponent" />
         </template>

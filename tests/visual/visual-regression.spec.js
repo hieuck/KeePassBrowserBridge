@@ -352,7 +352,7 @@ test.describe('Visual regression v2.0', () => {
     await page.waitForSelector('.options-page', { timeout: 5000 });
     const tabs = ['General', 'Bridge', 'Auto-fill', 'Sites', 'Clients', 'Passkeys', 'About'];
     for (const tabName of tabs) {
-      await page.locator('.options-sidebar__tab', { hasText: tabName }).click();
+      await page.locator('.ant-menu-item', { hasText: tabName }).click();
       await page.waitForTimeout(300);
       const slug = tabName.toLowerCase().replace(/[^a-z]/g, '');
       await expect(page).toHaveScreenshot(`options-tab-${slug}.png`, {
@@ -368,7 +368,7 @@ test.describe('Visual regression v2.0', () => {
     await page.waitForSelector('.options-page', { timeout: 5000 });
     const tabs = ['General', 'Bridge', 'Auto-fill', 'Sites', 'Clients', 'Passkeys', 'About'];
     for (const tabName of tabs) {
-      await page.locator('.options-sidebar__tab', { hasText: tabName }).click();
+      await page.locator('.ant-menu-item', { hasText: tabName }).click();
       await page.waitForTimeout(300);
       const slug = tabName.toLowerCase().replace(/[^a-z]/g, '');
       await expect(page).toHaveScreenshot(`options-tab-${slug}-dark.png`, {
