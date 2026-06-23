@@ -1,28 +1,31 @@
 <template>
-  <div class="more-menu" ref="menuEl">
-    <button class="more-menu__item" @click="$emit('action', { event: 'copy', args: ['username', entry.UserName] })">
-      <Icon name="user" :size="14" /> Copy username
-    </button>
-    <button class="more-menu__item" @click="$emit('action', { event: 'copy', args: ['password', entry.Password] })">
-      <Icon name="copy" :size="14" /> Copy password
-    </button>
-    <button class="more-menu__item more-menu__item--danger" @click="$emit('action', { event: 'delete' })">
-      <Icon name="trash" :size="14" /> Delete
-    </button>
-  </div>
+  <a-menu class="more-menu" @click="onClick">
+    <a-menu-item key="copy-username">
+      <UserOutlined /> Copy username
+    </a-menu-item>
+    <a-menu-item key="copy-password">
+      <CopyOutlined /> Copy password
+    </a-menu-item>
+    <a-menu-divider />
+    <a-menu-item key="delete" danger>
+      <DeleteOutlined /> Delete
+    </a-menu-item>
+  </a-menu>
 </template>
 
 <script setup>
-import Icon from '../components/Icon.vue';
+import { UserOutlined, CopyOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
 defineProps({ entry: { type: Object, required: true } });
-defineEmits(['action']);
+const emit = defineEmits(['action']);
+
+function onClick({ key }) {
+  if (key === 'copy-username') emit('action', { event: 'copy', args: ['username', ''] });
+  if (key === 'copy-password') emit('action', { event: 'copy', args: ['password', ''] });
+  if (key === 'delete') emit('action', { event: 'delete' });
+}
 </script>
 
 <style scoped>
-.more-menu { display: flex; flex-direction: column; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); overflow: hidden; }
-.more-menu__item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: transparent; border: none; font-size: var(--text-sm); color: var(--color-text); cursor: pointer; text-align: left; font-family: inherit; }
-.more-menu__item:hover { background: var(--color-bg); }
-.more-menu__item--danger { color: var(--color-danger); }
-.more-menu__item--danger:hover { background: var(--color-danger-subtle); }
+.more-menu { border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); min-width: 160px; }
 </style>
