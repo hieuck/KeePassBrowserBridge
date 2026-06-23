@@ -247,7 +247,7 @@ function compareVersions(left, right) {
 }
 
 async function getState() {
-  const state = await storageGet(['endpoint', 'clientId', 'sharedSecret', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
+  const state = await storageGet(['endpoint', 'clientId', 'sharedSecret', 'permissions', 'pairingSessionId', 'pairingStartedAt', 'autoFillEnabled', 'autoSubmitEnabled', 'locked', 'autoLockTimeoutMinutes', 'lastCredentialActivityAt']);
   if (hasPartialPairingCredentials(state)) {
     await chrome.storage.local.remove(['clientId', 'sharedSecret']);
     state.clientId = '';
@@ -277,6 +277,7 @@ async function getState() {
     endpoint: state.endpoint || DEFAULT_ENDPOINT,
     paired,
     clientId: state.clientId || '',
+    permissions: state.permissions || [],
     pairingSessionId: pairingActive ? state.pairingSessionId : '',
     pairingExpiresAt: pairingActive && pairingStartedAt ? pairingStartedAt + PAIRING_SESSION_MAX_AGE_MS : 0,
     autoFillEnabled: booleanSetting(state.autoFillEnabled, DEFAULT_AUTO_FILL_ENABLED),
@@ -506,7 +507,8 @@ async function pairComplete(pairingCode) {
 
   await chrome.storage.local.set({
     clientId: payload.ClientId,
-    sharedSecret: payload.SharedSecret
+    sharedSecret: payload.SharedSecret,
+    permissions: payload.Permissions || ['read', 'write', 'manageClients']
   });
   await clearPairingSession();
   await clearSensitiveRuntimeState('pair-complete');
