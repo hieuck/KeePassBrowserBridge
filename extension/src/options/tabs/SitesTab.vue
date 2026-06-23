@@ -1,6 +1,6 @@
 <template>
   <div>
-    <SectionCard title="Per-site rules" description="Control auto-fill behavior for specific sites.">
+    <SectionCard title="Per-site rules" description="Override auto-fill behavior for a host and its subdomains.">
       <div v-if="rules.length === 0" class="sites-empty">
         <p>No site-specific rules. Auto-fill behavior follows the global settings.</p>
       </div>
