@@ -965,6 +965,16 @@ async function fillFromInlineButton(button) {
   setInlineButtonState(button, "...");
   try {
     const pageUrl = credentialPageUrl();
+    // Wake up service worker if inactive (MV3 can kill SW after ~30s)
+    try {
+      await chrome.runtime.sendMessage({ type: "KBB_PING" });
+    } catch (wakeError) {
+      if (String(wakeError).includes('context invalidated')) {
+        showInlineErrorPicker(button, "Extension was updated or reloaded. Please refresh the page.");
+        setInlineButtonState(button, "!");
+        return;
+      }
+    }
     const result = await chrome.runtime.sendMessage({
       type: "KBB_QUERY_FOR_URL",
       url: pageUrl,
@@ -1000,6 +1010,8 @@ async function fillFromInlineButton(button) {
     const message = error && error.message ? error.message : String(error);
     if (message.includes("'get'")) {
       showInlineErrorPicker(button, "Browser API unavailable on this page.");
+    } else if (message.includes('context invalidated') || message.includes('Extension context')) {
+      showInlineErrorPicker(button, "Please open the extension popup once to activate, then try again.");
     } else {
       showInlineErrorPicker(button, message);
     }

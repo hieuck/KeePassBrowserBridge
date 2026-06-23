@@ -88,6 +88,8 @@ async function handleMessage(message) {
       return setAutoSubmit(message.enabled);
     case 'KBB_SET_LOCKED':
       return setLocked(message.locked);
+    case 'KBB_PING':
+      return { ok: true, pong: true };
     case 'KBB_HELLO':
       return bridgeCall('hello', {});
     case 'KBB_PAIR_BEGIN':
