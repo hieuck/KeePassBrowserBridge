@@ -55,4 +55,10 @@ test.describe('Design tokens consistency', () => {
     const hasHostDefs = promptCSS.includes('--color-accent');
     expect(hasHostDefs).toBe(true);
   });
+
+  test('manifest.json webAuthenticationProxy is in permissions, not optional_permissions', () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(EXTENSION_PATH, 'manifest.json'), 'utf8'));
+    expect(manifest.optional_permissions).not.toContain('webAuthenticationProxy');
+    expect(manifest.permissions).toContain('webAuthenticationProxy');
+  });
 });

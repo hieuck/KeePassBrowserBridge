@@ -47,10 +47,10 @@
     "contextMenus",
     "notifications",
     "webRequest",
-    "webRequestAuthProvider"
+    "webRequestAuthProvider",
+    "webAuthenticationProxy"
   ],
   "optional_permissions": [
-    "webAuthenticationProxy",
     "webNavigation"
   ],
   "host_permissions": [

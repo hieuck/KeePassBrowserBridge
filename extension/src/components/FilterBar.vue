@@ -8,7 +8,7 @@
       :class="{ 'filter-bar__chip--active': modelValue === group.id }"
       role="tab"
       :aria-selected="modelValue === group.id"
-      :data-testid="`filter-chip-${group.label.toLowerCase().replace(/\s+/g, '-')}`"
+      :data-testid="`filter-chip-${(group.label || '').toLowerCase().replace(/\s+/g, '-')}`"
       @click="$emit('update:modelValue', group.id)"
     >
       <BaseBadge v-if="group.count !== undefined" variant="neutral" size="sm">{{ group.count }}</BaseBadge>
@@ -27,7 +27,7 @@
           :class="{ 'filter-bar__chip--active': modelValue === group.id }"
           role="tab"
           :aria-selected="modelValue === group.id"
-          :data-testid="`filter-chip-${group.label.toLowerCase().replace(/\s+/g, '-')}`"
+          :data-testid="`filter-chip-${(group.label || '').toLowerCase().replace(/\s+/g, '-')}`"
           @click="selectOverflow(group.id)"
         >
           {{ group.label }}
