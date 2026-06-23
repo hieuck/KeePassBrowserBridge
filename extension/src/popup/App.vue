@@ -92,9 +92,9 @@ import SkeletonCard from './SkeletonCard.vue';
 import PairDialog from './PairDialog.vue';
 
 const bridge = useBridge();
-const { theme: appTheme, setTheme } = useTheme();
+const { theme: appTheme, resolved: resolvedTheme, setTheme } = useTheme();
 const antdThemeConfig = computed(() => ({
-  algorithm: appTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+  algorithm: resolvedTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
     colorPrimary: '#2563eb',
     colorBgContainer: appTheme.value === 'dark' ? '#1e293b' : '#ffffff',

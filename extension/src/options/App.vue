@@ -55,9 +55,9 @@ import { useToast } from '../composables/useToast.js';
 import { theme as antdTheme } from 'ant-design-vue';
 import { getSettings, setSettings } from '../../shared/storage.js';
 
-const { theme, setTheme } = useTheme();
+const { theme: appTheme, resolved: resolvedTheme, setTheme } = useTheme();
 const antdThemeConfig = computed(() => ({
-  algorithm: theme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+  algorithm: resolvedTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
     colorPrimary: '#2563eb',
     colorBgContainer: theme.value === 'dark' ? '#1e293b' : '#ffffff',
