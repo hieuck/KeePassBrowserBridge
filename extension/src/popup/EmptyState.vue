@@ -25,16 +25,19 @@ defineEmits(['action']);
 const icon = computed(() => {
   if (props.variant === 'search') return 'search';
   if (props.variant === 'filter') return 'filter';
+  if (props.variant === 'unpaired') return 'unlock';
   return 'key';
 });
 
 const title = computed(() => {
   if (props.variant === 'search') return `No results for "${props.query}"`;
   if (props.variant === 'filter') return 'No matches in this group';
+  if (props.variant === 'unpaired') return 'KeePass is not connected';
   return 'No logins yet';
 });
 
 const description = computed(() => {
+  if (props.variant === 'unpaired') return 'Open the extension popup and pair it with KeePass to get started.';
   if (props.variant === 'empty') return 'Add your first login to get started.';
   if (props.variant === 'search') return 'Try a different search term.';
   return 'Select a different group or clear the filter.';

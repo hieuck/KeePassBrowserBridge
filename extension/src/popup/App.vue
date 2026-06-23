@@ -118,6 +118,7 @@ const visibleEntries = computed(() => {
 });
 
 const emptyStateVariant = computed(() => {
+  if (!state.value.paired) return 'unpaired';
   if (searchQuery.value) return 'search';
   if (currentEntries.value.length === 0) return 'empty';
   return 'filter';
