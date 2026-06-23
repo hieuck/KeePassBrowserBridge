@@ -115,21 +115,25 @@ function Assert-ExtensionZip {
             "contentScript.js",
             "customFields.js",
             "design-tokens.css",
+            "dist/BaseBadge.css",
+            "dist/BaseBadge.js",
+            "dist/BaseInput.css",
+            "dist/BaseInput.js",
+            "dist/components.es.js",
+            "dist/options.css",
             "dist/options.js",
             "dist/popup.css",
             "dist/popup.js",
-            "dist/runtime-dom.esm-bundler.js",
             "httpAuth.js",
+            "icons.js",
             "icons/icon-16.png",
             "icons/icon-48.png",
             "icons/icon-128.png",
             "options.css",
             "options.html",
-            "options.js",
+            "passkeysProxyExperiment.js",
             "popup.css",
-            "popup.html",
-            "popup.js",
-            "shared-components.js"
+            "popup.html"
         )
 
         if ($Browser -eq "chrome") {
@@ -145,16 +149,7 @@ function Assert-ExtensionZip {
             "quick-test.js",
             "test-extension.js",
             "test-page.html",
-            "testingInfrastructure.js",
-            "uxEnhancements.js",
-            "multiDatabase.js",
-            "multiPageLogin.js",
-            "groupOrganization.js",
-            "enhancedSecurity_part1.js",
-            "enhancedSecurity_part2.js",
-            "generator.js",
-            "passwordQuality.js",
-            "passkeysProxyExperiment.js"
+            "testingInfrastructure.js"
         )
 
         foreach ($name in $forbidden) {
@@ -165,7 +160,7 @@ function Assert-ExtensionZip {
 
         Assert-ZipEntrySet -Browser $Browser -Expected $expectedEntryNames -Actual $entryNames
 
-        foreach ($required in @("manifest.json", "background.js", "popup.html", "popup.js", "popup.css", "dist/popup.js", "dist/popup.css", "dist/options.js", "design-tokens.css", "shared-components.js", "options.html", "options.js", "options.css", "contentScript.js", "customFields.js", "httpAuth.js", "icons/icon-16.png", "icons/icon-48.png", "icons/icon-128.png")) {
+        foreach ($required in @("manifest.json", "background.js", "popup.html", "popup.css", "dist/popup.js", "dist/popup.css", "dist/options.js", "dist/options.css", "design-tokens.css", "dist/components.es.js", "options.html", "options.css", "contentScript.js", "customFields.js", "httpAuth.js", "icons/icon-16.png", "icons/icon-48.png", "icons/icon-128.png")) {
             if ($entryNames -notcontains $required) {
                 throw "$Browser extension package is missing required file: $required"
             }
