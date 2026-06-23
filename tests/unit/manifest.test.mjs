@@ -28,8 +28,6 @@ const popupMarkup = fs.readFileSync(path.join(projectRoot, 'extension', 'popup.h
 const backgroundSource = fs.readFileSync(path.join(projectRoot, 'extension', 'background.js'), 'utf8');
 const passkeysProxyExperiment = fs.readFileSync(path.join(projectRoot, 'extension', 'passkeysProxyExperiment.js'), 'utf8');
 const optionsMarkup = fs.readFileSync(path.join(projectRoot, 'extension', 'options.html'), 'utf8');
-const popupSource = fs.readFileSync(path.join(projectRoot, 'extension', 'popup.js'), 'utf8');
-const optionsSource = fs.readFileSync(path.join(projectRoot, 'extension', 'options.js'), 'utf8');
 const updateInfo = fs.readFileSync(path.join(projectRoot, 'update', 'versioninfo.txt'), 'utf8');
 const releaseScript = fs.readFileSync(path.join(projectRoot, 'scripts', 'build-release.ps1'), 'utf8');
 const installScript = fs.readFileSync(path.join(projectRoot, 'scripts', 'install-plugin.ps1'), 'utf8');
@@ -476,10 +474,7 @@ assert.equal(bridgeRequestHandler.includes('feature_disabled'), true, 'passkey b
 assert.equal(backgroundSource.includes('clientPermissionAllowList'), true, 'extension background should gate trusted-client permission updates through a central allowlist');
 assert.equal(backgroundSource.includes("allowed.push('passkeyRead', 'passkeyWrite')"), true, 'extension background should only allow passkey permission updates when bridge feature discovery enables them');
 assert.equal(backgroundSource.includes('about.pluginPasskeysEnabled'), true, 'extension background passkey permission updates should depend on bridge feature discovery');
-assert.equal(popupSource.includes('bridgePasskeysEnabled'), true, 'popup trusted-browser UI should gate passkey permission controls on bridge feature discovery');
-assert.equal(popupSource.includes("value: 'passkeyRead'"), true, 'popup trusted-browser UI should define passkey read controls behind the feature gate');
-assert.equal(optionsSource.includes('bridgePasskeysEnabled'), true, 'settings trusted-browser UI should gate passkey permission controls on bridge feature discovery');
-assert.equal(optionsSource.includes("value: 'passkeyRead'"), true, 'settings trusted-browser UI should define passkey read controls behind the feature gate');
+// v1 popup.js/options.js removed — passkey tests now in options PasskeyTab E2E tests
 assert.equal(privacyPolicy.includes('does not collect analytics'), true, 'privacy policy should state no analytics collection');
 assert.equal(privacyPolicy.includes('does not send passwords'), true, 'privacy policy should state credentials are not sent to maintainers');
 assert.equal(privacyPolicy.includes('created/last-used timestamps'), true, 'privacy policy should disclose trusted-browser timestamps');
