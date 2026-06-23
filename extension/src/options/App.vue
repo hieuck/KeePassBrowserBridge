@@ -76,7 +76,7 @@ const components = {
 
 const activeComponent = computed(() => components[activeTab.value]);
 
-const themeIcon = computed(() => ({ light: 'globe', dark: 'lock', system: 'eye' })[theme.value] || 'globe');
+const themeIcon = computed(() => ({ light: 'sun', dark: 'moon', system: 'monitor' })[theme.value] || 'sun');
 
 function cycleTheme() {
   setTheme(theme.value === 'light' ? 'dark' : theme.value === 'dark' ? 'system' : 'light');
@@ -113,8 +113,8 @@ onMounted(() => { loadSettings(); });
 .options-page__brand { display: flex; align-items: center; gap: var(--space-2); font-weight: 700; font-size: var(--text-md); }
 .options-page__logo { color: var(--color-accent); }
 .options-page__version { color: var(--color-text-muted); font-weight: 400; font-size: var(--text-xs); }
-.options-page__theme-btn { background: transparent; border: 1px solid var(--color-border); width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); cursor: pointer; color: var(--color-text-secondary); }
-.options-page__theme-btn:hover { background: var(--color-bg); }
+.options-page__theme-btn { background: transparent; border: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); cursor: pointer; color: var(--color-text-secondary); transition: background var(--transition-fast), color var(--transition-fast); }
+.options-page__theme-btn:hover { background: var(--color-bg); color: var(--color-text); }
 .options-page__body { display: flex; flex: 1; min-height: 0; }
 .options-page__content { flex: 1; overflow-y: auto; padding: var(--space-5); }
 .options-page__footer { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-5); border-top: 1px solid var(--color-border); background: var(--color-surface); }

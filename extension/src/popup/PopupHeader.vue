@@ -17,7 +17,7 @@ import Icon from '../components/Icon.vue';
 const props = defineProps({ theme: { type: String, required: true } });
 defineEmits(['toggle-theme']);
 
-const themeIcon = computed(() => ({ light: 'globe', dark: 'lock', system: 'eye' })[props.theme] || 'globe');
+const themeIcon = computed(() => ({ light: 'sun', dark: 'moon', system: 'monitor' })[props.theme] || 'sun');
 </script>
 
 <style scoped>

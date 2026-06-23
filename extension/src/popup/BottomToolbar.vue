@@ -25,7 +25,7 @@ defineEmits(['new-login', 'settings', 'clients', 'lock']);
 
 <style scoped>
 .bottom-toolbar { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--color-border); background: var(--color-surface); }
-.bottom-toolbar__btn { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: transparent; border: none; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 500; color: var(--color-text-secondary); cursor: pointer; font-family: inherit; transition: background var(--transition-fast), color var(--transition-fast); }
+.bottom-toolbar__btn { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); background: transparent; border: none; border-radius: var(--radius-md); font-size: var(--text-xs); font-weight: 500; color: var(--color-text-secondary); cursor: pointer; font-family: inherit; transition: background var(--transition-fast), color var(--transition-fast); }
 .bottom-toolbar__btn:hover:not(:disabled) { background: var(--color-accent-subtle); color: var(--color-accent); }
 .bottom-toolbar__btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .bottom-toolbar__btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
