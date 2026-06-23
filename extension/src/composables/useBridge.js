@@ -34,5 +34,8 @@ export function useBridge() {
     createLogin: (login) => call('KBB_CREATE_LOGIN', { login }),
     updateLogin: (login) => call('KBB_UPDATE_LOGIN', { login }),
     fillLogin: (credential, fieldRole, customFieldName) => call('KBB_FILL_LOGIN', { credential, fieldRole, customFieldName }),
+    pairBegin: () => call('KBB_PAIR_BEGIN'),
+    pairComplete: (pairingCode) => call('KBB_PAIR_COMPLETE', { pairingCode }),
+    pairCancel: () => call('KBB_PAIR_CANCEL'),
   };
 }

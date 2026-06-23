@@ -60,6 +60,15 @@
       @save="saveEdit"
       @cancel="formMode = null"
     />
+    <PairDialog
+      v-if="showPairDialog"
+      :pairing-active="!!pairingSessionId"
+      :expires-at="pairingExpiresAt"
+      class="popup__pair-dialog"
+      @pair-begin="startPairing"
+      @pair-complete="completePairing"
+      @close="showPairDialog = false"
+    />
   </div>
 </a-config-provider>
 </template>
@@ -80,6 +89,7 @@ import FooterBar from './FooterBar.vue';
 import NewLoginForm from './NewLoginForm.vue';
 import EditForm from './EditForm.vue';
 import SkeletonCard from './SkeletonCard.vue';
+import PairDialog from './PairDialog.vue';
 
 const bridge = useBridge();
 const { theme: appTheme, setTheme } = useTheme();
@@ -105,6 +115,9 @@ const formMode = ref(null);
 const editingEntry = ref(null);
 const loading = ref(false);
 const currentUrl = ref('');
+const showPairDialog = ref(false);
+const pairingSessionId = ref('');
+const pairingExpiresAt = ref(0);
 
 const canWrite = computed(() => permissions.value.includes('write'));
 
@@ -225,12 +238,48 @@ function onEmptyAction() {
   if (emptyStateVariant.value === 'empty') startNew();
 }
 
+async function startPairing() {
+  try {
+    const result = await bridge.pairBegin();
+    showToast('Pairing session started', { variant: 'info' });
+    await refreshState();
+  } catch (error) {
+    showToast(error.message, { variant: 'error' });
+  }
+}
+
+async function completePairing(code) {
+  try {
+    await bridge.pairComplete(code);
+    showToast('Paired successfully!', { variant: 'success' });
+    showPairDialog.value = false;
+    await refreshState();
+  } catch (error) {
+    showToast(error.message, { variant: 'error' });
+  }
+}
+
 async function refreshState() {
   loading.value = true;
   try {
+    // Read from chrome.storage.local (popup context)
     const settings = await getSettings();
     state.value = { paired: !!settings.clientId, locked: !!settings.locked };
     permissions.value = settings.permissions || (settings.clientId ? ['read', 'write', 'manageClients'] : ['read']);
+
+    // Also get bridge state for pairing session info
+    try {
+      const bridgeState = await bridge.getState();
+      pairingSessionId.value = bridgeState.pairingSessionId || '';
+      pairingExpiresAt.value = bridgeState.pairingExpiresAt || 0;
+    } catch {
+      pairingSessionId.value = '';
+      pairingExpiresAt.value = 0;
+    }
+
+    // Show pair dialog if not paired
+    if (!state.value.paired) showPairDialog.value = true;
+
     if (state.value.paired && !state.value.locked) {
       const result = await bridge.queryLogins();
       currentEntries.value = result.entries || [];
