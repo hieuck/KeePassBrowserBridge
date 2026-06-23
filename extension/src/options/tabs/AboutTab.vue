@@ -14,6 +14,17 @@
         <span class="about-value">{{ pluginVersion }}</span>
       </div>
     </SectionCard>
+    <SectionCard title="Settings" description="Export or import your extension settings.">
+      <div class="about-actions">
+        <BaseButton variant="primary" :loading="exporting" leading-icon="download" @click="exportSettings">
+          Export Settings
+        </BaseButton>
+        <BaseButton variant="secondary" leading-icon="upload" @click="triggerImport">
+          Import Settings
+        </BaseButton>
+        <input ref="fileInput" type="file" accept=".json" style="display: none" @change="onFileSelected" />
+      </div>
+    </SectionCard>
     <SectionCard title="Logs" description="Export logs for debugging.">
       <BaseButton variant="secondary" @click="exportLogs">Export logs</BaseButton>
     </SectionCard>
@@ -21,12 +32,60 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import SectionCard from '../SectionCard.vue';
 import BaseButton from '../../components/BaseButton.vue';
+import { getSettings, setSettings } from '../../../shared/storage.js';
+import { useToast } from '../../composables/useToast.js';
+
+const { show: showToast } = useToast();
 
 const version = '2.0.0';
 const pluginVersion = '2.0.0';
 const repoUrl = 'https://github.com/hieuck/KeePassBrowserBridge';
+
+const exporting = ref(false);
+const fileInput = ref(null);
+
+function triggerImport() {
+  fileInput.value?.click();
+}
+
+async function exportSettings() {
+  exporting.value = true;
+  try {
+    const settings = await getSettings();
+    const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `keepass-bridge-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Settings exported', { variant: 'success' });
+  } catch (error) {
+    showToast(error.message, { variant: 'error' });
+  } finally {
+    exporting.value = false;
+  }
+}
+
+async function onFileSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data || typeof data !== 'object') throw new Error('Invalid settings file');
+    await setSettings(data);
+    showToast('Settings imported — reloading...', { variant: 'success' });
+    setTimeout(() => location.reload(), 1500);
+  } catch (error) {
+    showToast(error instanceof SyntaxError ? 'Invalid JSON file' : error.message, { variant: 'error' });
+  } finally {
+    event.target.value = '';
+  }
+}
 
 function exportLogs() {
   // Placeholder; real implementation would download a log file
@@ -39,4 +98,5 @@ function exportLogs() {
 .about-value { flex: 1; color: var(--color-text); }
 .about-value--link { color: var(--color-accent); text-decoration: none; word-break: break-all; }
 .about-value--link:hover { text-decoration: underline; }
+.about-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 </style>
