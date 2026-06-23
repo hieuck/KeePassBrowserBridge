@@ -61,5 +61,10 @@
     "http://127.0.0.1/*",
     "http://*/*",
     "https://*/*"
+  ],
+  "web_accessible_resources": [
+    "src/components/Picker.web.js",
+    "src/components/Prompt.web.js",
+    "icons.js"
   ]
 }
