@@ -60,9 +60,9 @@ const antdThemeConfig = computed(() => ({
   algorithm: resolvedTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
     colorPrimary: '#2563eb',
-    colorBgContainer: theme.value === 'dark' ? '#1e293b' : '#ffffff',
-    colorText: theme.value === 'dark' ? '#f1f5f9' : '#0f172a',
-    colorTextSecondary: theme.value === 'dark' ? '#cbd5e1' : '#475569',
+    colorBgContainer: resolvedTheme.value === 'dark' ? '#1e293b' : '#ffffff',
+    colorText: resolvedTheme.value === 'dark' ? '#f1f5f9' : '#0f172a',
+    colorTextSecondary: resolvedTheme.value === 'dark' ? '#cbd5e1' : '#475569',
     borderRadius: 6,
   },
 }));
