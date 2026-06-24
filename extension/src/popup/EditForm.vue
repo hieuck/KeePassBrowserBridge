@@ -187,6 +187,7 @@ function onSave() {
     Password: form.Password,
     Group: form.Group,
     CustomFields: form.CustomFields.filter(f => f.Name.trim()),
+    ReplaceCustomFields: true,
   });
 }
 

@@ -45,6 +45,18 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   scheduleAutoFill(tabId, tab.url);
 });
 
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab && isFillableUrl(tab.url)) {
+      const result = await queryLoginsForUrl(tab.url);
+      await updateBadgeCount(activeInfo.tabId, result.entries.length);
+      return;
+    }
+  } catch (_) { /* badge cleared below */ }
+  await updateBadgeCount(activeInfo.tabId, 0);
+});
+
 if (chrome.webRequest && chrome.webRequest.onAuthRequired) {
   chrome.webRequest.onAuthRequired.addListener(
     (details, callback) => {
@@ -631,7 +643,11 @@ async function queryLogins() {
     throw new Error('No active tab.');
   }
 
-  return queryLoginsForUrl(tab.url);
+  const result = await queryLoginsForUrl(tab.url);
+  if (tab.id) {
+    await updateBadgeCount(tab.id, result.entries.length);
+  }
+  return result;
 }
 
 async function queryLoginsForUrl(url) {
