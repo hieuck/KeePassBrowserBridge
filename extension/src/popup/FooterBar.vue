@@ -6,7 +6,7 @@
         <span class="footer-bar__label">New</span>
       </a-button>
       <a-button type="text" size="small" @click="$emit('settings')" aria-label="Settings" class="footer-bar__btn">
-        <template #icon><GlobalOutlined /></template>
+        <template #icon><SettingOutlined /></template>
         <span class="footer-bar__label">Settings</span>
       </a-button>
       <a-button type="text" size="small" @click="$emit('clients')" aria-label="Clients" class="footer-bar__btn">
@@ -32,7 +32,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { PlusOutlined, GlobalOutlined, UserAddOutlined, LockOutlined, UnlockOutlined, BulbOutlined, StarOutlined, DesktopOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined, SettingOutlined, UserAddOutlined, LockOutlined, UnlockOutlined, BulbOutlined, StarOutlined, DesktopOutlined } from '@ant-design/icons-vue';
 
 const props = defineProps({
   canWrite: { type: Boolean, default: false },

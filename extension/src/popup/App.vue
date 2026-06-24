@@ -13,7 +13,29 @@
       @update:model-value="(v) => activeGroup = v"
     />
     <main class="vault-list" id="results" role="region" aria-label="Credentials" aria-live="polite" :aria-busy="loading ? 'true' : 'false'">
-      <template v-if="loading">
+      <template v-if="formMode === 'new'">
+        <NewLoginForm
+          @save="createLogin"
+          @cancel="formMode = null"
+        />
+      </template>
+      <template v-else-if="formMode === 'edit' && editingEntry">
+        <EditForm
+          :entry="editingEntry"
+          @save="saveEdit"
+          @cancel="formMode = null"
+        />
+      </template>
+      <template v-else-if="showPairDialog">
+        <PairDialog
+          :pairing-active="!!pairingSessionId"
+          :expires-at="pairingExpiresAt"
+          @pair-begin="startPairing"
+          @pair-complete="completePairing"
+          @close="showPairDialog = false"
+        />
+      </template>
+      <template v-else-if="loading">
         <SkeletonCard v-for="i in 3" :key="i" />
       </template>
       <template v-else-if="visibleEntries.length === 0">
@@ -49,26 +71,6 @@
       @unlock="unlock"
       @toggle-theme="cycleTheme"
     />
-    <NewLoginForm
-      v-if="formMode === 'new'"
-      @save="createLogin"
-      @cancel="formMode = null"
-    />
-    <EditForm
-      v-else-if="formMode === 'edit' && editingEntry"
-      :entry="editingEntry"
-      @save="saveEdit"
-      @cancel="formMode = null"
-    />
-    <PairDialog
-      v-if="showPairDialog"
-      :pairing-active="!!pairingSessionId"
-      :expires-at="pairingExpiresAt"
-      class="popup__pair-dialog"
-      @pair-begin="startPairing"
-      @pair-complete="completePairing"
-      @close="showPairDialog = false"
-    />
   </div>
 </a-config-provider>
 </template>
@@ -97,9 +99,9 @@ const antdThemeConfig = computed(() => ({
   algorithm: resolvedTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
     colorPrimary: '#2563eb',
-    colorBgContainer: appTheme.value === 'dark' ? '#1e293b' : '#ffffff',
-    colorText: appTheme.value === 'dark' ? '#f1f5f9' : '#0f172a',
-    colorTextSecondary: appTheme.value === 'dark' ? '#cbd5e1' : '#475569',
+    colorBgContainer: resolvedTheme.value === 'dark' ? '#1e293b' : '#ffffff',
+    colorText: resolvedTheme.value === 'dark' ? '#f1f5f9' : '#0f172a',
+    colorTextSecondary: resolvedTheme.value === 'dark' ? '#cbd5e1' : '#475569',
     borderRadius: 6,
   },
 }));
