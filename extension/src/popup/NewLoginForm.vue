@@ -10,7 +10,7 @@
       <a-form-item label="Title" name="Title" :rules="[{ required: true, message: 'Title is required' }]">
         <a-input v-model:value="form.Title" placeholder="e.g. Facebook" />
       </a-form-item>
-      <a-form-item label="URL" name="Url">
+      <a-form-item label="URL" name="Url" :rules="[{ required: true, message: 'URL is required' }, { pattern: /^https?:\/\//, message: 'URL must start with http:// or https://' }]">
         <a-input v-model:value="form.Url" type="url" placeholder="https://example.com" />
       </a-form-item>
       <a-form-item label="Username" name="UserName">
@@ -44,7 +44,12 @@ const form = reactive({
   Group: '',
 });
 
-const canSave = computed(() => Boolean(form.Title.trim()));
+const canSave = computed(() => {
+  const titleOk = Boolean(form.Title.trim());
+  const urlOk = Boolean(form.Url.trim()) && /^https?:\/\//.test(form.Url.trim());
+  const hasCredential = Boolean(form.UserName.trim()) || Boolean(form.Password);
+  return titleOk && urlOk && hasCredential;
+});
 
 function onSave() {
   if (!canSave.value) return;
