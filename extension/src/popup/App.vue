@@ -218,7 +218,9 @@ function openSettings() {
 }
 
 function openClients() {
-  // Placeholder; show clients modal in future
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.openOptionsPage();
+  }
 }
 
 function lock() {
