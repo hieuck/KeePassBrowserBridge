@@ -146,7 +146,7 @@ describe('utils.js - normalizeSiteOverrides', () => {
 
 describe('utils.js - sanitizePortableSettings', () => {
   it('should handle non-object input', () => {
-    assert.ok(source.includes("typeof source === 'object'"), 'Missing object type check');
+    assert.ok(source.includes("typeof settings === 'object'"), 'Missing object type check');
   });
 
   it('should use PORTABLE_SETTING_KEYS for iteration', () => {

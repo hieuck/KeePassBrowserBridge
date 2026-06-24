@@ -10,6 +10,9 @@ const __filename = (() => {
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..');
 
+describe('manifest.json and extension build validation', () => {
+  it('should pass all manifest and build assertions', () => {
+
 const manifest = JSON.parse(fs.readFileSync(path.join(projectRoot, 'extension', 'manifest.json'), 'utf8'));
 const firefoxManifest = JSON.parse(fs.readFileSync(path.join(projectRoot, 'extension', 'manifest.firefox.json'), 'utf8'));
 const packageJson = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
@@ -513,16 +516,16 @@ for (const size of ['16', '48', '128']) {
 const designTokensPath = path.join(extensionRoot, 'design-tokens.css');
 assert.equal(fs.existsSync(designTokensPath), true, 'design-tokens.css should exist as a shared design token source');
 const designTokens = fs.readFileSync(designTokensPath, 'utf8');
-assert.equal(designTokens.includes('--color-primary:'), true, 'design-tokens.css should define --color-primary');
+assert.equal(designTokens.includes('--color-accent:'), true, 'design-tokens.css should define --color-accent');
 assert.equal(designTokens.includes('--color-bg:'), true, 'design-tokens.css should define --color-bg');
-assert.equal(designTokens.includes('--space-xs:'), true, 'design-tokens.css should define spacing tokens');
+assert.equal(designTokens.includes('--space-0:'), true, 'design-tokens.css should define spacing tokens');
 assert.equal(designTokens.includes('--radius-sm:'), true, 'design-tokens.css should define radius tokens');
 assert.equal(designTokens.includes('--shadow-sm:'), true, 'design-tokens.css should define shadow tokens');
-assert.equal(designTokens.includes('--font-family:'), true, 'design-tokens.css should define font-family');
-assert.equal(designTokens.includes('--font-size-sm:'), true, 'design-tokens.css should define font-size tokens');
+assert.equal(designTokens.includes('--font-sans:'), true, 'design-tokens.css should define font-family');
+assert.equal(designTokens.includes('--text-sm:'), true, 'design-tokens.css should define font-size tokens');
 assert.equal(designTokens.includes('--transition-fast:'), true, 'design-tokens.css should define transition tokens');
 assert.equal(designTokens.includes(':root[data-theme="dark"]'), true, 'design-tokens.css should define dark theme overrides');
-assert.equal(popupMarkup.includes('design-tokens.css'), true, 'popup.html should link design-tokens.css');
-assert.equal(optionsMarkup.includes('design-tokens.css'), true, 'options.html should link design-tokens.css');
-
-console.log('Manifest tests passed.');
+    assert.equal(popupMarkup.includes('design-tokens.css'), true, 'popup.html should link design-tokens.css');
+    assert.equal(optionsMarkup.includes('design-tokens.css'), true, 'options.html should link design-tokens.css');
+  });
+});
