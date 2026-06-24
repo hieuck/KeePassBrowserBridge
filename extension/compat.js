@@ -11,12 +11,19 @@
      */
     detectBrowser: function() {
       const ua = navigator.userAgent;
-      
+      // Edge and Firefox must be checked before Chrome because
+      // Chromium-based browsers (Edge, Brave) also contain "Chrome" in UA.
       if (ua.indexOf('Edg') > -1) return 'edge';
       if (ua.indexOf('Firefox') > -1) return 'firefox';
-      if (ua.indexOf('Chrome') > -1) return 'chrome';
-      if (ua.indexOf('Brave') > -1) return 'brave';
-      
+      if (ua.indexOf('Chrome') > -1) {
+        // Brave includes "Chrome" in UA but exposes navigator.brave API
+        if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
+          try {
+            if (navigator.brave.isBrave()) return 'brave';
+          } catch (_) { /* navigator.brave.isBrave() rejected */ }
+        }
+        return 'chrome';
+      }
       return 'unknown';
     },
 
@@ -138,11 +145,16 @@
      */
     executeScript: async function(tabId, options) {
       try {
-        const executeFunc = chrome?.scripting?.executeScript || browser?.tabs?.executeScript;
-        if (!executeFunc) {
-          throw new Error('Script execution not available');
+        if (chrome?.scripting?.executeScript) {
+          return await chrome.scripting.executeScript({
+            target: { tabId },
+            ...options
+          });
         }
-        return await executeFunc(tabId, options);
+        if (browser?.tabs?.executeScript) {
+          return await browser.tabs.executeScript(tabId, options);
+        }
+        throw new Error('Script execution not available');
       } catch (error) {
         console.error('Script execution failed:', error);
         throw error;
