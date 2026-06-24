@@ -79,7 +79,8 @@ namespace KeePassBrowserBridge.Bridge
         private static long ToUnixTimeMilliseconds(DateTime value)
         {
             DateTime utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
-            return new DateTimeOffset(utc).ToUnixTimeMilliseconds();
+            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return (long)(utc - epoch).TotalMilliseconds;
         }
 
         private static CustomField[] ExtractCustomFields(PwEntry entry)

@@ -59,7 +59,19 @@ namespace KeePassBrowserBridge.Bridge
             if (!TryGetPattern(entryUrl, out entryPattern)) return false;
             if (!TryGetUri(pageUrl, out pageUri)) return false;
 
-            if (!HostMatches(entryPattern.Host, pageUri.IdnHost, effectiveOptions.StrictUrlMatching)) return false;
+            // Compare scheme (protocol) — security: https should not match http
+            string pageScheme = (pageUri.Scheme ?? "").ToLowerInvariant();
+            if (!string.Equals(entryPattern.Scheme, pageScheme, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // Compare host
+            if (!HostMatches(entryPattern.Host, pageUri.Host, effectiveOptions.StrictUrlMatching)) return false;
+
+            // Compare port — ports must match when explicitly specified
+            int pagePort = pageUri.Port;
+            if (entryPattern.Port > 0 && entryPattern.Port != pagePort)
+                return false;
+
             return PathMatches(entryPattern.Path, pageUri.AbsolutePath);
         }
 
@@ -69,7 +81,7 @@ namespace KeePassBrowserBridge.Bridge
             Uri uri;
             if (!TryGetUri(url, out uri)) return false;
 
-            host = uri.IdnHost.ToLowerInvariant();
+            host = uri.Host.ToLowerInvariant();
             return true;
         }
 
@@ -87,7 +99,7 @@ namespace KeePassBrowserBridge.Bridge
             Uri uri;
             if (TryGetUri(url, out uri))
             {
-                pattern = new UrlPattern(uri.IdnHost, uri.AbsolutePath);
+                pattern = new UrlPattern(uri.Host, uri.AbsolutePath, uri.Scheme, uri.Port);
                 return true;
             }
 
@@ -95,6 +107,7 @@ namespace KeePassBrowserBridge.Bridge
             int schemeIndex = value.IndexOf("://", StringComparison.Ordinal);
             if (schemeIndex <= 0) return false;
 
+            string scheme = value.Substring(0, schemeIndex).ToLowerInvariant();
             int hostStart = schemeIndex + 3;
             int pathStart = value.IndexOf('/', hostStart);
             string host = pathStart < 0 ? value.Substring(hostStart) : value.Substring(hostStart, pathStart - hostStart);
@@ -102,7 +115,7 @@ namespace KeePassBrowserBridge.Bridge
             if (string.IsNullOrWhiteSpace(host)) return false;
             if (host.IndexOf('*') < 0 && path.IndexOf('*') < 0) return false;
 
-            pattern = new UrlPattern(host.ToLowerInvariant(), string.IsNullOrEmpty(path) ? "/" : path);
+            pattern = new UrlPattern(host.ToLowerInvariant(), string.IsNullOrEmpty(path) ? "/" : path, scheme, 0);
             return true;
         }
 
@@ -149,7 +162,11 @@ namespace KeePassBrowserBridge.Bridge
             string page = string.IsNullOrEmpty(pagePath) ? "/" : pagePath;
 
             if (entry.IndexOf('*') >= 0) return WildcardMatches(entry, page);
-            return true;
+
+            // Non-wildcard path: case-insensitive prefix match
+            string normalizedEntry = entry.EndsWith("/") ? entry : entry + "/";
+            string normalizedPage = page.EndsWith("/") ? page : page + "/";
+            return normalizedPage.StartsWith(normalizedEntry, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool WildcardMatches(string pattern, string value)
@@ -162,11 +179,15 @@ namespace KeePassBrowserBridge.Bridge
         {
             public readonly string Host;
             public readonly string Path;
+            public readonly string Scheme;
+            public readonly int Port;
 
-            public UrlPattern(string host, string path)
+            public UrlPattern(string host, string path, string scheme, int port)
             {
                 Host = host;
                 Path = path;
+                Scheme = scheme;
+                Port = port;
             }
         }
     }
