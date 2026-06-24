@@ -131,7 +131,6 @@ function Assert-ExtensionZip {
             "icons/icon-128.png",
             "options.css",
             "options.html",
-            "passkeysProxyExperiment.js",
             "popup.css",
             "popup.html"
         )
@@ -149,7 +148,9 @@ function Assert-ExtensionZip {
             "quick-test.js",
             "test-extension.js",
             "test-page.html",
-            "testingInfrastructure.js"
+            "testingInfrastructure.js",
+            "passwordQuality.js",
+            "passkeysProxyExperiment.js"
         )
 
         foreach ($name in $forbidden) {

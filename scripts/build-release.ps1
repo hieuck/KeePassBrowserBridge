@@ -393,7 +393,6 @@ $commonExtensionFiles = @(
     "icons.js",
     "options.css",
     "options.html",
-    "passkeysProxyExperiment.js",
     "popup.css",
     "popup.html"
 )

@@ -37,9 +37,13 @@ describe('build-release.ps1 - Firefox extension files', () => {
       'Chrome extension files must include compat.js');
   });
 
-  it('should include passkeysProxyExperiment.js in common files', () => {
-    assert.ok(source.includes('passkeysProxyExperiment.js'),
-      'passkeysProxyExperiment.js must be in common extension files');
+  it('should not include passkeysProxyExperiment.js in common files (store review)', () => {
+    // The passkeys proxy experiment is not ready for production release;
+    // it should not be packaged before store review.
+    const commonIdx = source.indexOf('$commonExtensionFiles');
+    const commonBlock = source.slice(commonIdx, commonIdx + 500);
+    assert.ok(!commonBlock.includes('passkeysProxyExperiment'),
+      'passkeysProxyExperiment.js must NOT be in common extension files for production release');
   });
 
   it('should read version from manifest.json at runtime', () => {
