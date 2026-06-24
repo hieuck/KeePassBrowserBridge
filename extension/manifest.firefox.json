@@ -30,6 +30,22 @@
     "page": "options.html",
     "open_in_tab": false
   },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Open KeePass popup"
+    },
+    "fill-credentials": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
+      },
+      "description": "Fill credentials on current page"
+    }
+  },
   "content_scripts": [
     {
       "matches": [

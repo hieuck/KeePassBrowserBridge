@@ -57,6 +57,17 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   await updateBadgeCount(activeInfo.tabId, 0);
 });
 
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'fill-credentials') {
+    try {
+      const tab = await getActiveTab();
+      if (tab && tab.id && isFillableUrl(tab.url)) {
+        await autoFillTab(tab.id, tab.url);
+      }
+    } catch (_) { /* keyboard fill is best-effort */ }
+  }
+});
+
 if (chrome.webRequest && chrome.webRequest.onAuthRequired) {
   chrome.webRequest.onAuthRequired.addListener(
     (details, callback) => {
