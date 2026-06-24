@@ -22,9 +22,11 @@
 import { ref, onMounted } from 'vue';
 import { DeleteOutlined } from '@ant-design/icons-vue';
 import SectionCard from '../SectionCard.vue';
+import { useBridge } from '../../composables/useBridge.js';
 
 const props = defineProps({ settings: { type: Object, required: true } });
 const emit = defineEmits(['save', 'reset']);
+const bridge = useBridge();
 
 const clients = ref([]);
 
@@ -33,12 +35,23 @@ function formatDate(timestamp) {
   return new Date(timestamp).toLocaleDateString();
 }
 
-function revokeClient(id) {
-  clients.value = clients.value.filter(c => c.id !== id);
+async function revokeClient(id) {
+  try {
+    await bridge.revokeClient(id);
+    clients.value = clients.value.filter(c => c.id !== id);
+  } catch (e) {
+    console.error('Failed to revoke client:', e);
+  }
 }
 
-onMounted(() => {
-  // Placeholder; load from background via KBB_LIST_CLIENTS
+onMounted(async () => {
+  try {
+    const result = await bridge.listClients();
+    clients.value = Array.isArray(result) ? result : [];
+  } catch (e) {
+    console.error('Failed to load clients:', e);
+    clients.value = [];
+  }
 });
 </script>
 

@@ -37,5 +37,8 @@ export function useBridge() {
     pairBegin: () => call('KBB_PAIR_BEGIN'),
     pairComplete: (pairingCode) => call('KBB_PAIR_COMPLETE', { pairingCode }),
     pairCancel: () => call('KBB_PAIR_CANCEL'),
+    listClients: () => call('KBB_LIST_CLIENTS'),
+    revokeClient: (clientId) => call('KBB_REVOKE_CLIENT', { clientId }),
+    setPasskeysEnabled: (enabled) => call('KBB_SET_PASSKEYS_ENABLED', { enabled }),
   };
 }
