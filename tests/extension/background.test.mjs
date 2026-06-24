@@ -283,6 +283,9 @@ const sandbox = {
         badgeCalls.push({ method: 'setBadgeBackgroundColor', details });
       }
     },
+    commands: {
+      onCommand: { addListener(fn) { sandbox.commandHandler = fn; } }
+    },
     tabs: {
       onUpdated: { addListener(fn) { sandbox.tabsUpdatedHandler = fn; } },
       onActivated: { addListener(fn) { sandbox.tabsActivatedHandler = fn; } },
