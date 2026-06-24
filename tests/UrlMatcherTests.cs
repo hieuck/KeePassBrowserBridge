@@ -14,6 +14,15 @@ namespace KeePassBrowserBridge.Tests
         [InlineData("https://*.example.com", "https://example.com", false)]
         [InlineData("https://example.com/login", "https://example.com/login", true)]
         [InlineData("https://example.com/login*", "https://example.com/login/page", true)]
+        // Intentional: path and scheme are NOT compared for non-wildcard URLs
+        [InlineData("https://example.com/login", "https://example.com/dashboard", true)]
+        [InlineData("http://example.com", "https://example.com", true)]
+        // Case insensitivity
+        [InlineData("HTTPS://EXAMPLE.COM", "https://example.com", true)]
+        [InlineData("https://example.com/Login", "https://example.com/login", true)]
+        // Root path matching
+        [InlineData("https://example.com", "https://example.com/accounts", true)]
+        [InlineData("https://example.com/", "https://example.com/accounts", true)]
         public void IsMatch_WildcardPatterns_WorkCorrectly(string entryUrl, string pageUrl, bool expected)
         {
             bool result = UrlMatcher.IsMatch(entryUrl, pageUrl);
