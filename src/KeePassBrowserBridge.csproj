@@ -5,6 +5,8 @@
     <RootNamespace>KeePassBrowserBridge</RootNamespace>
     <AssemblyName>KeePassBrowserBridge</AssemblyName>
     <KeePassReferencePath Condition=" '$(KeePassReferencePath)' == '' ">..\..\..</KeePassReferencePath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime.Serialization" />
