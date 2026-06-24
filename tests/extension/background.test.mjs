@@ -285,7 +285,9 @@ const sandbox = {
     },
     tabs: {
       onUpdated: { addListener(fn) { sandbox.tabsUpdatedHandler = fn; } },
-      query: async () => []
+      onActivated: { addListener(fn) { sandbox.tabsActivatedHandler = fn; } },
+      query: async () => [],
+      get: async (tabId) => ({ id: tabId, url: 'https://example.com/login' })
     },
     scripting: {
       executeScript: async (details) => {
