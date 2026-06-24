@@ -37,6 +37,7 @@
         "https://*/*"
       ],
       "js": [
+        "compat.js",
         "httpAuth.js",
         "customFields.js",
         "contentScript.js"
