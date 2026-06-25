@@ -163,6 +163,8 @@ async function handleMessage(message) {
       return setPasskeysEnabled(message.enabled);
     case 'KBB_LOCK_DATABASE':
       return lockDatabase();
+    case 'KBB_LIST_GROUPS':
+      return listGroups();
     default:
       throw new Error('Unknown message type.');
   }
@@ -429,6 +431,11 @@ async function listClients() {
 async function lockDatabase() {
   const response = await bridgeCall('database.lock', {}, true);
   await chrome.storage.local.set({ locked: true });
+  return parsePayload(response);
+}
+
+async function listGroups() {
+  const response = await bridgeCall('database.groups', {}, true);
   return parsePayload(response);
 }
 

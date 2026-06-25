@@ -25,7 +25,8 @@ namespace KeePassBrowserBridge.Bridge
             BridgeMethods.PasskeysList,
             BridgeMethods.PasskeysCancel,
             BridgeMethods.PasskeysRevoke,
-            BridgeMethods.DatabaseLock
+            BridgeMethods.DatabaseLock,
+            BridgeMethods.DatabaseGroups
         };
 
         public static string[] AllMethods()

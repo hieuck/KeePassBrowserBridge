@@ -41,5 +41,6 @@ export function useBridge() {
     revokeClient: (clientId) => call('KBB_REVOKE_CLIENT', { clientId }),
     setPasskeysEnabled: (enabled) => call('KBB_SET_PASSKEYS_ENABLED', { enabled }),
     lockDatabase: () => call('KBB_LOCK_DATABASE'),
+    listGroups: () => call('KBB_LIST_GROUPS'),
   };
 }

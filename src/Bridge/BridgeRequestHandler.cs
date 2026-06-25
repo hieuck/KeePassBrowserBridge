@@ -114,6 +114,7 @@ namespace KeePassBrowserBridge.Bridge
                 if (request.Method == BridgeMethods.LoginsFillAck) return LoginsFillAck(request);
                 if (BridgeMethodPolicy.IsPasskeyMethod(request.Method)) return Passkeys(request);
                 if (request.Method == BridgeMethods.DatabaseLock) return DatabaseLock(request);
+                if (request.Method == BridgeMethods.DatabaseGroups) return DatabaseGroups(request);
             }
             catch (SerializationException)
             {
@@ -658,6 +659,50 @@ namespace KeePassBrowserBridge.Bridge
             {
                 return Error(request, "lock_failed", "Failed to lock KeePass database: " + ex.Message);
             }
+        }
+
+        private BridgeResponse DatabaseGroups(BridgeRequest request)
+        {
+            try
+            {
+                PwDatabase db = m_databaseProvider();
+                if (db == null || db.RootGroup == null)
+                    return Error(request, "database_not_open", "KeePass database is not open.");
+
+                GroupNode root = BuildGroupNode(db.RootGroup);
+                DatabaseGroupsResponsePayload payload = new DatabaseGroupsResponsePayload
+                {
+                    Root = root,
+                    DefaultGroup = db.RootGroup.Name
+                };
+                return Success(request, BridgeJsonSerializer.Serialize(payload));
+            }
+            catch (System.Exception ex)
+            {
+                return Error(request, "list_groups_failed", "Failed to list database groups: " + ex.Message);
+            }
+        }
+
+        private static GroupNode BuildGroupNode(PwGroup group)
+        {
+            if (group == null) return null;
+            GroupNode node = new GroupNode
+            {
+                Name = group.Name,
+                Uuid = group.Uuid.ToHexString(),
+                Children = new GroupNode[0]
+            };
+            if (group.Groups != null && group.Groups.UCount > 0)
+            {
+                var children = new System.Collections.Generic.List<GroupNode>();
+                foreach (PwGroup child in group.Groups)
+                {
+                    GroupNode childNode = BuildGroupNode(child);
+                    if (childNode != null) children.Add(childNode);
+                }
+                node.Children = children.ToArray();
+            }
+            return node;
         }
 
         private static BridgeResponse Error(BridgeRequest request, string errorCode, string error)

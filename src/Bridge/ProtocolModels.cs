@@ -22,6 +22,7 @@ namespace KeePassBrowserBridge.Bridge
         public const string PasskeysCancel = "passkeys.cancel";
         public const string PasskeysRevoke = "passkeys.revoke";
         public const string DatabaseLock = "database.lock";
+        public const string DatabaseGroups = "database.groups";
     }
 
     public sealed class BridgeRequest
@@ -199,6 +200,19 @@ namespace KeePassBrowserBridge.Bridge
     public sealed class LockDatabasePayload
     {
         public string Reason { get; set; }
+    }
+
+    public sealed class GroupNode
+    {
+        public string Name { get; set; }
+        public string Uuid { get; set; }
+        public GroupNode[] Children { get; set; }
+    }
+
+    public sealed class DatabaseGroupsResponsePayload
+    {
+        public GroupNode Root { get; set; }
+        public string DefaultGroup { get; set; }
     }
 
     public interface IPasskeyBeginPayload
