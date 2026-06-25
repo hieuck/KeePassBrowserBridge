@@ -26,7 +26,8 @@ namespace KeePassBrowserBridge.Bridge
             BridgeMethods.PasskeysCancel,
             BridgeMethods.PasskeysRevoke,
             BridgeMethods.DatabaseLock,
-            BridgeMethods.DatabaseGroups
+            BridgeMethods.DatabaseGroups,
+            BridgeMethods.DatabaseInfo
         };
 
         public static string[] AllMethods()
@@ -58,7 +59,8 @@ namespace KeePassBrowserBridge.Bridge
 
         public static string RequiredPermission(string method)
         {
-            if (method == BridgeMethods.LoginsQuery || method == BridgeMethods.ClientStatus)
+            if (method == BridgeMethods.LoginsQuery || method == BridgeMethods.ClientStatus ||
+                method == BridgeMethods.DatabaseInfo)
                 return TrustedClientPermissions.Read;
             if (method == BridgeMethods.LoginsCreate ||
                 method == BridgeMethods.LoginsUpdate ||

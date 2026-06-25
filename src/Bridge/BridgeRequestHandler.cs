@@ -115,6 +115,7 @@ namespace KeePassBrowserBridge.Bridge
                 if (BridgeMethodPolicy.IsPasskeyMethod(request.Method)) return Passkeys(request);
                 if (request.Method == BridgeMethods.DatabaseLock) return DatabaseLock(request);
                 if (request.Method == BridgeMethods.DatabaseGroups) return DatabaseGroups(request);
+                if (request.Method == BridgeMethods.DatabaseInfo) return DatabaseInfo(request);
             }
             catch (SerializationException)
             {
@@ -715,6 +716,25 @@ namespace KeePassBrowserBridge.Bridge
                 ErrorCode = errorCode,
                 Error = error
             };
+        }
+
+        private BridgeResponse DatabaseInfo(BridgeRequest request)
+        {
+            try
+            {
+                PwDatabase db = m_databaseProvider();
+                DatabaseInfoResponsePayload payload = new DatabaseInfoResponsePayload
+                {
+                    Name = (db == null) ? null : db.Name,
+                    Path = (db == null) ? null : db.IOConnectionInfo?.Path,
+                    IsOpen = db != null
+                };
+                return Success(request, BridgeJsonSerializer.Serialize(payload));
+            }
+            catch (System.Exception ex)
+            {
+                return Error(request, "db_info_failed", "Failed to get database info: " + ex.Message);
+            }
         }
     }
 }

@@ -165,6 +165,8 @@ async function handleMessage(message) {
       return lockDatabase();
     case 'KBB_LIST_GROUPS':
       return listGroups();
+    case 'KBB_GET_DATABASE_INFO':
+      return getDatabaseInfo();
     default:
       throw new Error('Unknown message type.');
   }
@@ -436,6 +438,11 @@ async function lockDatabase() {
 
 async function listGroups() {
   const response = await bridgeCall('database.groups', {}, true);
+  return parsePayload(response);
+}
+
+async function getDatabaseInfo() {
+  const response = await bridgeCall('database.info', {}, true);
   return parsePayload(response);
 }
 
