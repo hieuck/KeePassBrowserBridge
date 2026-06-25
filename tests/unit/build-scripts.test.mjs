@@ -52,12 +52,8 @@ describe('build-release.ps1 - Firefox extension files', () => {
   });
 
   it('should compile all C# source files', () => {
-    // The csc command should reference all Bridge .cs files
-    const cscFiles = ['BridgeRequestHandler.cs', 'BridgeSettings.cs', 'BridgeAuthentication.cs',
-      'CredentialMutationService.cs', 'CredentialQueryService.cs', 'PairingService.cs',
-      'PasskeyService.cs', 'TrustedClientStore.cs', 'ProtocolModels.cs'];
-    for (const f of cscFiles) {
-      assert.ok(source.includes(f), `Missing ${f} in csc compilation list`);
-    }
+    // The dotnet build command should reference the .csproj
+    assert.ok(source.includes('KeePassBrowserBridge.csproj') || source.includes('dotnet build'),
+      'build script should compile via dotnet build with the .csproj project file');
   });
 });

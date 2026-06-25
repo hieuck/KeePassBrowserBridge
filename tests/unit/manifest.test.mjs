@@ -176,7 +176,7 @@ assert.equal(releaseScript.includes('release-manifest.json'), true, 'release scr
 assert.equal(releaseScript.includes('Get-GitStatusIgnoringArtifactOutput'), true, 'release script should ignore artifact output when computing source dirty-state');
 assert.equal(releaseScript.includes('"describe", "--tags", "--always"'), true, 'release script should build SourceDescribe from filtered dirty-state');
 assert.equal(releaseScript.includes('"describe", "--tags", "--dirty", "--always"'), false, 'release script should not let artifact output affect git describe dirty-state');
-assert.equal(releaseScript.includes('Bridge\\BridgeMethodPolicy.cs'), true, 'release script should compile centralized bridge method policy');
+assert.equal(releaseScript.includes('KeePassBrowserBridge.csproj'), true, 'release script should compile via dotnet build with the .csproj project file');
 assert.equal(verifierScript.includes('tests\\extension\\content-script.test.mjs'), true, 'main verifier should run content script tests');
 assert.equal(verifierScript.includes('.\\src\\Bridge\\BridgeMethodPolicy.cs'), true, 'main verifier should compile centralized bridge method policy');
 assert.equal(pluginProject.includes('Bridge\\BridgeMethodPolicy.cs'), true, 'plugin project should include centralized bridge method policy');

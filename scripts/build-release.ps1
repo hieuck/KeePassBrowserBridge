@@ -21,6 +21,7 @@ if ([string]::IsNullOrWhiteSpace($KeePassExe)) {
 }
 
 $KeePassExe = (Resolve-Path $KeePassExe).Path
+$KeePassDir = Split-Path -Parent $KeePassExe
 
 if ([string]::IsNullOrWhiteSpace($ArtifactsDir)) {
     $ArtifactsDir = Join-Path $env:TEMP "KeePassBrowserBridge-artifacts"
@@ -287,46 +288,20 @@ $updateInfoTarget = Join-Path $ArtifactsDir "versioninfo.txt"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($updateInfoTarget, $expectedUpdateInfo, $utf8NoBom)
 
-$sources = @(
-    (Join-Path $srcDir "Bridge\BridgeAuthentication.cs"),
-    (Join-Path $srcDir "Bridge\BridgeClock.cs"),
-    (Join-Path $srcDir "Bridge\BridgeJsonSerializer.cs"),
-    (Join-Path $srcDir "Bridge\BridgeMethodPolicy.cs"),
-    (Join-Path $srcDir "Bridge\BridgeRequestHandler.cs"),
-    (Join-Path $srcDir "Bridge\BridgeSettings.cs"),
-    (Join-Path $srcDir "Bridge\CredentialMutationService.cs"),
-    (Join-Path $srcDir "Bridge\CredentialQueryService.cs"),
-    (Join-Path $srcDir "Bridge\EntryUrlMatcher.cs"),
-    (Join-Path $srcDir "Bridge\LoopbackBridgeServer.cs"),
-    (Join-Path $srcDir "Bridge\PairingService.cs"),
-    (Join-Path $srcDir "Bridge\PasskeyService.cs"),
-    (Join-Path $srcDir "Bridge\ProtocolModels.cs"),
-    (Join-Path $srcDir "Bridge\ProtocolValidator.cs"),
-    (Join-Path $srcDir "Bridge\TrustedClientStore.cs"),
-    (Join-Path $srcDir "Bridge\TotpGenerator.cs"),
-    (Join-Path $srcDir "Bridge\UpdateChecker.cs"),
-    (Join-Path $srcDir "Bridge\UrlMatcher.cs"),
-    (Join-Path $srcDir "KeePassBrowserBridgeExt.cs"),
-    (Join-Path $srcDir "Properties\AssemblyInfo.cs")
-)
-
-$cscArgs = @(
-    "/nologo",
-    "/target:library",
-    "/optimize+",
-    "/out:$pluginDllTarget",
-    "/reference:$KeePassExe",
-    "/reference:$(Join-Path $frameworkDir "System.dll")",
-    "/reference:$(Join-Path $frameworkDir "System.Core.dll")",
-    "/reference:$(Join-Path $frameworkDir "System.Drawing.dll")",
-    "/reference:$(Join-Path $frameworkDir "System.Runtime.Serialization.dll")",
-    "/reference:$(Join-Path $frameworkDir "System.Windows.Forms.dll")"
-) + $sources
-
-& $csc @cscArgs
+Write-Host "Compiling KeePass plugin via dotnet build..."
+$projectPath = Join-Path $PSScriptRoot "..\src\KeePassBrowserBridge.csproj"
+$buildOutput = "$env:TEMP\KeePassBrowserBridge-build\"
+Remove-Item -Path $buildOutput -Recurse -Force -ErrorAction SilentlyContinue
+dotnet build $projectPath /p:BaseOutputPath="$buildOutput" --configuration Release -p:KeePassReferencePath="$KeePassDir"
 if ($LASTEXITCODE -ne 0) {
-    throw "DLL compile failed with exit code $LASTEXITCODE."
+    throw "dotnet build failed with exit code $LASTEXITCODE."
 }
+
+$compiledDll = "${buildOutput}Release\net40\KeePassBrowserBridge.dll"
+if (-not (Test-Path -LiteralPath $compiledDll)) {
+    throw "Compiled DLL not found at $compiledDll"
+}
+Copy-Item -LiteralPath $compiledDll -Destination $pluginDllTarget -Force
 
 $expectedPlgx = Join-Path $repoRoot "src.plgx"
 $existingPlgx = @()
