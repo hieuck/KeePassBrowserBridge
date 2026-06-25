@@ -10,7 +10,7 @@
     :aria-expanded="expanded"
     :data-testid="'credential-card'"
   >
-    <a-avatar :src="faviconUrl" :size="32" class="credential-card__avatar">{{ entry.Title?.[0] || '?' }}</a-avatar>
+    <a-avatar :src="faviconUrl" :size="32" class="credential-card__avatar" :alt="'Favicon for ' + (entry.Title || 'credential')">{{ entry.Title?.[0] || '?' }}</a-avatar>
     <div class="credential-card__info">
       <div class="credential-card__title">{{ entry.Title || '(Untitled)' }}</div>
       <div v-if="entry.UserName" class="credential-card__subtitle">{{ entry.UserName }}</div>
