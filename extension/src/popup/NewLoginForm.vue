@@ -20,7 +20,16 @@
         <a-input-password v-model:value="form.Password" />
       </a-form-item>
       <a-form-item label="Folder" name="Group">
-        <a-input v-model:value="form.Group" placeholder="Optional" />
+        <a-tree-select
+          v-if="treeData.length > 0"
+          v-model:value="form.Group"
+          :tree-data="treeData"
+          :placeholder="'Select or type folder'"
+          allow-clear
+          tree-default-expand-all
+          style="width: 100%"
+        />
+        <a-input v-else v-model:value="form.Group" placeholder="Optional" />
       </a-form-item>
     </a-form>
     <footer class="form__footer">
@@ -34,6 +43,9 @@
 import { reactive, computed } from 'vue';
 import { CloseOutlined } from '@ant-design/icons-vue';
 
+const props = defineProps({
+  groups: { type: Array, default: () => [] },
+});
 const emit = defineEmits(['save', 'cancel']);
 
 const form = reactive({
@@ -43,6 +55,21 @@ const form = reactive({
   Password: '',
   Group: '',
 });
+
+function flattenTree(nodes, parentPath = '') {
+  const result = [];
+  for (const node of (nodes || [])) {
+    const path = parentPath ? parentPath + '\\' + node.Name : node.Name;
+    const item = { title: node.Name, value: path, key: path };
+    if (node.Children && node.Children.length > 0) {
+      item.children = flattenTree(node.Children, path);
+    }
+    result.push(item);
+  }
+  return result;
+}
+
+const treeData = computed(() => flattenTree(props.groups));
 
 const canSave = computed(() => {
   const titleOk = Boolean(form.Title.trim());

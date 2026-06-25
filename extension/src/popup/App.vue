@@ -15,6 +15,7 @@
     <main class="vault-list" id="results" role="region" aria-label="Credentials" aria-live="polite" :aria-busy="loading ? 'true' : 'false'">
       <template v-if="formMode === 'new'">
         <NewLoginForm
+          :groups="groupsData"
           @save="createLogin"
           @cancel="formMode = null"
         />
@@ -120,6 +121,7 @@ const currentUrl = ref('');
 const showPairDialog = ref(false);
 const pairingSessionId = ref('');
 const pairingExpiresAt = ref(0);
+const groupsData = ref([]);
 
 const canWrite = computed(() => permissions.value.includes('write'));
 
@@ -294,6 +296,10 @@ async function refreshState() {
       const result = await bridge.queryLogins();
       currentEntries.value = result.entries || [];
       currentUrl.value = result.url || '';
+      // Load groups in background
+      bridge.listGroups().then((groups) => {
+        groupsData.value = groups && groups.Root && groups.Root.Children ? groups.Root.Children : [];
+      }).catch(() => {});
     } else {
       currentEntries.value = [];
     }
