@@ -170,7 +170,7 @@ assert.equal(releaseScript.includes('versioninfo.txt'), true, 'release script sh
 assert.equal(releaseScript.includes('$commonExtensionFiles'), true, 'release script should package extension files from an explicit production allowlist');
 assert.equal(releaseScript.includes('quick-test.js'), false, 'release script should not package development test helpers');
 assert.equal(releaseScript.includes('passwordQuality.js'), false, 'release script should not package unused password quality helpers');
-assert.equal(releaseScript.includes('passkeysProxyExperiment.js'), false, 'release script should not package passkey proxy experiment before store review');
+assert.equal(releaseScript.includes('passkeysProxyExperiment.js'), true, 'release script should package passkey proxy experiment for background.js importScripts');
 assert.equal(releaseScript.includes('SHA256SUMS.txt'), true, 'release script should emit checksums for release artifacts');
 assert.equal(releaseScript.includes('release-manifest.json'), true, 'release script should emit structured release provenance manifest');
 assert.equal(releaseScript.includes('Get-GitStatusIgnoringArtifactOutput'), true, 'release script should ignore artifact output when computing source dirty-state');
@@ -187,7 +187,7 @@ assert.equal(releaseScript.includes('[switch] $SignArtifacts'), true, 'release s
 assert.equal(releaseScript.includes('Invoke-GpgDetachedSignature'), true, 'release script should create GPG detached signatures when signing is enabled');
 assert.equal(artifactVerifyScript.includes('quick-test.js'), true, 'artifact verifier should reject development test helpers in extension ZIPs');
 assert.equal(artifactVerifyScript.includes('passwordQuality.js'), true, 'artifact verifier should reject unused password quality helpers in extension ZIPs');
-assert.equal(artifactVerifyScript.includes('passkeysProxyExperiment.js'), true, 'artifact verifier should reject non-packaged passkey proxy experiments in extension ZIPs');
+assert.equal(artifactVerifyScript.includes('passkeysProxyExperiment.js'), true, 'artifact verifier should expect passkeysProxyExperiment.js in extension ZIPs — needed by background.js importScripts');
 assert.equal(artifactVerifyScript.includes('KeePassBrowserBridge-chrome-extension-$Version.zip'), true, 'artifact verifier should inspect Chrome extension ZIP');
 assert.equal(artifactVerifyScript.includes('KeePassBrowserBridge-firefox-extension-$Version.zip'), true, 'artifact verifier should inspect Firefox extension ZIP');
 assert.equal(artifactVerifyScript.includes('Firefox extension package is missing passwordQuality.js.'), false, 'artifact verifier should not require unused Firefox password quality helpers');
