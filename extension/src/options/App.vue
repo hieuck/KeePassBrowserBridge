@@ -52,6 +52,7 @@ import PasskeyTab from './tabs/PasskeyTab.vue';
 import AboutTab from './tabs/AboutTab.vue';
 import { useTheme } from '../composables/useTheme.js';
 import { useToast } from '../composables/useToast.js';
+import { useBridge } from '../composables/useBridge.js';
 import { theme as antdTheme } from 'ant-design-vue';
 import { getSettings, setSettings } from '../../shared/storage.js';
 
@@ -67,6 +68,7 @@ const antdThemeConfig = computed(() => ({
   },
 }));
 const { show: showToast } = useToast();
+const bridge = useBridge();
 
 const activeTab = ref('general');
 const settings = ref({});
@@ -111,8 +113,15 @@ async function loadSettings() {
 async function save() {
   saving.value = true;
   try {
+    const prevPasskeys = originalSettings.value.passkeysEnabled;
+    const nextPasskeys = settings.value.passkeysEnabled;
     await setSettings(settings.value);
     originalSettings.value = { ...settings.value };
+    if (prevPasskeys !== nextPasskeys) {
+      bridge.setPasskeysEnabled(nextPasskeys).catch((e) => {
+        console.error('Passkey toggle failed:', e);
+      });
+    }
     showToast('Settings saved', { variant: 'success' });
   } catch (error) {
     showToast(error.message, { variant: 'error' });
