@@ -23,7 +23,7 @@
       <DownOutlined :style="{ transform: expanded ? 'rotate(180deg)' : 'none' }" />
     </button>
 
-    <div class="credential-card__quick-actions">
+    <div v-if="!expanded" class="credential-card__quick-actions">
       <a-tooltip title="Copy username">
         <button type="button" class="credential-card__icon-btn" aria-label="Copy username" @click.stop="$emit('copy', 'username', entry.UserName)">
           <CopyOutlined />

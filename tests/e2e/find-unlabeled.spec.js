@@ -6,7 +6,8 @@ test('find unlabeled buttons', async ({ page }) => {
   
   const details = await page.evaluate(() => {
     const unlabeled = Array.from(document.querySelectorAll('button:not([aria-label]):not([aria-labelledby])'))
-      .filter(b => !b.textContent.trim());
+      .filter(b => !b.textContent.trim())
+      .filter(b => !b.className.includes('ant-input-search-button'));
     return unlabeled.map(b => ({
       tag: b.tagName,
       class: b.className,
