@@ -2,79 +2,151 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, develop]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '22'
+  DOTNET_VERSION: '8.0.x'
+  KEEPASS_VERSION: '2.61.1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test
+  lint:
+    name: Lint
     runs-on: windows-latest
-    env:
-      KEEPASS_VERSION: 2.61.1
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          dotnet-version: 8.0.x
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache npm
+        uses: actions/cache@v4
         with:
-          node-version: 24
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+      - run: npm ci
+      - run: npm run lint
 
-      - name: Install Node dependencies
+  unit:
+    name: Unit tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+      - run: npm ci
+      - run: npm test
+
+  dotnet:
+    name: .NET build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet build src/KeePassBrowserBridge.csproj
+
+  e2e:
+    name: E2E tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+      - name: Build extension
+        run: npm run build:all
+      - name: Start dev server
+        run: npm run dev &
         shell: pwsh
-        run: npm ci
+      - name: E2E tests
+        run: npx playwright test --project=chromium --reporter=line
 
-      - name: Install Playwright Chromium
-        shell: pwsh
-        run: npx playwright install chromium
+  csharp-tests:
+    name: C# bridge tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+      - name: Build test project
+        run: dotnet build tests/KeePassBrowserBridge.Tests.csproj
+      - name: Run bridge tests
+        run: dotnet run --project tests/KeePassBrowserBridge.Tests.csproj
 
+  verify:
+    name: Full verification
+    needs: [unit, dotnet, e2e, csharp-tests]
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install chromium firefox --with-deps
+      - name: Build extension
+        run: npm run build:all
       - name: Download KeePass
         shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
           $url = "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/$env:KEEPASS_VERSION/KeePass-$env:KEEPASS_VERSION.zip"
           $keepassRoot = Join-Path $env:RUNNER_TEMP "KeePassBrowserBridge-KeePass"
           $zipPath = Join-Path $keepassRoot "KeePass.zip"
           $extractPath = Join-Path $keepassRoot "KeePass"
           New-Item -ItemType Directory -Force -Path $keepassRoot | Out-Null
           curl.exe --location --fail --retry 5 --retry-delay 5 --output $zipPath $url
-          if ($LASTEXITCODE -ne 0) {
-            throw "KeePass download failed with exit code $LASTEXITCODE."
-          }
-          $header = [System.IO.File]::ReadAllBytes((Resolve-Path $zipPath))[0..1]
-          if ($header[0] -ne 0x50 -or $header[1] -ne 0x4B) {
-            throw "Downloaded KeePass file is not a ZIP archive."
-          }
           Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-
-      - name: Verify
-        shell: pwsh
-        run: .\scripts\verify.ps1 -KeePassExe "$env:RUNNER_TEMP\KeePassBrowserBridge-KeePass\KeePass\KeePass.exe"
-
+      - name: Full verify
+        run: .\scripts\verify.ps1 -KeePassExe "$env:RUNNER_TEMP\KeePassBrowserBridge-KeePass\KeePass\KeePass.exe" -E2EProjects chromium,firefox
       - name: Build release artifacts
-        shell: pwsh
-        run: |
-          .\scripts\build-release.ps1 `
-            -KeePassExe "$env:RUNNER_TEMP\KeePassBrowserBridge-KeePass\KeePass\KeePass.exe" `
-            -ArtifactsDir "${{ github.workspace }}\artifacts" `
-            -RequireCleanSource
-
+        run: .\scripts\build-release.ps1 -KeePassExe "$env:RUNNER_TEMP\KeePassBrowserBridge-KeePass\KeePass\KeePass.exe" -ArtifactsDir "${{ github.workspace }}\artifacts" -RequireCleanSource
       - name: Verify release artifacts
-        shell: pwsh
-        run: |
-          .\scripts\verify-release-artifacts.ps1 `
-            -ArtifactsDir "${{ github.workspace }}\artifacts"
-
-      - name: Upload release artifact bundle
+        run: .\scripts\verify-release-artifacts.ps1 -ArtifactsDir "${{ github.workspace }}\artifacts"
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: KeePassBrowserBridge-ci-release-artifacts
+          name: release-artifacts
           path: artifacts\*
