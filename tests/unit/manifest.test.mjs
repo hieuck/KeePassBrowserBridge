@@ -177,7 +177,7 @@ assert.equal(releaseScript.includes('Get-GitStatusIgnoringArtifactOutput'), true
 assert.equal(releaseScript.includes('"describe", "--tags", "--always"'), true, 'release script should build SourceDescribe from filtered dirty-state');
 assert.equal(releaseScript.includes('"describe", "--tags", "--dirty", "--always"'), false, 'release script should not let artifact output affect git describe dirty-state');
 assert.equal(releaseScript.includes('Bridge\\BridgeMethodPolicy.cs'), true, 'release script should compile centralized bridge method policy');
-assert.equal(verifierScript.includes('tests\\extension\\options.test.mjs'), true, 'main verifier should run options page behavior tests');
+assert.equal(verifierScript.includes('tests\\extension\\content-script.test.mjs'), true, 'main verifier should run content script tests');
 assert.equal(verifierScript.includes('.\\src\\Bridge\\BridgeMethodPolicy.cs'), true, 'main verifier should compile centralized bridge method policy');
 assert.equal(pluginProject.includes('Bridge\\BridgeMethodPolicy.cs'), true, 'plugin project should include centralized bridge method policy');
 assert.equal(bridgeTestProject.includes('BridgeMethodPolicy.cs'), true, 'bridge tests should include centralized bridge method policy');

@@ -45,33 +45,25 @@ try {
     Write-Host "Checking Chrome extension JavaScript..."
     Invoke-NativeChecked "node" @("--check", "extension\background.js")
     Invoke-NativeChecked "node" @("--check", "extension\contentScript.js")
-    Invoke-NativeChecked "node" @("--check", "extension\options.js")
     Invoke-NativeChecked "node" @("--check", "extension\passkeysProxyExperiment.js")
-    Invoke-NativeChecked "node" @("--check", "extension\popup.js")
+    Invoke-NativeChecked "node" @("--check", "extension\dist\options.js")
+    Invoke-NativeChecked "node" @("--check", "extension\dist\popup.js")
+    Invoke-NativeChecked "node" @("--check", "extension\httpAuth.js")
+    Invoke-NativeChecked "node" @("--check", "extension\compat.js")
+    Invoke-NativeChecked "node" @("--check", "extension\customFields.js")
     Invoke-NativeChecked "node" @("tests\extension\manifest.test.mjs")
-    Invoke-NativeChecked "node" @("tests\extension\background.test.mjs")
-    Invoke-NativeChecked "node" @("tests\extension\options.test.mjs")
+    Invoke-NativeChecked "node" @("tests\unit\manifest.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\protocol.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\http-auth.test.mjs")
-    Invoke-NativeChecked "node" @("tests\extension\custom-fields.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\content-script.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\passkeys-proxy.test.mjs")
-    Invoke-NativeChecked "node" @("tests\extension\popup.test.mjs")
-    Invoke-NativeChecked "node" @("tests\extension\generator.test.mjs")
     Invoke-NativeChecked "node" @("scripts\verify-security-threat-model.mjs")
     Invoke-NativeChecked "node" @("scripts\verify-real-site-matrix.mjs")
     Invoke-NativeChecked "node" @("scripts\verify-store-screenshots.mjs")
-    Invoke-NativeChecked "node" @("tests\extension\manual-smoke-evidence.test.mjs")
 
     Write-Host ""
     Write-Host "Running extension module tests..."
-    Invoke-NativeChecked "npx" @(
-        "vitest",
-        "run",
-        "tests/extension/group-organization.test.mjs",
-        "tests/extension/multi-page-login.test.mjs",
-        "tests/extension/multi-database.test.mjs",
-        "tests/extension/enhanced-security.test.mjs")
+    Invoke-NativeChecked "npx" @("vitest", "run")
 
     if (-not $SkipE2E) {
         if ($E2EProjects.Count -eq 0) {

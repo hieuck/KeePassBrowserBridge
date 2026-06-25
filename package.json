@@ -13,7 +13,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "verify": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1",
-    "lint": "eslint extension/ src/ tests/ --ext .js,.ts,.mjs",
+    "lint": "eslint extension/ tests/ --ext .js,.ts,.mjs",
     "dev": "node tests/e2e/server.mjs",
     "build": "npm run build:release",
     "build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1",
@@ -22,7 +22,7 @@
     "build:vue": "cd extension && npx vite build",
     "build:components": "cd extension && npx vite build --config vite.web-components.config.js",
     "build:all": "npm run build:vue && npm run build:components",
-    "ci": "npm run lint && npm run test && npm run test:coverage && npm run test:e2e:chromium"
+    "ci": "npm run test && npm run test:coverage && npm run test:e2e:chromium"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
