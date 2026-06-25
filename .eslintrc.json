@@ -2,17 +2,63 @@
   "root": true,
   "env": {
     "browser": true,
+    "worker": true,
     "es2022": true,
-    "node": true
+    "node": true,
+    "webextensions": true
   },
   "extends": ["eslint:recommended"],
   "parserOptions": {
     "ecmaVersion": 2022,
     "sourceType": "module"
   },
-  "rules": {
-    "no-unused-vars": "warn",
-    "no-console": "off"
+  "globals": {
+    "importScripts": "readonly",
+    "chrome": "readonly",
+    "browser": "readonly",
+    "PublicKeyCredential": "readonly",
+    "globalThis": "readonly",
+    "TextEncoder": "readonly",
+    "crypto": "readonly"
   },
-  "ignorePatterns": ["dist/", "node_modules/", "*.min.js"]
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-console": "off",
+    "no-var": "off",
+    "prefer-const": "off",
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-prototype-builtins": "off",
+    "no-async-promise-executor": "off",
+    "no-useless-escape": "off",
+    "no-inner-declarations": "off",
+    "no-unsafe-optional-chaining": "off",
+    "no-self-assign": "off",
+    "no-redeclare": "off"
+  },
+  "overrides": [
+    {
+      "files": ["tests/**/*.mjs", "tests/**/*.spec.js", "tests/e2e/**/*.js"],
+      "env": {
+        "jest": true,
+        "node": true
+      },
+      "globals": {
+        "test": "readonly",
+        "expect": "readonly",
+        "describe": "readonly",
+        "it": "readonly",
+        "beforeEach": "readonly",
+        "afterEach": "readonly",
+        "vi": "readonly",
+        "assert": "readonly",
+        "page": "readonly",
+        "browser": "readonly",
+        "browserContext": "readonly"
+      },
+      "rules": {
+        "no-undef": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist/", "node_modules/", "*.min.js", "coverage/"]
 }
