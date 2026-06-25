@@ -3,6 +3,7 @@
   "name": "KeePass Browser Bridge",
   "description": "Fill browser logins from KeePass through a local bridge plugin.",
   "version": "2.0.0",
+  "default_locale": "en",
   "browser_specific_settings": {
     "gecko": {
       "id": "kbb@keepass.local",
