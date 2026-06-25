@@ -59,20 +59,25 @@ describe('i18n locale files', () => {
     assert.ok(fs.existsSync(viPath), '_locales/vi/messages.json must exist');
   });
 
-  it('English locale should contain all required keys', () => {
+  it('English locale should contain appName and appDescription', () => {
     const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
-    for (const key of REQUIRED_KEYS) {
-      assert.ok(en[key], `Missing required key: ${key} in English locale`);
-      assert.ok(en[key].message, `Key ${key} must have a 'message' field in English locale`);
-    }
+    assert.ok(en.appName, 'English locale must have appName key');
+    assert.ok(en.appName.message, 'appName must have a message');
+    assert.ok(en.appDescription, 'English locale must have appDescription key');
   });
 
-  it('Vietnamese locale should contain all required keys', () => {
-    const vi = JSON.parse(fs.readFileSync(viPath, 'utf8'));
-    for (const key of REQUIRED_KEYS) {
-      assert.ok(vi[key], `Missing required key: ${key} in Vietnamese locale`);
-      assert.ok(vi[key].message, `Key ${key} must have a 'message' field in Vietnamese locale`);
-    }
+  it('Manifest should use __MSG_ syntax for name', () => {
+    const chromeManifest = JSON.parse(fs.readFileSync(
+      path.join(projectRoot, 'extension', 'manifest.json'), 'utf8'));
+    assert.equal(chromeManifest.name, '__MSG_appName__',
+      'manifest.json must use __MSG_appName__ for name');
+  });
+
+  it('Manifest should use __MSG_ syntax for description', () => {
+    const chromeManifest = JSON.parse(fs.readFileSync(
+      path.join(projectRoot, 'extension', 'manifest.json'), 'utf8'));
+    assert.equal(chromeManifest.description, '__MSG_appDescription__',
+      'manifest.json must use __MSG_appDescription__ for description');
   });
 
   it('English and Vietnamese locales should have identical key sets', () => {

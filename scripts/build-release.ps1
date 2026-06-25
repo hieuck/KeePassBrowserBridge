@@ -373,6 +373,8 @@ $chromeStagingDir = Join-Path $ArtifactsDir "_chrome-extension"
 $firefoxStagingDir = Join-Path $ArtifactsDir "_firefox-extension"
 $firefoxManifestPath = Join-Path $extensionDir "manifest.firefox.json"
 $commonExtensionFiles = @(
+    "_locales\en\messages.json",
+    "_locales\vi\messages.json",
     "background.js",
     "contentScript.js",
     "customFields.js",

@@ -111,6 +111,8 @@ function Assert-ExtensionZip {
         $entryNames = @($archive.Entries | ForEach-Object { $_.FullName.Replace("\", "/") })
         $expectedEntryNames = @(
             "manifest.json",
+            "_locales/en/messages.json",
+            "_locales/vi/messages.json",
             "background.js",
             "contentScript.js",
             "customFields.js",

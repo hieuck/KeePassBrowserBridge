@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "KeePass Browser Bridge",
-  "description": "Fill browser logins from KeePass through a local bridge plugin.",
+  "name": "__MSG_appName__",
+  "description": "__MSG_appDescription__",
   "version": "2.0.0",
   "default_locale": "en",
   "icons": {
