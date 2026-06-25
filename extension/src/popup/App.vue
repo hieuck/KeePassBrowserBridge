@@ -226,9 +226,14 @@ function openClients() {
 }
 
 function lock() {
-  bridge.setLocked(true).then(() => {
+  bridge.lockDatabase().then(() => {
     state.value.locked = true;
     showToast('KeePass locked', { variant: 'info', duration: 2000 });
+  }).catch(() => {
+    bridge.setLocked(true).then(() => {
+      state.value.locked = true;
+      showToast('KeePass locked (local)', { variant: 'info', duration: 2000 });
+    });
   });
 }
 

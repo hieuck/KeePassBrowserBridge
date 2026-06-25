@@ -161,6 +161,8 @@ async function handleMessage(message) {
       return checkUpdates();
     case 'KBB_SET_PASSKEYS_ENABLED':
       return setPasskeysEnabled(message.enabled);
+    case 'KBB_LOCK_DATABASE':
+      return lockDatabase();
     default:
       throw new Error('Unknown message type.');
   }
@@ -421,6 +423,12 @@ async function setPasskeysEnabled(enabled) {
 
 async function listClients() {
   const response = await bridgeCall('clients.list', {}, true);
+  return parsePayload(response);
+}
+
+async function lockDatabase() {
+  const response = await bridgeCall('database.lock', {}, true);
+  await chrome.storage.local.set({ locked: true });
   return parsePayload(response);
 }
 

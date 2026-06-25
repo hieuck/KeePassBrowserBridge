@@ -24,7 +24,8 @@ namespace KeePassBrowserBridge.Bridge
             BridgeMethods.PasskeysGetComplete,
             BridgeMethods.PasskeysList,
             BridgeMethods.PasskeysCancel,
-            BridgeMethods.PasskeysRevoke
+            BridgeMethods.PasskeysRevoke,
+            BridgeMethods.DatabaseLock
         };
 
         public static string[] AllMethods()
@@ -60,7 +61,8 @@ namespace KeePassBrowserBridge.Bridge
                 return TrustedClientPermissions.Read;
             if (method == BridgeMethods.LoginsCreate ||
                 method == BridgeMethods.LoginsUpdate ||
-                method == BridgeMethods.LoginsFillAck)
+                method == BridgeMethods.LoginsFillAck ||
+                method == BridgeMethods.DatabaseLock)
                 return TrustedClientPermissions.Write;
             if (method == BridgeMethods.ClientsList ||
                 method == BridgeMethods.ClientsRevoke ||

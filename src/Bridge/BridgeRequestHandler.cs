@@ -16,6 +16,7 @@ namespace KeePassBrowserBridge.Bridge
         private readonly PasskeyPendingSessionStore m_passkeyPendingSessionStore;
         private readonly Func<PwDatabase> m_databaseProvider;
         private readonly Func<bool> m_passkeysEnabled;
+        private readonly Action m_lockCallback;
         private readonly Func<PasskeyApprovalRequest, PasskeyApprovalResult> m_passkeyApproval;
         private readonly Action<PairingSession> m_pairingSessionCreated;
         private readonly Action<PwDatabase> m_databaseChanged;
@@ -31,11 +32,12 @@ namespace KeePassBrowserBridge.Bridge
             Action<PairingSession> pairingSessionCreated,
             Action<PwDatabase> databaseChanged,
             Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null,
-            Func<bool> passkeysEnabled = null)
+            Func<bool> passkeysEnabled = null,
+            Action lockCallback = null)
             : this(pairingService, trustedClients, credentialQueryService, credentialMutationService,
                 new PasskeyService(), new PasskeyCredentialLookupService(), new PasskeyPendingSessionStore(),
                 databaseProvider, passkeysEnabled ?? new Func<bool>(() => BridgeSettings.PasskeysEnabled),
-                pairingSessionCreated, databaseChanged, passkeyApproval)
+                pairingSessionCreated, databaseChanged, passkeyApproval, lockCallback)
         {
         }
 
@@ -51,7 +53,8 @@ namespace KeePassBrowserBridge.Bridge
             Func<bool> passkeysEnabled,
             Action<PairingSession> pairingSessionCreated,
             Action<PwDatabase> databaseChanged,
-            Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null)
+            Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null,
+            Action lockCallback = null)
         {
             if (pairingService == null) throw new ArgumentNullException("pairingService");
             if (trustedClients == null) throw new ArgumentNullException("trustedClients");
@@ -73,6 +76,7 @@ namespace KeePassBrowserBridge.Bridge
             m_passkeyApproval = passkeyApproval ?? DefaultPasskeyApproval;
             m_pairingSessionCreated = pairingSessionCreated ?? delegate(PairingSession session) { };
             m_databaseChanged = databaseChanged ?? delegate(PwDatabase database) { };
+            m_lockCallback = lockCallback ?? delegate { };
         }
 
         public BridgeResponse Handle(BridgeRequest request)
@@ -109,6 +113,7 @@ namespace KeePassBrowserBridge.Bridge
                 if (request.Method == BridgeMethods.LoginsUpdate) return LoginsUpdate(request);
                 if (request.Method == BridgeMethods.LoginsFillAck) return LoginsFillAck(request);
                 if (BridgeMethodPolicy.IsPasskeyMethod(request.Method)) return Passkeys(request);
+                if (request.Method == BridgeMethods.DatabaseLock) return DatabaseLock(request);
             }
             catch (SerializationException)
             {
@@ -639,6 +644,20 @@ namespace KeePassBrowserBridge.Bridge
                 Success = true,
                 Payload = payload
             };
+        }
+
+        private BridgeResponse DatabaseLock(BridgeRequest request)
+        {
+            LockDatabasePayload payload = BridgeJsonSerializer.Deserialize<LockDatabasePayload>(request.Payload);
+            try
+            {
+                m_lockCallback();
+                return Success(request, "{}");
+            }
+            catch (System.Exception ex)
+            {
+                return Error(request, "lock_failed", "Failed to lock KeePass database: " + ex.Message);
+            }
         }
 
         private static BridgeResponse Error(BridgeRequest request, string errorCode, string error)

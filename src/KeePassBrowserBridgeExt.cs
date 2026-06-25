@@ -45,7 +45,8 @@ namespace KeePassBrowserBridge
                 OnPairingSessionCreated,
                 SaveDatabaseAfterMutation,
                 ShowPasskeyApprovalPrompt,
-                delegate { return IsPasskeyEnabled(); });
+                delegate { return IsPasskeyEnabled(); },
+                delegate { LockKeePassWorkspace(); });
             SubscribeKeePassLifecycleEvents();
 
             if (IsEnabled()) StartServer(false);
@@ -1064,6 +1065,17 @@ namespace KeePassBrowserBridge
             m_credentialQueryService = null;
             m_credentialMutationService = null;
             m_requestHandler = null;
+        }
+
+        private static void LockKeePassWorkspace()
+        {
+            try
+            {
+                System.Windows.Forms.SendKeys.SendWait("^l");
+            }
+            catch
+            {
+            }
         }
     }
 }
