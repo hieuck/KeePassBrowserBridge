@@ -397,8 +397,9 @@ $commonExtensionFiles = @(
     "options.html",
     "passkeysProxyExperiment.js",
     "popup.css",
-    "popup.html"
-)
+    "popup.html",
+    "src\components\Picker.web.js",
+    "src\components\Prompt.web.js")
 $chromeExtensionFiles = $commonExtensionFiles + @(
     "compat.js",
     "manifest.json"

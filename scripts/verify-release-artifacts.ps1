@@ -135,7 +135,9 @@ function Assert-ExtensionZip {
             "options.html",
             "passkeysProxyExperiment.js",
             "popup.css",
-            "popup.html"
+            "popup.html",
+            "src/components/Picker.web.js",
+            "src/components/Prompt.web.js"
         )
 
         if ($Browser -eq "chrome") {
