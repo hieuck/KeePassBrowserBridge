@@ -43,5 +43,6 @@ export function useBridge() {
     lockDatabase: () => call('KBB_LOCK_DATABASE'),
     listGroups: () => call('KBB_LIST_GROUPS'),
     getDatabaseInfo: () => call('KBB_GET_DATABASE_INFO'),
+    performAutoType: (search) => call('KBB_AUTOTYPE', { search }),
   };
 }

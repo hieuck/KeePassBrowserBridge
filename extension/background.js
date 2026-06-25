@@ -167,6 +167,8 @@ async function handleMessage(message) {
       return listGroups();
     case 'KBB_GET_DATABASE_INFO':
       return getDatabaseInfo();
+    case 'KBB_AUTOTYPE':
+      return performAutoType(message);
     default:
       throw new Error('Unknown message type.');
   }
@@ -443,6 +445,11 @@ async function listGroups() {
 
 async function getDatabaseInfo() {
   const response = await bridgeCall('database.info', {}, true);
+  return parsePayload(response);
+}
+
+async function performAutoType(message) {
+  const response = await bridgeCall('autotype.perform', { Search: message.search || '' }, true);
   return parsePayload(response);
 }
 

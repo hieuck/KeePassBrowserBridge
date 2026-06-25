@@ -17,6 +17,7 @@ namespace KeePassBrowserBridge.Bridge
         private readonly Func<PwDatabase> m_databaseProvider;
         private readonly Func<bool> m_passkeysEnabled;
         private readonly Action m_lockCallback;
+        private readonly Action<string> m_autotypeCallback;
         private readonly Func<PasskeyApprovalRequest, PasskeyApprovalResult> m_passkeyApproval;
         private readonly Action<PairingSession> m_pairingSessionCreated;
         private readonly Action<PwDatabase> m_databaseChanged;
@@ -33,11 +34,12 @@ namespace KeePassBrowserBridge.Bridge
             Action<PwDatabase> databaseChanged,
             Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null,
             Func<bool> passkeysEnabled = null,
-            Action lockCallback = null)
+            Action lockCallback = null,
+            Action<string> autotypeCallback = null)
             : this(pairingService, trustedClients, credentialQueryService, credentialMutationService,
                 new PasskeyService(), new PasskeyCredentialLookupService(), new PasskeyPendingSessionStore(),
                 databaseProvider, passkeysEnabled ?? new Func<bool>(() => BridgeSettings.PasskeysEnabled),
-                pairingSessionCreated, databaseChanged, passkeyApproval, lockCallback)
+                pairingSessionCreated, databaseChanged, passkeyApproval, lockCallback, autotypeCallback)
         {
         }
 
@@ -54,7 +56,8 @@ namespace KeePassBrowserBridge.Bridge
             Action<PairingSession> pairingSessionCreated,
             Action<PwDatabase> databaseChanged,
             Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null,
-            Action lockCallback = null)
+            Action lockCallback = null,
+            Action<string> autotypeCallback = null)
         {
             if (pairingService == null) throw new ArgumentNullException("pairingService");
             if (trustedClients == null) throw new ArgumentNullException("trustedClients");
@@ -77,6 +80,7 @@ namespace KeePassBrowserBridge.Bridge
             m_pairingSessionCreated = pairingSessionCreated ?? delegate(PairingSession session) { };
             m_databaseChanged = databaseChanged ?? delegate(PwDatabase database) { };
             m_lockCallback = lockCallback ?? delegate { };
+            m_autotypeCallback = autotypeCallback ?? delegate(string search) { };
         }
 
         public BridgeResponse Handle(BridgeRequest request)
@@ -116,6 +120,7 @@ namespace KeePassBrowserBridge.Bridge
                 if (request.Method == BridgeMethods.DatabaseLock) return DatabaseLock(request);
                 if (request.Method == BridgeMethods.DatabaseGroups) return DatabaseGroups(request);
                 if (request.Method == BridgeMethods.DatabaseInfo) return DatabaseInfo(request);
+                if (request.Method == BridgeMethods.AutoType) return AutoType(request);
             }
             catch (SerializationException)
             {
@@ -734,6 +739,20 @@ namespace KeePassBrowserBridge.Bridge
             catch (System.Exception ex)
             {
                 return Error(request, "db_info_failed", "Failed to get database info: " + ex.Message);
+            }
+        }
+
+        private BridgeResponse AutoType(BridgeRequest request)
+        {
+            try
+            {
+                AutoTypePayload payload = BridgeJsonSerializer.Deserialize<AutoTypePayload>(request.Payload);
+                m_autotypeCallback(payload.Search ?? string.Empty);
+                return Success(request, "{}");
+            }
+            catch (System.Exception ex)
+            {
+                return Error(request, "autotype_failed", "Failed to perform auto-type: " + ex.Message);
             }
         }
     }

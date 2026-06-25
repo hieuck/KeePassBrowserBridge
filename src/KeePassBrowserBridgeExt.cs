@@ -46,7 +46,8 @@ namespace KeePassBrowserBridge
                 SaveDatabaseAfterMutation,
                 ShowPasskeyApprovalPrompt,
                 delegate { return IsPasskeyEnabled(); },
-                delegate { LockKeePassWorkspace(); });
+                delegate { LockKeePassWorkspace(); },
+                delegate (string search) { PerformAutoType(search); });
             SubscribeKeePassLifecycleEvents();
 
             if (IsEnabled()) StartServer(false);
@@ -1072,6 +1073,23 @@ namespace KeePassBrowserBridge
             try
             {
                 System.Windows.Forms.SendKeys.SendWait("^l");
+            }
+            catch
+            {
+            }
+        }
+
+        private static void PerformAutoType(string search)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(search) && KeePass.Program.MainForm != null)
+                {
+                    var method = KeePass.Program.MainForm.GetType().GetMethod("StartGlobalAutoType",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (method != null)
+                        method.Invoke(KeePass.Program.MainForm, new object[] { search });
+                }
             }
             catch
             {
