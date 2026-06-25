@@ -118,6 +118,15 @@ async function save() {
     await setSettings(settings.value);
     originalSettings.value = { ...settings.value };
     if (prevPasskeys !== nextPasskeys) {
+      if (nextPasskeys && typeof chrome !== 'undefined' && chrome.permissions) {
+        try {
+          await chrome.permissions.request({
+            permissions: ['webAuthenticationProxy', 'webNavigation']
+          });
+        } catch (e) {
+          console.error('Passkey permission request failed:', e);
+        }
+      }
       bridge.setPasskeysEnabled(nextPasskeys).catch((e) => {
         console.error('Passkey toggle failed:', e);
       });
