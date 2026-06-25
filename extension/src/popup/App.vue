@@ -13,40 +13,39 @@
       @update:model-value="(v) => activeGroup = v"
     />
     <main class="vault-list" id="results" role="region" aria-label="Credentials" aria-live="polite" :aria-busy="loading ? 'true' : 'false'">
-      <template v-if="formMode === 'new'">
+      <PairDialog
+        v-if="showPairDialog"
+        :pairing-active="!!pairingSessionId"
+        :expires-at="pairingExpiresAt"
+        @pair-begin="startPairing"
+        @pair-complete="completePairing"
+        @close="showPairDialog = false"
+      />
+      <template v-if="formMode === 'new' && !showPairDialog">
         <NewLoginForm
           :groups="groupsData"
           @save="createLogin"
           @cancel="formMode = null"
         />
       </template>
-      <template v-else-if="formMode === 'edit' && editingEntry">
+      <template v-else-if="formMode === 'edit' && editingEntry && !showPairDialog">
         <EditForm
           :entry="editingEntry"
           @save="saveEdit"
           @cancel="formMode = null"
         />
       </template>
-      <template v-else-if="showPairDialog">
-        <PairDialog
-          :pairing-active="!!pairingSessionId"
-          :expires-at="pairingExpiresAt"
-          @pair-begin="startPairing"
-          @pair-complete="completePairing"
-          @close="showPairDialog = false"
-        />
-      </template>
-      <template v-else-if="loading">
+      <template v-else-if="loading && !showPairDialog">
         <SkeletonCard v-for="i in 3" :key="i" />
       </template>
-      <template v-else-if="visibleEntries.length === 0">
+      <template v-else-if="visibleEntries.length === 0 && !showPairDialog">
         <EmptyState
           :variant="emptyStateVariant"
           :query="searchQuery"
           @action="onEmptyAction"
         />
       </template>
-      <template v-else>
+      <template v-else-if="!showPairDialog">
         <CredentialCard
           v-for="(entry, idx) in visibleEntries"
           :key="entry.Uuid || entry.EntryId"

@@ -158,7 +158,7 @@ test.describe('Bug Regression Tests', () => {
     await expect(footerBar).toBeVisible();
     const box = await footerBar.boundingBox();
     expect(box).not.toBeNull();
-    if (box) expect(box.y + box.height).toBeGreaterThan(350);
+    if (box) expect(box.y + box.height).toBeGreaterThan(450);
   });
 
   test('BUG4: Settings icon is SettingOutlined (gear), not globe', async ({ page }) => {
