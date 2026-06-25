@@ -17,6 +17,7 @@
       <a-space direction="vertical" size="small" style="width: 100%">
         <div class="generator__label"><span>Length: {{ length }}</span><a-slider :min="8" :max="64" v-model:value="length" style="flex:1" /></div>
         <a-checkbox v-model:checked="useSymbols">Include symbols</a-checkbox>
+        <a-checkbox v-model:checked="excludeAmbiguous">Exclude ambiguous (1,l,I,0,O)</a-checkbox>
       </a-space>
     </div>
     <div class="generator__actions">
@@ -36,13 +37,21 @@ const emit = defineEmits(['close', 'select']);
 
 const length = ref(20);
 const useSymbols = ref(true);
+const excludeAmbiguous = ref(false);
 
 const charset = computed(() => {
   const lower = 'abcdefghijklmnopqrstuvwxyz';
   const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const digits = '0123456789';
   const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-  return lower + upper + digits + (useSymbols.value ? symbols : '');
+  const ambiguous = '1lI0O';
+  let result = lower + upper + digits + (useSymbols.value ? symbols : '');
+  if (excludeAmbiguous.value) {
+    for (const c of ambiguous) {
+      result = result.replaceAll(c, '');
+    }
+  }
+  return result;
 });
 
 function generate() {

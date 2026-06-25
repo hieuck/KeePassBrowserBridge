@@ -23,6 +23,19 @@
       <DownOutlined :style="{ transform: expanded ? 'rotate(180deg)' : 'none' }" />
     </button>
 
+    <div class="credential-card__quick-actions">
+      <a-tooltip title="Copy username">
+        <button type="button" class="credential-card__icon-btn" aria-label="Copy username" @click.stop="$emit('copy', 'username', entry.UserName)">
+          <CopyOutlined />
+        </button>
+      </a-tooltip>
+      <a-tooltip title="Copy password">
+        <button type="button" class="credential-card__icon-btn" aria-label="Copy password" @click.stop="$emit('copy', 'password', entry.Password)">
+          <KeyOutlined />
+        </button>
+      </a-tooltip>
+    </div>
+
     <div v-if="expanded" class="credential-card__detail" @click.stop>
       <DetailView
         :entry="entry"
@@ -41,7 +54,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { DownOutlined, EditOutlined } from '@ant-design/icons-vue';
+import { DownOutlined, EditOutlined, CopyOutlined, KeyOutlined } from '@ant-design/icons-vue';
 import DetailView from '../components/DetailView.vue';
 import { formatRelativeTime } from '../../shared/formatters.js';
 
@@ -95,4 +108,7 @@ function onCardClick(event) {
 .credential-card__icon-btn:hover { background: var(--color-surface); color: var(--color-accent); }
 .credential-card__custom-header { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-1); }
 .credential-card__actions { display: flex; gap: var(--space-2); }
+.credential-card__quick-actions { display: flex; gap: 2px; align-items: center; flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
+.credential-card__icon-btn { background: transparent; border: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-muted); border-radius: var(--radius-sm); transition: color var(--transition-fast), background var(--transition-fast); }
+.credential-card__icon-btn:hover { background: var(--color-bg); color: var(--color-accent); }
 </style>
