@@ -84,6 +84,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $keepassVersion = "${{ inputs.keepass_version }}"
+          if ([string]::IsNullOrWhiteSpace($keepassVersion)) { $keepassVersion = "2.61.1" }
           $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
           $zipPath = Join-Path $keepassDir "KeePass.zip"
           New-Item -ItemType Directory -Force -Path $keepassDir | Out-Null
