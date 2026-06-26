@@ -932,9 +932,7 @@ requireEvery('popup', [
   'return fields.filter((field) => field && !field.IsProtected'
 ], 'popup should hide protected custom field values from display, search, copy, and fill actions');
 requireEvery('options', [
-  'PORTABLE_SETTING_DEFAULTS',
   'PORTABLE_SETTING_KEYS',
-  'chrome.storage.local.get(PORTABLE_SETTING_DEFAULTS',
   'Object.prototype.hasOwnProperty.call(source, key)',
   'sanitizePortableSettings',
   'normalizeSiteOverrides',

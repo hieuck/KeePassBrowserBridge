@@ -1145,11 +1145,6 @@ function getExtensionOrigin() {
   return `chrome-extension://${chrome.runtime.id}`;
 }
 
-async function getEndpoint() {
-  const state = await storageGet(['endpoint']);
-  return state.endpoint || DEFAULT_ENDPOINT;
-}
-
 async function createAuthentication(request, sharedSecret) {
   const canonical = [
     request.ProtocolVersion,

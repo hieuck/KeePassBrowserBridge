@@ -21,45 +21,8 @@ async function selectPickerByName(picker, name) {
   }, name);
 }
 
-async function selectPickerByIndex(picker, index) {
-  return picker.evaluate((target, targetIndex) => {
-    const items = target.shadowRoot.querySelectorAll('[role="option"]');
-    if (items[targetIndex]) {
-      items[targetIndex].click();
-      return true;
-    }
-    return false;
-  }, index);
-}
-
 function pollPickerNames(picker) {
   return expect.poll(async () => getPickerNames(picker), { timeout: 5000 });
-}
-
-async function getPickerSearchValue(picker) {
-  return picker.evaluate((el) => {
-    const input = el.shadowRoot.querySelector('.picker-search-input');
-    return input ? input.value : '';
-  });
-}
-
-async function setPickerSearch(picker, value) {
-  return picker.evaluate((el, v) => {
-    const input = el.shadowRoot.querySelector('.picker-search-input');
-    if (!input) return false;
-    input.value = v;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    return true;
-  }, value);
-}
-
-async function loadWebComponents(page) {
-  await page.evaluate(async () => {
-    await Promise.all([
-      import('/extension/src/components/Picker.web.js'),
-      import('/extension/src/components/Prompt.web.js')
-    ]);
-  });
 }
 
 async function installContentScript(page) {

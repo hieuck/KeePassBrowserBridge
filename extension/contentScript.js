@@ -771,44 +771,6 @@ function installInlineFillButtons() {
     window.__keepassBrowserBridgeInlineTargets.add(otpInput);
   }
 }
-function createInlineButton(input) {
-  const btn = document.createElement('button');
-  btn.className = 'kbb-inline-button';
-  btn.setAttribute('aria-label', 'Open KeePass picker');
-  btn.setAttribute('type', 'button');
-  btn.textContent = 'K';
-  btn.style.cssText = `
-    position: absolute;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    border: none;
-    border-radius: 50%;
-    background: #2563eb;
-    color: white;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2147483646;
-    padding: 0;
-    line-height: 1;
-    transition: transform 120ms ease, background 120ms ease;
-  `;
-  btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-50%) scale(1.1)'; });
-  btn.addEventListener('mouseleave', () => { btn.style.transform = 'translateY(-50%) scale(1)'; });
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    showInlinePickerForInput(input);
-  });
-  return btn;
-}
-
 function attachInlineButton(input, role) {
   const button = document.createElement("button");
   button.type = "button";

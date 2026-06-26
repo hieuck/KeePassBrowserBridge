@@ -1,4 +1,3 @@
-import { registerIcons } from '../../icons.js';
 import { escapeHtml } from '../../shared/escape-html.js';
 
 class KbbButton extends HTMLElement {

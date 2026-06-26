@@ -116,11 +116,6 @@ export const PORTABLE_SETTING_KEYS = [
   'siteOverrides'
 ];
 
-const PORTABLE_SETTING_DEFAULTS = {
-  endpoint: DEFAULT_ENDPOINT,
-  ...DEFAULT_SETTINGS
-};
-
 export function sanitizePortableSettings(settings, options = {}) {
   const source = settings && typeof settings === 'object' ? settings : {};
   const sanitized = {};
