@@ -194,7 +194,11 @@ function startNew() {
 
 async function saveEdit(updates) {
   try {
-    const result = await bridge.updateLogin({ ...editingEntry.value, ...updates });
+    const payload = { ...editingEntry.value, ...updates };
+    if (!payload.EntryId && editingEntry.value.Uuid) {
+      payload.EntryId = editingEntry.value.Uuid;
+    }
+    const result = await bridge.updateLogin(payload);
     if (result && result.Success === false) {
       showToast(result.Error || 'Update failed', { variant: 'error' });
       return;
