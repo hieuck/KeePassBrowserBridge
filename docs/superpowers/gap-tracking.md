@@ -46,7 +46,7 @@
 | No WebKit E2E in CI | 🟡 P2 | QA | Open | playwright.config.js has webkit but CI only runs chromium + firefox |
 | Coverage thresholds not enforced in CI | 🟡 P2 | DevOps | Open | vitest.config.js has thresholds but CI doesn't enforce |
 | Favicon fetch from google.com/s2/favicons | 🟡 P2 | Security | Open | Privacy concern; add configurable favicon source or disable |
-| No CSP (Content Security Policy) in extension manifest | 🟡 P2 | Security | Open | Should restrict script/style sources |
-| Options page: tab changes don't propagate to settings state | 🟡 P2 | Frontend | Open | Individual tab @save emits don't update parent settings.value; batch save likely broken for individual changes |
+| No CSP (Content Security Policy) in extension manifest | 🟡 P2 | Security | **Resolved** | Added `script-src 'self'; object-src 'none'; frame-ancestors 'none'` to both Chrome + Firefox manifests |
+| Options page: tab changes don't propagate to settings state | 🟡 P2 | Frontend | **Resolved** | Added `onSettingChange()` handler that merges tab emits into `settings.value`. "Unsaved changes" footer now works correctly. |
 | No fuzzing test for bridge HTTP endpoint | 🟢 P3 | Security | Open | Protocol parsing robustness |
 | MoreMenu.vue referenced in planning docs | 🟢 P3 | Docs | Open | `docs/superpowers/plans/2026-06-22-v2-ui-ux-complete-redesign.md` mentions MoreMenu as unchecked step 8 |
