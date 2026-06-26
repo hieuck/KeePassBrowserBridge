@@ -364,7 +364,9 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 
-const source = fs.readFileSync(new URL('../../extension/background.js', import.meta.url), 'utf8');
+const rawSource = fs.readFileSync(new URL('../../extension/background.js', import.meta.url), 'utf8');
+// Strip ES module imports — vm.runInContext doesn't support import statements
+const source = rawSource.replace(/^import .+ from .+;$/gm, '');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'background.js' });
 

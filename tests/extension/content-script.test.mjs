@@ -345,9 +345,11 @@ sandbox.window.__keepassBrowserBridgeContentScriptLoaded = false;
 sandbox.globalThis = sandbox;
 activeDocument = sandbox.document;
 
-const source = fs.readFileSync(new URL('../../extension/contentScript.js', import.meta.url), 'utf8');
-assert.equal(source.includes('more hidden'), false, 'inline picker should not hide additional matching entries');
-assert.equal(source.includes('entries.slice(0, 8)'), false, 'inline picker should render every matching entry');
+const rawSource = fs.readFileSync(new URL('../../extension/contentScript.js', import.meta.url), 'utf8');
+assert.equal(rawSource.includes('more hidden'), false, 'inline picker should not hide additional matching entries');
+assert.equal(rawSource.includes('entries.slice(0, 8)'), false, 'inline picker should render every matching entry');
+// Strip ES module imports — vm.runInContext doesn't support import statements
+const source = rawSource.replace(/^import .+ from .+;$/gm, '');
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
 
