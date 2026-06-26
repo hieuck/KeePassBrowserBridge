@@ -29,7 +29,6 @@ describe('Firefox manifest parity with Chrome manifest', () => {
     assert.ok(firefoxCompatIdx >= 0, 'compat.js not found in Firefox manifest');
 
     // compat.js must load before contentScript.js which depends on __kbbCompat
-    const chromeContentScriptIdx = chromeManifest.indexOf('contentScript.js', chromeCompatIdx);
     const firefoxContentScriptIdx = firefoxManifest.indexOf('contentScript.js', firefoxCompatIdx);
     assert.ok(firefoxCompatIdx < firefoxContentScriptIdx,
       'compat.js must load BEFORE contentScript.js in Firefox manifest');

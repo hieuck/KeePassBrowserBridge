@@ -74,8 +74,7 @@ describe('MultiDatabase', () => {
 
     test('should get all databases sorted by recent', () => {
       const db1 = window.__kbbMultiDatabase.registerDatabase({ name: 'DB1' });
-      const db2 = window.__kbbMultiDatabase.registerDatabase({ name: 'DB2' });
-
+      window.__kbbMultiDatabase.registerDatabase({ name: 'DB2' });
       window.__kbbMultiDatabase.switchDatabase(db1.id);
 
       const all = window.__kbbMultiDatabase.getAllDatabases();

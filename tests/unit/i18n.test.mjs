@@ -10,43 +10,6 @@ const __filename = (() => {
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..');
 
-const REQUIRED_KEYS = [
-  'appName',
-  'appDescription',
-  'popupTitle',
-  'optionsTitle',
-  'newLogin',
-  'editLogin',
-  'saveChanges',
-  'cancel',
-  'fill',
-  'copyUsername',
-  'copyPassword',
-  'searchPlaceholder',
-  'noLoginsFound',
-  'settings',
-  'about',
-  'themeLight',
-  'themeDark',
-  'themeSystem',
-  'locked',
-  'unlock',
-  'pairing',
-  'startPairing',
-  'pairingCode',
-  'bridgeEndpoint',
-  'general',
-  'autofill',
-  'clients',
-  'passkeys',
-  'sites',
-  'debugMode',
-  'version',
-  'errorGeneric',
-  'success',
-  'failed',
-];
-
 const enPath = path.join(projectRoot, 'extension', '_locales', 'en', 'messages.json');
 const viPath = path.join(projectRoot, 'extension', '_locales', 'vi', 'messages.json');
 

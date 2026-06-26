@@ -49,7 +49,6 @@ const secondTenantInput = new MockInput({
   placeholder: 'Tenant'
 });
 const inputs = [tenantInput, firstTenantInput, secondTenantInput];
-const firstRoot = new MockRoot([firstTenantInput]);
 const secondRoot = new MockRoot([secondTenantInput]);
 
 const sandbox = {

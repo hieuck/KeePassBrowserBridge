@@ -438,19 +438,12 @@ class KbbUpdatePrompt extends HTMLElement {
     const newUsername = this.getAttribute('username') || '';
     const password = this.getAttribute('password') || '';
     const url = this.getAttribute('url') || '';
-    const title = this.getAttribute('title') || name || '';
     let folders = [];
     try {
       const raw = this.getAttribute('folders');
       if (raw) folders = JSON.parse(raw);
     } catch {}
     if (!Array.isArray(folders)) folders = [];
-
-    const folderOptions = folders.map(f => {
-      const val = typeof f === 'string' ? f : (f.value || f.name || '');
-      const label = typeof f === 'string' ? f : (f.label || f.name || val);
-      return `<option value="${escapeHtml(val)}">${escapeHtml(label)}</option>`;
-    }).join('');
 
     this.shadowRoot.innerHTML = `
       <style>${PROMPT_STYLES}</style>

@@ -475,7 +475,7 @@ assert.equal(bridgeMethodPolicy.includes('RequiredPermission'), true, 'bridge me
 assert.equal(bridgeMethodPolicy.includes('TrustedClientPermissions.PasskeyRead'), true, 'bridge method policy should require passkeyRead for passkey read methods');
 assert.equal(bridgeMethodPolicy.includes('TrustedClientPermissions.PasskeyWrite'), true, 'bridge method policy should require passkeyWrite for passkey write methods');
 assert.equal(bridgeRequestHandler.includes('feature_disabled'), true, 'passkey bridge methods should remain feature-disabled in this build');
-assert.equal(backgroundSource.includes('clientPermissionAllowList'), true, 'extension background should gate trusted-client permission updates through a central allowlist');
+assert.equal(backgroundUtilsSource.includes('clientPermissionAllowList'), true, 'extension background utils should gate trusted-client permission updates through a central allowlist');
 assert.equal(backgroundUtilsSource.includes("allowed.push('passkeyRead', 'passkeyWrite')"), true, 'extension background utils should gate passkey permissions through a feature-discovered allowlist');
 assert.equal(backgroundSource.includes('about.pluginPasskeysEnabled'), true, 'extension background passkey permission updates should depend on bridge feature discovery');
 // v1 popup.js/options.js removed — passkey tests now in options PasskeyTab E2E tests

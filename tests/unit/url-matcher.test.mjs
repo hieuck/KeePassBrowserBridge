@@ -118,7 +118,6 @@ function matchUrl(entryUrl, pageUrl) {
   if (rawEntry.length < 2 || rawPage.length < 2) return false;
   if (rawEntry[0].toLowerCase() !== rawPage[0].toLowerCase()) return false;
 
-  const protocol = rawEntry[0] + '://';
   const entryRest = rawEntry.slice(1).join('://');
   const pageRest = rawPage.slice(1).join('://');
 

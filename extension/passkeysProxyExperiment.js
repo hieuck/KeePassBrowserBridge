@@ -1,4 +1,3 @@
-/* global chrome */
 (function (globalScope) {
   'use strict';
 
@@ -832,10 +831,6 @@
     return normalizedHints;
   }
 
-  function normalizeCredentialDescriptorIds(credentials) {
-    return normalizeCredentialDescriptorIdsWithError(credentials, '');
-  }
-
   function normalizeExcludeCredentialIds(credentials) {
     return normalizeCredentialDescriptorIdsWithError(credentials, invalidExcludeCredentialMessage);
   }
@@ -1119,7 +1114,6 @@
     const attestationObject = completeBase64UrlAliasField(response.attestationObject, response.AttestationObject);
     const authenticatorData = completeBase64UrlAliasField(response.authenticatorData, response.AuthenticatorData);
     const publicKey = completeBase64UrlField(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
-    const transports = completeSerializedTransportMetadata(response.transports, response.Transports);
     assertSerializedCredentialType(parsed);
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
@@ -1221,23 +1215,6 @@
     return credentialId;
   }
 
-  function assertSerializedTransportMetadata(transports) {
-    if (transports === undefined || transports === null) return;
-    if (!Array.isArray(transports)) {
-      throw notAllowedError(invalidCompleteResponseTransportMessage);
-    }
-
-    const normalized = normalizeTransportArray(transports) || [];
-    if (normalized.length !== transports.length) {
-      throw notAllowedError(invalidCompleteResponseTransportMessage);
-    }
-    for (let i = 0; i < transports.length; i++) {
-      if (typeof transports[i] !== 'string' || transports[i] !== normalized[i]) {
-        throw notAllowedError(invalidCompleteResponseTransportMessage);
-      }
-    }
-  }
-
   function normalizeCompleteTransportMetadata(...values) {
     let selected;
     for (const value of values) {
@@ -1253,20 +1230,6 @@
       }
     }
     return selected && selected.length ? selected : undefined;
-  }
-
-  function completeSerializedTransportMetadata(...values) {
-    let selected;
-    for (const value of values) {
-      if (value === undefined || value === null) continue;
-      assertSerializedTransportMetadata(value);
-      if (selected === undefined) {
-        selected = value;
-      } else if (JSON.stringify(selected) !== JSON.stringify(value)) {
-        throw notAllowedError(invalidCompleteResponseTransportMessage);
-      }
-    }
-    return selected;
   }
 
   function assertCompleteAuthenticatorAttachment(authenticatorAttachment) {
@@ -1341,7 +1304,7 @@
     };
   }
 
-  function normalizeIsUvpaaResult(result) {
+  function normalizeIsUvpaaResult(_result) {
     return false;
   }
 

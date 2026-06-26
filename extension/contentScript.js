@@ -1212,7 +1212,7 @@ function closeInlinePicker() {
   }
   window.__keepassBrowserBridgeActivePicker = null;
 }
-function anchorPositionNearForm(credential) {
+function anchorPositionNearForm(_credential) {
   // Try to find the form that was just submitted
   const passwordInput = findSubmittedPasswordInput(document);
   const usernameInput = findUsernameInput(passwordInput);
@@ -1224,7 +1224,6 @@ function anchorPositionNearForm(credential) {
   const rect = form.getBoundingClientRect();
   const viewWidth = window.innerWidth;
   const gap = 16;
-  const promptWidth = 360;
   const right = Math.max(gap, viewWidth - rect.right + gap);
   return {
     "data-position": "anchored",
@@ -1449,81 +1448,6 @@ function positionInlinePicker(anchor, picker) {
   picker.style.top = `${top}px`;
   picker.style.maxHeight = `${maxHeight}px`;
 }
-function showInlinePickerForInput(input) {
-  const pageUrl = credentialPageUrl();
-  chrome.runtime.sendMessage({
-    type: "KBB_QUERY_FOR_URL",
-    url: pageUrl,
-  }).then((result) => {
-    if (!result || !result.ok) throw new Error(result && result.error ? result.error : "KeePass query failed.");
-    const entries = result.response && Array.isArray(result.response.entries) ? result.response.entries : [];
-    if (entries.length === 0) {
-      showInlineEmptyPicker(input);
-      return;
-    }
-    showInlinePickerForEntries(input, entries);
-  }).catch((error) => {
-    showInlineErrorPicker(input, error && error.message ? error.message : String(error));
-  });
-}
-
-function showInlinePickerForEntries(targetInput, entries) {
-  entries = sortCredentialEntries(entries || []);
-  const items = entries.map((entry) => ({
-    name: entry.Title || "(Untitled)",
-    username: entry.UserName || "",
-    url: entry.Url || "",
-    group: entry.Group || "",
-    password: entry.Password || "",
-    oneTimePassword: entry.OneTimePassword || "",
-    customFields: entry.CustomFields || [],
-    entryId: entry.EntryId || "",
-    selected: Boolean(entry.selected),
-    _entry: entry,
-  }));
-  const mountPicker = () => {
-    if (!customElements.get("kbb-picker")) return false;
-    const picker = document.createElement("kbb-picker");
-    picker.setAttribute("placeholder", "Search KeePass logins…");
-    picker.setAttribute("aria-label", `${items.length} KeePass logins`);
-    picker.addEventListener("kbb-fill", (event) => {
-      const detail = event.detail || {};
-      const cred = detail.credential || {};
-      const entry = cred._entry;
-      if (!entry) return;
-      event.preventDefault();
-      event.stopPropagation();
-      rememberMultiStepCredentialIfNeeded(fillCredentialForButton({ __kbbTargetInput: targetInput, dataset: { kbbFillRole: detail.fieldRole || "form" } }, entry), entry);
-      acknowledgeFilledEntry(entry);
-      closeInlinePicker();
-    });
-    picker.addEventListener("kbb-copy", (event) => {
-      const detail = event.detail || {};
-      const cred = detail.credential || {};
-      const field = detail.field || "";
-      const value = field === "username" ? cred.username : field === "password" ? cred.password : "";
-      if (value) {
-        navigator.clipboard.writeText(value).catch(() => {});
-      }
-      closeInlinePicker();
-    });
-    picker.addEventListener("kbb-close", () => { closeInlinePicker(); });
-    document.documentElement.appendChild(picker);
-    window.__keepassBrowserBridgeActivePicker = picker;
-    picker.credentials = items;
-    positionInlinePicker(targetInput, picker);
-    requestAnimationFrame(() => positionInlinePicker(targetInput, picker));
-    const searchInput = picker.shadowRoot && picker.shadowRoot.querySelector ? picker.shadowRoot.querySelector(".picker-search-input") : null;
-    if (searchInput && searchInput.focus) { searchInput.focus(); } else if (picker.focus) { picker.focus(); }
-    return true;
-  };
-  if (mountPicker()) return;
-  if (customElements.whenDefined) {
-    customElements.whenDefined("kbb-picker").then(() => { if (!window.__keepassBrowserBridgeActivePicker) mountPicker(); }).catch(() => {});
-  }
-  ensureInlinePickerComponent().then(() => { if (!window.__keepassBrowserBridgeActivePicker) mountPicker(); }).catch(() => {});
-}
-
 function setInlineButtonState(button, state) {
   button.classList.remove("kbb-inline-btn--success", "kbb-inline-btn--error");
   if (state === "ok") {

@@ -6,7 +6,7 @@ try {
   // passkeys proxy experiment is only available when included in the extension package
 }
 
-import { normalizeStringArray, normalizeFeatureMap, normalizeFeatureDetails, normalizeReleaseVersion, compareVersions, hasPartialPairingCredentials, booleanSetting, numberSetting, isActivePairingTimestamp, normalizeClientPermissions, clientPermissionAllowList, isTerminalPairingError } from './shared/background-utils.js';
+import { normalizeStringArray, normalizeFeatureMap, normalizeFeatureDetails, normalizeReleaseVersion, compareVersions, hasPartialPairingCredentials, booleanSetting, numberSetting, isActivePairingTimestamp, normalizeClientPermissions, isTerminalPairingError } from './shared/background-utils.js';
 
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;

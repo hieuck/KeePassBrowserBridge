@@ -258,7 +258,6 @@ test('update prompt shows diff from old to new username', async ({ page }) => {
     p.setAttribute('username', 'new_user');
     document.body.appendChild(p);
     const shadow = p.shadowRoot;
-    const fields = shadow.querySelectorAll('.prompt-field');
     const labels = shadow.querySelectorAll('.prompt-field__label');
     const fromLabel = Array.from(labels).find(l => l.textContent === 'From');
     const toLabel = Array.from(labels).find(l => l.textContent === 'To');
@@ -271,7 +270,7 @@ test('update prompt shows diff from old to new username', async ({ page }) => {
   expect(result.toLabel).toBe('To');
 });
 
-test('respects prefers-color-scheme: dark', async ({ page, context }) => {
+test('respects prefers-color-scheme: dark', async ({ page, context: _context }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     const bgColor = await page.evaluate(() => {
       const p = document.createElement('kbb-save-prompt');

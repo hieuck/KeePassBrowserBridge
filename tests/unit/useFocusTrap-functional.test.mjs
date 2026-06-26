@@ -1,5 +1,5 @@
 import { describe, it, assert, beforeEach, afterEach } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import { createApp, defineComponent, h } from 'vue';
 import { useFocusTrap } from '../../extension/src/composables/useFocusTrap.js';
 
 function mountTrap() {

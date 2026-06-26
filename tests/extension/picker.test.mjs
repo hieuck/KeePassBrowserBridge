@@ -111,7 +111,7 @@ test.describe('kbb-picker Web Component', () => {
     expect(result.hasListbox).toBe(true);
   });
 
-  test('respects prefers-color-scheme: dark', async ({ page, context }) => {
+  test('respects prefers-color-scheme: dark', async ({ page, context: _context }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     const bgColor = await page.evaluate(() => {
       const picker = document.createElement('kbb-picker');
