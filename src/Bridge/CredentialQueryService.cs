@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using KeePassLib;
 using KeePassLib.Security;
 
@@ -18,6 +19,11 @@ namespace KeePassBrowserBridge.Bridge
 
         public CredentialQueryResult Query(PwDatabase database, string pageUrl, CredentialQueryOptions options)
         {
+            return Query(database, pageUrl, options, null);
+        }
+
+        public CredentialQueryResult Query(PwDatabase database, string pageUrl, CredentialQueryOptions options, string[] relatedUrls)
+        {
             if (database == null || database.RootGroup == null)
                 return CredentialQueryResult.Fail("database_not_open", "KeePass database is not open.");
 
@@ -27,6 +33,27 @@ namespace KeePassBrowserBridge.Bridge
 
             List<CredentialEntry> matches = new List<CredentialEntry>();
             CollectMatches(database.RootGroup, pageUrl, options ?? new CredentialQueryOptions(), matches, string.Empty);
+
+            if (relatedUrls != null)
+            {
+                HashSet<string> matchedIds = new HashSet<string>(matches.Select(m => m.EntryId));
+                foreach (string relatedUrl in relatedUrls)
+                {
+                    if (string.IsNullOrWhiteSpace(relatedUrl)) continue;
+                    if (!UrlMatcher.TryGetHost(relatedUrl, out _)) continue;
+
+                    List<CredentialEntry> relatedMatches = new List<CredentialEntry>();
+                    CollectMatches(database.RootGroup, relatedUrl, options ?? new CredentialQueryOptions(), relatedMatches, string.Empty);
+
+                    foreach (var entry in relatedMatches)
+                    {
+                        if (matchedIds.Add(entry.EntryId))
+                        {
+                            matches.Add(entry);
+                        }
+                    }
+                }
+            }
 
             return CredentialQueryResult.Ok(matches.ToArray());
         }

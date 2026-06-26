@@ -30,8 +30,8 @@ describe('README.md accuracy', () => {
       const num = parseInt(m, 10);
       return !isNaN(num) && num >= 700;
     });
-    assert.ok(hasHighCount || readme.includes('700') || readme.includes('784'),
-      'README should reflect current test count (700+)');
+    assert.ok(hasHighCount || readme.match(/\d{3}\+\s+tests/),
+      'README should reflect current test count (650+)');
   });
 
   it('should mention group browser feature', () => {

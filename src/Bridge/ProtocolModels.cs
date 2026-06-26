@@ -165,6 +165,7 @@ namespace KeePassBrowserBridge.Bridge
         public string Url { get; set; }
         public bool? StrictUrlMatching { get; set; }
         public bool? RegexUrlMatching { get; set; }
+        public string[] RelatedUrls { get; set; }
     }
 
     public sealed class CreateLoginPayload

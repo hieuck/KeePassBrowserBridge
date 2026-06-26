@@ -88,3 +88,40 @@ export function isTerminalPairingError(error) {
   const message = error && error.message ? error.message : String(error || '');
   return /expired|not found|too many invalid attempts/i.test(message);
 }
+
+const TLD_PAIRS = {
+  '.com': ['.co.uk', '.com.au', '.ca', '.de', '.fr', '.jp', '.eu', '.co.jp', '.org', '.net', '.io', '.co', '.app'],
+  '.co.uk': ['.com', '.co.uk'],
+  '.com.au': ['.com', '.com.au'],
+  '.de': ['.com', '.de', '.eu'],
+  '.fr': ['.com', '.fr', '.eu'],
+  '.co.jp': ['.com', '.co.jp'],
+};
+
+export function getRelatedOrigins(url) {
+  try {
+    const u = new URL(url);
+    const hostname = u.hostname.toLowerCase();
+
+    let baseDomain = hostname;
+    let matchedTld = '';
+    for (const [tld] of Object.entries(TLD_PAIRS)) {
+      if (hostname.endsWith(tld)) {
+        matchedTld = tld;
+        baseDomain = hostname.slice(0, -tld.length);
+        break;
+      }
+    }
+    if (!matchedTld) return [];
+
+    const alternatives = TLD_PAIRS[matchedTld];
+    return alternatives
+      .filter(alt => alt !== matchedTld)
+      .map(alt => {
+        const port = u.port ? ':' + u.port : '';
+        return `${u.protocol}//${baseDomain}${alt}${port}${u.pathname}${u.search}`;
+      });
+  } catch {
+    return [];
+  }
+}

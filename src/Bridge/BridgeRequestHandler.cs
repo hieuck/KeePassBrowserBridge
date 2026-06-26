@@ -281,7 +281,7 @@ namespace KeePassBrowserBridge.Bridge
             {
                 StrictUrlMatching = payload == null || payload.StrictUrlMatching.GetValueOrDefault(true),
                 RegexUrlMatching = payload != null && payload.RegexUrlMatching.GetValueOrDefault(false)
-            });
+            }, payload?.RelatedUrls);
             return Success(request, BridgeJsonSerializer.Serialize(result));
         }
 

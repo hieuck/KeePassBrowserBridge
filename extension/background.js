@@ -6,7 +6,7 @@ try {
   // passkeys proxy is only available when included in the extension package
 }
 
-import { normalizeStringArray, normalizeFeatureMap, normalizeFeatureDetails, normalizeReleaseVersion, compareVersions, hasPartialPairingCredentials, booleanSetting, numberSetting, isActivePairingTimestamp, normalizeClientPermissions, isTerminalPairingError } from './shared/background-utils.js';
+import { normalizeStringArray, normalizeFeatureMap, normalizeFeatureDetails, normalizeReleaseVersion, compareVersions, hasPartialPairingCredentials, booleanSetting, numberSetting, isActivePairingTimestamp, normalizeClientPermissions, isTerminalPairingError, getRelatedOrigins } from './shared/background-utils.js';
 
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;
@@ -29,6 +29,7 @@ const DEFAULT_AUTO_SUBMIT_ENABLED = false;
 const DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES = 0;
 const DEFAULT_STRICT_URL_MATCHING = false;
 const DEFAULT_REGEX_URL_MATCHING = false;
+const DEFAULT_RELATED_ORIGIN_MATCHING = true;
 const MAX_AUTO_LOCK_TIMEOUT_MINUTES = 1440;
 const autoFillTimers = new Map();
 const clipboardTimers = new Map();
@@ -993,12 +994,20 @@ async function getAutoSubmitForUrl(url, fallback) {
 }
 
 async function buildLoginsQueryPayload(url) {
-  const state = await storageGet(['strictUrlMatching', 'regexUrlMatching']);
-  return {
+  const state = await storageGet(['strictUrlMatching', 'regexUrlMatching', 'relatedOriginMatching']);
+  const relatedOriginMatching = booleanSetting(state.relatedOriginMatching, DEFAULT_RELATED_ORIGIN_MATCHING);
+  const payload = {
     Url: url,
     StrictUrlMatching: booleanSetting(state.strictUrlMatching, DEFAULT_STRICT_URL_MATCHING),
     RegexUrlMatching: booleanSetting(state.regexUrlMatching, DEFAULT_REGEX_URL_MATCHING)
   };
+  if (relatedOriginMatching) {
+    const related = getRelatedOrigins(url);
+    if (related.length > 0) {
+      payload.RelatedUrls = related;
+    }
+  }
+  return payload;
 }
 
 function getEffectiveAutoSubmit(fallback, siteOverride) {

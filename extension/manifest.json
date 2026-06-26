@@ -98,6 +98,9 @@
     "http://*/*",
     "https://*/*"
   ],
+  "storage": {
+    "managed_schema": "managed_storage.json"
+  },
   "web_accessible_resources": [{
     "resources": [
       "src/components/Picker.web.js",

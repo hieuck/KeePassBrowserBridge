@@ -1,0 +1,42 @@
+{
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "title": "Bridge endpoint URL",
+      "description": "KeePass bridge endpoint (default: http://127.0.0.1:19455/bridge)",
+      "type": "string"
+    },
+    "autoFillEnabled": {
+      "title": "Auto-fill enabled",
+      "description": "Globally enable auto-fill",
+      "type": "boolean"
+    },
+    "autoSubmitEnabled": {
+      "title": "Auto-submit enabled",
+      "description": "Automatically submit forms after fill",
+      "type": "boolean"
+    },
+    "strictUrlMatching": {
+      "title": "Strict URL matching",
+      "description": "Only match exact URLs (no parent domain fallback)",
+      "type": "boolean"
+    },
+    "notificationsEnabled": {
+      "title": "Notifications enabled",
+      "description": "Show desktop notifications for fill/save events",
+      "type": "boolean"
+    },
+    "clipboardClearDelay": {
+      "title": "Clipboard clear delay",
+      "description": "Seconds before clearing clipboard (0-300)",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 300
+    },
+    "passkeysEnabled": {
+      "title": "Passkeys enabled",
+      "description": "Enable WebAuthn passkey support",
+      "type": "boolean"
+    }
+  }
+}

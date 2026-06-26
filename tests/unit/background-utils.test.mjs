@@ -245,6 +245,51 @@ describe('background-utils - edge cases', () => {
   });
 });
 
+describe('background-utils - getRelatedOrigins', () => {
+  it('should return related origins for .com domain', async () => {
+    const { getRelatedOrigins } = await importModule();
+    const results = getRelatedOrigins('https://example.com/login');
+    assert.ok(results.length > 0);
+    assert.ok(results.some(r => r.startsWith('https://example.co.uk')));
+    assert.ok(results.some(r => r.startsWith('https://example.ca')));
+  });
+
+  it('should preserve protocol, path and query', async () => {
+    const { getRelatedOrigins } = await importModule();
+    const results = getRelatedOrigins('http://example.com/path?q=1');
+    assert.ok(results.every(r => r.startsWith('http://')));
+    assert.ok(results.every(r => r.endsWith('/path?q=1')));
+  });
+
+  it('should return empty array for unknown TLD', async () => {
+    const { getRelatedOrigins } = await importModule();
+    assert.deepEqual(getRelatedOrigins('https://example.xyz'), []);
+  });
+
+  it('should return empty array for invalid URL', async () => {
+    const { getRelatedOrigins } = await importModule();
+    assert.deepEqual(getRelatedOrigins('not-a-url'), []);
+  });
+
+  it('should map .co.uk to .com', async () => {
+    const { getRelatedOrigins } = await importModule();
+    const results = getRelatedOrigins('https://example.co.uk/page');
+    assert.ok(results.some(r => r.startsWith('https://example.com')));
+  });
+
+  it('should preserve port in related origins', async () => {
+    const { getRelatedOrigins } = await importModule();
+    const results = getRelatedOrigins('https://example.com:8080/app');
+    assert.ok(results.every(r => r.includes(':8080/')));
+  });
+
+  it('should handle subdomains correctly', async () => {
+    const { getRelatedOrigins } = await importModule();
+    const results = getRelatedOrigins('https://sub.example.com/login');
+    assert.ok(results.every(r => r.startsWith('https://sub.example')));
+  });
+});
+
 describe('background-utils - isTerminalPairingError', () => {
   it('should return true for expired error', async () => {
     const { isTerminalPairingError } = await importModule();
