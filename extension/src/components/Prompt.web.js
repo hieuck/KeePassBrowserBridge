@@ -1,4 +1,5 @@
 import { ICONS } from '../../icons.js';
+import { escapeHtml } from '../../shared/escape-html.js';
 
 const PROMPT_STYLES = `
 :host {
@@ -268,14 +269,6 @@ const PROMPT_STYLES = `
   .prompt-editable-label { color: var(--color-text-muted); }
 }
 `;
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 class KbbSavePrompt extends HTMLElement {
   static get observedAttributes() {

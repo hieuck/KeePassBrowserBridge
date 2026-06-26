@@ -86,22 +86,12 @@ describe('BaseButton.web.js - render', () => {
     assert.ok(source.includes('aria-disabled'), 'Missing aria-disabled attribute');
   });
 
-  it('should escape label HTML', () => {
+  it('should escape label HTML (via shared escapeHtml import)', () => {
     assert.ok(source.includes('escapeHtml'), 'Missing escapeHtml call on label');
   });
-});
 
-describe('BaseButton.web.js - escapeHtml', () => {
-  it('should handle empty/null input', () => {
-    assert.ok(source.includes('String(str || \'\')'), 'Missing empty/string coercion');
-  });
-
-  it('should escape HTML special characters', () => {
-    assert.ok(source.includes('&amp;'), 'Missing & entity');
-    assert.ok(source.includes('&lt;'), 'Missing < entity');
-    assert.ok(source.includes('&gt;'), 'Missing > entity');
-    assert.ok(source.includes('&quot;'), 'Missing " entity');
-    assert.ok(source.includes('&#39;'), "Missing ' entity");
+  it('should import escapeHtml from shared module', () => {
+    assert.ok(source.includes("from '../../shared/escape-html.js'"), 'Missing escape-html import');
   });
 });
 

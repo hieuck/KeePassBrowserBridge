@@ -1,4 +1,5 @@
 import { registerIcons } from '../../icons.js';
+import { escapeHtml } from '../../shared/escape-html.js';
 
 class KbbButton extends HTMLElement {
   static get observedAttributes() {
@@ -38,10 +39,6 @@ class KbbButton extends HTMLElement {
 
     this.innerHTML = `<button type="${type}" class="kbb-btn kbb-btn--${variant} kbb-btn--${size}${block ? ' kbb-btn--block' : ''}${loading ? ' kbb-btn--loading' : ''}" ${disabled ? 'disabled' : ''} aria-busy="${loading}" aria-disabled="${disabled}"><span class="kbb-btn__label">${escapeHtml(label)}</span></button>`;
   }
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 if (typeof customElements !== 'undefined' && !customElements.get('kbb-button')) {

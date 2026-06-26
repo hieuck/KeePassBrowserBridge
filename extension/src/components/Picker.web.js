@@ -1,4 +1,5 @@
 import { ICONS } from '../../icons.js';
+import { escapeHtml } from '../../shared/escape-html.js';
 
 const PICKER_STYLES = `
 :host {
@@ -345,7 +346,7 @@ class KbbPicker extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${PICKER_STYLES}</style>
       <div class="picker-header">
-        <span class="picker-header__title">${filtered.length} login${filtered.length !== 1 ? 's' : ''}${headerDomain ? ` for ${this._escapeHtml(headerDomain)}` : ''}</span>
+        <span class="picker-header__title">${filtered.length} login${filtered.length !== 1 ? 's' : ''}${headerDomain ? ` for ${escapeHtml(headerDomain)}` : ''}</span>
         <button type="button" class="picker-header__close" aria-label="Close picker">
           <span aria-hidden="true">${ICONS.close || '✕'}</span>
         </button>
@@ -356,9 +357,9 @@ class KbbPicker extends HTMLElement {
           <input
             type="text"
             class="picker-search-input"
-            placeholder="${this._escapeHtml(placeholder)}"
+            placeholder="${escapeHtml(placeholder)}"
             aria-label="Search credentials"
-            value="${this._escapeHtml(this._search)}"
+            value="${escapeHtml(this._search)}"
           />
         </div>
       ` : ''}
@@ -450,8 +451,8 @@ class KbbPicker extends HTMLElement {
       >
         ${avatar}
         <div class="picker-info">
-          <div class="picker-name">${this._escapeHtml(cred.name || '(no name)')}</div>
-          ${cred.username ? `<div class="picker-username">${this._escapeHtml(cred.username)}</div>` : ''}
+          <div class="picker-name">${escapeHtml(cred.name || '(no name)')}</div>
+          ${cred.username ? `<div class="picker-username">${escapeHtml(cred.username)}</div>` : ''}
         </div>
         <span class="picker-icon" style="transition: transform 120ms;${isExpanded ? ' transform: rotate(180deg);' : ''}" aria-hidden="true">${ICONS['chevron-down'] || ''}</span>
       </li>
@@ -482,14 +483,6 @@ class KbbPicker extends HTMLElement {
     } catch {
       return null;
     }
-  }
-
-  _escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 
   _highlightActive() {
