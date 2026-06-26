@@ -81,3 +81,32 @@
 - Add `coverage` CI job — fails build below thresholds
 - Add `test:coverage:ci` script
 - Update `.gitignore` for coverage reports and test screenshots
+
+### v2.1.0 Post-Release Updates
+
+#### Features
+- i18n: Add 6 major languages (DE, FR, ES, JA, KO, ZH_CN) - 8 total locales, 35 keys each
+- Keyboard shortcuts: Add 4 new commands (Fill TOTP, Lock DB, Generate Password, Show Popup) - 6 total
+- Passkeys: Graduate from experimental to production-ready (proxy packaged, docs updated)
+- Enterprise GPO: Add `managed_storage.json` schema for Chrome enterprise policy
+- Related origins: Cross-TLD credential matching (.com ↔ .co.uk, .de, .fr, .jp, etc.)
+- Related origin C# backend: `CredentialQueryService` accepts `RelatedUrls[]`, dedup by EntryId
+
+#### Bug Fixes
+- Pairing dialog now auto-closes after successful pair (C# callback `ClosePairingDialog`)
+- Edit form checks bridge response `result.Success === false` before showing success toast
+- `saveEdit` maps `Uuid` → `EntryId` for backward compatibility with older entry formats
+- Release workflow: separate Chrome/Firefox extension zips with correct manifests
+- Release workflow: plugin DLL built in CI with correct KeePassReferencePath
+
+#### Store Preparation
+- Privacy policy URL ready: `https://github.com/hieuck/KeePassBrowserBridge/blob/main/docs/privacy-policy.md`
+- Store submission docs finalized with checklist
+- README comparison table updated: passkeys production, 8 locales, 6 shortcuts, 658 tests
+- Release workflow auto-triggers on git tag push (v*)
+
+#### Tests
+- **Total: 658 tests** (was 644, +14)
+- Add `background-utils.test.mjs`: 7 tests for `getRelatedOrigins`
+- Add `i18n.test.mjs`: dynamic test for all 8 locales
+- Add edge case tests: URL matching (+13), field classifier (+6), background utils (+5)

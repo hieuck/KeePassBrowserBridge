@@ -113,17 +113,19 @@ Edge Add-ons:
 
 ## Current Blockers
 
-- Privacy policy URL needs to be published to a public URL (GitHub Pages or raw GitHub URL)
-- Chrome Web Store developer account needs to be registered
+- Privacy policy URL: `https://github.com/hieuck/KeePassBrowserBridge/blob/main/docs/privacy-policy.md` (raw GitHub)
+- Chrome Web Store developer account needs to be registered (one-time $5 fee)
 - Firefox Add-ons developer account needs to be registered
-- Store screenshots need to be generated and reviewed
+- Store screenshots need to be generated via `scripts/capture-store-screenshots.ps1` (requires KeePass running)
 
 ## Open Items Before First Public Listing
 
-- Publish `docs/privacy-policy.md` and use its public URL in every store listing.
-- Decide final GitHub repository/support URL.
-- Confirm publisher account names do not imply official KeePass, Kee, or KeePassXC ownership.
-- Run `.\scripts\verify.ps1 -E2EProjects chromium,firefox`.
-- Run `.\scripts\build-release.ps1` and `.\scripts\verify-release-artifacts.ps1`.
-- Run `.\scripts\capture-store-screenshots.ps1` after the final UI build.
-- Complete the manual smoke test in `docs/release-readiness.md` with a throwaway database and disposable browser profile, recording results in `docs/manual-smoke-evidence.md`.
+- [✅] Privacy policy published at https://github.com/hieuck/KeePassBrowserBridge/blob/main/docs/privacy-policy.md
+- [✅] Source repo: https://github.com/hieuck/KeePassBrowserBridge
+- [ ] Register Chrome Web Store developer account ($5 one-time)
+- [ ] Register Firefox Add-ons developer account
+- [ ] Run `.\scripts\verify.ps1 -E2EProjects chromium,firefox` with KeePass running
+- [ ] Run `.\scripts\build-release.ps1` and `.\scripts\verify-release-artifacts.ps1`
+- [ ] Run `.\scripts\capture-store-screenshots.ps1` after final UI build (requires KeePass)
+- [ ] Complete manual smoke test in `docs/release-readiness.md`
+- [ ] Confirm publisher name does not imply official KeePass, Kee, or KeePassXC ownership
