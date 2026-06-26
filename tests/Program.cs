@@ -4435,6 +4435,7 @@ internal static class Program
             delegate { return true; },
             delegate(PairingSession session) { },
             databaseChanged,
+            null,  // pairingSessionCompleted — auto-close on success
             passkeyApproval);
     }
 
