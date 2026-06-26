@@ -94,24 +94,24 @@ export function credentialContextText(input) {
   return parts.join(' ').toLowerCase();
 }
 
-export function isCurrentPasswordInput(input, fieldTextFn) {
+export function isCurrentPasswordInput(input, fieldTextFn = fieldText) {
   const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
   if (autocomplete === 'current-password') return true;
   return /\b(current|old|existing)\b/.test(fieldTextFn(input));
 }
 
-export function isNewPasswordInput(input, fieldTextFn) {
+export function isNewPasswordInput(input, fieldTextFn = fieldText) {
   const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
   if (autocomplete === 'new-password') return true;
   return /\b(new|confirm|confirmation|repeat|retype)\b/.test(fieldTextFn(input));
 }
 
-export function isChangePasswordForm(passwordInputs, deps) {
+export function isChangePasswordForm(passwordInputs, deps = { isCurrentPasswordInput, isNewPasswordInput, fieldText }) {
   return passwordInputs.some((input) => deps.isCurrentPasswordInput(input, deps.fieldText)) &&
     passwordInputs.some((input) => deps.isNewPasswordInput(input, deps.fieldText));
 }
 
-export function isLoginPasswordInput(input, fieldTextFn) {
+export function isLoginPasswordInput(input, fieldTextFn = fieldText) {
   const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
   const text = fieldTextFn(input);
   const context = credentialContextText(input);
@@ -124,7 +124,7 @@ export function isLoginPasswordInput(input, fieldTextFn) {
   return true;
 }
 
-export function isOtpDigitInput(input, fieldTextFn) {
+export function isOtpDigitInput(input, fieldTextFn = fieldText) {
   const maxLength = Number(input.getAttribute('maxlength') || input.maxLength || 0);
   if (maxLength !== 1) return false;
   const type = (input.getAttribute('type') || 'text').toLowerCase();
@@ -132,7 +132,7 @@ export function isOtpDigitInput(input, fieldTextFn) {
   return scoreOtpCandidate(input, fieldTextFn) > 0;
 }
 
-export function scoreOtpCandidate(input, fieldTextFn) {
+export function scoreOtpCandidate(input, fieldTextFn = fieldText) {
   const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
   const inputMode = (input.getAttribute('inputmode') || '').toLowerCase();
   const text = fieldTextFn(input);
@@ -178,7 +178,7 @@ export function isVisible(element) {
   );
 }
 
-export function editableInputFromElement(element, isVisibleFn) {
+export function editableInputFromElement(element, isVisibleFn = isVisible) {
   if (!element || !isVisibleFn(element) || element.disabled || element.readOnly) {
     return null;
   }

@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         popup: 'src/popup/main.js',
         options: 'src/options/main.js',
+        contentScript: 'contentScript.js',
       },
       output: {
         entryFileNames: '[name].js',
