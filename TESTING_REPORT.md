@@ -1,8 +1,8 @@
 # KeePassBrowserBridge - Testing Report
 
-**Date:** 2026-06-19
-**Version:** 0.9.0
-**Status:** Verification passed
+**Date:** 2026-06-26
+**Version:** 2.0.0
+**Status:** Verification passed (421 Vitest tests, 220+ Chromium E2E, 200+ C# tests)
 
 This report reflects the current repository state after running release-candidate verification:
 
@@ -18,10 +18,10 @@ This report reflects the current repository state after running release-candidat
 | Direct extension module tests | Pass | manifest, background, options, protocol, HTTP auth, custom fields, content script, passkey proxy experiment, popup, generator |
 | Real-site validation matrix | Pass | `scripts/verify-real-site-matrix.mjs` checks documented local fixtures exist and documented coverage labels still appear in automated test sources |
 | Security threat-model evidence | Pass | `scripts/verify-security-threat-model.mjs` ties key security-review checklist claims to backend tests, E2E labels, source controls, release scripts, store/privacy docs, and WebAuthn permission gates |
-| Vitest extension modules | Pass | 67 tests across group organization, multi-page login, multi-database, enhanced security |
+| Vitest extension modules | Pass | 421 tests across 43 test files — group organization, multi-page login, multi-database, enhanced security, formatters, password generator, escape-html |
 | Chromium E2E tests | Pass | 118 tests across popup, options, and form-detection flows |
 | Firefox E2E tests | Pass | 118 tests across popup, options, and form-detection flows |
-| C# bridge harness | Pass | 90+ checks covering URL matching, protocol, centralized bridge method permission policy, pairing, query, mutation, server behavior, and update integrity |
+| C# bridge harness | Pass | 200+ checks covering URL matching, protocol, centralized bridge method permission policy, pairing, query, mutation, server behavior, passkey/crypto, and update integrity |
 | Plugin compilation | Pass | Compiled verification DLL at `%TEMP%\KeePassBrowserBridge.verify.dll` |
 | Clean-source release smoke | Pass | `scripts/verify-clean-source-smoke.ps1` creates a temporary dirty marker and confirms `build-release.ps1 -RequireCleanSource` refuses dirty release provenance |
 | Signed release smoke | Pass | `scripts/verify-signed-release-smoke.ps1` builds signed artifacts with fake GPG, verifies required `.asc` files, and exercises fingerprint-pinned signature verification flow without requiring a real key |
@@ -64,6 +64,10 @@ KeePassBrowserBridge already covers the core replacement path: browser extension
 Migration guidance for users moving from Kee/KeePassRPC or KeePassXC-Browser is tracked in `docs/migration-guide.md`. Passkeys/WebAuthn are explicitly unsupported as a browser-facing feature in 0.9.0 and scoped in `docs/passkeys-webauthn-design.md`; backend-only C# tests now cover the crypto/storage prototype, create/get `clientDataJSON` structure with canonical challenge and WebAuthn origin handling, strict EC2/P-256/ES256 public-key COSE verification, assertion flag/origin/metadata binding for authenticatorData RP ID hash, exact length, user-present-only flags, `clientDataJSON` origin and expected challenge, credential ID, user handle, and sign count, none-attestation authenticator-data structure with canonical RP ID hashes, assertion authenticator-data structure with canonical RP ID hashes, assertion `userHandle` canonicalization from stored material, origin, user-verification, resident-key, and transport metadata round-trip, required/unknown user-verification rejection for registration/assertion/pending flows, unknown resident-key requirement rejection, invalid user-handle rejection before approval, invalid create `excludeCredentials` and list/get `allowCredentials` rejection, ES256 create-algorithm policy enforcement, attestation conveyance gating for `none`, authenticator attachment gating for platform requests, unsupported requested WebAuthn create/get extension rejection, create `excludeCredentials` conflict rejection, browser timeout hint clamping, requested `credProps` extension result handling, create/get-complete authenticator attachment plus create-complete authenticatorData/SPKI publicKey/transport metadata, RP ID/allow-credential lookup summaries, bridge feature discovery with disabled status metadata, KeePass approval grant/deny handling, bridge-level list/create/get/cancel/revoke routing behind a test-enabled gate, pending create/get session binding, duplicate live WebAuthn request ID rejection, sign-count persistence across repeated get sessions, completion replay rejection, plus disabled protocol/permission gates. JS and E2E tests cover feature-gated trusted-browser passkey permission controls and bridge feature-status parsing, while JS tests also cover the non-packaged Chrome proxy experiment, including trusted-origin resolver fail-closed behavior, missing/invalid request ID and missing/malformed/non-object request JSON rejection, RP ID validation, invalid challenge rejection, invalid user-handle rejection, invalid create `excludeCredentials` ID/type and get `allowCredentials` ID/type rejection, begin-response request/RP ID/origin binding before approval/selection/completion, complete-response request/RP ID/selected-credential binding and required-field validation before browser completion, selected-credential allow-list enforcement before get completion, required/unknown user-verification rejection, unknown resident-key/attestation/authenticator-attachment rejection, unsupported WebAuthn create/get extension rejection, ES256 create-algorithm gating, authenticator attachment gating, attestation conveyance gating, create `excludeCredentials` mapping, create/get timeout mapping, create resident-key mapping, create `credProps` request/result mapping, create/get response authenticator attachment, create response authenticatorData, transport, SPKI publicKey, COSE storage-key fallback, and ES256 algorithm serialization, and duplicate pending request ID rejection before handler and bridge dispatch, injected bridge begin/complete/cancel helpers with create approval and get credential-selection hooks, explicit lock cleanup with browser-visible error completion, request-timeout lifecycle cleanup, and background lock/auto-lock/revoke cleanup hooks.
 
 Current passkey tests also cover WebAuthn Level 3 UX hint normalization for create/get requests, preserving known hints in order while dropping duplicate or unknown values.
+
+## Gap Tracking
+
+A comprehensive gap analysis from all dev-team perspectives is tracked in `docs/superpowers/gap-tracking.md`, covering architectural, security, testing, DevOps, and UX gaps with priority levels and fix status.
 
 ## Current Risks
 
