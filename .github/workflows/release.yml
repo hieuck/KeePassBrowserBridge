@@ -132,7 +132,7 @@ jobs:
           $project = "${{ github.workspace }}\src\KeePassBrowserBridge.csproj"
           $buildOut = "$env:TEMP\kp-build"
           Remove-Item -Path $buildOut -Recurse -Force -ErrorAction SilentlyContinue
-          dotnet build $project /p:BaseOutputPath="$buildOut" --configuration Release -p:KeePassReferencePath="$keepassDir"
+          dotnet build $project /p:BaseOutputPath="$buildOut\" --configuration Release -p:KeePassReferencePath="$keepassDir"
           if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
           $dllPath = Join-Path $buildOut "Release\net40\KeePassBrowserBridge.dll"
           if (-not (Test-Path $dllPath)) { throw "DLL not found at $dllPath" }
