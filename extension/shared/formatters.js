@@ -12,12 +12,6 @@ export function formatRelativeTime(timestampMs) {
   return `${months}mo ago`;
 }
 
-export function formatCount(n) {
-  if (n < 1000) return String(n);
-  if (n < 1000000) return `${(n / 1000).toFixed(1)}K`;
-  return `${(n / 1000000).toFixed(1)}M`;
-}
-
 export function truncate(str, max = 50) {
   if (!str) return '';
   if (str.length <= max) return str;

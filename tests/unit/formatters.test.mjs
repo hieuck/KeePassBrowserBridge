@@ -42,24 +42,6 @@ describe('formatters.js - formatRelativeTime', () => {
   });
 });
 
-describe('formatters.js - formatCount', () => {
-  it('should export formatCount', () => {
-    assert.ok(source.includes('formatCount'), 'Missing formatCount export');
-  });
-
-  it('should return raw number for < 1000', () => {
-    assert.ok(source.includes('n < 1000'), 'Missing <1000 condition');
-  });
-
-  it('should format thousands with K suffix', () => {
-    assert.ok(source.includes('K'), 'Missing K suffix for thousands');
-  });
-
-  it('should format millions with M suffix', () => {
-    assert.ok(source.includes('M'), 'Missing M suffix for millions');
-  });
-});
-
 describe('formatters.js - truncate', () => {
   it('should export truncate', () => {
     assert.ok(source.includes('truncate'), 'Missing truncate export');

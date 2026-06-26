@@ -9,7 +9,7 @@ const __filename = (() => {
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..');
 
-const { formatRelativeTime, formatCount, truncate } = await import(
+const { formatRelativeTime, truncate } = await import(
   path.join(projectRoot, 'extension', 'shared', 'formatters.js')
 );
 
@@ -63,36 +63,6 @@ describe('formatters.js - formatRelativeTime functional', () => {
   it('should floor fractional minutes', () => {
     const oneAndHalfMin = Date.now() - 90 * 1000;
     assert.equal(formatRelativeTime(oneAndHalfMin), '1m ago');
-  });
-});
-
-describe('formatters.js - formatCount functional', () => {
-  it('should return "0" for 0', () => {
-    assert.equal(formatCount(0), '0');
-  });
-
-  it('should return "999" for 999', () => {
-    assert.equal(formatCount(999), '999');
-  });
-
-  it('should return "1.0K" for 1000', () => {
-    assert.equal(formatCount(1000), '1.0K');
-  });
-
-  it('should return "1.5K" for 1500', () => {
-    assert.equal(formatCount(1500), '1.5K');
-  });
-
-  it('should return "10.0K" for 10000', () => {
-    assert.equal(formatCount(10000), '10.0K');
-  });
-
-  it('should return "1.0M" for 1000000', () => {
-    assert.equal(formatCount(1000000), '1.0M');
-  });
-
-  it('should return "2.5M" for 2500000', () => {
-    assert.equal(formatCount(2500000), '2.5M');
   });
 });
 
