@@ -176,7 +176,7 @@ jobs:
       - name: Run bridge tests
         run: |
           if (Test-Path "$env:KEEPASS_DIR\KeePass.exe") {
-            dotnet run --project tests/KeePassBrowserBridge.Tests.csproj
+            dotnet run --project tests/KeePassBrowserBridge.Tests.csproj /p:KeePassExe="$env:KEEPASS_DIR\KeePass.exe"
           } else {
             Write-Warning "KeePass not available. Skipping C# tests."
           }
