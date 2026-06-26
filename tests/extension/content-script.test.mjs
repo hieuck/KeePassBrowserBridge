@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import * as fieldClassifier from '../../extension/shared/field-classifier.js';
 
 const DOCUMENT_POSITION_FOLLOWING = 4;
 let activeDocument = null;
@@ -350,6 +351,33 @@ assert.equal(rawSource.includes('more hidden'), false, 'inline picker should not
 assert.equal(rawSource.includes('entries.slice(0, 8)'), false, 'inline picker should render every matching entry');
 // Strip ES module imports — vm.runInContext doesn't support import statements
 const source = rawSource.replace(/^import .+ from .+;$/gm, '');
+// Import and expose field-classifier functions that contentScript.js imports
+// The real module functions capture Node.js globals from module scope.
+// For vm sandbox compatibility, we expose reimplementations that reference
+// sandbox globals (Node, window, etc.) instead.
+const classifierFns = { ...fieldClassifier };
+// Override DOM-dependent functions with sandbox-compatible versions
+classifierFns.documentOrder = (left, right) => {
+  if (left === right) return 0;
+  return left.compareDocumentPosition && (left.compareDocumentPosition(right) & 4) ? -1 : 1;
+};
+classifierFns.isVisible = (element) => {
+  if (element && element.closest) {
+    if (element.closest('[aria-hidden="true"], [hidden]')) return false;
+  }
+  return true;
+};
+classifierFns.editableInputFromElement = (element, isVisibleFn) => {
+  if (!element || !classifierFns.isVisible(element) || element.disabled || element.readOnly) return null;
+  const tagName = String(element.tagName || element.nodeName || '').toLowerCase();
+  if (tagName === 'textarea') return element;
+  if (tagName && tagName !== 'input') return null;
+  const type = (element.getAttribute('type') || 'text').toLowerCase();
+  return ['text', 'email', 'tel', 'url', 'search', 'number', 'password', ''].includes(type) ? element : null;
+};
+Object.assign(sandbox, Object.fromEntries(
+  Object.entries(classifierFns).map(([k, v]) => [k, typeof v === 'function' ? v : () => v])
+));
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
 

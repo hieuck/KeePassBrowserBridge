@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as backgroundUtils from '../../extension/shared/background-utils.js';
 
 const storage = {
   endpoint: 'http://127.0.0.1:19455/bridge',
@@ -367,6 +368,10 @@ sandbox.globalThis = sandbox;
 const rawSource = fs.readFileSync(new URL('../../extension/background.js', import.meta.url), 'utf8');
 // Strip ES module imports — vm.runInContext doesn't support import statements
 const source = rawSource.replace(/^import .+ from .+;$/gm, '');
+// Import and expose background-utils functions that background.js imports
+Object.assign(sandbox, Object.fromEntries(
+  Object.entries(backgroundUtils).map(([k, v]) => [k, typeof v === 'function' ? v : () => v])
+));
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'background.js' });
 
