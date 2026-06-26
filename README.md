@@ -59,7 +59,7 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 
 | Runner | Count | Status |
 |--------|-------|--------|
-| vitest unit tests | 392 | ✅ 0 failures |
+| vitest unit tests | 645 | ✅ 0 failures |
 | Playwright Chromium | 220 | ✅ 0 failures |
 | Playwright Firefox | 162 | ✅ 0 failures |
 | Accessibility WCAG AA | 10 | ✅ 0 violations |
@@ -70,9 +70,14 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 
 1. Download `KeePassBrowserBridge.plgx` or `.dll` from [Releases](https://github.com/hieuck/KeePassBrowserBridge/releases)
 2. Place in KeePass `Plugins` directory
-3. Restart KeePass, enable browser integration
-4. Install Chrome/Firefox extension from store
-5. Pair with KeePass from extension popup
+3. Restart KeePass, enable browser integration in `Tools > KeePass Browser Bridge`
+4. **Chrome:** Install from [Chrome Web Store](#) (pending) or load unpacked from `extension/` directory
+5. **Firefox:** Install from [Firefox Add-ons](#) (pending) or load temporary add-on from `extension/` directory
+6. Pair with KeePass from extension popup
+
+> **Store listing is in progress.** For now, install via developer mode:
+> - **Chrome:** `chrome://extensions` → Enable Developer mode → Load unpacked → Select `extension/` folder
+> - **Firefox:** `about:debugging#/runtime/this-firefox` → Load Temporary Add-on → Select `extension/manifest.firefox.json`
 
 See `docs/migration-guide.md` for migrating from Kee/KeePassRPC or KeePassXC-Browser.
 
@@ -89,7 +94,7 @@ npm run build:all
 ## Test
 
 ```powershell
-npm test                  # vitest unit tests (392)
+npm test                  # vitest unit tests (645)
 npm run test:e2e:chromium # Playwright E2E (Chromium)
 .\scripts\verify.ps1      # Full verification
 npm run test:e2e:headed   # Watch tests in browser
