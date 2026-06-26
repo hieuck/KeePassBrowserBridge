@@ -19,7 +19,8 @@
 | Setting key naming: autoFillDelay vs autoFillDelayMs | 🟡 P2 | Frontend | Unified to `autoFillDelay` in AutoFillTab.vue | 2026-06-26 |
 | Missing unit tests for shared modules | 🟡 P2 | QA | Added `escape-html.test.mjs` (8 tests) + `password-generator.test.mjs` (8 tests) + `field-classifier.test.mjs` (70 tests) | 2026-06-26 |
 | Dead code test references to removed formatCount | 🟢 P3 | QA | Updated formatters tests to remove formatCount references | 2026-06-26 |
-| Monolithic content script (20 functions extracted) | 🔴 P1 | Architect | Created `extension/shared/field-classifier.js` with 20 pure functions via TDD (70 tests) | 2026-06-26 |
+| Monolithic content script (20 functions extracted) | 🔴 P1 | Architect | Extracted field-classifier.js via TDD (70 tests). Content script now built through Vite, imports shared module, 120 lines removed. | 2026-06-26 |
+| Vue composable 0% coverage (useTheme, useI18n, useFocusTrap) | 🟡 P2 | QA | Added 19 functional tests across 3 composable test files. All 510 tests pass. | 2026-06-26 |
 
 ---
 
@@ -29,7 +30,7 @@
 |-----|----------|------|--------|-------|
 | No public store listing (Chrome/Firefox) | 🔴 P0 | PM | Open | External process; needs Chrome Web Store + Firefox Add-ons submission |
 | Passkeys feature gate disabled at browser | 🔴 P0 | PM/Arch | In progress | Backend prototype done (`PasskeyService.cs`, 1984 lines); browser proxy experiment in progress; needs completion per `docs/passkeys-webauthn-design.md` |
-| contentScript.js monolithic (1795 lines) | 🔴 P1 | Architect | In progress | Extracted field-classifier.js (70 TDD tests, 20 pure functions) — see `extension/shared/field-classifier.js`. Remaining: wire import when Vite bundles content scripts |
+| contentScript.js monolithic (1795→1675 lines) | 🔴 P1 | Architect | **Resolved** | Extracted 20 functions to `field-classifier.js` (70 TDD tests). Content script now built via Vite, imports shared modules. Removed 120 lines of inline code. |
 | background.js monolithic (1487 lines) | 🔴 P1 | Architect | Open | Needs splitting into modules |
 | Vue components 0% Vitest coverage | 🔴 P1 | QA | Open | popup/, options/, components/, composables/ all 0%; only tested via Playwright E2E |
 | No TypeScript for extension | 🟡 P2 | Frontend | Open | Would catch type errors at build time; large migration effort |
