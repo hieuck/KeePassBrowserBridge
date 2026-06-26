@@ -211,11 +211,13 @@ async function getAbout() {
   return about;
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function normalizeStringArray(values) {
   if (!Array.isArray(values)) return [];
   return values.map((value) => String(value || '').trim()).filter(Boolean);
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function normalizeFeatureMap(features) {
   if (!Array.isArray(features)) return {};
   return features.reduce((result, feature) => {
@@ -225,6 +227,7 @@ function normalizeFeatureMap(features) {
   }, {});
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function normalizeFeatureDetails(features) {
   if (!Array.isArray(features)) return {};
   return features.reduce((result, feature) => {
@@ -263,6 +266,7 @@ async function checkUpdates() {
   };
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function normalizeReleaseVersion(version) {
   return String(version || '').trim().replace(/^v/i, '');
 }
@@ -320,14 +324,17 @@ async function getState() {
   };
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function hasPartialPairingCredentials(state) {
   return Boolean(state && ((state.clientId && !state.sharedSecret) || (!state.clientId && state.sharedSecret)));
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function booleanSetting(value, defaultValue) {
   return typeof value === 'boolean' ? value : defaultValue;
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function numberSetting(value, defaultValue, maxValue) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 && (maxValue === undefined || parsed <= maxValue)
@@ -335,6 +342,7 @@ function numberSetting(value, defaultValue, maxValue) {
     : defaultValue;
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function isActivePairingTimestamp(value) {
   if (!Number.isFinite(value) || value <= 0 || value > Date.now()) {
     return false;
@@ -490,6 +498,7 @@ async function updateClientPermissions(clientId, permissions) {
   return parsePayload(response);
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function normalizeClientPermissions(permissions, passkeysEnabled = false) {
   const allowed = clientPermissionAllowList(passkeysEnabled);
   const normalized = ['read'];
@@ -502,6 +511,7 @@ function normalizeClientPermissions(permissions, passkeysEnabled = false) {
   return normalized;
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function clientPermissionAllowList(passkeysEnabled = false) {
   const allowed = ['read', 'write', 'manageClients'];
   if (passkeysEnabled) {
@@ -672,6 +682,7 @@ async function clearClipboardState() {
   }
 }
 
+// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
 function isTerminalPairingError(error) {
   const message = error && error.message ? error.message : String(error || '');
   return /expired|not found|too many invalid attempts/i.test(message);
