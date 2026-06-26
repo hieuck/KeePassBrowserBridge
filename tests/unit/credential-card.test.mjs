@@ -68,12 +68,8 @@ describe('CredentialCard.vue - favicon display', () => {
     assert.ok(source.includes('faviconUrl'), 'Missing faviconUrl computed property');
   });
 
-  it('should use Google favicons service', () => {
-    assert.ok(source.includes('google.com/s2/favicons'), 'Missing Google favicons URL');
-  });
-
-  it('should encode hostname for favicon URL', () => {
-    assert.ok(source.includes('encodeURIComponent'), 'Missing hostname encoding for favicon');
+  it('should import getFaviconUrl from shared', () => {
+    assert.ok(source.includes("getFaviconUrl"), 'Missing getFaviconUrl import');
   });
 
   it('should bind faviconUrl to avatar src', () => {
@@ -93,7 +89,7 @@ describe('CredentialCard.vue - empty credential handling', () => {
   });
 
   it('should handle missing entry.Url gracefully in faviconUrl', () => {
-    assert.ok(source.includes("!props.entry.Url"),
+    assert.ok(source.includes("props.entry?.Url"),
       'Missing empty Url guard in faviconUrl');
   });
 });

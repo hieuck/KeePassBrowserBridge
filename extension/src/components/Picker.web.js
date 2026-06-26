@@ -1,6 +1,7 @@
 import { ICONS } from '../../icons.js';
 import { escapeHtml } from '../../shared/escape-html.js';
 import { DESIGN_TOKENS } from '../../shared/design-tokens.js';
+import { getFaviconUrl } from '../../shared/favicon.js';
 
 const PICKER_STYLES = `
 :host {${DESIGN_TOKENS}
@@ -447,12 +448,7 @@ class KbbPicker extends HTMLElement {
   }
 
   _faviconUrl(url) {
-    try {
-      const u = new URL(url);
-      return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`;
-    } catch {
-      return null;
-    }
+    return getFaviconUrl(url);
   }
 
   _highlightActive() {

@@ -57,6 +57,7 @@ import { computed } from 'vue';
 import { DownOutlined, EditOutlined, CopyOutlined, KeyOutlined } from '@ant-design/icons-vue';
 import DetailView from '../components/DetailView.vue';
 import { formatRelativeTime } from '../../shared/formatters.js';
+import { getFaviconUrl } from '../../shared/favicon.js';
 
 const props = defineProps({
   entry: { type: Object, required: true },
@@ -66,14 +67,8 @@ const props = defineProps({
 const emit = defineEmits(['toggle', 'fill', 'copy', 'edit']);
 
 const faviconUrl = computed(() => {
-  if (!props.entry.Url) return '';
-  try {
-    const u = new URL(props.entry.Url);
-    if (!u.hostname) return '';
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(u.hostname)}&sz=64`;
-  } catch {
-    return '';
-  }
+  if (!props.entry?.Url) return null;
+  return getFaviconUrl(props.entry.Url);
 });
 
 const metaText = computed(() => {
