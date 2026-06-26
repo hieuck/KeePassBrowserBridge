@@ -1118,6 +1118,10 @@
     assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
     assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
     assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
+    completeSerializedTransportMetadata(
+      parsed && parsed.response && parsed.response.transports,
+      parsed && parsed.response && parsed.response.Transports
+    );
     completeAuthenticatorAttachment(parsed, true);
     assertCompleteClientExtensionResultAliases(parsed);
     return responseJson;
@@ -1230,6 +1234,36 @@
       }
     }
     return selected && selected.length ? selected : undefined;
+  }
+
+  function assertSerializedTransportMetadata(transports) {
+    if (transports === undefined || transports === null) return;
+    if (!Array.isArray(transports)) {
+      throw notAllowedError(invalidCompleteResponseTransportMessage);
+    }
+    const normalized = normalizeTransportArray(transports) || [];
+    if (normalized.length !== transports.length) {
+      throw notAllowedError(invalidCompleteResponseTransportMessage);
+    }
+    for (let i = 0; i < transports.length; i++) {
+      if (typeof transports[i] !== 'string' || transports[i] !== normalized[i]) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+    }
+  }
+
+  function completeSerializedTransportMetadata(...values) {
+    let selected;
+    for (const value of values) {
+      if (value === undefined || value === null) continue;
+      assertSerializedTransportMetadata(value);
+      if (selected === undefined) {
+        selected = value;
+      } else if (JSON.stringify(selected) !== JSON.stringify(value)) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+    }
+    return selected;
   }
 
   function assertCompleteAuthenticatorAttachment(authenticatorAttachment) {
