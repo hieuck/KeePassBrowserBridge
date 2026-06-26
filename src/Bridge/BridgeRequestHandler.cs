@@ -20,6 +20,7 @@ namespace KeePassBrowserBridge.Bridge
         private readonly Action<string> m_autotypeCallback;
         private readonly Func<PasskeyApprovalRequest, PasskeyApprovalResult> m_passkeyApproval;
         private readonly Action<PairingSession> m_pairingSessionCreated;
+        private readonly Action m_pairingSessionCompleted;
         private readonly Action<PwDatabase> m_databaseChanged;
         private readonly Dictionary<string, long> m_seenAuthenticatedRequests = new Dictionary<string, long>(StringComparer.Ordinal);
         private readonly object m_seenAuthenticatedRequestsLock = new object();
@@ -32,6 +33,7 @@ namespace KeePassBrowserBridge.Bridge
             Func<PwDatabase> databaseProvider,
             Action<PairingSession> pairingSessionCreated,
             Action<PwDatabase> databaseChanged,
+            Action pairingSessionCompleted = null,
             Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null,
             Func<bool> passkeysEnabled = null,
             Action lockCallback = null,
@@ -39,7 +41,7 @@ namespace KeePassBrowserBridge.Bridge
             : this(pairingService, trustedClients, credentialQueryService, credentialMutationService,
                 new PasskeyService(), new PasskeyCredentialLookupService(), new PasskeyPendingSessionStore(),
                 databaseProvider, passkeysEnabled ?? new Func<bool>(() => BridgeSettings.PasskeysEnabled),
-                pairingSessionCreated, databaseChanged, passkeyApproval, lockCallback, autotypeCallback)
+                pairingSessionCreated, databaseChanged, pairingSessionCompleted, passkeyApproval, lockCallback, autotypeCallback)
         {
         }
 
@@ -55,6 +57,7 @@ namespace KeePassBrowserBridge.Bridge
             Func<bool> passkeysEnabled,
             Action<PairingSession> pairingSessionCreated,
             Action<PwDatabase> databaseChanged,
+            Action pairingSessionCompleted = null,
             Func<PasskeyApprovalRequest, PasskeyApprovalResult> passkeyApproval = null,
             Action lockCallback = null,
             Action<string> autotypeCallback = null)
@@ -78,6 +81,7 @@ namespace KeePassBrowserBridge.Bridge
             m_passkeysEnabled = passkeysEnabled ?? delegate { return false; };
             m_passkeyApproval = passkeyApproval ?? DefaultPasskeyApproval;
             m_pairingSessionCreated = pairingSessionCreated ?? delegate(PairingSession session) { };
+            m_pairingSessionCompleted = pairingSessionCompleted ?? delegate { };
             m_databaseChanged = databaseChanged ?? delegate(PwDatabase database) { };
             m_lockCallback = lockCallback ?? delegate { };
             m_autotypeCallback = autotypeCallback ?? delegate(string search) { };
@@ -182,6 +186,8 @@ namespace KeePassBrowserBridge.Bridge
                 payload.PairingSessionId, payload.PairingCode, payload.ClientName, request.Origin);
 
             if (!result.Success) return Error(request, result.ErrorCode, result.Error);
+
+            m_pairingSessionCompleted();
 
             return Success(request, BridgeJsonSerializer.Serialize(new PairCompleteResponsePayload
             {

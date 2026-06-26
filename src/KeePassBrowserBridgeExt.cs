@@ -44,6 +44,7 @@ namespace KeePassBrowserBridge
                 delegate { return (m_host == null) ? null : m_host.Database; },
                 OnPairingSessionCreated,
                 SaveDatabaseAfterMutation,
+                new Action(() => ClosePairingDialog()),
                 ShowPasskeyApprovalPrompt,
                 delegate { return IsPasskeyEnabled(); },
                 delegate { LockKeePassWorkspace(); },
@@ -297,6 +298,15 @@ namespace KeePassBrowserBridge
             if (session == null) return;
 
             ShowPairingSession(session);
+        }
+
+        private void ClosePairingDialog()
+        {
+            if (m_pairingDialog != null && !m_pairingDialog.IsDisposed)
+            {
+                m_pairingDialog.Invoke(new Action(() => m_pairingDialog.Close()));
+                m_pairingDialog = null;
+            }
         }
 
         private void ShowPairingSession(PairingSession session)

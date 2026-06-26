@@ -194,7 +194,11 @@ function startNew() {
 
 async function saveEdit(updates) {
   try {
-    await bridge.updateLogin({ ...editingEntry.value, ...updates });
+    const result = await bridge.updateLogin({ ...editingEntry.value, ...updates });
+    if (result && result.Success === false) {
+      showToast(result.Error || 'Update failed', { variant: 'error' });
+      return;
+    }
     showToast('Updated', { variant: 'success' });
     formMode.value = null;
     await refreshState();
@@ -205,7 +209,11 @@ async function saveEdit(updates) {
 
 async function createLogin(login) {
   try {
-    await bridge.createLogin(login);
+    const result = await bridge.createLogin(login);
+    if (result && result.Success === false) {
+      showToast(result.Error || 'Create failed', { variant: 'error' });
+      return;
+    }
     showToast('Created', { variant: 'success' });
     formMode.value = null;
     await refreshState();
