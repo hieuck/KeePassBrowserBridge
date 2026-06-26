@@ -11,7 +11,7 @@
     </SectionCard>
     <SectionCard title="Fill delay" description="How long to wait before filling credentials.">
       <a-form-item label="Delay (ms)">
-        <a-input-number :value="settings.autoFillDelayMs || 1200" @change="v => update('autoFillDelayMs', v)" :min="200" :max="5000" :step="100" style="width: 120px" />
+        <a-input-number :value="settings.autoFillDelay || 1200" @change="v => update('autoFillDelay', v)" :min="200" :max="5000" :step="100" style="width: 120px" />
       </a-form-item>
     </SectionCard>
   </div>
