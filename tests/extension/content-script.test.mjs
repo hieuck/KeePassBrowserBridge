@@ -367,7 +367,7 @@ classifierFns.isVisible = (element) => {
   }
   return true;
 };
-classifierFns.editableInputFromElement = (element, isVisibleFn) => {
+classifierFns.editableInputFromElement = (element, _isVisible) => {
   if (!element || !classifierFns.isVisible(element) || element.disabled || element.readOnly) return null;
   const tagName = String(element.tagName || element.nodeName || '').toLowerCase();
   if (tagName === 'textarea') return element;
