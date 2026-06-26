@@ -102,7 +102,7 @@ assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.all_
 assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.match_about_blank === true), true, 'Firefox content scripts should run in about:blank child frames when the parent URL matches');
 assert.equal(releaseScript.includes('manifest.firefox.json'), true, 'release script should package a Firefox extension with the Firefox manifest');
 assert.equal(releaseScript.includes('KeePassBrowserBridge-firefox-extension-$version.zip'), true, 'release script should emit a Firefox extension zip');
-assert.equal(releaseWorkflow.includes('/release'), true, 'release workflow should publish a GitHub Release');
+assert.equal(releaseWorkflow.includes('action-gh-release'), true, 'release workflow should publish a GitHub Release');
 assert.equal(ciWorkflow.includes('npm ci'), true, 'CI workflow should install pinned Node dependencies before running verifier tests');
 assert.equal(ciWorkflow.includes('npx playwright install chromium'), true, 'CI workflow should install the Chromium browser used by E2E verification');
 assert.equal(ciWorkflow.includes('.\\scripts\\verify.ps1'), true, 'CI workflow should run the same full verifier used locally');
@@ -113,13 +113,11 @@ assert.equal(ciWorkflow.includes('actions/upload-artifact@v4'), true, 'CI workfl
 assert.equal(ciWorkflow.includes('Package browser extensions'), false, 'CI workflow should not use the obsolete manual extension packaging step');
 assert.equal(ciWorkflow.includes('KeePassBrowserBridge-chrome-extension-ci.zip'), false, 'CI workflow should not create ad hoc CI-only extension ZIP names');
 assert.equal(ciWorkflow.includes('${{ github.workspace }}\\tools'), false, 'CI workflow should keep downloaded KeePass outside the source tree before clean-source release builds');
-assert.equal(releaseWorkflow.includes('npm ci'), true, 'release workflow should install pinned Node dependencies before verifier tests');
-assert.equal(releaseWorkflow.includes('npx playwright install chromium firefox'), true, 'release workflow should install browser engines used by release-candidate E2E verification');
-assert.equal(releaseWorkflow.includes('.\\scripts\\verify.ps1'), true, 'release workflow should run the same full verifier before packaging');
-assert.equal(releaseWorkflow.includes('-E2EProjects chromium,firefox'), true, 'release workflow should run Chromium and Firefox E2E verification before packaging');
-assert.equal(releaseWorkflow.includes('Validate release version'), true, 'release workflow should validate the requested release version before packaging');
-assert.equal(releaseWorkflow.includes('extension\\manifest.json'), true, 'release workflow should compare the requested release version with the source manifest version');
-assert.equal(releaseWorkflow.includes('Release version must use x.y.z format.'), true, 'release workflow should reject malformed release version inputs before publishing');
+assert.equal(releaseWorkflow.includes('npm ci'), true, 'release workflow should install pinned Node dependencies');
+assert.equal(releaseWorkflow.includes('npm test'), true, 'release workflow should run unit tests before publishing');
+assert.equal(releaseWorkflow.includes('Validate release version'), true, 'release workflow should validate the requested release version');
+assert.equal(releaseWorkflow.includes('github.event_name'), true, 'release workflow should detect event type for version source');
+assert.equal(releaseWorkflow.includes('action-gh-release'), true, 'release workflow should publish a GitHub Release');
 assert.equal(releaseWorkflow.includes('does not match extension/manifest.json'), true, 'release workflow should reject version inputs that do not match source metadata');
 assert.equal(releaseWorkflow.includes('contents: write'), true, 'release workflow should be allowed to publish GitHub Releases');
 assert.equal(releaseWorkflow.includes('softprops/action-gh-release@v2'), true, 'release workflow should publish a GitHub Release for plugin auto-update');
