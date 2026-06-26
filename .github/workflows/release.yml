@@ -95,7 +95,7 @@ jobs:
               $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
               if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
                 Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
-                echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
+                echo "KEEPASS_DOWNLOADED=true" >> $env:GITHUB_ENV
                 Write-Output "KeePass $keepassVersion downloaded OK"
                 return
               }
@@ -124,10 +124,11 @@ jobs:
           gpg --batch --import $keyPath
 
       - name: Build plugin
-        if: ${{ env.KEEPASS_DIR != '' }}
+        if: ${{ env.KEEPASS_DOWNLOADED == 'true' }}
         shell: pwsh
         run: |
-          .\scripts\build-release.ps1 -KeePassExe "$env:KEEPASS_DIR\KeePass.exe" -ArtifactsDir "${{ github.workspace }}\artifacts" -RequireCleanSource
+          $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
+          .\scripts\build-release.ps1 -KeePassExe "$keepassDir\KeePass.exe" -ArtifactsDir "${{ github.workspace }}\artifacts" -RequireCleanSource
 
       - name: Build extension
         shell: pwsh
