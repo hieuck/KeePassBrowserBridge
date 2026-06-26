@@ -127,5 +127,5 @@ Edge Add-ons:
 - [ ] Run `.\scripts\verify.ps1 -E2EProjects chromium,firefox` with KeePass running
 - [ ] Run `.\scripts\build-release.ps1` and `.\scripts\verify-release-artifacts.ps1`
 - [ ] Run `.\scripts\capture-store-screenshots.ps1` after final UI build (requires KeePass)
-- [ ] Complete manual smoke test in `docs/release-readiness.md`
+- [ ] Complete manual smoke test in `docs/release-readiness.md` with results recorded in `docs/manual-smoke-evidence.md`
 - [ ] Confirm publisher name does not imply official KeePass, Kee, or KeePassXC ownership

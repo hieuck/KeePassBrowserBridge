@@ -1022,22 +1022,23 @@ assert.equal(queryRequest.Origin, 'chrome-extension://abcdefghijklmnopabcdefghij
 assert.equal(queryRequest.ClientId, 'client-1', 'authenticated bridge requests should include stored client id');
 assert.equal(typeof queryRequest.TimestampUtcMs, 'number', 'authenticated bridge requests should use TimestampUtcMs');
 assert.ok(queryRequest.Authentication, 'authenticated bridge requests should include HMAC authentication');
-assert.deepEqual(JSON.parse(queryRequest.Payload), {
-  Url: 'https://example.com/login',
-  StrictUrlMatching: true,
-  RegexUrlMatching: false
-}, 'logins.query should include URL matching settings');
+const queryPayload = JSON.parse(queryRequest.Payload);
+assert.equal(queryPayload.Url, 'https://example.com/login', 'logins.query should include the request URL');
+assert.equal(queryPayload.StrictUrlMatching, true, 'logins.query should include strict URL matching setting');
+assert.equal(queryPayload.RegexUrlMatching, false, 'logins.query should include regex URL matching setting');
+assert.ok(Array.isArray(queryPayload.RelatedUrls), 'logins.query should include RelatedUrls');
+assert.ok(queryPayload.RelatedUrls.includes('https://example.co.uk/login'), 'RelatedUrls should include .co.uk variant');
 
 requests.length = 0;
 storage.strictUrlMatching = 'false';
 storage.regexUrlMatching = 'true';
 await sandbox.queryLoginsForUrl('https://example.com/login');
 const corruptedQueryRequest = requests.find((request) => request.Method === 'logins.query');
-assert.deepEqual(JSON.parse(corruptedQueryRequest.Payload), {
-  Url: 'https://example.com/login',
-  StrictUrlMatching: false,
-  RegexUrlMatching: false
-}, 'logins.query should ignore corrupt URL matching settings');
+const corruptPayload = JSON.parse(corruptedQueryRequest.Payload);
+assert.equal(corruptPayload.Url, 'https://example.com/login', 'corrupt query should include URL');
+assert.equal(corruptPayload.StrictUrlMatching, false, 'corrupt query should default strict matching to false');
+assert.equal(corruptPayload.RegexUrlMatching, false, 'corrupt query should default regex matching to false');
+assert.ok(Array.isArray(corruptPayload.RelatedUrls), 'corrupt query should include RelatedUrls');
 
 badgeCalls.length = 0;
 assert.ok(sandbox.tabsUpdatedHandler, 'background should register a tab update listener');
