@@ -43,7 +43,7 @@ Recommended long-description bullets:
 - Save newly submitted logins and update changed passwords back into KeePass.
 - Revoke or limit trusted browser permissions from the extension settings or KeePass.
 - Keep database access inside KeePass; the extension never reads `.kdbx` files or stores the master key.
-- Passkeys/WebAuthn are supported in this release via Chrome WebAuthn proxy (requires opt-in).
+- Passkeys/WebAuthn are supported in this release via Chrome WebAuthn proxy (default-enabled in Options).
 
 Avoid claims such as "official KeePass extension", "KeePassXC replacement", "number one", or references that imply endorsement by other projects.
 

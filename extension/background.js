@@ -60,14 +60,34 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command === 'fill-credentials') {
-    try {
-      const tab = await getActiveTab();
-      if (tab && tab.id && isFillableUrl(tab.url)) {
-        await autoFillTab(tab.id, tab.url);
+  try {
+    switch (command) {
+      case 'fill-credentials': {
+        const tab = await getActiveTab();
+        if (tab && tab.id && isFillableUrl(tab.url)) {
+          await autoFillTab(tab.id, tab.url);
+        }
+        break;
       }
-    } catch (_) { /* keyboard fill is best-effort */ }
-  }
+      case 'fill-totp':
+        await fillTotp();
+        break;
+      case 'lock-database':
+        await lockDatabase();
+        await notifyUser('KeePass locked', 'Database has been locked.');
+        break;
+      case 'generate-password': {
+        const tab = await getActiveTab();
+        if (tab && tab.id) {
+          await generateAndFillPassword(tab.id);
+        }
+        break;
+      }
+      case 'show-popup':
+        await chrome.action.openPopup();
+        break;
+    }
+  } catch (_) { /* keyboard commands are best-effort */ }
 });
 
 if (chrome.webRequest && chrome.webRequest.onAuthRequired) {
@@ -1332,6 +1352,34 @@ async function fillFromContextMenu(tabId, url, role) {
   } catch (error) {
     if (isExpectedAccessStateError(error)) return;
     console.error('Context menu fill failed:', error);
+  }
+}
+
+async function fillTotp() {
+  const tab = await getActiveTab();
+  if (!tab || !tab.id || !tab.url || !isFillableUrl(tab.url)) {
+    throw new Error('No active tab.');
+  }
+
+  await assertCanAccessCredentials();
+  await rememberCredentialActivity();
+  const response = await bridgeCall('logins.query', await buildLoginsQueryPayload(tab.url), true);
+  const result = queryResultFromResponse(tab.url, response);
+  const entry = result.entries.find((e) => e.OneTimePassword);
+  if (!entry) {
+    await notifyUser('No TOTP found', 'No entry with a one-time password found for this page.');
+    return;
+  }
+
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['contentScript.js'] });
+  await chrome.tabs.sendMessage(tab.id, {
+    type: 'KBB_FILL',
+    credential: { OneTimePassword: entry.OneTimePassword },
+    fieldRole: 'otp'
+  });
+
+  if (entry.EntryId) {
+    await tryAcknowledgeFill(entry.EntryId, tab.url);
   }
 }
 

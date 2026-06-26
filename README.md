@@ -23,7 +23,7 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 - **Site overrides** — per-site auto-fill enable/disable
 - **Multi-database info** — current database name and path display
 - **i18n** — English + Vietnamese locale, `chrome.i18n` based
-- **Passkeys/WebAuthn** — experiment with strict RP ID validation (requires opt-in)
+- **Passkeys/WebAuthn** — supported with strict RP ID validation
 - **Settings import/export** — portable settings with validation
 
 ## Comparison
@@ -47,7 +47,7 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 | Dark mode | ❌ | ✅ | **✅ Auto system** |
 | Site overrides | ❌ | ✅ | ✅ |
 | i18n / translations | ✅ (20) | ✅ (45) | **✅ EN+VI** |
-| Passkeys/WebAuthn | ❌ | ✅ | **✅ Experiment** |
+| Passkeys/WebAuthn | ❌ | ✅ | **✅** |
 | Multi-database info | ✅ | ❌ | **✅** |
 | dotnet build 0 errors | N/A | N/A | **✅** |
 | C# test suite exit 0 | N/A | N/A | **✅** |

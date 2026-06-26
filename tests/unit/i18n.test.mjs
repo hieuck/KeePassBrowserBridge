@@ -11,16 +11,16 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..');
 
 const enPath = path.join(projectRoot, 'extension', '_locales', 'en', 'messages.json');
-const viPath = path.join(projectRoot, 'extension', '_locales', 'vi', 'messages.json');
+
+const LOCALES = ['en', 'vi', 'de', 'fr', 'es', 'ja', 'ko', 'zh_CN'];
 
 describe('i18n locale files', () => {
-  it('should have English locale file', () => {
-    assert.ok(fs.existsSync(enPath), '_locales/en/messages.json must exist');
-  });
-
-  it('should have Vietnamese locale file', () => {
-    assert.ok(fs.existsSync(viPath), '_locales/vi/messages.json must exist');
-  });
+  for (const locale of LOCALES) {
+    it(`should have ${locale} locale file`, () => {
+      const localePath = path.join(projectRoot, 'extension', '_locales', locale, 'messages.json');
+      assert.ok(fs.existsSync(localePath), `_locales/${locale}/messages.json must exist`);
+    });
+  }
 
   it('English locale should contain appName and appDescription', () => {
     const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
@@ -43,12 +43,15 @@ describe('i18n locale files', () => {
       'manifest.json must use __MSG_appDescription__ for description');
   });
 
-  it('English and Vietnamese locales should have identical key sets', () => {
+  it('all locales should have identical key sets', () => {
     const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
-    const vi = JSON.parse(fs.readFileSync(viPath, 'utf8'));
     const enKeys = Object.keys(en).sort();
-    const viKeys = Object.keys(vi).sort();
-    assert.deepEqual(enKeys, viKeys, 'English and Vietnamese must have identical translation keys');
+    for (const locale of LOCALES) {
+      const localePath = path.join(projectRoot, 'extension', '_locales', locale, 'messages.json');
+      const localeData = JSON.parse(fs.readFileSync(localePath, 'utf8'));
+      const localeKeys = Object.keys(localeData).sort();
+      assert.deepEqual(enKeys, localeKeys, `${locale} must have identical translation keys to English`);
+    }
   });
 });
 
