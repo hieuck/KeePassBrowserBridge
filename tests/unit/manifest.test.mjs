@@ -29,6 +29,7 @@ const passkeyServiceSource = fs.readFileSync(path.join(projectRoot, 'src', 'Brid
 const pluginExt = fs.readFileSync(path.join(projectRoot, 'src', 'KeePassBrowserBridgeExt.cs'), 'utf8');
 const popupMarkup = fs.readFileSync(path.join(projectRoot, 'extension', 'popup.html'), 'utf8');
 const backgroundSource = fs.readFileSync(path.join(projectRoot, 'extension', 'background.js'), 'utf8');
+const backgroundUtilsSource = fs.readFileSync(path.join(projectRoot, 'extension', 'shared', 'background-utils.js'), 'utf8');
 const passkeysProxyExperiment = fs.readFileSync(path.join(projectRoot, 'extension', 'passkeysProxyExperiment.js'), 'utf8');
 const optionsMarkup = fs.readFileSync(path.join(projectRoot, 'extension', 'options.html'), 'utf8');
 const updateInfo = fs.readFileSync(path.join(projectRoot, 'update', 'versioninfo.txt'), 'utf8');
@@ -475,7 +476,7 @@ assert.equal(bridgeMethodPolicy.includes('TrustedClientPermissions.PasskeyRead')
 assert.equal(bridgeMethodPolicy.includes('TrustedClientPermissions.PasskeyWrite'), true, 'bridge method policy should require passkeyWrite for passkey write methods');
 assert.equal(bridgeRequestHandler.includes('feature_disabled'), true, 'passkey bridge methods should remain feature-disabled in this build');
 assert.equal(backgroundSource.includes('clientPermissionAllowList'), true, 'extension background should gate trusted-client permission updates through a central allowlist');
-assert.equal(backgroundSource.includes("allowed.push('passkeyRead', 'passkeyWrite')"), true, 'extension background should only allow passkey permission updates when bridge feature discovery enables them');
+assert.equal(backgroundUtilsSource.includes("allowed.push('passkeyRead', 'passkeyWrite')"), true, 'extension background utils should gate passkey permissions through a feature-discovered allowlist');
 assert.equal(backgroundSource.includes('about.pluginPasskeysEnabled'), true, 'extension background passkey permission updates should depend on bridge feature discovery');
 // v1 popup.js/options.js removed — passkey tests now in options PasskeyTab E2E tests
 assert.equal(privacyPolicy.includes('does not collect analytics'), true, 'privacy policy should state no analytics collection');

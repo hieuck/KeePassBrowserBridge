@@ -11,6 +11,7 @@ export default defineConfig({
         popup: 'src/popup/main.js',
         options: 'src/options/main.js',
         contentScript: 'contentScript.js',
+        background: 'background.js',
       },
       output: {
         entryFileNames: '[name].js',

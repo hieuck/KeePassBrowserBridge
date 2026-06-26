@@ -6,6 +6,8 @@ try {
   // passkeys proxy experiment is only available when included in the extension package
 }
 
+import { normalizeStringArray, normalizeFeatureMap, normalizeFeatureDetails, normalizeReleaseVersion, compareVersions, hasPartialPairingCredentials, booleanSetting, numberSetting, isActivePairingTimestamp, normalizeClientPermissions, clientPermissionAllowList, isTerminalPairingError } from './shared/background-utils.js';
+
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;
 const CLIENT_NAME = 'Chrome';
@@ -211,39 +213,6 @@ async function getAbout() {
   return about;
 }
 
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function normalizeStringArray(values) {
-  if (!Array.isArray(values)) return [];
-  return values.map((value) => String(value || '').trim()).filter(Boolean);
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function normalizeFeatureMap(features) {
-  if (!Array.isArray(features)) return {};
-  return features.reduce((result, feature) => {
-    const name = String(feature && feature.Name || '').trim();
-    if (name) result[name] = Boolean(feature.Enabled);
-    return result;
-  }, {});
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function normalizeFeatureDetails(features) {
-  if (!Array.isArray(features)) return {};
-  return features.reduce((result, feature) => {
-    const name = String(feature && feature.Name || '').trim();
-    if (!name) return result;
-    const enabled = Boolean(feature.Enabled);
-    const status = String(feature && feature.Status || '').trim() || (enabled ? 'enabled' : 'disabled');
-    result[name] = {
-      enabled,
-      status,
-      reason: String(feature && feature.Reason || '').trim()
-    };
-    return result;
-  }, {});
-}
-
 async function checkUpdates() {
   const about = await getAbout();
   const response = await fetch(LATEST_RELEASE_API_URL, {
@@ -264,23 +233,6 @@ async function checkUpdates() {
     updateAvailable: compareVersions(latestVersion, about.version) > 0,
     releaseUrl
   };
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function normalizeReleaseVersion(version) {
-  return String(version || '').trim().replace(/^v/i, '');
-}
-
-function compareVersions(left, right) {
-  const leftParts = normalizeReleaseVersion(left).split('.').map((part) => Number.parseInt(part, 10) || 0);
-  const rightParts = normalizeReleaseVersion(right).split('.').map((part) => Number.parseInt(part, 10) || 0);
-  const length = Math.max(leftParts.length, rightParts.length);
-  for (let index = 0; index < length; index += 1) {
-    const delta = (leftParts[index] || 0) - (rightParts[index] || 0);
-    if (delta !== 0) return delta;
-  }
-
-  return 0;
 }
 
 async function getState() {
@@ -322,33 +274,6 @@ async function getState() {
     autoLockTimeoutMinutes: numberSetting(state.autoLockTimeoutMinutes, DEFAULT_AUTO_LOCK_TIMEOUT_MINUTES, MAX_AUTO_LOCK_TIMEOUT_MINUTES),
     locked: state.locked === true
   };
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function hasPartialPairingCredentials(state) {
-  return Boolean(state && ((state.clientId && !state.sharedSecret) || (!state.clientId && state.sharedSecret)));
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function booleanSetting(value, defaultValue) {
-  return typeof value === 'boolean' ? value : defaultValue;
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function numberSetting(value, defaultValue, maxValue) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 && (maxValue === undefined || parsed <= maxValue)
-    ? parsed
-    : defaultValue;
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function isActivePairingTimestamp(value) {
-  if (!Number.isFinite(value) || value <= 0 || value > Date.now()) {
-    return false;
-  }
-
-  return Date.now() - value <= PAIRING_SESSION_MAX_AGE_MS;
 }
 
 async function applyAutoLock(state) {
@@ -496,28 +421,6 @@ async function updateClientPermissions(clientId, permissions) {
     Permissions: normalizeClientPermissions(permissions, about.pluginPasskeysEnabled)
   }, true);
   return parsePayload(response);
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function normalizeClientPermissions(permissions, passkeysEnabled = false) {
-  const allowed = clientPermissionAllowList(passkeysEnabled);
-  const normalized = ['read'];
-  for (const permission of Array.isArray(permissions) ? permissions : []) {
-    if (allowed.includes(permission) && !normalized.includes(permission)) {
-      normalized.push(permission);
-    }
-  }
-
-  return normalized;
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function clientPermissionAllowList(passkeysEnabled = false) {
-  const allowed = ['read', 'write', 'manageClients'];
-  if (passkeysEnabled) {
-    allowed.push('passkeyRead', 'passkeyWrite');
-  }
-  return allowed;
 }
 
 async function pairBegin() {
@@ -680,12 +583,6 @@ async function clearClipboardState() {
       // Clipboard clearing is best-effort and should not block lock/revoke.
     }
   }
-}
-
-// TODO: Extract to extension/shared/background-utils.js when service_worker module loading is set up
-function isTerminalPairingError(error) {
-  const message = error && error.message ? error.message : String(error || '');
-  return /expired|not found|too many invalid attempts/i.test(message);
 }
 
 async function queryLogins() {

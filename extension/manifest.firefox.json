@@ -25,7 +25,7 @@
     "default_title": "KeePass Browser Bridge"
   },
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["dist/background.js"]
   },
   "options_ui": {
     "page": "options.html",
