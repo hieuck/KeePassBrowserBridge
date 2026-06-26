@@ -45,7 +45,7 @@
 | No mutation testing | 🟡 P2 | QA | Open | Test quality not measured |
 | No WebKit E2E in CI | 🟡 P2 | QA | Open | playwright.config.js has webkit but CI only runs chromium + firefox |
 | Coverage thresholds not enforced in CI | 🟡 P2 | DevOps | **Resolved** | Added `coverage` CI job with `test:coverage:ci` script. Excludes E2E-only paths. Current: 100% stmts, 89.1% branches, 100% funcs. CI fails below 80% lines/funcs, 75% branches. |
-| Favicon fetch from google.com/s2/favicons | 🟡 P2 | Security | Open | Privacy concern; add configurable favicon source or disable |
+| Favicon fetch from google.com/s2/favicons | 🟡 P2 | Security | **Resolved** | Default changed to DuckDuckGo (privacy-first). Configurable: duckduckgo/google/direct. Shared `favicon.js` module with 5 TDD tests. |
 | No CSP (Content Security Policy) in extension manifest | 🟡 P2 | Security | **Resolved** | Added `script-src 'self'; object-src 'none'; frame-ancestors 'none'` to both Chrome + Firefox manifests |
 | Options page: tab changes don't propagate to settings state | 🟡 P2 | Frontend | **Resolved** | Added `onSettingChange()` handler that merges tab emits into `settings.value`. "Unsaved changes" footer now works correctly. |
 | No fuzzing test for bridge HTTP endpoint | 🟢 P3 | Security | Open | Protocol parsing robustness |
