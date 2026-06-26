@@ -1,8 +1,8 @@
 # KeePassBrowserBridge - Testing Report
 
 **Date:** 2026-06-26
-**Version:** 2.0.0
-**Status:** Verification passed (421 Vitest tests, 220+ Chromium E2E, 200+ C# tests)
+**Version:** 2.1.0
+**Status:** Verification passed (645 Vitest tests, 220+ Chromium E2E, 200+ C# tests, 51 test files)
 
 This report reflects the current repository state after running release-candidate verification:
 
