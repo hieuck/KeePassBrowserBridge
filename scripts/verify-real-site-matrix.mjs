@@ -11,7 +11,7 @@ const matrix = fs.readFileSync(matrixPath, 'utf8');
 const searchableSources = [
   'tests/e2e/form-detection.spec.js',
   'tests/extension/content-script.test.mjs',
-  'tests/extension/manifest.test.mjs',
+  'tests/unit/manifest.test.mjs',
   'tests/Program.cs'
 ].map((relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), 'utf8')).join('\n');
 
