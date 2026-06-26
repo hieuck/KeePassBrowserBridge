@@ -21,7 +21,8 @@
 | Dead code test references to removed formatCount | 🟢 P3 | QA | Updated formatters tests to remove formatCount references | 2026-06-26 |
 | Monolithic content script (20 functions extracted) | 🔴 P1 | Architect | Extracted field-classifier.js via TDD (70 tests). Content script now built through Vite, imports shared module, 120 lines removed. | 2026-06-26 |
 | Vue composable 0% coverage (useTheme, useI18n, useFocusTrap) | 🟡 P2 | QA | Added 19 functional tests across 3 composable test files. | 2026-06-26 |
-| Background.js pure utils 0% coverage | 🔴 P1 | QA | Extracted `background-utils.js` with 37 TDD tests covering 12 functions. All 547 tests pass. | 2026-06-26 |
+| Background.js pure utils 0% coverage | 🔴 P1 | QA | Extracted `background-utils.js` with 37 TDD tests covering 12 functions. | 2026-06-26 |
+| Vue component tests (CredentialCard, EmptyState, FilterBar) | 🟡 P2 | QA | Added 44 tests across 3 component test files. | 2026-06-26 |
 
 ---
 
@@ -32,14 +33,14 @@
 | No public store listing (Chrome/Firefox) | 🔴 P0 | PM | Open | External process; needs Chrome Web Store + Firefox Add-ons submission |
 | Passkeys feature gate disabled at browser | 🔴 P0 | PM/Arch | In progress | Backend prototype done (`PasskeyService.cs`, 1984 lines); browser proxy experiment in progress; needs completion per `docs/passkeys-webauthn-design.md` |
 | contentScript.js monolithic (1795→1675 lines) | 🔴 P1 | Architect | **Resolved** | Extracted 20 functions to `field-classifier.js` (70 TDD tests). Content script now built via Vite, imports shared modules. Removed 120 lines of inline code. |
-| background.js monolithic (1487 lines) | 🔴 P1 | Architect | In progress | Extracted `background-utils.js` (12 pure functions, 37 TDD tests). Remaining: wire import when service_worker supports modules |
+| background.js monolithic (1487→1395 lines) | 🔴 P1 | Architect | **Resolved** | Extracted `background-utils.js` (12 functions, 37 TDD tests). Built through Vite, imports shared module. 92 lines removed. Both Chrome + Firefox manifests updated. |
 | Vue components 0% Vitest coverage | 🔴 P1 | QA | Open | popup/, options/, components/, composables/ all 0%; only tested via Playwright E2E |
 | No TypeScript for extension | 🟡 P2 | Frontend | Open | Would catch type errors at build time; large migration effort |
 | .NET Framework 4.0 + DataContractJsonSerializer + HttpListener | 🟡 P2 | Backend | Open | Legacy stack; Kestrel + System.Text.Json would improve perf |
 | Windows-only CI, no containerized build | 🟡 P2 | DevOps | Open | Linux/macOS extension testing missing |
 | Shared secrets in browser localStorage | 🟡 P2 | Security | Open | Accepted risk; consider WebAuthn or OS-level protected storage |
 | CSS tokens duplicated in Picker.web.js + Prompt.web.js | 🟢 P3 | Frontend | **Resolved** | Extracted 32 shared CSS vars to `shared/design-tokens.js`. Bundle: 41.30→40.40 kB (-0.9 kB) |
-| Duplicate test files: url-matcher.test.mjs vs urlMatcher.test.mjs | 🟢 P3 | QA | Open | Different content; should be consolidated or renamed |
+| Duplicate test files: url-matcher.test.mjs vs urlMatcher.test.mjs | 🟢 P3 | QA | **Resolved** | Deleted stub `urlMatcher.test.mjs` (3 placeholder tests). Only `url-matcher.test.mjs` remains. |
 | No load/stress testing for bridge | 🟡 P2 | QA | Open | No performance benchmarks |
 | No mutation testing | 🟡 P2 | QA | Open | Test quality not measured |
 | No WebKit E2E in CI | 🟡 P2 | QA | Open | playwright.config.js has webkit but CI only runs chromium + firefox |
