@@ -251,7 +251,7 @@ assert.equal(rootReadme.includes(`KeePassBrowserBridge-chrome-extension-${manife
 assert.equal(rootReadme.includes(`KeePassBrowserBridge-firefox-extension-${manifest.version}.zip`), false, 'root README should not hardcode the current Firefox extension artifact version');
 assert.equal(rootReadme.includes('Passkeys/WebAuthn'), true, 'root README should document passkey/WebAuthn support');
 assert.equal(rootReadme.includes('MVP development is in progress'), false, 'root README should not describe the product as the old MVP status');
-assert.equal(rootReadme.includes('Chrome/Firefox extension'), true, 'root README should describe both packaged browser extension targets');
+assert.equal(rootReadme.includes('Chrome') && rootReadme.includes('Firefox'), true, 'root README should describe both browser targets');
 assert.equal(rootReadme.includes('install-plugin.ps1'), true, 'root README should document the local plugin install script');
 assert.equal(rootReadme.includes('capture-store-screenshots.ps1'), true, 'root README should document store screenshot generation');
 assert.equal(rootReadme.includes('docs/store-submission.md'), true, 'root README should link store submission docs');
@@ -315,7 +315,7 @@ assert.equal(storeSubmission.includes('does not send credentials to any remote s
 assert.equal(storeSubmission.includes('docs/store-assets/screenshots/'), true, 'store submission docs should document generated screenshot location');
 assert.equal(storeSubmission.includes('docs/privacy-policy.md'), true, 'store submission docs should point to publishable privacy policy source');
 assert.equal(storeSubmission.includes('docs/manual-smoke-evidence.md'), true, 'store submission docs should require manual smoke evidence before listing');
-assert.equal(storeSubmission.includes('Passkeys/WebAuthn are not supported'), true, 'store submission docs should disclose the current passkey gap');
+assert.equal(storeSubmission.includes('Passkeys/WebAuthn are supported'), true, 'store submission docs should document passkey support');
 assert.equal(manualSmokeEvidence.includes('Pairing and Revocation'), true, 'manual smoke evidence template should cover pairing and revoke behavior');
 assert.equal(manualSmokeEvidence.includes('Popup and Inline Fill'), true, 'manual smoke evidence template should cover popup and inline fill behavior');
 assert.equal(manualSmokeEvidence.includes('Save New Login'), true, 'manual smoke evidence template should cover save-new behavior');

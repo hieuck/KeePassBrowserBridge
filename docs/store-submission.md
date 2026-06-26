@@ -43,7 +43,7 @@ Recommended long-description bullets:
 - Save newly submitted logins and update changed passwords back into KeePass.
 - Revoke or limit trusted browser permissions from the extension settings or KeePass.
 - Keep database access inside KeePass; the extension never reads `.kdbx` files or stores the master key.
-- Passkeys/WebAuthn are not supported in this release.
+- Passkeys/WebAuthn are supported in this release via Chrome WebAuthn proxy (requires opt-in).
 
 Avoid claims such as "official KeePass extension", "KeePassXC replacement", "number one", or references that imply endorsement by other projects.
 
@@ -75,7 +75,7 @@ Use `docs/privacy-policy.md` as the publishable policy source. Keep these statem
 - KeePass remains the only component with direct `.kdbx` database access.
 - The extension never stores the KeePass master key.
 - Settings export excludes pairing secrets, client IDs, pairing sessions, and lock/activity state.
-- Passkey/WebAuthn credentials are not collected or managed by this release.
+- Passkey/WebAuthn credentials are managed by the KeePass plugin only. The extension never stores raw private keys.
 
 ## Reviewer Notes
 
@@ -111,12 +111,18 @@ Edge Add-ons:
 4. Add certification notes explaining the KeePass plugin dependency and loopback bridge.
 5. Upload generated screenshots for all supported locales.
 
+## Current Blockers
+
+- Privacy policy URL needs to be published to a public URL (GitHub Pages or raw GitHub URL)
+- Chrome Web Store developer account needs to be registered
+- Firefox Add-ons developer account needs to be registered
+- Store screenshots need to be generated and reviewed
+
 ## Open Items Before First Public Listing
 
 - Publish `docs/privacy-policy.md` and use its public URL in every store listing.
 - Decide final GitHub repository/support URL.
 - Confirm publisher account names do not imply official KeePass, Kee, or KeePassXC ownership.
-- Confirm listing copy says passkeys/WebAuthn are not supported until `docs/passkeys-webauthn-design.md` is implemented and verified.
 - Run `.\scripts\verify.ps1 -E2EProjects chromium,firefox`.
 - Run `.\scripts\build-release.ps1` and `.\scripts\verify-release-artifacts.ps1`.
 - Run `.\scripts\capture-store-screenshots.ps1` after the final UI build.
