@@ -337,11 +337,11 @@ async function setPasskeysEnabled(enabled) {
   if (enable) {
     try {
       const granted = await chrome.permissions.request({
-        permissions: ['webAuthenticationProxy', 'webNavigation']
+        permissions: ['webNavigation']
       });
       if (!granted) {
         await chrome.storage.local.set({ passkeysEnabled: false });
-        throw new Error('WebAuthenticationProxy permission was denied.');
+        throw new Error('WebNavigation permission was denied.');
       }
     } catch (error) {
       await chrome.storage.local.set({ passkeysEnabled: false });
@@ -352,7 +352,7 @@ async function setPasskeysEnabled(enabled) {
     await teardownPasskeyProxy();
     try {
       await chrome.permissions.remove({
-        permissions: ['webAuthenticationProxy', 'webNavigation']
+        permissions: ['webNavigation']
       });
     } catch (_) {}
   }

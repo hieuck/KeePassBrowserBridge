@@ -133,4 +133,4 @@ Before public replacement release:
 - [x] 10. Confirm `docs/privacy-policy.md` matches the browser-store privacy answers.
       Confirmed: Privacy policy reviewed and published-ready; matches store-submission privacy statements.
 - [x] 11. Confirm any future WebAuthn permission follows `docs/passkeys-webauthn-design.md`.
-      Confirmed: `webAuthenticationProxy` is optional permission, requested at runtime; design doc governs any passkey-related permission addition.
+      Confirmed: `webAuthenticationProxy` is a required permission in Chrome MV3 (cannot be optional); design doc governs any passkey-related permission addition.

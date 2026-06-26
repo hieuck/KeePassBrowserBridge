@@ -1,6 +1,6 @@
 # KeePass Browser Bridge
 
-Version 2.0.0
+Version 2.1.0
 
 Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 

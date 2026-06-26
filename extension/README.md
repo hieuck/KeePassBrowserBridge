@@ -1,6 +1,6 @@
 # KeePass Browser Bridge Extension
 
-Version 2.0.0
+Version 2.1.0
 
 This directory contains the Chrome MV3 and Firefox-compatible browser extension for KeePass Browser Bridge. The extension talks to the KeePass plugin through the local loopback bridge at `http://127.0.0.1:19455/bridge`.
 

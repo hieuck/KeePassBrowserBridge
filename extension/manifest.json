@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_appName__",
   "description": "__MSG_appDescription__",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "default_locale": "en",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; frame-ancestors 'none'"
@@ -67,10 +67,10 @@
     "contextMenus",
     "notifications",
     "webRequest",
-    "webRequestAuthProvider"
+    "webRequestAuthProvider",
+    "webAuthenticationProxy"
   ],
   "optional_permissions": [
-    "webAuthenticationProxy",
     "webNavigation"
   ],
   "host_permissions": [

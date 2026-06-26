@@ -28,8 +28,8 @@ import { useToast } from '../../composables/useToast.js';
 
 const { show: showToast } = useToast();
 
-const version = '2.0.0';
-const pluginVersion = '2.0.0';
+const version = __APP_VERSION__;
+const pluginVersion = __APP_VERSION__;
 const repoUrl = 'https://github.com/hieuck/KeePassBrowserBridge';
 
 const exporting = ref(false);

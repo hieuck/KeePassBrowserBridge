@@ -83,9 +83,8 @@ assert.equal(manifest.background?.service_worker === 'passkeysProxy.js', false, 
 assert.equal(manifest.permissions.includes('notifications'), true, 'manifest should request notifications for save/update/fill feedback');
 assert.equal(manifest.permissions.includes('contextMenus'), true, 'Chrome manifest should request contextMenus for field actions');
 assert.equal(firefoxManifest.permissions.includes('contextMenus'), true, 'Firefox manifest should request contextMenus for field actions');
-assert.equal(manifest.permissions.includes('webAuthenticationProxy'), false, 'manifest must not request WebAuthn proxy permission before browser-facing passkeys are implemented');
+assert.equal(manifest.permissions.includes('webAuthenticationProxy'), true, 'Chrome manifest must request WebAuthn proxy permission (required, not optional in MV3)');
 assert.equal(firefoxManifest.permissions.includes('webAuthenticationProxy'), false, 'Firefox manifest must not request unsupported WebAuthn proxy permission');
-assert.equal(manifest.optional_permissions.includes('webAuthenticationProxy'), true, 'manifest should optionally declare WebAuthn proxy permission for passkey experiment');
 assert.equal(manifest.optional_permissions.includes('webNavigation'), true, 'manifest should optionally declare webNavigation for passkey proxy trusted origin resolution');
 assert.equal(contentScriptEntries.every((entry) => entry.all_frames === true), true, 'content scripts should run in iframes for embedded login widgets');
 assert.equal(contentScriptEntries.every((entry) => entry.match_about_blank === true), true, 'content scripts should run in about:blank child frames when the parent URL matches');
@@ -125,7 +124,7 @@ assert.equal(releaseWorkflow.includes('does not match extension/manifest.json'),
 assert.equal(releaseWorkflow.includes('contents: write'), true, 'release workflow should be allowed to publish GitHub Releases');
 assert.equal(releaseWorkflow.includes('softprops/action-gh-release@v2'), true, 'release workflow should publish a GitHub Release for plugin auto-update');
 assert.equal(releaseWorkflow.includes('verify-release-artifacts.ps1'), true, 'release workflow should verify release artifacts before publishing');
-assert.equal(releaseWorkflow.includes('tag_name: v${{ inputs.version }}'), true, 'release workflow should publish semantic version tags used by the plugin updater');
+assert.equal(releaseWorkflow.includes('tag_name: v${{ env.RELEASE_VERSION }}'), true, 'release workflow should publish semantic version tags used by the plugin updater');
 assert.equal(releaseWorkflow.includes('artifacts/KeePassBrowserBridge.plgx'), true, 'release workflow should attach the PLGX asset consumed by plugin auto-update');
 assert.equal(releaseWorkflow.includes('artifacts/versioninfo.txt'), true, 'release workflow should attach KeePass update metadata to the release');
 assert.equal(releaseWorkflow.includes('artifacts/release-manifest.json'), true, 'release workflow should attach release manifest');

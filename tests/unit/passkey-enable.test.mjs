@@ -35,11 +35,11 @@ describe('Passkey enablement flow', () => {
       'background.js must also react to storage changes for passkeysEnabled');
   });
 
-  it('should request webAuthenticationProxy permission before calling setupPasskeyProxy', () => {
+  it('should request webNavigation permission before calling setupPasskeyProxy', () => {
     assert.ok(bgSource.includes('chrome.permissions.request'),
       'background.js must request permission before proxy setup');
-    assert.ok(bgSource.includes('webAuthenticationProxy'),
-      'must request webAuthenticationProxy permission');
+    assert.ok(bgSource.includes('webNavigation'),
+      'must request webNavigation permission');
   });
 
   it('PasskeyTab should emit save event with passkeysEnabled', () => {

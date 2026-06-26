@@ -120,7 +120,7 @@ async function save() {
       if (nextPasskeys && typeof chrome !== 'undefined' && chrome.permissions) {
         try {
           await chrome.permissions.request({
-            permissions: ['webAuthenticationProxy', 'webNavigation']
+            permissions: ['webNavigation']
           });
         } catch (e) {
           console.error('Passkey permission request failed:', e);

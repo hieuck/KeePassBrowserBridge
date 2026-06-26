@@ -17,8 +17,8 @@ describe('Passkey enablement — user gesture fix', () => {
   it('options App.vue should request chrome.permissions directly (user gesture)', () => {
     assert.ok(optionsApp.includes('chrome.permissions.request'),
       'options App.vue must call chrome.permissions.request() directly from user gesture');
-    assert.ok(optionsApp.includes('webAuthenticationProxy'),
-      'options App.vue must request webAuthenticationProxy permission');
+    assert.ok(optionsApp.includes('webNavigation'),
+      'options App.vue must request webNavigation permission');
   });
 
   it('background.js setPasskeysEnabled should still request permissions (redundant but safe)', () => {

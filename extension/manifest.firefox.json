@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_appName__",
   "description": "__MSG_appDescription__",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "default_locale": "en",
   "browser_specific_settings": {
     "gecko": {
@@ -60,7 +60,7 @@
         "compat.js",
         "httpAuth.js",
         "customFields.js",
-        "contentScript.js"
+        "dist/contentScript.js"
       ],
       "run_at": "document_start",
       "all_frames": true,
