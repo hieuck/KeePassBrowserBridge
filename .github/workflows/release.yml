@@ -123,12 +123,18 @@ jobs:
           [System.IO.File]::WriteAllText($keyPath, $env:KBB_GPG_PRIVATE_KEY)
           gpg --batch --import $keyPath
 
-      - name: Build plugin
+      - name: Build plugin (DLL only)
         if: ${{ env.KEEPASS_DOWNLOADED == 'true' }}
         shell: pwsh
         run: |
           $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
-          .\scripts\build-release.ps1 -KeePassExe "$keepassDir\KeePass.exe" -ArtifactsDir "${{ github.workspace }}\artifacts" -RequireCleanSource
+          $artifacts = "${{ github.workspace }}\artifacts"
+          $project = "${{ github.workspace }}\src\KeePassBrowserBridge.csproj"
+          $buildOut = "$env:TEMP\kp-build"
+          Remove-Item -Path $buildOut -Recurse -Force -ErrorAction SilentlyContinue
+          dotnet build $project /p:BaseOutputPath="$buildOut" --configuration Release -p:KeePassReferencePath="$keepassDir"
+          if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
+          Copy-Item "$buildOut\Release\net40\KeePassBrowserBridge.dll" "$artifacts\" -Force
 
       - name: Build extension
         shell: pwsh
