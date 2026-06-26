@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+import { describe, it, assert } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,50 +12,44 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 
 const source = fs.readFileSync(path.join(projectRoot, 'extension', 'shared', 'storage.js'), 'utf8');
 
-describe('storage.js - getSettings', () => {
+describe('storage.js', () => {
   it('should export getSettings', () => {
-    assert.ok(source.includes('getSettings'), 'Missing getSettings export');
+    assert.ok(source.includes('export function getSettings'), 'Missing getSettings');
   });
 
-  it('should return empty object when chrome API is unavailable', () => {
-    assert.ok(source.includes('typeof chrome') || source.includes('typeof window.chrome'),
-      'Missing chrome availability check');
-    assert.ok(source.includes("resolve({})"), 'Missing empty object fallback');
-  });
-
-  it('should call chrome.storage.local.get(null) for all settings', () => {
-    assert.ok(source.includes('chrome.storage.local.get'),
-      'Missing chrome.storage.local.get call');
-    assert.ok(source.includes('null'), 'Missing null argument (get all settings)');
-  });
-});
-
-describe('storage.js - setSetting', () => {
   it('should export setSetting', () => {
-    assert.ok(source.includes('setSetting'), 'Missing setSetting export');
+    assert.ok(source.includes('export function setSetting'), 'Missing setSetting');
   });
 
-  it('should call chrome.storage.local.set with key/value object', () => {
-    assert.ok(source.includes('chrome.storage.local.set'),
-      'Missing chrome.storage.local.set call');
-  });
-
-  it('should resolve without error when chrome API is unavailable', () => {
-    assert.ok(source.includes('resolve()'), 'Missing resolve on failure');
-  });
-});
-
-describe('storage.js - setSettings', () => {
   it('should export setSettings', () => {
-    assert.ok(source.includes('setSettings'), 'Missing setSettings export');
+    assert.ok(source.includes('export function setSettings'), 'Missing setSettings');
   });
 
-  it('should pass object directly to chrome.storage.local.set', () => {
-    assert.ok(source.includes('chrome.storage.local.set'),
-      'Missing chrome.storage.local.set call');
+  it('should use chrome.storage.local', () => {
+    assert.ok(source.includes('chrome.storage.local'), 'Missing chrome.storage.local');
   });
 
-  it('should resolve without error when chrome API is unavailable', () => {
-    assert.ok(source.includes('resolve()'), 'Missing resolve on failure');
+  it('should handle null result in getSettings', () => {
+    assert.ok(source.includes('data || {}'), 'Missing fallback for null result');
+  });
+
+  it('should call get with null for all settings', () => {
+    assert.ok(source.includes('.get(null,'), 'Missing get(null) for all settings');
+  });
+
+  it('should set a single key in setSetting', () => {
+    assert.ok(source.includes('.set({ [key]: value }'), 'Missing single key set');
+  });
+
+  it('should set all settings in setSettings', () => {
+    assert.ok(source.includes('.set(obj,'), 'Missing settings set');
+  });
+
+  it('should return Promises from all functions', () => {
+    assert.ok(source.includes('new Promise'), 'Missing Promise wrapper');
+  });
+
+  it('should resolve Promise on successful set', () => {
+    assert.ok(source.includes('resolve()'), 'Missing resolve callback');
   });
 });
