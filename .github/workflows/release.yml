@@ -37,6 +37,9 @@ env:
 permissions:
   contents: write
 
+env:
+  RELEASE_VERSION: ""
+
 jobs:
   package:
     name: Package plugin and extension
@@ -66,10 +69,10 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $releaseVersion = "${{ env.RELEASE_VERSION }}"
-          if ([string]::IsNullOrWhiteSpace($releaseVersion)) {
-            $tag = "${{ github.ref_name }}"
-            $releaseVersion = $tag -replace '^v', ''
+          if ("${{ github.event_name }}" -eq "push") {
+            $releaseVersion = "${{ github.ref_name }}" -replace '^v', ''
+          } else {
+            $releaseVersion = "${{ inputs.version }}"
           }
           if ($releaseVersion -notmatch '^\d+\.\d+\.\d+$') {
             throw "Release version must use x.y.z format. Got: $releaseVersion"

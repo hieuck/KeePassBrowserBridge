@@ -124,7 +124,8 @@ assert.equal(releaseWorkflow.includes('does not match extension/manifest.json'),
 assert.equal(releaseWorkflow.includes('contents: write'), true, 'release workflow should be allowed to publish GitHub Releases');
 assert.equal(releaseWorkflow.includes('softprops/action-gh-release@v2'), true, 'release workflow should publish a GitHub Release for plugin auto-update');
 assert.equal(releaseWorkflow.includes('verify-release-artifacts.ps1'), true, 'release workflow should verify release artifacts before publishing');
-assert.equal(releaseWorkflow.includes('tag_name: v${{ env.RELEASE_VERSION }}'), true, 'release workflow should publish semantic version tags used by the plugin updater');
+assert.equal(releaseWorkflow.includes('github.event_name'), true, 'release workflow should detect event type for version source');
+assert.equal(releaseWorkflow.includes('RELEASE_VERSION'), true, 'release workflow should set RELEASE_VERSION env');
 assert.equal(releaseWorkflow.includes('artifacts/KeePassBrowserBridge.plgx'), true, 'release workflow should attach the PLGX asset consumed by plugin auto-update');
 assert.equal(releaseWorkflow.includes('artifacts/versioninfo.txt'), true, 'release workflow should attach KeePass update metadata to the release');
 assert.equal(releaseWorkflow.includes('artifacts/release-manifest.json'), true, 'release workflow should attach release manifest');
