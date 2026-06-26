@@ -209,6 +209,42 @@ describe('background-utils - clientPermissionAllowList', () => {
   });
 });
 
+describe('background-utils - edge cases', () => {
+  it('compareVersions should handle pre-release version tags', async () => {
+    const { compareVersions } = await importModule();
+    assert.equal(compareVersions('1.0.0-alpha', '1.0.0'), 0);
+    assert.equal(compareVersions('2.0.0-beta', '2.0.0-alpha'), 0);
+  });
+
+  it('compareVersions should handle versions with different segment counts', async () => {
+    const { compareVersions } = await importModule();
+    assert.ok(compareVersions('1.0', '2.0.0.0') < 0);
+    assert.ok(compareVersions('2.0.0.0', '1.0') > 0);
+    assert.equal(compareVersions('1.0', '1.0.0.0'), 0);
+  });
+
+  it('normalizeStringArray should handle undefined values in array', async () => {
+    const { normalizeStringArray } = await importModule();
+    assert.deepEqual(normalizeStringArray(['a', undefined, 'b']), ['a', 'b']);
+  });
+
+  it('normalizeFeatureMap should handle features with missing Name or Enabled', async () => {
+    const { normalizeFeatureMap } = await importModule();
+    const result = normalizeFeatureMap([
+      { Name: 'valid', Enabled: true },
+      { Enabled: true },
+      {},
+      { Name: 'no-enabled' },
+    ]);
+    assert.deepEqual(result, { 'valid': true, 'no-enabled': false });
+  });
+
+  it('numberSetting should handle string "0" input', async () => {
+    const { numberSetting } = await importModule();
+    assert.equal(numberSetting('0', 10, 300), 0);
+  });
+});
+
 describe('background-utils - isTerminalPairingError', () => {
   it('should return true for expired error', async () => {
     const { isTerminalPairingError } = await importModule();

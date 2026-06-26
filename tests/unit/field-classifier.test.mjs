@@ -479,6 +479,46 @@ describe('field-classifier - credentialKey', () => {
   });
 });
 
+describe('field-classifier - edge cases', () => {
+  it('isVisible should handle elements not in DOM', async () => {
+    const { isVisible } = await importModule();
+    const el = document.createElement('div');
+    assert.ok(!isVisible(el));
+  });
+
+  it('editableInputFromElement should return null for undefined', async () => {
+    const { editableInputFromElement } = await importModule();
+    assert.equal(editableInputFromElement(undefined), null);
+  });
+
+  it('editableInputFromElement should return null for non-element objects', async () => {
+    const { editableInputFromElement } = await importModule();
+    assert.equal(editableInputFromElement({}, () => true), null);
+  });
+
+  it('fieldText should return empty string for element with no attributes', async () => {
+    const { fieldText } = await importModule();
+    const input = document.createElement('input');
+    assert.equal(fieldText(input), '');
+  });
+
+  it('isSubmitControl should return false for custom elements', async () => {
+    const { isSubmitControl } = await importModule();
+    const custom = document.createElement('custom-element');
+    assert.ok(!isSubmitControl(custom));
+    const div = document.createElement('div');
+    assert.ok(!isSubmitControl(div));
+  });
+
+  it('documentOrder should handle disconnected elements', async () => {
+    const { documentOrder } = await importModule();
+    const el1 = document.createElement('div');
+    const el2 = document.createElement('div');
+    const result = documentOrder(el1, el2);
+    assert.ok(result === -1 || result === 1);
+  });
+});
+
 describe('field-classifier - isLoginPasswordInput', () => {
   it('should return true for standard password input', async () => {
     const { isLoginPasswordInput, fieldText } = await importModule();

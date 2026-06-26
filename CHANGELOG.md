@@ -38,3 +38,46 @@
 - 14 WCAG 2.1 AA a11y tests (axe-core, 0 violations)
 - 90 Vitest unit tests
 - Test infrastructure: vitest files moved to `tests/unit/` to prevent Playwright/vitest conflict
+
+## 2.1.0 (2026-06-26)
+
+### Features
+- Extract shared modules: `field-classifier.js` (20 form-detection functions), `background-utils.js` (12 data-utility functions), `password-generator.js`, `escape-html.js`, `design-tokens.js`, `favicon.js`
+- Bundle content script through Vite build pipeline — enables ES imports, reduces contentScript.js from 1795 to 1675 lines
+- Bundle background service worker through Vite — enables ES imports, reduces background.js from 1498 to 1395 lines
+- Enable passkeys/WebAuthn support: backend gate open, Chrome proxy packaged, "Experimental" label removed
+- Configurable favicon source (DuckDuckGo privacy-first, Google, direct)
+- Content Security Policy added to both Chrome and Firefox manifests
+
+### Bug Fixes
+- Options page: tab setting changes now properly propagate to parent state — "Unsaved changes" footer now works
+- Auto-fill delay setting key naming unified (`autoFillDelayMs` → `autoFillDelay`)
+- Dead code elimination: 29 lint warnings → 0 across entire codebase
+
+### Security
+- Replace Google favicon service with DuckDuckGo by default (privacy-first)
+- Add CSP: `script-src 'self'; object-src 'none'; frame-ancestors 'none'`
+- Remove `PORTABLE_SETTING_DEFAULTS` exposure
+
+### Code Quality
+- Extract and deduplicate `escapeHtml` (4 copies → 1 shared module)
+- Extract and deduplicate password generation (2 copies → 1 shared utility)
+- Extract shared design tokens (32 CSS vars, deduplicated between Picker + Prompt)
+- Remove dead code: `MoreMenu.vue`, `formatCount()`, `getEndpoint()`, `createInlineButton()`, `PORTABLE_SETTING_DEFAULTS`, `registerIcons` import, `showInlinePickerForInput()`, 4 unused E2E test helpers
+- Remove duplicate stub test file: `urlMatcher.test.mjs`
+
+### Tests
+- **Total: 620 tests** (was 421, +47%)
+- Add `field-classifier.test.mjs` — 70 TDD tests for form detection logic
+- Add `background-utils.test.mjs` — 37 TDD tests for data utilities
+- Add `password-generator.test.mjs` — 8 tests
+- Add `escape-html.test.mjs` — 8 tests
+- Add `favicon.test.mjs` — 5 tests
+- Add Vue composable tests: `useTheme` (9), `useI18n` (6), `useFocusTrap` (4), `useBridge` (32)
+- Add Vue component tests: `CredentialCard` (16), `EmptyState` (11), `FilterBar` (17)
+- CI now enforces coverage thresholds: 80% lines/functions, 75% branches
+
+### CI/CD
+- Add `coverage` CI job — fails build below thresholds
+- Add `test:coverage:ci` script
+- Update `.gitignore` for coverage reports and test screenshots

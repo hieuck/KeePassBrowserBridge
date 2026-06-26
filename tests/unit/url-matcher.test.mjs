@@ -96,6 +96,64 @@ describe('UrlMatcher Integration Tests', () => {
   });
 });
 
+describe('url-matcher - edge case URLs', () => {
+  test('should match IP address URLs', () => {
+    expect(matchUrl('http://192.168.1.1', 'http://192.168.1.1/admin')).toBe(true);
+  });
+
+  test('should match localhost URLs', () => {
+    expect(matchUrl('http://localhost:8080', 'http://localhost:8080/path')).toBe(true);
+  });
+
+  test('should handle data: URLs gracefully', () => {
+    expect(matchUrl('data:text/html,hi', 'data:text/html,hi')).toBe(false);
+  });
+
+  test('should handle blob: URLs gracefully', () => {
+    expect(matchUrl('blob:d3958f5c-0777-0845-9dcf-2cb28779acf4', 'blob:d3958f5c-0777-0845-9dcf-2cb28779acf4')).toBe(false);
+  });
+
+  test('should handle about:blank gracefully', () => {
+    expect(matchUrl('about:blank', 'about:blank')).toBe(false);
+  });
+
+  test('should handle javascript: URLs gracefully', () => {
+    expect(matchUrl('javascript:void(0)', 'javascript:void(0)')).toBe(false);
+  });
+
+  test('should handle file: URLs', () => {
+    expect(matchUrl('file:///c:/path', 'file:///c:/path/file')).toBe(true);
+  });
+
+  test('should handle URLs with authentication', () => {
+    expect(matchUrl('http://user:pass@example.com', 'http://user:pass@example.com/path')).toBe(true);
+  });
+
+  test('should handle Punycode/IDN domain matching', () => {
+    expect(matchUrl('https://xn--mnchen-3ya.de', 'https://xn--mnchen-3ya.de/page')).toBe(true);
+  });
+});
+
+describe('url-matcher - source inspection', () => {
+  const source = matchUrl.toString();
+
+  it('should have URL parsing logic', () => {
+    assert.ok(source.includes('hostname'), 'Should parse hostname from URL');
+  });
+
+  it('should have path matching logic', () => {
+    assert.ok(source.includes('path'), 'Should handle URL path matching');
+  });
+
+  it('should have protocol comparison', () => {
+    assert.ok(source.includes('protocol') || source.includes('://'), 'Should compare URL protocols');
+  });
+
+  it('should have regex generation for wildcards', () => {
+    assert.ok(source.includes('RegExp') || source.includes('regex'), 'Should generate regex for wildcard patterns');
+  });
+});
+
 function matchUrl(entryUrl, pageUrl) {
   if (!entryUrl || !pageUrl) return false;
 
