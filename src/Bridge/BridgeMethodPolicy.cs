@@ -61,7 +61,7 @@ namespace KeePassBrowserBridge.Bridge
         public static string RequiredPermission(string method)
         {
             if (method == BridgeMethods.LoginsQuery || method == BridgeMethods.ClientStatus ||
-                method == BridgeMethods.DatabaseInfo)
+                method == BridgeMethods.DatabaseInfo || method == BridgeMethods.DatabaseGroups)
                 return TrustedClientPermissions.Read;
             if (method == BridgeMethods.LoginsCreate ||
                 method == BridgeMethods.LoginsUpdate ||
