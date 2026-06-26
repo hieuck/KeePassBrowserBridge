@@ -288,20 +288,22 @@ $updateInfoTarget = Join-Path $ArtifactsDir "versioninfo.txt"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($updateInfoTarget, $expectedUpdateInfo, $utf8NoBom)
 
-Write-Host "Compiling KeePass plugin via dotnet build..."
-$projectPath = Join-Path $PSScriptRoot "..\src\KeePassBrowserBridge.csproj"
-$buildOutput = "$env:TEMP\KeePassBrowserBridge-build\"
-Remove-Item -Path $buildOutput -Recurse -Force -ErrorAction SilentlyContinue
-dotnet build $projectPath /p:BaseOutputPath="$buildOutput" --configuration Release -p:KeePassReferencePath="$KeePassDir"
+Write-Host "Compiling KeePass plugin via csc.exe..."
+$srcDir = Join-Path $PSScriptRoot "..\src"
+$refs = @(
+    "/reference:$KeePassDir\KeePass.exe"
+    "/reference:System.dll"
+    "/reference:System.Core.dll"
+    "/reference:System.Drawing.dll"
+    "/reference:System.Windows.Forms.dll"
+    "/reference:System.Runtime.Serialization.dll"
+    "/reference:System.Xml.Linq.dll"
+)
+& $csc @("/target:library", "/out:$pluginDllTarget") @refs "/recurse:$srcDir\*.cs"
 if ($LASTEXITCODE -ne 0) {
-    throw "dotnet build failed with exit code $LASTEXITCODE."
+    throw "csc.exe compilation failed with exit code $LASTEXITCODE."
 }
-
-$compiledDll = "${buildOutput}Release\net40\KeePassBrowserBridge.dll"
-if (-not (Test-Path -LiteralPath $compiledDll)) {
-    throw "Compiled DLL not found at $compiledDll"
-}
-Copy-Item -LiteralPath $compiledDll -Destination $pluginDllTarget -Force
+Write-Host "Plugin compiled: $pluginDllTarget"
 
 $expectedPlgx = Join-Path $repoRoot "src.plgx"
 $existingPlgx = @()

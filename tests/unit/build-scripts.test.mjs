@@ -52,8 +52,8 @@ describe('build-release.ps1 - Firefox extension files', () => {
   });
 
   it('should compile all C# source files', () => {
-    // The dotnet build command should reference the .csproj
-    assert.ok(source.includes('KeePassBrowserBridge.csproj') || source.includes('dotnet build'),
-      'build script should compile via dotnet build with the .csproj project file');
+    // The build script should compile .cs files via csc.exe
+    assert.ok(source.includes('csc.exe') || source.includes('/recurse:'),
+      'build script should compile via csc.exe with /recurse on .cs files');
   });
 });
