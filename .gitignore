@@ -13,4 +13,6 @@ Thumbs.db
 /playwright-report
 /test-results
 
+/coverage/
+/tests/__screenshots__/
 # Test artifacts
