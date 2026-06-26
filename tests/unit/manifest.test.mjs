@@ -30,7 +30,7 @@ const pluginExt = fs.readFileSync(path.join(projectRoot, 'src', 'KeePassBrowserB
 const popupMarkup = fs.readFileSync(path.join(projectRoot, 'extension', 'popup.html'), 'utf8');
 const backgroundSource = fs.readFileSync(path.join(projectRoot, 'extension', 'background.js'), 'utf8');
 const backgroundUtilsSource = fs.readFileSync(path.join(projectRoot, 'extension', 'shared', 'background-utils.js'), 'utf8');
-const passkeysProxyExperiment = fs.readFileSync(path.join(projectRoot, 'extension', 'passkeysProxyExperiment.js'), 'utf8');
+const passkeysProxyExperiment = fs.readFileSync(path.join(projectRoot, 'extension', 'passkeysProxy.js'), 'utf8');
 const optionsMarkup = fs.readFileSync(path.join(projectRoot, 'extension', 'options.html'), 'utf8');
 const updateInfo = fs.readFileSync(path.join(projectRoot, 'update', 'versioninfo.txt'), 'utf8');
 const releaseScript = fs.readFileSync(path.join(projectRoot, 'scripts', 'build-release.ps1'), 'utf8');
@@ -78,8 +78,8 @@ assert.equal(scripts.includes('enhancedSecurity_part2.js'), false, 'production m
 assert.equal(scripts.includes('groupOrganization.js'), false, 'production manifest must not inject popup search helpers into web pages');
 assert.equal(scripts.includes('passwordQuality.js'), false, 'production manifest must not inject password quality helpers into web pages');
 assert.equal(firefoxScripts.includes('passwordQuality.js'), false, 'Firefox production manifest must not inject unused password quality helpers into web pages');
-assert.equal(scripts.includes('passkeysProxyExperiment.js'), false, 'production manifest must not inject passkey proxy experiment into web pages');
-assert.equal(manifest.background?.service_worker === 'passkeysProxyExperiment.js', false, 'production manifest must not use passkey proxy experiment as service worker');
+assert.equal(scripts.includes('passkeysProxy.js'), false, 'production manifest must not inject passkey proxy into web pages');
+assert.equal(manifest.background?.service_worker === 'passkeysProxy.js', false, 'production manifest must not use passkey proxy as service worker');
 assert.equal(manifest.permissions.includes('notifications'), true, 'manifest should request notifications for save/update/fill feedback');
 assert.equal(manifest.permissions.includes('contextMenus'), true, 'Chrome manifest should request contextMenus for field actions');
 assert.equal(firefoxManifest.permissions.includes('contextMenus'), true, 'Firefox manifest should request contextMenus for field actions');
@@ -171,7 +171,7 @@ assert.equal(releaseScript.includes('versioninfo.txt'), true, 'release script sh
 assert.equal(releaseScript.includes('$commonExtensionFiles'), true, 'release script should package extension files from an explicit production allowlist');
 assert.equal(releaseScript.includes('quick-test.js'), false, 'release script should not package development test helpers');
 assert.equal(releaseScript.includes('passwordQuality.js'), false, 'release script should not package unused password quality helpers');
-assert.equal(releaseScript.includes('passkeysProxyExperiment.js'), true, 'release script should package passkey proxy experiment for background.js importScripts');
+assert.equal(releaseScript.includes('passkeysProxy.js'), true, 'release script should package passkey proxy for background.js importScripts');
 assert.equal(releaseScript.includes('SHA256SUMS.txt'), true, 'release script should emit checksums for release artifacts');
 assert.equal(releaseScript.includes('release-manifest.json'), true, 'release script should emit structured release provenance manifest');
 assert.equal(releaseScript.includes('Get-GitStatusIgnoringArtifactOutput'), true, 'release script should ignore artifact output when computing source dirty-state');
@@ -188,7 +188,7 @@ assert.equal(releaseScript.includes('[switch] $SignArtifacts'), true, 'release s
 assert.equal(releaseScript.includes('Invoke-GpgDetachedSignature'), true, 'release script should create GPG detached signatures when signing is enabled');
 assert.equal(artifactVerifyScript.includes('quick-test.js'), true, 'artifact verifier should reject development test helpers in extension ZIPs');
 assert.equal(artifactVerifyScript.includes('passwordQuality.js'), true, 'artifact verifier should reject unused password quality helpers in extension ZIPs');
-assert.equal(artifactVerifyScript.includes('passkeysProxyExperiment.js'), true, 'artifact verifier should expect passkeysProxyExperiment.js in extension ZIPs — needed by background.js importScripts');
+assert.equal(artifactVerifyScript.includes('passkeysProxy.js'), true, 'artifact verifier should expect passkeysProxy.js in extension ZIPs — needed by background.js importScripts');
 assert.equal(artifactVerifyScript.includes('KeePassBrowserBridge-chrome-extension-$Version.zip'), true, 'artifact verifier should inspect Chrome extension ZIP');
 assert.equal(artifactVerifyScript.includes('KeePassBrowserBridge-firefox-extension-$Version.zip'), true, 'artifact verifier should inspect Firefox extension ZIP');
 assert.equal(artifactVerifyScript.includes('Firefox extension package is missing passwordQuality.js.'), false, 'artifact verifier should not require unused Firefox password quality helpers');
@@ -268,7 +268,7 @@ assert.equal(extensionReadme.includes('contentScript.js - Main filling logic (un
 assert.equal(extensionReadme.includes('docs/release-readiness.md'), true, 'extension README should point maintainers to release readiness docs');
 assert.equal(extensionReadme.includes('docs/store-submission.md'), true, 'extension README should point maintainers to store submission docs');
 assert.equal(extensionReadme.includes('Passkeys'), true, 'extension README should document passkey support');
-assert.equal(extensionReadme.includes('docs/passkeys-webauthn-design.md'), true, 'extension README should route passkey work to the design doc');
+assert.equal(extensionReadme.includes('Options > Passkeys'), true, 'extension README should reference passkey configuration in extension options');
 assert.equal(extensionTestingGuide.includes('Passkeys/WebAuthn'), true, 'extension testing guide should compare passkey support explicitly');
 assert.equal(extensionTestingGuide.includes('Passkeys'), true, 'extension testing guide should document passkey testing status');
 assert.equal(extensionTestingGuide.includes('docs/manual-smoke-evidence.md'), true, 'extension testing guide should route manual smoke results to the evidence template');
@@ -346,7 +346,7 @@ assert.equal(migrationGuide.includes('Back up the KeePass database'), true, 'mig
 assert.equal(migrationGuide.includes('Pair each browser profile again'), true, 'migration guide should explain fresh pairing');
 assert.equal(migrationGuide.includes('Passkeys/WebAuthn are not implemented yet'), true, 'migration guide should disclose unsupported passkeys');
 assert.equal(migrationGuide.includes('Rollback'), true, 'migration guide should include rollback guidance');
-assert.equal(passkeyDesign.includes('Passkeys are not implemented'), true, 'passkey design should state current unsupported status');
+assert.equal(passkeyDesign.includes('Passkeys are supported'), true, 'passkey design should state current supported status');
 assert.equal(passkeyDesign.includes('webAuthenticationProxy'), true, 'passkey design should address Chrome/Edge WebAuthn proxy API');
 assert.equal(passkeyDesign.includes('Protocol Additions'), true, 'passkey design should define future protocol area');
 assert.equal(passkeyDesign.includes('KBB-Passkey-PrivateKey'), true, 'passkey design should define protected KeePass storage fields');

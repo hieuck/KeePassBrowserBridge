@@ -133,7 +133,7 @@ function Assert-ExtensionZip {
             "icons/icon-128.png",
             "options.css",
             "options.html",
-            "passkeysProxyExperiment.js",
+            "passkeysProxy.js",
             "popup.css",
             "popup.html",
             "src/components/Picker.web.js",

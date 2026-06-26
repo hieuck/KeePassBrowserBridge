@@ -1528,9 +1528,9 @@ function createWebAuthnEvent() {
 
   // Load the real passkeys proxy experiment into the sandbox
   const expSource = fs.readFileSync(
-    new URL('../../extension/passkeysProxyExperiment.js', import.meta.url), 'utf8'
+    new URL('../../extension/passkeysProxy.js', import.meta.url), 'utf8'
   );
-  vm.runInContext(expSource, sandbox, { filename: 'passkeysProxyExperiment.js' });
+  vm.runInContext(expSource, sandbox, { filename: 'passkeysProxy.js' });
 
   const experiment = sandbox.KeePassBrowserBridgePasskeysProxyExperiment;
   assert.ok(experiment, 'experiment module should be loaded into sandbox');

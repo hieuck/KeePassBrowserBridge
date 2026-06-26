@@ -27,7 +27,7 @@ export default defineConfig({
         'extension/httpAuth.js',
         'extension/customFields.js',
         'extension/icons.js',
-        'extension/passkeysProxyExperiment.js',
+        'extension/passkeysProxy.js',
         'extension/enhancedSecurity_part1.js',
         'extension/enhancedSecurity_part2.js',
         'extension/groupOrganization.js',

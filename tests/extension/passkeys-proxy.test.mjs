@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const source = fs.readFileSync(new URL('../../extension/passkeysProxyExperiment.js', import.meta.url), 'utf8');
+const source = fs.readFileSync(new URL('../../extension/passkeysProxy.js', import.meta.url), 'utf8');
 
 function loadSandbox(chrome) {
   const sandbox = {
@@ -11,7 +11,7 @@ function loadSandbox(chrome) {
     module: { exports: {} }
   };
   sandbox.globalThis = sandbox;
-  vm.runInNewContext(source, sandbox, { filename: 'passkeysProxyExperiment.js' });
+  vm.runInNewContext(source, sandbox, { filename: 'passkeysProxy.js' });
   return sandbox.module.exports;
 }
 

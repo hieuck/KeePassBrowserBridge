@@ -31,7 +31,7 @@
 | Gap | Priority | Role | Status | Notes |
 |-----|----------|------|--------|-------|
 | No public store listing (Chrome/Firefox) | 🔴 P0 | PM | Open | External process; needs Chrome Web Store + Firefox Add-ons submission |
-| Passkeys feature gate disabled at browser | 🔴 P0 | PM/Arch | In progress | Backend prototype done (`PasskeyService.cs`, 1984 lines); browser proxy experiment in progress; needs completion per `docs/passkeys-webauthn-design.md` |
+| Passkeys feature gate disabled at browser | 🔴 P0 | PM/Arch | **Resolved** | Backend enabled by default. WebAuthn proxy packaged as `passkeysProxy.js`. "Experimental" label removed. Enable in Options > Passkeys. |
 | contentScript.js monolithic (1795→1675 lines) | 🔴 P1 | Architect | **Resolved** | Extracted 20 functions to `field-classifier.js` (70 TDD tests). Content script now built via Vite, imports shared modules. Removed 120 lines of inline code. |
 | background.js monolithic (1487→1395 lines) | 🔴 P1 | Architect | **Resolved** | Extracted `background-utils.js` (12 functions, 37 TDD tests). Built through Vite, imports shared module. 92 lines removed. Both Chrome + Firefox manifests updated. |
 | Vue components 0% Vitest coverage | 🔴 P1 | QA | Open | popup/, options/, components/, composables/ all 0%; only tested via Playwright E2E |

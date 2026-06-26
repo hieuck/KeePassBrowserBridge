@@ -77,7 +77,7 @@ namespace KeePassBrowserBridge
 
             root.DropDownItems.Add(new ToolStripSeparator());
 
-            ToolStripMenuItem passkeyItem = new ToolStripMenuItem("Passkey Support (Experimental)");
+            ToolStripMenuItem passkeyItem = new ToolStripMenuItem("Passkey Support");
             passkeyItem.CheckOnClick = true;
             passkeyItem.Checked = IsPasskeyEnabled();
             passkeyItem.Click += OnTogglePasskeys;

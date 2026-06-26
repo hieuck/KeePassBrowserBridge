@@ -100,7 +100,7 @@
 - `extension/test-page.html`
 - `extension/test-extension.js`
 - `extension/quick-test.js`
-- `extension/passkeysProxyExperiment.js`
+- `extension/passkeysProxy.js`
 - `extension/TESTING_GUIDE.md`
 - `extension/README.md` (the one in extension/)
 

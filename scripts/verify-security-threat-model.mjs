@@ -34,7 +34,7 @@ const sources = {
   background: read('extension/background.js'),
   backgroundTests: read('tests/extension/background.test.mjs'),
   contentScriptTests: read('tests/extension/content-script.test.mjs'),
-  passkeysProxyExperiment: read('extension/passkeysProxyExperiment.js'),
+  passkeysProxyExperiment: read('extension/passkeysProxy.js'),
   manifest: read('extension/manifest.json'),
   manifestPermissions: JSON.stringify(JSON.parse(read('extension/manifest.json')).permissions || []),
   firefoxManifest: read('extension/manifest.firefox.json'),

@@ -1,9 +1,9 @@
 'use strict';
 
 try {
-  importScripts('passkeysProxyExperiment.js');
+  importScripts('passkeysProxy.js');
 } catch (_) {
-  // passkeys proxy experiment is only available when included in the extension package
+  // passkeys proxy is only available when included in the extension package
 }
 
 import { normalizeStringArray, normalizeFeatureMap, normalizeFeatureDetails, normalizeReleaseVersion, compareVersions, hasPartialPairingCredentials, booleanSetting, numberSetting, isActivePairingTimestamp, normalizeClientPermissions, isTerminalPairingError } from './shared/background-utils.js';

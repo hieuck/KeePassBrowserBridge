@@ -22,18 +22,18 @@ The project is at v0.9.0 with all core features working:
 
 ### Workstream A: Passkeys/WebAuthn (Gate for Release)
 
-Enable browser-facing passkey support. Backend (`PasskeyService.cs` ~1983 lines) and Chrome proxy experiment (`passkeysProxyExperiment.js` ~1559 lines) exist but are not wired into production.
+Enable browser-facing passkey support. Backend (`PasskeyService.cs` ~1983 lines) and Chrome proxy (`passkeysProxy.js` ~1559 lines) exist but are not wired into production.
 
 **Current state:**
 - `BridgeSettings.PasskeysEnabled` hardcoded `false`
-- `passkeysProxyExperiment.js` is standalone, not imported by `background.js`
+- `passkeysProxy.js` is standalone, not imported by `background.js`
 - `manifest.json` lacks `webAuthenticationProxy` permission
 - Passkey methods exist in `BridgeRequestHandler` behind feature gate
 
 **Implementation:**
 
-1. **Integrate proxy experiment into background.js**
-   - Import `passkeysProxyExperiment.js` module into `background.js`
+1. **Integrate proxy into background.js**
+   - Import `passkeysProxy.js` module into `background.js`
    - Wire attach/detach lifecycle to service worker events
    - Connect proxy handlers to bridge dispatch via background bridge client
 

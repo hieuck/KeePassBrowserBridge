@@ -45,7 +45,7 @@ try {
     Write-Host "Checking Chrome extension JavaScript..."
     Invoke-NativeChecked "node" @("--check", "extension\background.js")
     Invoke-NativeChecked "node" @("--check", "extension\contentScript.js")
-    Invoke-NativeChecked "node" @("--check", "extension\passkeysProxyExperiment.js")
+    Invoke-NativeChecked "node" @("--check", "extension\passkeysProxy.js")
     Invoke-NativeChecked "node" @("--check", "extension\dist\options.js")
     Invoke-NativeChecked "node" @("--check", "extension\dist\popup.js")
     Invoke-NativeChecked "node" @("--check", "extension\httpAuth.js")

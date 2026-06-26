@@ -35,7 +35,7 @@ This directory contains the Chrome MV3 and Firefox-compatible browser extension 
 
 ## Known Gap
 
-Passkeys/WebAuthn are not supported in extension release 2.0.0. Public builds do not request WebAuthn proxy permissions or expose passkey workflows. Backend and proxy experiment work is tracked in `docs/passkeys-webauthn-design.md`.
+Passkeys/WebAuthn are supported via the KeePass plugin backend and Chrome WebAuthn proxy. Enable passkeys in the extension Options > Passkeys tab. Requires a compatible browser and KeePass 2.x with the plugin installed.
 
 ## Development Checks
 

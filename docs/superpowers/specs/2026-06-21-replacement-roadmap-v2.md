@@ -16,7 +16,7 @@
 ### Passkeys/WebAuthn
 - ✅ Backend crypto/storage (PasskeyService.cs) — complete
 - ✅ Bridge protocol methods + feature gate
-- ✅ Chrome proxy experiment (passkeysProxyExperiment.js)
+- ✅ Chrome proxy (passkeysProxy.js)
 - ✅ Config-based gate, KeePass menu toggle, optional permission
 - ✅ Proxy wired into background.js + popup/options toggle
 - ✅ Critical bug fix: resolveTrustedOrigin

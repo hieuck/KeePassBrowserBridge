@@ -184,7 +184,7 @@ test('should fill login credentials', async ({ page }) => {
 | Update changed passwords | ✅ | ✅ | ✅ | Page prompt and popup edit |
 | Site overrides | ✅ | ✅ | ✅ | Auto-fill and auto-submit overrides |
 | Trusted browser management | ✅ | ✅ | ✅ | List and revoke |
-| Passkeys/WebAuthn | ❌ | ✅ | ❌ | Unsupported in 1.0.0; backend prototype and non-packaged proxy experiment remain gated by `docs/passkeys-webauthn-design.md` |
+| Passkeys/WebAuthn | ✅ | ✅ | ✅ | Supported via Chrome WebAuthn proxy and KeePass plugin backend. Requires opt-in from extension Options > Passkeys. |
 
 ---
 

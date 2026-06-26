@@ -4,7 +4,7 @@
 
 **Goal:** Enable browser-facing passkey/WebAuthn support, bump to v1.0.0, and produce release artifacts.
 
-**Architecture:** Backend passkey crypto/storage (`PasskeyService.cs`) and Chrome proxy experiment (`passkeysProxyExperiment.js`) already exist. The production gap is: (a) proxy experiment not loaded by `background.js`, (b) `BridgeSettings.PasskeysEnabled` hardcoded `false`, (c) no `webAuthenticationProxy` permission in manifest, (d) no KeePass menu toggle. This plan wires those pieces together, then releases v1.0.0.
+**Architecture:** Backend passkey crypto/storage (`PasskeyService.cs`) and Chrome proxy (`passkeysProxy.js`) already exist. The production gap is: (a) proxy not loaded by `background.js`, (b) `BridgeSettings.PasskeysEnabled` hardcoded `false`, (c) no `webAuthenticationProxy` permission in manifest, (d) no KeePass menu toggle. This plan wires those pieces together, then releases v1.0.0.
 
 **Tech Stack:** C# .NET Framework 4.8 KeePass plugin, Chrome MV3 extension, Playwright E2E, Vitest unit tests.
 
@@ -18,7 +18,7 @@
 |------|--------|
 | `src/Bridge/BridgeSettings.cs` | Replace hardcoded `PasskeysEnabled` with config key |
 | `src/KeePassBrowserBridgeExt.cs` | Add passkey menu toggle item, config save/load, optional permission request |
-| `extension/background.js` | Load `passkeysProxyExperiment.js`, wire lifecycle into bridge dispatch, handle passkey enable/disable |
+| `extension/background.js` | Load `passkeysProxy.js`, wire lifecycle into bridge dispatch, handle passkey enable/disable |
 | `extension/manifest.json` | Add `"optional_permissions": ["webAuthenticationProxy"]` |
 | `extension/popup.js` | Respect plugin passkey toggle in permission controls |
 | `README.md` | Bump version 0.9.0 → 1.0.0 |
@@ -29,7 +29,7 @@
 | `update/versioninfo.txt` | Version bump |
 
 ### Files referenced (no changes needed):
-- `extension/passkeysProxyExperiment.js` — already complete
+- `extension/passkeysProxy.js` — already complete
 - `src/Bridge/PasskeyService.cs` — already complete
 - `src/Bridge/BridgeRequestHandler.cs` — already routes passkey methods behind `m_passkeysEnabled()` gate
 - `src/Bridge/BridgeMethodPolicy.cs` — already has passkey method policies
@@ -165,7 +165,7 @@ In `KeePassBrowserBridgeExt.cs`, add after the `Trusted Browsers...` item:
 ```csharp
 root.DropDownItems.Add(new ToolStripSeparator());
 
-ToolStripMenuItem passkeyItem = new ToolStripMenuItem("Passkey Support (Experimental)");
+ToolStripMenuItem passkeyItem = new ToolStripMenuItem("Passkey Support");
 passkeyItem.CheckOnClick = true;
 passkeyItem.Checked = IsPasskeyEnabled();
 passkeyItem.Click += OnTogglePasskeys;
@@ -274,18 +274,18 @@ git commit -m "feat: add optional webAuthenticationProxy permission"
 **Files:**
 - Modify: `extension/background.js`
 
-**Rationale:** `passkeysProxyExperiment.js` is a standalone IIFE that assigns to `globalScope.KeePassBrowserBridgePasskeysProxyExperiment`. In a service worker context, `globalThis` is available. We need to load the experiment module, check availability, and wire the lifecycle into the bridge dispatch on startup.
+**Rationale:** `passkeysProxy.js` is a standalone IIFE that assigns to `globalScope.KeePassBrowserBridgePasskeysProxyExperiment`. In a service worker context, `globalThis` is available. We need to load the experiment module, check availability, and wire the lifecycle into the bridge dispatch on startup.
 
-**Approach:** Since Chrome MV3 service workers cannot load scripts dynamically easily, `passkeysProxyExperiment.js` must be declared in the manifest's `background.service_worker` along with `background.js`. Chrome MV3 does not support multiple background scripts. Instead, we import the experiment via `importScripts()` in `background.js`, or we merge `passkeysProxyExperiment.js` content via build step.
+**Approach:** Since Chrome MV3 service workers cannot load scripts dynamically easily, `passkeysProxy.js` must be declared in the manifest's `background.service_worker` along with `background.js`. Chrome MV3 does not support multiple background scripts. Instead, we import the experiment via `importScripts()` in `background.js`, or we merge `passkeysProxy.js` content via build step.
 
-**Simplest approach:** use `importScripts()` inside `background.js` to load `passkeysProxyExperiment.js` at the top.
+**Simplest approach:** use `importScripts()` inside `background.js` to load `passkeysProxy.js` at the top.
 
 - [ ] **Step 1: Write failing test for background passkey lifecycle**
 
 In `tests/extension/background.test.mjs`, add:
 
 ```javascript
-test('background.js loads passkeysProxyExperiment.js', async () => {
+test('background.js loads passkeysProxy.js', async () => {
   const background = await loadBackgroundScript();
   expect(globalThis.KeePassBrowserBridgePasskeysProxyExperiment).toBeDefined();
   expect(typeof globalThis.KeePassBrowserBridgePasskeysProxyExperiment.createLifecycle).toBe('function');
@@ -295,17 +295,17 @@ test('background.js loads passkeysProxyExperiment.js', async () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/extension/background.test.mjs`
-Expected: Fails because `passkeysProxyExperiment.js` not loaded.
+Expected: Fails because `passkeysProxy.js` not loaded.
 
-- [ ] **Step 3: Load proxy experiment in background.js**
+- [ ] **Step 3: Load proxy in background.js**
 
 At the top of `extension/background.js`, add:
 
 ```javascript
 try {
-  importScripts('passkeysProxyExperiment.js');
+  importScripts('passkeysProxy.js');
 } catch (_) {
-  // passkeys proxy experiment is only available when included in the extension package
+  // passkeys proxy is only available when included in the extension package
 }
 ```
 
