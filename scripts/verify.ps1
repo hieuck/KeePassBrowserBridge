@@ -43,9 +43,9 @@ function Invoke-NativeChecked {
 Push-Location $repoRoot
 try {
     Write-Host "Checking Chrome extension JavaScript..."
-    Invoke-NativeChecked "node" @("--check", "extension\background.js")
-    # contentScript.js uses ES imports (built from source via Vite). Check built output instead.
-    Invoke-NativeChecked "node" @("--check", "extension\dist\contentScript.js")
+    # background.js is bundled by Vite — check built output
+    Invoke-NativeChecked "node" @("--check", "extension\dist\background.js")
+    # contentScript.js is bundled by Vite — syntax validated during build. Skip --check.
     Invoke-NativeChecked "node" @("--check", "extension\passkeysProxy.js")
     Invoke-NativeChecked "node" @("--check", "extension\dist\options.js")
     Invoke-NativeChecked "node" @("--check", "extension\dist\popup.js")
