@@ -31,14 +31,8 @@ on:
         default: ""
         type: string
 
-env:
-  RELEASE_VERSION: ${{ github.ref_name }}
-
 permissions:
   contents: write
-
-env:
-  RELEASE_VERSION: ""
 
 jobs:
   package:
