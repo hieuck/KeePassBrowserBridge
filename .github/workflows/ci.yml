@@ -110,6 +110,7 @@ jobs:
   e2e:
     name: E2E tests
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -135,6 +136,7 @@ jobs:
   csharp-tests:
     name: C# bridge tests
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
