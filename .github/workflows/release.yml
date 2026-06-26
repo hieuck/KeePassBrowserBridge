@@ -130,9 +130,13 @@ jobs:
           $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
           $artifacts = "${{ github.workspace }}\artifacts"
           $project = "${{ github.workspace }}\src\KeePassBrowserBridge.csproj"
-          dotnet build $project --configuration Release -p:KeePassReferencePath="$keepassDir" -p:OutputPath="$artifacts\"
+          $buildOut = "$env:TEMP\kp-build"
+          Remove-Item -Path $buildOut -Recurse -Force -ErrorAction SilentlyContinue
+          dotnet build $project --configuration Release -p:KeePassReferencePath="$keepassDir" -p:OutputPath="$buildOut\"
           if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
-          Write-Output "Plugin DLL built at $artifacts"
+          Copy-Item "$buildOut\KeePassBrowserBridge.dll" "$artifacts\" -Force
+          Copy-Item "$buildOut\KeePassBrowserBridge.pdb" "$artifacts\" -Force -ErrorAction SilentlyContinue
+          Remove-Item "$buildOut\*" -Recurse -Force -ErrorAction SilentlyContinue
 
       - name: Build extension
         shell: pwsh
@@ -151,7 +155,10 @@ jobs:
           name: KeePass Browser Bridge ${{ env.RELEASE_VERSION }}
           make_latest: true
           generate_release_notes: true
-          files: artifacts/*
+          files: |
+            artifacts/extension-dist-${{ env.RELEASE_VERSION }}.zip
+            artifacts/KeePassBrowserBridge.dll
+            artifacts/KeePassBrowserBridge.pdb
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v4
