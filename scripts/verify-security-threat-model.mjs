@@ -19,7 +19,7 @@ const sources = {
   testsProgram: read('tests/Program.cs'),
   formDetectionTests: read('tests/e2e/form-detection.spec.js'),
   // extensionLoadTests: read('tests/e2e/extension-load.spec.js'), // File moved/deleted
-  optionsPageTests: read('tests/e2e/options-page.spec.js'),
+  optionsPageTests: read('tests/e2e/options-page-v2.spec.js'),
   optionsTests: read('tests/extension/options.test.mjs'),
   popupTests: read('tests/extension/popup.test.mjs'),
   realSiteValidation: read('docs/real-site-validation.md'),
