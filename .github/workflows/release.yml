@@ -129,14 +129,10 @@ jobs:
         run: |
           $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
           $artifacts = "${{ github.workspace }}\artifacts"
-          $project = "${{ github.workspace }}\src\KeePassBrowserBridge.csproj"
-          $buildOut = "$env:TEMP\kp-build"
-          Remove-Item -Path $buildOut -Recurse -Force -ErrorAction SilentlyContinue
-          dotnet build $project --configuration Release -p:KeePassReferencePath="$keepassDir" -p:OutputPath="$buildOut\"
+          New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
+          dotnet build "${{ github.workspace }}\src\KeePassBrowserBridge.csproj" --configuration Release -p:KeePassReferencePath="$keepassDir" -p:OutputPath="$artifacts\"
           if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
-          Copy-Item "$buildOut\KeePassBrowserBridge.dll" "$artifacts\" -Force
-          Copy-Item "$buildOut\KeePassBrowserBridge.pdb" "$artifacts\" -Force -ErrorAction SilentlyContinue
-          Remove-Item "$buildOut\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Output "Plugin built: $buildOut\KeePassBrowserBridge.dll"
 
       - name: Build extension
         shell: pwsh
