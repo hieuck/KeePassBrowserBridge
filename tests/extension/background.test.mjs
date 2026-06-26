@@ -369,8 +369,14 @@ const rawSource = fs.readFileSync(new URL('../../extension/background.js', impor
 // Strip ES module imports — vm.runInContext doesn't support import statements
 const source = rawSource.replace(/^import .+ from .+;$/gm, '');
 // Import and expose background-utils functions that background.js imports
+const bgUtils = { ...backgroundUtils };
+// Override time-dependent functions to use sandbox's 'now' variable instead of Date.now()
+bgUtils.isActivePairingTimestamp = (value) => {
+  if (!Number.isFinite(value) || value <= 0 || value > now) return false;
+  return now - value <= (5 * 60 * 1000);
+};
 Object.assign(sandbox, Object.fromEntries(
-  Object.entries(backgroundUtils).map(([k, v]) => [k, typeof v === 'function' ? v : () => v])
+  Object.entries(bgUtils).map(([k, v]) => [k, typeof v === 'function' ? v : () => v])
 ));
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'background.js' });
