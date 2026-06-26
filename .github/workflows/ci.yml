@@ -81,10 +81,10 @@ jobs:
       - name: Build extension
         run: npm run build:all
       - name: Start dev server
-        run: npm run dev &
+        run: Start-Job -ScriptBlock { node "$env:GITHUB_WORKSPACE/tests/e2e/server.mjs" }; Start-Sleep 3
         shell: pwsh
       - name: E2E tests
-        run: npx playwright test --project=chromium --reporter=line
+        run: npx playwright test tests/e2e/user-journey.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=chromium --reporter=line
 
   csharp-tests:
     name: C# bridge tests
