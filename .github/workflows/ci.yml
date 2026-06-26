@@ -51,6 +51,23 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  coverage:
+    name: Coverage check
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+      - run: npm ci
+      - run: npm run test:coverage:ci
+
   dotnet:
     name: .NET build
     runs-on: windows-latest
@@ -107,7 +124,7 @@ jobs:
 
   verify:
     name: Full verification
-    needs: [unit, dotnet, e2e, csharp-tests]
+    needs: [unit, coverage, dotnet, e2e, csharp-tests]
     runs-on: windows-latest
     if: github.event_name == 'workflow_dispatch'
     steps:
