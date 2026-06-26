@@ -76,7 +76,29 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet build src/KeePassBrowserBridge.csproj
+      - name: Download KeePass
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
+          $zipPath = Join-Path $keepassDir "KeePass.zip"
+          New-Item -ItemType Directory -Force -Path $keepassDir | Out-Null
+          $url = "https://sourceforge.net/projects/keepass/files/KeePass%202.x/${{ env.KEEPASS_VERSION }}/KeePass-${{ env.KEEPASS_VERSION }}.zip/download"
+          curl.exe -L --connect-timeout 30 --max-time 120 -o $zipPath $url 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
+            if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
+              Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
+              echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
+            }
+          }
+      - name: Build plugin
+        run: |
+          if (Test-Path "$env:KEEPASS_DIR\KeePass.exe") {
+            dotnet build src/KeePassBrowserBridge.csproj /p:KeePassReferencePath="$env:KEEPASS_DIR"
+          } else {
+            Write-Warning "KeePass not available. Skipping plugin build."
+          }
 
   e2e:
     name: E2E tests
