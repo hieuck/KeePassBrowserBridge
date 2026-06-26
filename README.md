@@ -52,7 +52,7 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 | Keyboard shortcuts count | 4 | 10+ | **✅ 6** |
 | Accessibility WCAG AA | ❌ | ❌ | **✅** |
 | C# test suite | N/A | N/A | **✅ 200+ tests** |
-| Total automated tests | Partial | Partial | **✅ 658+ tests** |
+| Total automated tests | Partial | Partial | **✅ 698+ tests** |
 | CI pipeline | ✅ | ✅ | **✅** |
 | Release automation | Partial | ✅ | **✅** |
 
@@ -60,7 +60,7 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 
 | Runner | Count | Status |
 |--------|-------|--------|
-| vitest unit tests | 658 | ✅ 0 failures |
+| vitest unit tests | 698 | ✅ 0 failures |
 | Playwright Chromium | 220 | ✅ 0 failures |
 | Playwright Firefox | 162 | ✅ 0 failures |
 | Accessibility WCAG AA | 10 | ✅ 0 violations |
@@ -95,7 +95,7 @@ npm run build:all
 ## Test
 
 ```powershell
-npm test                  # vitest unit tests (658)
+npm test                  # vitest unit tests (698)
 npm run test:e2e:chromium # Playwright E2E (Chromium)
 .\scripts\verify.ps1      # Full verification
 npm run test:e2e:headed   # Watch tests in browser
