@@ -1,4 +1,4 @@
-const f = {
+const g = {
   key: "M10.5 0a4.5 4.5 0 1 1-3.18 7.68L2 13l-1.5 1.5L2 16l1.5-1.5L5 13l5.32-5.32A4.5 4.5 0 0 1 10.5 0zm-2 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z",
   lock: "M3 7V5a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm2 0h6V5a3 3 0 0 0-6 0v2z",
   "lock-open": "M3 7V5a5 5 0 0 1 9.9-1H11a3 3 0 0 0-5 1v2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1zm0 2v6h10V9H3z",
@@ -26,11 +26,11 @@ const f = {
   download: "M7.47 10.78a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L5.28 6.47a.75.75 0 0 0-1.06 1.06l3.25 3.25zM3.75 13.25a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5z",
   upload: "M8.53 1.22a.75.75 0 0 0-1.06 0L4.22 4.47a.75.75 0 0 0 1.06 1.06l2.47-2.47v6.69a.75.75 0 0 0 1.5 0V3.06l2.47 2.47a.75.75 0 1 0 1.06-1.06L8.53 1.22zM3.75 11.75a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5z"
 };
-function g(p, e) {
+function x(p, e) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
 }
 const a = Object.fromEntries(
-  Object.entries(f).map(([p, e]) => [p, g(p, e)])
+  Object.entries(g).map(([p, e]) => [p, x(p, e)])
 );
 a.key;
 a.lock;
@@ -58,7 +58,7 @@ a.moon;
 a.monitor;
 a.download;
 a.upload;
-function x(p = "kbb") {
+function _(p = "kbb") {
   if (!(typeof customElements > "u"))
     for (const [e, t] of Object.entries(a)) {
       const r = `${p}-icon-${e}`;
@@ -75,7 +75,7 @@ function x(p = "kbb") {
 function n(p) {
   return String(p).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-class _ extends HTMLElement {
+class k extends HTMLElement {
   static get observedAttributes() {
     return ["variant", "size", "type", "disabled", "loading", "block", "leading-icon", "trailing-icon"];
   }
@@ -100,9 +100,8 @@ class _ extends HTMLElement {
     this.innerHTML = `<button type="${r}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${o ? " kbb-btn--block" : ""}${d ? " kbb-btn--loading" : ""}" ${l ? "disabled" : ""} aria-busy="${d}" aria-disabled="${l}"><span class="kbb-btn__label">${n(i)}</span></button>`;
   }
 }
-typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", _);
-const k = `
-:host {
+typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", k);
+const v = `
   --color-bg: #fafbfc;
   --color-surface: #ffffff;
   --color-text: #1a1a1a;
@@ -134,6 +133,8 @@ const k = `
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+`, y = `
+:host {${v}
   position: absolute;
   z-index: 2147483647;
   font-family: var(--font-sans);
@@ -366,7 +367,7 @@ const k = `
   .picker-expanded { border-color: var(--color-border); }
 }
 `;
-class y extends HTMLElement {
+class w extends HTMLElement {
   static get observedAttributes() {
     return ["credentials", "placeholder", "show-search", "position"];
   }
@@ -415,7 +416,7 @@ class y extends HTMLElement {
     this._activeIndex = o.length > 0 ? 0 : -1;
     const d = this._getHeaderDomain();
     this.shadowRoot.innerHTML = `
-      <style>${k}</style>
+      <style>${y}</style>
       <div class="picker-header">
         <span class="picker-header__title">${o.length} login${o.length !== 1 ? "s" : ""}${d ? ` for ${n(d)}` : ""}</span>
         <button type="button" class="picker-header__close" aria-label="Close picker">
@@ -575,41 +576,10 @@ class y extends HTMLElement {
     }));
   }
 }
-customElements.get("kbb-picker") || customElements.define("kbb-picker", y);
-const v = `
-:host {
-  --color-bg: #fafbfc;
-  --color-surface: #ffffff;
-  --color-text: #1a1a1a;
-  --color-text-secondary: #586069;
-  --color-text-muted: #8b949e;
-  --color-border: #e1e4e8;
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
-  --color-accent-subtle: #dbeafe;
-  --color-success: #10b981;
-  --color-danger: #d73a49;
+customElements.get("kbb-picker") || customElements.define("kbb-picker", w);
+const f = `
+:host {${v}
   --color-danger-subtle: #fee2e2;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'SF Mono', Menlo, Consolas, monospace;
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-base: 13px;
-  --text-md: 14px;
-  --transition-fast: 120ms ease;
-  --transition-base: 200ms ease;
-  --transition-slow: 300ms ease;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
   position: fixed;
   z-index: 2147483647;
   width: 360px;
@@ -844,7 +814,7 @@ const v = `
   .prompt-editable-label { color: var(--color-text-muted); }
 }
 `;
-class w extends HTMLElement {
+class $ extends HTMLElement {
   static get observedAttributes() {
     return ["name", "username", "password", "url", "title", "folder", "folders"];
   }
@@ -885,7 +855,7 @@ class w extends HTMLElement {
       return `<option value="${n(h)}"${u}>${n(b)}</option>`;
     }).join("");
     this.shadowRoot.innerHTML = `
-      <style>${v}</style>
+      <style>${f}</style>
       <div class="prompt-header" role="region" aria-label="Save login">
         <span class="prompt-header__icon" aria-hidden="true">${a.key || ""}</span>
         <span class="prompt-header__title">Save this login?</span>
@@ -952,7 +922,7 @@ class w extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-class $ extends HTMLElement {
+class A extends HTMLElement {
   static get observedAttributes() {
     return ["name", "username", "password", "old-username", "title", "folder", "folders"];
   }
@@ -992,7 +962,7 @@ class $ extends HTMLElement {
       const c = typeof i == "string" ? i : i.value || i.name || "", s = typeof i == "string" ? i : i.label || i.name || c;
       return `<option value="${n(c)}">${n(s)}</option>`;
     }).join(""), this.shadowRoot.innerHTML = `
-      <style>${v}</style>
+      <style>${f}</style>
       <div class="prompt-header" role="region" aria-label="Update login">
         <span class="prompt-header__icon" aria-hidden="true">${a.shield || ""}</span>
         <span class="prompt-header__title">Update existing login?</span>
@@ -1054,6 +1024,6 @@ class $ extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", w);
-customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", $);
-x("kbb");
+customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", $);
+customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", A);
+_("kbb");

@@ -1,39 +1,9 @@
 import { ICONS } from '../../icons.js';
 import { escapeHtml } from '../../shared/escape-html.js';
+import { DESIGN_TOKENS } from '../../shared/design-tokens.js';
 
 const PICKER_STYLES = `
-:host {
-  --color-bg: #fafbfc;
-  --color-surface: #ffffff;
-  --color-text: #1a1a1a;
-  --color-text-secondary: #586069;
-  --color-text-muted: #8b949e;
-  --color-border: #e1e4e8;
-  --color-accent: #2563eb;
-  --color-accent-hover: #1d4ed8;
-  --color-accent-subtle: #dbeafe;
-  --color-success: #10b981;
-  --color-danger: #d73a49;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'SF Mono', Menlo, Consolas, monospace;
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-base: 13px;
-  --text-md: 14px;
-  --transition-fast: 120ms ease;
-  --transition-base: 200ms ease;
-  --transition-slow: 300ms ease;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
+:host {${DESIGN_TOKENS}
   position: absolute;
   z-index: 2147483647;
   font-family: var(--font-sans);
