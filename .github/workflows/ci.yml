@@ -89,6 +89,8 @@ jobs:
             $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
             if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
               Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
+              $kpExe = Get-ChildItem -Path $keepassDir -Recurse -Filter "KeePass.exe" | Select-Object -First 1 -ExpandProperty FullName
+              if ($kpExe) { $keepassDir = Split-Path $kpExe -Parent }
               echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
             }
           }
@@ -154,8 +156,10 @@ jobs:
               $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
               if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
                 Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
+                $kpExe = Get-ChildItem -Path $keepassDir -Recurse -Filter "KeePass.exe" | Select-Object -First 1 -ExpandProperty FullName
+                if ($kpExe) { $keepassDir = Split-Path $kpExe -Parent }
                 echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
-                Write-Output "KeePass $keepassVersion downloaded OK"
+                Write-Output "KeePass $keepassVersion downloaded OK at $keepassDir"
                 return
               }
             }
