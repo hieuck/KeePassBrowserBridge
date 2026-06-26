@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import {
   BulbOutlined,
   HighlightOutlined,
@@ -43,13 +43,16 @@ import {
   SafetyOutlined,
 } from '@ant-design/icons-vue';
 import Sidebar from './Sidebar.vue';
-import GeneralTab from './tabs/GeneralTab.vue';
-import BridgeTab from './tabs/BridgeTab.vue';
-import AutoFillTab from './tabs/AutoFillTab.vue';
-import SitesTab from './tabs/SitesTab.vue';
-import ClientsTab from './tabs/ClientsTab.vue';
-import PasskeyTab from './tabs/PasskeyTab.vue';
-import AboutTab from './tabs/AboutTab.vue';
+
+const components = {
+  general: defineAsyncComponent(() => import('./tabs/GeneralTab.vue')),
+  bridge: defineAsyncComponent(() => import('./tabs/BridgeTab.vue')),
+  autofill: defineAsyncComponent(() => import('./tabs/AutoFillTab.vue')),
+  sites: defineAsyncComponent(() => import('./tabs/SitesTab.vue')),
+  clients: defineAsyncComponent(() => import('./tabs/ClientsTab.vue')),
+  passkey: defineAsyncComponent(() => import('./tabs/PasskeyTab.vue')),
+  about: defineAsyncComponent(() => import('./tabs/AboutTab.vue')),
+};
 import { useTheme } from '../composables/useTheme.js';
 import { useToast } from '../composables/useToast.js';
 import { useBridge } from '../composables/useBridge.js';
@@ -85,16 +88,6 @@ const tabs = [
   { id: 'passkey', label: 'Passkeys' },
   { id: 'about', label: 'About' },
 ];
-
-const components = {
-  general: GeneralTab,
-  bridge: BridgeTab,
-  autofill: AutoFillTab,
-  sites: SitesTab,
-  clients: ClientsTab,
-  passkey: PasskeyTab,
-  about: AboutTab,
-};
 
 const activeComponent = computed(() => components[activeTab.value]);
 

@@ -23,6 +23,7 @@
     "build:vue": "cd extension && npx vite build",
     "build:components": "cd extension && npx vite build --config vite.web-components.config.js",
     "build:all": "npm run build:vue && npm run build:components",
+    "size": "node scripts/check-bundle-size.mjs",
     "ci": "npm run test && npm run test:coverage && npm run test:e2e:chromium"
   },
   "devDependencies": {

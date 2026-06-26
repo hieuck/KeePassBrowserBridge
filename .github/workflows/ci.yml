@@ -122,9 +122,26 @@ jobs:
       - name: Run bridge tests
         run: dotnet run --project tests/KeePassBrowserBridge.Tests.csproj
 
+  bundle-size:
+    name: Bundle size
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci
+      - name: Build extension
+        run: |
+          Set-Location extension
+          npx vite build
+          npx vite build --config vite.web-components.config.js
+      - name: Check bundle sizes
+        run: node scripts/check-bundle-size.mjs
+
   verify:
     name: Full verification
-    needs: [unit, coverage, dotnet, e2e, csharp-tests]
+    needs: [unit, coverage, bundle-size, dotnet, e2e, csharp-tests]
     runs-on: windows-latest
     if: github.event_name == 'workflow_dispatch'
     steps:
