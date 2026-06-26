@@ -52,8 +52,8 @@ describe('build-release.ps1 - Firefox extension files', () => {
   });
 
   it('should compile all C# source files', () => {
-    // The build script should compile .cs files via csc.exe
-    assert.ok(source.includes('csc.exe') || source.includes('/recurse:'),
-      'build script should compile via csc.exe with /recurse on .cs files');
+    // The build script should compile via dotnet build with reference path
+    assert.ok(source.includes('dotnet build') && source.includes('KeePassReferencePath'),
+      'build script should compile via dotnet build with KeePassReferencePath');
   });
 });
