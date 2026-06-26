@@ -109,10 +109,8 @@ jobs:
       - name: Verify
         shell: pwsh
         run: |
-          if ([string]::IsNullOrWhiteSpace("$env:KEEPASS_EXTRACTED")) {
-            Write-Warning "KeePass not available. Skipping full verification."
-            npm test
-          } else {
+          npm test
+          if (-not ([string]::IsNullOrWhiteSpace("$env:KEEPASS_EXTRACTED"))) {
             .\scripts\verify.ps1 -KeePassExe "$env:KEEPASS_EXTRACTED\KeePass.exe" -E2EProjects chromium,firefox
           }
 

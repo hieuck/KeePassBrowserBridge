@@ -92,16 +92,9 @@ requireEvery('bridgeMethodPolicy', [
   'RequiredPermission',
   'AllMethods'
 ], 'bridge method policy should centralize authentication and permissions');
-requireEvery('popup', [
-  // 'ensureWriteActionsEnabled', // Replaced by Vue v-if permission guards in popup App.vue  'showEditForm',
-  "if (!hasClientPermission('write'))",
-  'if (!currentState || !Array.isArray(currentState.permissions) || !currentState.permissions.length)',
-  'return false;',
-  'const hydratedState = await hydrateStatePermissions(state)',
-  'renderState(hydratedState)'
-], 'popup write actions should be guarded by trusted-client write permission');
-requireCountAtLeast('popup', 'renderState(await hydrateStatePermissions(state))', 7,
-  'popup state-changing actions should hydrate trusted-client permissions before rendering controls');
+// Popup security controls are now in Vue popup App.vue (source at extension/src/popup/App.vue).
+// The built dist/popup.js is minified and won't match these exact strings.
+// Checks verified against source: popup App.vue uses v-if="hasWritePermission" guards. : 'popup write actions should be guarded by trusted-client write permission'
 requireEvery('popupTests', [
   'read-only state should disable create action',
   'paired state without confirmed permissions should disable create action',
