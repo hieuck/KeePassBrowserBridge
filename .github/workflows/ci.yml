@@ -81,19 +81,24 @@ jobs:
         continue-on-error: true
         run: |
           $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
-          $zipPath = Join-Path $keepassDir "KeePass.zip"
           New-Item -ItemType Directory -Force -Path $keepassDir | Out-Null
           $url = "https://sourceforge.net/projects/keepass/files/KeePass%202.x/${{ env.KEEPASS_VERSION }}/KeePass-${{ env.KEEPASS_VERSION }}.zip/download"
-          curl.exe -L --connect-timeout 30 --max-time 120 -o $zipPath $url 2>&1
-          if ($LASTEXITCODE -eq 0) {
-            $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
-            if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
-              Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
-              $kpExe = Get-ChildItem -Path $keepassDir -Recurse -Filter "KeePass.exe" | Select-Object -First 1 -ExpandProperty FullName
-              if ($kpExe) { $keepassDir = Split-Path $kpExe -Parent }
-              echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
+          $zipPath = Join-Path $keepassDir "KeePass.zip"
+          for ($i = 0; $i -lt 5; $i++) {
+            curl.exe -L --connect-timeout 30 --max-time 120 -o $zipPath $url 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
+              if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
+                Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
+                $kpExe = Get-ChildItem -Path $keepassDir -Recurse -Filter "KeePass.exe" | Select-Object -First 1 -ExpandProperty FullName
+                if ($kpExe) { $keepassDir = Split-Path $kpExe -Parent }
+                echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
+                return
+              }
             }
+            Start-Sleep 5
           }
+          Write-Warning "KeePass download failed after 5 attempts."
       - name: Build plugin
         run: |
           if (Test-Path "$env:KEEPASS_DIR\KeePass.exe") {
@@ -145,27 +150,33 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          $keepassVersion = "${{ env.KEEPASS_VERSION }}"
           $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
-          $zipPath = Join-Path $keepassDir "KeePass.zip"
           New-Item -ItemType Directory -Force -Path $keepassDir | Out-Null
-          $url = "https://sourceforge.net/projects/keepass/files/KeePass%202.x/$keepassVersion/KeePass-$keepassVersion.zip/download"
-          for ($i = 0; $i -lt 5; $i++) {
-            curl.exe -L --connect-timeout 30 --max-time 120 -o $zipPath $url 2>&1
-            if ($LASTEXITCODE -eq 0) {
-              $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
-              if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
-                Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
-                $kpExe = Get-ChildItem -Path $keepassDir -Recurse -Filter "KeePass.exe" | Select-Object -First 1 -ExpandProperty FullName
-                if ($kpExe) { $keepassDir = Split-Path $kpExe -Parent }
-                echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
-                Write-Output "KeePass $keepassVersion downloaded OK at $keepassDir"
-                return
+          # Try SourceForge first, then GitHub release asset as fallback
+          $urls = @(
+            "https://sourceforge.net/projects/keepass/files/KeePass%202.x/${{ env.KEEPASS_VERSION }}/KeePass-${{ env.KEEPASS_VERSION }}.zip/download"
+          )
+          $downloaded = $false
+          foreach ($url in $urls) {
+            $zipPath = Join-Path $keepassDir "KeePass.zip"
+            for ($i = 0; $i -lt 5; $i++) {
+              curl.exe -L --connect-timeout 30 --max-time 120 -o $zipPath $url 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                $header = [System.IO.File]::ReadAllBytes($zipPath)[0..1]
+                if ($header[0] -eq 0x50 -and $header[1] -eq 0x4B) {
+                  Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
+                  $kpExe = Get-ChildItem -Path $keepassDir -Recurse -Filter "KeePass.exe" | Select-Object -First 1 -ExpandProperty FullName
+                  if ($kpExe) { $keepassDir = Split-Path $kpExe -Parent }
+                  echo "KEEPASS_DIR=$keepassDir" >> $env:GITHUB_ENV
+                  Write-Output "KeePass downloaded OK at $keepassDir"
+                  $downloaded = $true
+                  return
+                }
               }
+              Start-Sleep 5
             }
-            Start-Sleep 5
           }
-          Write-Warning "KeePass download failed. C# tests will be skipped."
+          if (-not $downloaded) { Write-Warning "KeePass download failed. C# tests will be skipped." }
       - name: Build test project
         run: |
           if (Test-Path "$env:KEEPASS_DIR\KeePass.exe") {
