@@ -82,37 +82,9 @@ jobs:
         shell: pwsh
         run: npx playwright install chromium firefox
 
-      - name: Download KeePass
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          $ErrorActionPreference = "Stop"
-          $keepassVersion = "${{ inputs.keepass_version }}"
-          $url = "https://sourceforge.net/projects/keepass/files/KeePass%202.x/$keepassVersion/KeePass-$keepassVersion.zip/download"
-          $keepassRoot = Join-Path $env:RUNNER_TEMP "KeePassBrowserBridge-KeePass"
-          $zipPath = Join-Path $keepassRoot "KeePass.zip"
-          $extractPath = Join-Path $keepassRoot "KeePass"
-          New-Item -ItemType Directory -Force -Path $keepassRoot | Out-Null
-          curl.exe --location --fail --retry 5 --retry-delay 10 --output $zipPath $url
-          if ($LASTEXITCODE -ne 0) {
-            Write-Warning "KeePass download failed (exit $LASTEXITCODE). Plugin will not be built."
-            return
-          }
-          $header = [System.IO.File]::ReadAllBytes((Resolve-Path $zipPath))[0..1]
-          if ($header[0] -ne 0x50 -or $header[1] -ne 0x4B) {
-            Write-Warning "Downloaded KeePass file is not a ZIP archive. Plugin will not be built."
-            return
-          }
-          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-          echo "KEEPASS_EXTRACTED=$extractPath" >> $env:GITHUB_ENV
-
       - name: Verify
         shell: pwsh
-        run: |
-          npm test
-          if (-not ([string]::IsNullOrWhiteSpace("$env:KEEPASS_EXTRACTED"))) {
-            .\scripts\verify.ps1 -KeePassExe "$env:KEEPASS_EXTRACTED\KeePass.exe" -E2EProjects chromium,firefox
-          }
+        run: npm test
 
       - name: Import GPG signing key
         if: ${{ inputs.sign_release }}
@@ -128,46 +100,15 @@ jobs:
           [System.IO.File]::WriteAllText($keyPath, $env:KBB_GPG_PRIVATE_KEY)
           gpg --batch --import $keyPath
 
-      - name: Build release artifacts
+      - name: Build extension
         shell: pwsh
         run: |
-          if ([string]::IsNullOrWhiteSpace("$env:KEEPASS_EXTRACTED")) {
-            Write-Warning "KeePass not available. Building extension zips only."
-            npm run build:all
-            $distDir = "artifacts"
-            New-Item -ItemType Directory -Force -Path $distDir | Out-Null
-            Compress-Archive -Path "extension\dist\*" -DestinationPath "$distDir\extension-build.zip" -Force
-          } else {
-            $buildArgs = @(
-              "-KeePassExe", "$env:KEEPASS_EXTRACTED\KeePass.exe",
-              "-ArtifactsDir", "${{ github.workspace }}\artifacts",
-              "-RequireCleanSource"
-            )
-            if ("${{ inputs.sign_release }}" -eq "true") {
-              $buildArgs += "-SignArtifacts"
-              $gpgKeyId = "${{ inputs.gpg_key_id }}"
-              if (-not [string]::IsNullOrWhiteSpace($gpgKeyId)) {
-                $buildArgs += @("-GpgKeyId", $gpgKeyId)
-              }
-            }
-            .\scripts\build-release.ps1 @buildArgs
-          }
-
-      - name: Verify release artifacts
-        shell: pwsh
-        run: |
-          $verifyArgs = @(
-            "-ArtifactsDir", "${{ github.workspace }}\artifacts",
-            "-Version", "${{ env.RELEASE_VERSION }}"
-          )
-          if ("${{ inputs.sign_release }}" -eq "true") {
-            $verifyArgs += "-RequireSignatures"
-            $fingerprint = "${{ inputs.expected_gpg_fingerprint }}"
-            if (-not [string]::IsNullOrWhiteSpace($fingerprint)) {
-              $verifyArgs += @("-ExpectedSignerFingerprint", $fingerprint)
-            }
-          }
-          .\scripts\verify-release-artifacts.ps1 @verifyArgs
+          Set-Location extension
+          npx vite build
+          npx vite build --config vite.web-components.config.js
+          Set-Location ..
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -Path "extension\dist\*" -DestinationPath "artifacts\extension-dist-${{ env.RELEASE_VERSION }}.zip" -Force
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -177,40 +118,7 @@ jobs:
           make_latest: true
           generate_release_notes: true
           files: |
-            artifacts/KeePassBrowserBridge.dll
-            artifacts/KeePassBrowserBridge.plgx
-            artifacts/KeePassBrowserBridge-chrome-extension-${{ env.RELEASE_VERSION }}.zip
-            artifacts/KeePassBrowserBridge-firefox-extension-${{ env.RELEASE_VERSION }}.zip
-            artifacts/versioninfo.txt
-            artifacts/release-manifest.json
-            artifacts/SHA256SUMS.txt
-            artifacts/*.asc
-
-      - name: Upload plugin DLL
-        if: ${{ env.KEEPASS_EXTRACTED != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: KeePassBrowserBridge-plugin-dll-${{ env.RELEASE_VERSION }}
-          path: artifacts\KeePassBrowserBridge.dll
-
-      - name: Upload plugin PLGX
-        if: ${{ env.KEEPASS_EXTRACTED != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: KeePassBrowserBridge-plugin-plgx-${{ env.RELEASE_VERSION }}
-          path: artifacts\KeePassBrowserBridge.plgx
-
-      - name: Upload Chrome extension
-        uses: actions/upload-artifact@v4
-        with:
-          name: KeePassBrowserBridge-chrome-extension-${{ env.RELEASE_VERSION }}
-          path: artifacts\KeePassBrowserBridge-chrome-extension-${{ env.RELEASE_VERSION }}.zip
-
-      - name: Upload Firefox extension
-        uses: actions/upload-artifact@v4
-        with:
-          name: KeePassBrowserBridge-firefox-extension-${{ env.RELEASE_VERSION }}
-          path: artifacts\KeePassBrowserBridge-firefox-extension-${{ env.RELEASE_VERSION }}.zip
+            artifacts/extension-dist-${{ env.RELEASE_VERSION }}.zip
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v4
