@@ -145,6 +145,8 @@ function installRootEventListeners(root) {
     true,
   );
 }
+// TODO: Extract to extension/shared/field-classifier.js when Vite bundles content scripts
+// Import: import { isSubmitControl, fieldText, isNonCredentialAutocomplete, ... } from '../shared/field-classifier.js'
 function isSubmitControl(element) {
   if (!element || !element.tagName) return false;
   const tagName = element.tagName.toLowerCase();
