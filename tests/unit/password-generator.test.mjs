@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,32 +9,60 @@ const __filename = (() => {
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..');
 
-const source = fs.readFileSync(path.join(projectRoot, 'extension', 'src', 'popup', 'PasswordGenerator.vue'), 'utf8');
-// Note: formatCount and formatRelativeTime are in shared/formatters.js. We check the generator itself.
+const { generatePassword } = await import(
+  path.join(projectRoot, 'extension', 'shared', 'password-generator.js')
+);
 
-describe('PasswordGenerator.vue - charset options', () => {
-  it('should include lowercase letters by default', () => {
-    assert.ok(source.includes('lower') || source.includes('Lower'),
-      'Missing lowercase option');
+describe('password-generator.js - generatePassword', () => {
+  it('should generate a password of default length 20', () => {
+    const pwd = generatePassword();
+    assert.equal(pwd.length, 20);
   });
 
-  it('should include uppercase letters by default', () => {
-    assert.ok(source.includes('upper') || source.includes('Upper'),
-      'Missing uppercase option');
+  it('should generate a password of specified length', () => {
+    const pwd = generatePassword(32);
+    assert.equal(pwd.length, 32);
   });
 
-  it('should include digits by default', () => {
-    assert.ok(source.includes('digit') || source.includes('Digit'),
-      'Missing digits option');
+  it('should generate a password of length 8 (minimum)', () => {
+    const pwd = generatePassword(8);
+    assert.equal(pwd.length, 8);
   });
 
-  it('should have configurable length slider', () => {
-    assert.ok(source.includes('length') && source.includes('min'),
-      'Missing min/max length configuration');
+  it('should exclude ambiguous characters when option set', () => {
+    const pwd = generatePassword(50, { excludeAmbiguous: true });
+    assert.ok(!pwd.includes('1'), 'Should exclude 1');
+    assert.ok(!pwd.includes('l'), 'Should exclude l');
+    assert.ok(!pwd.includes('I'), 'Should exclude I');
+    assert.ok(!pwd.includes('0'), 'Should exclude 0');
+    assert.ok(!pwd.includes('O'), 'Should exclude O');
   });
 
-  it('should have exclude-ambiguous toggle', () => {
-    assert.ok(source.includes('exclude') || source.includes('ambiguous') || source.includes('similar'),
-      'Missing exclude ambiguous characters option');
+  it('should exclude symbols when useSymbols is false', () => {
+    const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const pwd = generatePassword(100, { useSymbols: false });
+    for (const c of pwd) {
+      assert.ok(!symbols.includes(c), `Should not contain symbol: ${c}`);
+    }
+  });
+
+  it('should generate different passwords each call', () => {
+    const pwd1 = generatePassword();
+    const pwd2 = generatePassword();
+    assert.notEqual(pwd1, pwd2);
+  });
+
+  it('should contain only valid characters', () => {
+    const validChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const pwd = generatePassword(50);
+    for (const c of pwd) {
+      assert.ok(validChars.includes(c), `Unexpected character: ${c}`);
+    }
+  });
+
+  it('should contain at least one letter and one digit', () => {
+    const pwd = generatePassword(50);
+    assert.ok(/[a-zA-Z]/.test(pwd), 'Should contain at least one letter');
+    assert.ok(/[0-9]/.test(pwd), 'Should contain at least one digit');
   });
 });

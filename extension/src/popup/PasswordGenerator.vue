@@ -32,6 +32,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { CloseOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons-vue';
+import { generatePassword } from '../../shared/password-generator.js';
 
 const emit = defineEmits(['close', 'select']);
 
@@ -55,14 +56,10 @@ const charset = computed(() => {
 });
 
 function generate() {
-  const chars = charset.value;
-  let result = '';
-  const arr = new Uint32Array(length.value);
-  crypto.getRandomValues(arr);
-  for (let i = 0; i < length.value; i++) {
-    result += chars[arr[i] % chars.length];
-  }
-  return result;
+  return generatePassword(length.value, {
+    useSymbols: useSymbols.value,
+    excludeAmbiguous: excludeAmbiguous.value,
+  });
 }
 
 const password = ref('');

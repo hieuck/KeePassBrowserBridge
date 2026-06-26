@@ -67,6 +67,7 @@ import { reactive, computed, ref, onMounted, onUnmounted } from 'vue';
 import { CloseOutlined, KeyOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import PasswordGenerator from './PasswordGenerator.vue';
 import { isValidUrl, isNonEmpty } from '../../shared/validators.js';
+import { generatePassword } from '../../shared/password-generator.js';
 
 const props = defineProps({ entry: { type: Object, required: true } });
 const emit = defineEmits(['save', 'cancel']);
@@ -128,15 +129,7 @@ const isValid = computed(() => {
 });
 
 function refreshPassword() {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
-  let result = '';
-  const len = 20;
-  const arr = new Uint32Array(len);
-  crypto.getRandomValues(arr);
-  for (let i = 0; i < len; i++) {
-    result += chars[arr[i] % chars.length];
-  }
-  generatedPassword.value = result;
+  generatedPassword.value = generatePassword();
 }
 
 function useGeneratedPassword() {
