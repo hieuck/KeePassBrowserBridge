@@ -130,13 +130,9 @@ jobs:
           $keepassDir = Join-Path $env:RUNNER_TEMP "KeePass"
           $artifacts = "${{ github.workspace }}\artifacts"
           $project = "${{ github.workspace }}\src\KeePassBrowserBridge.csproj"
-          $buildOut = "$env:TEMP\kp-build"
-          Remove-Item -Path $buildOut -Recurse -Force -ErrorAction SilentlyContinue
-          dotnet build $project /p:BaseOutputPath="$buildOut\" --configuration Release -p:KeePassReferencePath="$keepassDir"
+          dotnet build $project --configuration Release -p:KeePassReferencePath="$keepassDir" -p:OutputPath="$artifacts\"
           if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
-          $dllPath = Join-Path $buildOut "Release\net40\KeePassBrowserBridge.dll"
-          if (-not (Test-Path $dllPath)) { throw "DLL not found at $dllPath" }
-          Copy-Item $dllPath "$artifacts\" -Force
+          Write-Output "Plugin DLL built at $artifacts"
 
       - name: Build extension
         shell: pwsh
