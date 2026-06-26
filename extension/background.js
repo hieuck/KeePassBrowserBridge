@@ -1197,22 +1197,29 @@ async function bridgeCall(method, payload, requiresAuth) {
     request.Authentication = await createAuthentication(request, state.sharedSecret);
   }
   
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request)
-  });
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request)
+    });
 
-  if (!response.ok) {
-    throw new Error(`Bridge returned ${response.status}: ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(`Bridge returned ${response.status}: ${response.statusText}`);
+    }
+
+    const bridgeResponse = await response.json();
+    if (!bridgeResponse.Success) {
+      throw new Error(bridgeResponse.Error || bridgeResponse.ErrorCode || 'KeePass bridge request failed.');
+    }
+
+    return bridgeResponse;
+  } catch (fetchError) {
+    if (fetchError && fetchError.message === 'Failed to fetch') {
+      throw new Error('Cannot connect to KeePass. Please ensure KeePass is running with the plugin enabled.');
+    }
+    throw fetchError;
   }
-
-  const bridgeResponse = await response.json();
-  if (!bridgeResponse.Success) {
-    throw new Error(bridgeResponse.Error || bridgeResponse.ErrorCode || 'KeePass bridge request failed.');
-  }
-
-  return bridgeResponse;
 }
 
 function getExtensionOrigin() {
