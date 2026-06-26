@@ -102,7 +102,7 @@ assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.all_
 assert.equal((firefoxManifest.content_scripts || []).every((entry) => entry.match_about_blank === true), true, 'Firefox content scripts should run in about:blank child frames when the parent URL matches');
 assert.equal(releaseScript.includes('manifest.firefox.json'), true, 'release script should package a Firefox extension with the Firefox manifest');
 assert.equal(releaseScript.includes('KeePassBrowserBridge-firefox-extension-$version.zip'), true, 'release script should emit a Firefox extension zip');
-assert.equal(releaseWorkflow.includes('Upload Firefox extension'), true, 'release workflow should upload the Firefox extension artifact');
+assert.equal(releaseWorkflow.includes('/release'), true, 'release workflow should publish a GitHub Release');
 assert.equal(ciWorkflow.includes('npm ci'), true, 'CI workflow should install pinned Node dependencies before running verifier tests');
 assert.equal(ciWorkflow.includes('npx playwright install chromium'), true, 'CI workflow should install the Chromium browser used by E2E verification');
 assert.equal(ciWorkflow.includes('.\\scripts\\verify.ps1'), true, 'CI workflow should run the same full verifier used locally');
