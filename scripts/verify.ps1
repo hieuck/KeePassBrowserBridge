@@ -51,7 +51,6 @@ try {
     Invoke-NativeChecked "node" @("--check", "extension\httpAuth.js")
     Invoke-NativeChecked "node" @("--check", "extension\compat.js")
     Invoke-NativeChecked "node" @("--check", "extension\customFields.js")
-    Invoke-NativeChecked "node" @("tests\extension\manifest.test.mjs")
     Invoke-NativeChecked "node" @("tests\unit\manifest.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\protocol.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\http-auth.test.mjs")
