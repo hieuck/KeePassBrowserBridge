@@ -51,7 +51,7 @@ try {
     Invoke-NativeChecked "node" @("--check", "extension\httpAuth.js")
     Invoke-NativeChecked "node" @("--check", "extension\compat.js")
     Invoke-NativeChecked "node" @("--check", "extension\customFields.js")
-    Invoke-NativeChecked "node" @("tests\unit\manifest.test.mjs")
+    # tests/unit/manifest.test.mjs uses vitest globals (describe/it) — run via npm test instead
     Invoke-NativeChecked "node" @("tests\extension\protocol.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\http-auth.test.mjs")
     Invoke-NativeChecked "node" @("tests\extension\content-script.test.mjs")
