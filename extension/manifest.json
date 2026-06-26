@@ -51,7 +51,7 @@
         "compat.js",
         "httpAuth.js",
         "customFields.js",
-        "dist/content-script.js"
+        "dist/contentScript.js"
       ],
       "run_at": "document_start",
       "all_frames": true,

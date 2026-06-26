@@ -1,6 +1,9 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -27,6 +30,9 @@ on:
         required: false
         default: ""
         type: string
+
+env:
+  RELEASE_VERSION: ${{ github.ref_name }}
 
 permissions:
   contents: write
@@ -60,10 +66,15 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $releaseVersion = "${{ inputs.version }}"
-          if ($releaseVersion -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Release version must use x.y.z format."
+          $releaseVersion = "${{ env.RELEASE_VERSION }}"
+          if ([string]::IsNullOrWhiteSpace($releaseVersion)) {
+            $tag = "${{ github.ref_name }}"
+            $releaseVersion = $tag -replace '^v', ''
           }
+          if ($releaseVersion -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release version must use x.y.z format. Got: $releaseVersion"
+          }
+          echo "RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_ENV
 
           $manifest = Get-Content -Raw extension\manifest.json | ConvertFrom-Json
           if ([string] $manifest.version -ne $releaseVersion) {
@@ -134,7 +145,7 @@ jobs:
         run: |
           $verifyArgs = @(
             "-ArtifactsDir", "${{ github.workspace }}\artifacts",
-            "-Version", "${{ inputs.version }}"
+            "-Version", "${{ env.RELEASE_VERSION }}"
           )
           if ("${{ inputs.sign_release }}" -eq "true") {
             $verifyArgs += "-RequireSignatures"
@@ -148,15 +159,15 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: KeePass Browser Bridge ${{ inputs.version }}
+          tag_name: v${{ env.RELEASE_VERSION }}
+          name: KeePass Browser Bridge ${{ env.RELEASE_VERSION }}
           make_latest: true
           generate_release_notes: true
           files: |
             artifacts/KeePassBrowserBridge.dll
             artifacts/KeePassBrowserBridge.plgx
-            artifacts/KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip
-            artifacts/KeePassBrowserBridge-firefox-extension-${{ inputs.version }}.zip
+            artifacts/KeePassBrowserBridge-chrome-extension-${{ env.RELEASE_VERSION }}.zip
+            artifacts/KeePassBrowserBridge-firefox-extension-${{ env.RELEASE_VERSION }}.zip
             artifacts/versioninfo.txt
             artifacts/release-manifest.json
             artifacts/SHA256SUMS.txt
@@ -165,29 +176,29 @@ jobs:
       - name: Upload plugin DLL
         uses: actions/upload-artifact@v4
         with:
-          name: KeePassBrowserBridge-plugin-dll-${{ inputs.version }}
+          name: KeePassBrowserBridge-plugin-dll-${{ env.RELEASE_VERSION }}
           path: artifacts\KeePassBrowserBridge.dll
 
       - name: Upload plugin PLGX
         uses: actions/upload-artifact@v4
         with:
-          name: KeePassBrowserBridge-plugin-plgx-${{ inputs.version }}
+          name: KeePassBrowserBridge-plugin-plgx-${{ env.RELEASE_VERSION }}
           path: artifacts\KeePassBrowserBridge.plgx
 
       - name: Upload Chrome extension
         uses: actions/upload-artifact@v4
         with:
-          name: KeePassBrowserBridge-chrome-extension-${{ inputs.version }}
-          path: artifacts\KeePassBrowserBridge-chrome-extension-${{ inputs.version }}.zip
+          name: KeePassBrowserBridge-chrome-extension-${{ env.RELEASE_VERSION }}
+          path: artifacts\KeePassBrowserBridge-chrome-extension-${{ env.RELEASE_VERSION }}.zip
 
       - name: Upload Firefox extension
         uses: actions/upload-artifact@v4
         with:
-          name: KeePassBrowserBridge-firefox-extension-${{ inputs.version }}
-          path: artifacts\KeePassBrowserBridge-firefox-extension-${{ inputs.version }}.zip
+          name: KeePassBrowserBridge-firefox-extension-${{ env.RELEASE_VERSION }}
+          path: artifacts\KeePassBrowserBridge-firefox-extension-${{ env.RELEASE_VERSION }}.zip
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: KeePassBrowserBridge-release-${{ inputs.version }}
+          name: KeePassBrowserBridge-release-${{ env.RELEASE_VERSION }}
           path: artifacts\*
