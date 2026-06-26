@@ -123,27 +123,20 @@ jobs:
           [System.IO.File]::WriteAllText($keyPath, $env:KBB_GPG_PRIVATE_KEY)
           gpg --batch --import $keyPath
 
-      - name: Build extension and plugin
+      - name: Build plugin
+        if: ${{ env.KEEPASS_DIR != '' }}
+        shell: pwsh
+        run: |
+          .\scripts\build-release.ps1 -KeePassExe "$env:KEEPASS_DIR\KeePass.exe" -ArtifactsDir "${{ github.workspace }}\artifacts" -RequireCleanSource
+
+      - name: Build extension
         shell: pwsh
         run: |
           Set-Location extension
           npx vite build
           npx vite build --config vite.web-components.config.js
           Set-Location ..
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          # Build plugin if KeePass available
-          $keepassDir = "$env:KEEPASS_DIR"
-          if (-not [string]::IsNullOrWhiteSpace($keepassDir) -and (Test-Path "$keepassDir\KeePass.exe")) {
-            Write-Output "Building plugin with KeePass from $keepassDir"
-            dotnet build src/KeePassBrowserBridge.csproj /p:ReferencePath="$keepassDir"
-            if ($LASTEXITCODE -eq 0) {
-              Copy-Item "src/bin/Debug/KeePassBrowserBridge.dll" "artifacts/"
-              & "$keepassDir\KeePass.exe" --plgx-create "src" --plgx-dest "artifacts/KeePassBrowserBridge.plgx"
-            }
-          } else {
-            Write-Output "KeePass not available. Building extension only."
-          }
-          # Build extension dist zip
+          if (-not (Test-Path "artifacts")) { New-Item -ItemType Directory -Force -Path artifacts | Out-Null }
           Compress-Archive -Path "extension\dist\*" -DestinationPath "artifacts\extension-dist-${{ env.RELEASE_VERSION }}.zip" -Force
 
       - name: Publish GitHub Release
