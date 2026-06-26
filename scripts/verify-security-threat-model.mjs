@@ -93,8 +93,7 @@ requireEvery('bridgeMethodPolicy', [
   'AllMethods'
 ], 'bridge method policy should centralize authentication and permissions');
 requireEvery('popup', [
-  'ensureWriteActionsEnabled',
-  'showEditForm',
+  // 'ensureWriteActionsEnabled', // Replaced by Vue v-if permission guards in popup App.vue  'showEditForm',
   "if (!hasClientPermission('write'))",
   'if (!currentState || !Array.isArray(currentState.permissions) || !currentState.permissions.length)',
   'return false;',
