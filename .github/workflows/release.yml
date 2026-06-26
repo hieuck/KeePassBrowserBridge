@@ -134,7 +134,9 @@ jobs:
           Remove-Item -Path $buildOut -Recurse -Force -ErrorAction SilentlyContinue
           dotnet build $project /p:BaseOutputPath="$buildOut" --configuration Release -p:KeePassReferencePath="$keepassDir"
           if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
-          Copy-Item "$buildOut\Release\net40\KeePassBrowserBridge.dll" "$artifacts\" -Force
+          $dllPath = Join-Path $buildOut "Release\net40\KeePassBrowserBridge.dll"
+          if (-not (Test-Path $dllPath)) { throw "DLL not found at $dllPath" }
+          Copy-Item $dllPath "$artifacts\" -Force
 
       - name: Build extension
         shell: pwsh
