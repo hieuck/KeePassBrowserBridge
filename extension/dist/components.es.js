@@ -26,51 +26,54 @@ const f = {
   download: "M7.47 10.78a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L5.28 6.47a.75.75 0 0 0-1.06 1.06l3.25 3.25zM3.75 13.25a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5z",
   upload: "M8.53 1.22a.75.75 0 0 0-1.06 0L4.22 4.47a.75.75 0 0 0 1.06 1.06l2.47-2.47v6.69a.75.75 0 0 0 1.5 0V3.06l2.47 2.47a.75.75 0 1 0 1.06-1.06L8.53 1.22zM3.75 11.75a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5z"
 };
-function g(c, e) {
+function g(p, e) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
 }
-const r = Object.fromEntries(
-  Object.entries(f).map(([c, e]) => [c, g(c, e)])
+const a = Object.fromEntries(
+  Object.entries(f).map(([p, e]) => [p, g(p, e)])
 );
-r.key;
-r.lock;
-r["lock-open"];
-r.unlock;
-r.copy;
-r.check;
-r.edit;
-r.pencil;
-r.plus;
-r.trash;
-r.search;
-r.filter;
-r.close;
-r["chevron-down"];
-r.eye;
-r["eye-off"];
-r.shield;
-r["shield-check"];
-r.globe;
-r.user;
-r["user-plus"];
-r.sun;
-r.moon;
-r.monitor;
-r.download;
-r.upload;
-function x(c = "kbb") {
+a.key;
+a.lock;
+a["lock-open"];
+a.unlock;
+a.copy;
+a.check;
+a.edit;
+a.pencil;
+a.plus;
+a.trash;
+a.search;
+a.filter;
+a.close;
+a["chevron-down"];
+a.eye;
+a["eye-off"];
+a.shield;
+a["shield-check"];
+a.globe;
+a.user;
+a["user-plus"];
+a.sun;
+a.moon;
+a.monitor;
+a.download;
+a.upload;
+function x(p = "kbb") {
   if (!(typeof customElements > "u"))
-    for (const [e, t] of Object.entries(r)) {
-      const a = `${c}-icon-${e}`;
-      if (customElements.get(a)) continue;
+    for (const [e, t] of Object.entries(a)) {
+      const r = `${p}-icon-${e}`;
+      if (customElements.get(r)) continue;
       class o extends HTMLElement {
         connectedCallback() {
-          const n = this.getAttribute("size") || 16;
-          this.innerHTML = t.replace('width="16"', `width="${n}"`).replace('height="16"', `height="${n}"`);
+          const l = this.getAttribute("size") || 16;
+          this.innerHTML = t.replace('width="16"', `width="${l}"`).replace('height="16"', `height="${l}"`);
         }
       }
-      customElements.define(a, o);
+      customElements.define(r, o);
     }
+}
+function n(p) {
+  return String(p).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 class _ extends HTMLElement {
   static get observedAttributes() {
@@ -93,15 +96,12 @@ class _ extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-click", { bubbles: !0, detail: { original: e } }));
   }
   render() {
-    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", a = this.getAttribute("type") || "button", o = this.hasAttribute("block"), d = this.hasAttribute("loading"), n = this.hasAttribute("disabled") || d, i = this.textContent.trim();
-    this.innerHTML = `<button type="${a}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${o ? " kbb-btn--block" : ""}${d ? " kbb-btn--loading" : ""}" ${n ? "disabled" : ""} aria-busy="${d}" aria-disabled="${n}"><span class="kbb-btn__label">${k(i)}</span></button>`;
+    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", r = this.getAttribute("type") || "button", o = this.hasAttribute("block"), d = this.hasAttribute("loading"), l = this.hasAttribute("disabled") || d, i = this.textContent.trim();
+    this.innerHTML = `<button type="${r}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${o ? " kbb-btn--block" : ""}${d ? " kbb-btn--loading" : ""}" ${l ? "disabled" : ""} aria-busy="${d}" aria-disabled="${l}"><span class="kbb-btn__label">${n(i)}</span></button>`;
   }
 }
-function k(c) {
-  return String(c || "").replace(/[&<>"']/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[e]);
-}
 typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", _);
-const y = `
+const k = `
 :host {
   --color-bg: #fafbfc;
   --color-surface: #ffffff;
@@ -366,7 +366,7 @@ const y = `
   .picker-expanded { border-color: var(--color-border); }
 }
 `;
-class w extends HTMLElement {
+class y extends HTMLElement {
   static get observedAttributes() {
     return ["credentials", "placeholder", "show-search", "position"];
   }
@@ -379,11 +379,11 @@ class w extends HTMLElement {
   disconnectedCallback() {
     document.removeEventListener("keydown", this._boundOnKeyDown, !0), document.removeEventListener("mousedown", this._boundOnClickOutside, !0);
   }
-  attributeChangedCallback(e, t, a) {
-    if (t !== a) {
+  attributeChangedCallback(e, t, r) {
+    if (t !== r) {
       if (e === "credentials")
         try {
-          this._credentials = JSON.parse(a || "[]");
+          this._credentials = JSON.parse(r || "[]");
         } catch {
           this._credentials = [];
         }
@@ -410,58 +410,58 @@ class w extends HTMLElement {
     );
   }
   _render() {
-    var n, i;
-    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search"), a = t !== null ? t !== "false" : this._credentials.length > 4, o = this._filtered;
+    var l, i;
+    const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search"), r = t !== null ? t !== "false" : this._credentials.length > 4, o = this._filtered;
     this._activeIndex = o.length > 0 ? 0 : -1;
     const d = this._getHeaderDomain();
     this.shadowRoot.innerHTML = `
-      <style>${y}</style>
+      <style>${k}</style>
       <div class="picker-header">
-        <span class="picker-header__title">${o.length} login${o.length !== 1 ? "s" : ""}${d ? ` for ${this._escapeHtml(d)}` : ""}</span>
+        <span class="picker-header__title">${o.length} login${o.length !== 1 ? "s" : ""}${d ? ` for ${n(d)}` : ""}</span>
         <button type="button" class="picker-header__close" aria-label="Close picker">
-          <span aria-hidden="true">${r.close || "✕"}</span>
+          <span aria-hidden="true">${a.close || "✕"}</span>
         </button>
       </div>
-      ${a ? `
+      ${r ? `
         <div class="picker-search">
-          <span class="picker-icon" aria-hidden="true">${r.search || ""}</span>
+          <span class="picker-icon" aria-hidden="true">${a.search || ""}</span>
           <input
             type="text"
             class="picker-search-input"
-            placeholder="${this._escapeHtml(e)}"
+            placeholder="${n(e)}"
             aria-label="Search credentials"
-            value="${this._escapeHtml(this._search)}"
+            value="${n(this._search)}"
           />
         </div>
       ` : ""}
       <ul class="picker-list" role="listbox" aria-label="Credentials">
         ${o.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
-        ${o.map((l, s) => this._renderItem(l, s)).join("")}
+        ${o.map((c, s) => this._renderItem(c, s)).join("")}
       </ul>
-    `, (n = this.shadowRoot.querySelector(".picker-header__close")) == null || n.addEventListener("click", (l) => {
-      l.stopPropagation(), this._emitClose();
-    }), (i = this.shadowRoot.querySelector(".picker-search-input")) == null || i.addEventListener("input", (l) => {
+    `, (l = this.shadowRoot.querySelector(".picker-header__close")) == null || l.addEventListener("click", (c) => {
+      c.stopPropagation(), this._emitClose();
+    }), (i = this.shadowRoot.querySelector(".picker-search-input")) == null || i.addEventListener("input", (c) => {
       var s;
-      this._search = l.target.value, this._expandedIndex = -1, this._activeIndex = 0, this._render(), (s = this.shadowRoot.querySelector(".picker-search-input")) == null || s.focus();
-    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((l) => {
-      l.addEventListener("click", (s) => {
+      this._search = c.target.value, this._expandedIndex = -1, this._activeIndex = 0, this._render(), (s = this.shadowRoot.querySelector(".picker-search-input")) == null || s.focus();
+    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((c) => {
+      c.addEventListener("click", (s) => {
         s.stopPropagation();
-        const h = Number(l.dataset.index);
+        const h = Number(c.dataset.index);
         if (h === this._expandedIndex) {
           this._expandedIndex = -1, this._render();
           return;
         }
         this._expandedIndex = h, this._render();
       });
-    }), this.shadowRoot.querySelectorAll(".picker-action").forEach((l) => {
-      l.addEventListener("click", (s) => {
+    }), this.shadowRoot.querySelectorAll(".picker-action").forEach((c) => {
+      c.addEventListener("click", (s) => {
         s.stopPropagation();
-        const h = Number(l.dataset.index), m = l.dataset.action, u = o[h];
+        const h = Number(c.dataset.index), b = c.dataset.action, u = o[h];
         if (u)
-          if (m === "fill-form") {
-            const b = { ...u };
-            b._fillRole = "form", this._emitFill(b);
-          } else m === "fill-username" ? this._emitFillForTarget(u, "username") : m === "copy-username" ? this._emitCopy(u, "username") : m === "fill-password" ? this._emitFillForTarget(u, "password") : m === "copy-password" && this._emitCopy(u, "password");
+          if (b === "fill-form") {
+            const m = { ...u };
+            m._fillRole = "form", this._emitFill(m);
+          } else b === "fill-username" ? this._emitFillForTarget(u, "username") : b === "copy-username" ? this._emitCopy(u, "username") : b === "fill-password" ? this._emitFillForTarget(u, "password") : b === "copy-password" && this._emitCopy(u, "password");
       });
     }), this._activeIndex >= 0 && this._highlightActive();
   }
@@ -482,7 +482,7 @@ class w extends HTMLElement {
     }
   }
   _renderItem(e, t) {
-    const a = (e.name || e.username || "?").charAt(0).toUpperCase(), o = e.url ? this._faviconUrl(e.url) : null, d = o ? `<img class="picker-avatar picker-avatar--favicon" src="${o}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${a}</div>'" />` : `<div class="picker-avatar">${a}</div>`, n = t === this._expandedIndex;
+    const r = (e.name || e.username || "?").charAt(0).toUpperCase(), o = e.url ? this._faviconUrl(e.url) : null, d = o ? `<img class="picker-avatar picker-avatar--favicon" src="${o}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${r}</div>'" />` : `<div class="picker-avatar">${r}</div>`, l = t === this._expandedIndex;
     return `
       <li
         class="picker-item${t === this._activeIndex ? " picker-item--active" : ""}${e.selected ? " picker-item--selected" : ""}"
@@ -493,16 +493,16 @@ class w extends HTMLElement {
       >
         ${d}
         <div class="picker-info">
-          <div class="picker-name">${this._escapeHtml(e.name || "(no name)")}</div>
-          ${e.username ? `<div class="picker-username">${this._escapeHtml(e.username)}</div>` : ""}
+          <div class="picker-name">${n(e.name || "(no name)")}</div>
+          ${e.username ? `<div class="picker-username">${n(e.username)}</div>` : ""}
         </div>
-        <span class="picker-icon" style="transition: transform 120ms;${n ? " transform: rotate(180deg);" : ""}" aria-hidden="true">${r["chevron-down"] || ""}</span>
+        <span class="picker-icon" style="transition: transform 120ms;${l ? " transform: rotate(180deg);" : ""}" aria-hidden="true">${a["chevron-down"] || ""}</span>
       </li>
-      ${n ? this._renderExpanded(e, t) : ""}
+      ${l ? this._renderExpanded(e, t) : ""}
     `;
   }
   _renderExpanded(e, t) {
-    const a = e.customFields && Array.isArray(e.customFields) && e.customFields.length > 0;
+    const r = e.customFields && Array.isArray(e.customFields) && e.customFields.length > 0;
     return `
       <li class="picker-expanded" role="presentation">
         <div class="picker-action-row">
@@ -512,7 +512,7 @@ class w extends HTMLElement {
           ${e.password ? `<button type="button" class="picker-action" data-index="${t}" data-action="fill-password">Fill pass</button>` : ""}
           ${e.password ? `<button type="button" class="picker-action" data-index="${t}" data-action="copy-password">Copy pass</button>` : ""}
         </div>
-        ${a ? `<div class="picker-custom-header">Custom fields (${e.customFields.length})</div>` : ""}
+        ${r ? `<div class="picker-custom-header">Custom fields (${e.customFields.length})</div>` : ""}
       </li>
     `;
   }
@@ -523,13 +523,10 @@ class w extends HTMLElement {
       return null;
     }
   }
-  _escapeHtml(e) {
-    return String(e).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
   _highlightActive() {
     const e = this.shadowRoot.querySelectorAll(".picker-item");
-    e.forEach((a, o) => {
-      a.classList.toggle("picker-item--active", o === this._activeIndex), a.setAttribute("aria-selected", o === this._activeIndex), a.setAttribute("tabindex", o === this._activeIndex ? "0" : "-1");
+    e.forEach((r, o) => {
+      r.classList.toggle("picker-item--active", o === this._activeIndex), r.setAttribute("aria-selected", o === this._activeIndex), r.setAttribute("tabindex", o === this._activeIndex ? "0" : "-1");
     });
     const t = e[this._activeIndex];
     t && t.scrollIntoView({ block: "nearest" });
@@ -543,8 +540,8 @@ class w extends HTMLElement {
       e.preventDefault(), e.stopPropagation(), this._activeIndex = Math.max(this._activeIndex - 1, 0), this._expandedIndex = -1, this._highlightActive();
     else if (e.key === "Enter") {
       e.preventDefault(), e.stopPropagation();
-      const a = t[this._activeIndex];
-      a && this._emitFill(a);
+      const r = t[this._activeIndex];
+      r && this._emitFill(r);
     } else e.key === "Escape" && (e.preventDefault(), e.stopPropagation(), this._expandedIndex >= 0 ? (this._expandedIndex = -1, this._render()) : this._emitClose());
   }
   _onClickOutside(e) {
@@ -578,7 +575,7 @@ class w extends HTMLElement {
     }));
   }
 }
-customElements.get("kbb-picker") || customElements.define("kbb-picker", w);
+customElements.get("kbb-picker") || customElements.define("kbb-picker", y);
 const v = `
 :host {
   --color-bg: #fafbfc;
@@ -847,10 +844,7 @@ const v = `
   .prompt-editable-label { color: var(--color-text-muted); }
 }
 `;
-function p(c) {
-  return String(c).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-class $ extends HTMLElement {
+class w extends HTMLElement {
   static get observedAttributes() {
     return ["name", "username", "password", "url", "title", "folder", "folders"];
   }
@@ -870,15 +864,15 @@ class $ extends HTMLElement {
     if (!this.isConnected) return;
     const e = this.getAttribute("data-position");
     if (!e || e === "bottom-right") return;
-    const t = this.getAttribute("data-top"), a = this.getAttribute("data-right");
-    t && (this.style.top = t), a && (this.style.right = a);
+    const t = this.getAttribute("data-top"), r = this.getAttribute("data-right");
+    t && (this.style.top = t), r && (this.style.right = r);
   }
   _bindEvents() {
-    var e, t, a;
-    (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="save"]')) == null || t.addEventListener("click", () => this._save()), (a = this.shadowRoot.querySelector('[data-action="never"]')) == null || a.addEventListener("click", () => this._never());
+    var e, t, r;
+    (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="save"]')) == null || t.addEventListener("click", () => this._save()), (r = this.shadowRoot.querySelector('[data-action="never"]')) == null || r.addEventListener("click", () => this._never());
   }
   _render() {
-    const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", a = this.getAttribute("password") || "", o = this.getAttribute("url") || "", d = this.getAttribute("title") || e || "", n = this.getAttribute("folder") || "";
+    const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", r = this.getAttribute("password") || "", o = this.getAttribute("url") || "", d = this.getAttribute("title") || e || "", l = this.getAttribute("folder") || "";
     let i = [];
     try {
       const s = this.getAttribute("folders");
@@ -886,35 +880,35 @@ class $ extends HTMLElement {
     } catch {
     }
     Array.isArray(i) || (i = []);
-    const l = i.map((s) => {
-      const h = typeof s == "string" ? s : s.value || s.name || "", m = typeof s == "string" ? s : s.label || s.name || h, u = h === n ? " selected" : "";
-      return `<option value="${p(h)}"${u}>${p(m)}</option>`;
+    const c = i.map((s) => {
+      const h = typeof s == "string" ? s : s.value || s.name || "", b = typeof s == "string" ? s : s.label || s.name || h, u = h === l ? " selected" : "";
+      return `<option value="${n(h)}"${u}>${n(b)}</option>`;
     }).join("");
     this.shadowRoot.innerHTML = `
       <style>${v}</style>
       <div class="prompt-header" role="region" aria-label="Save login">
-        <span class="prompt-header__icon" aria-hidden="true">${r.key || ""}</span>
+        <span class="prompt-header__icon" aria-hidden="true">${a.key || ""}</span>
         <span class="prompt-header__title">Save this login?</span>
         <button type="button" class="prompt-header__close" aria-label="Close">
-          <span aria-hidden="true">${r.close || ""}</span>
+          <span aria-hidden="true">${a.close || ""}</span>
         </button>
       </div>
       <div class="prompt-body">
-        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${p(e)}</span></div>` : ""}
-        ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${p(t)}</span></div>` : ""}
-        ${a ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(a.length, 12))}</span></div>` : ""}
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${n(e)}</span></div>` : ""}
+        ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${n(t)}</span></div>` : ""}
+        ${r ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(r.length, 12))}</span></div>` : ""}
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">Title</label>
-          <input type="text" class="prompt-editable-input" data-field="title" value="${p(d)}" placeholder="Login title" />
+          <input type="text" class="prompt-editable-input" data-field="title" value="${n(d)}" placeholder="Login title" />
         </div>
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">URL</label>
-          <input type="text" class="prompt-editable-input" data-field="url" value="${p(o)}" placeholder="https://" />
+          <input type="text" class="prompt-editable-input" data-field="url" value="${n(o)}" placeholder="https://" />
         </div>
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">Folder</label>
           <select class="prompt-editable-select" data-field="folder" aria-label="Folder">
-            ${l}
+            ${c}
           </select>
         </div>
       </div>
@@ -933,7 +927,7 @@ class $ extends HTMLElement {
     return t ? t.value : "";
   }
   _save() {
-    const e = this._getFieldValue('[data-field="title"]') || this.getAttribute("name") || "", t = this._getFieldValue('[data-field="url"]') || this.getAttribute("url") || "", a = this._getFieldValue('[data-field="folder"]') || "";
+    const e = this._getFieldValue('[data-field="title"]') || this.getAttribute("name") || "", t = this._getFieldValue('[data-field="url"]') || this.getAttribute("url") || "", r = this._getFieldValue('[data-field="folder"]') || "";
     this.dispatchEvent(new CustomEvent("kbb-save", {
       bubbles: !0,
       composed: !0,
@@ -943,7 +937,7 @@ class $ extends HTMLElement {
         username: this.getAttribute("username"),
         password: this.getAttribute("password"),
         url: t,
-        folder: a
+        folder: r
       }
     })), this.remove();
   }
@@ -958,7 +952,7 @@ class $ extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-class A extends HTMLElement {
+class $ extends HTMLElement {
   static get observedAttributes() {
     return ["name", "username", "password", "old-username", "title", "folder", "folders"];
   }
@@ -978,52 +972,52 @@ class A extends HTMLElement {
     if (!this.isConnected) return;
     const e = this.getAttribute("data-position");
     if (!e || e === "bottom-right") return;
-    const t = this.getAttribute("data-top"), a = this.getAttribute("data-right");
-    t && (this.style.top = t), a && (this.style.right = a);
+    const t = this.getAttribute("data-top"), r = this.getAttribute("data-right");
+    t && (this.style.top = t), r && (this.style.right = r);
   }
   _bindEvents() {
-    var e, t, a;
-    (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="update"]')) == null || t.addEventListener("click", () => this._update()), (a = this.shadowRoot.querySelector('[data-action="skip"]')) == null || a.addEventListener("click", () => this._skip());
+    var e, t, r;
+    (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="update"]')) == null || t.addEventListener("click", () => this._update()), (r = this.shadowRoot.querySelector('[data-action="skip"]')) == null || r.addEventListener("click", () => this._skip());
   }
   _render() {
-    const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", a = this.getAttribute("username") || "", o = this.getAttribute("password") || "", d = this.getAttribute("url") || "";
+    const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", r = this.getAttribute("username") || "", o = this.getAttribute("password") || "", d = this.getAttribute("url") || "";
     this.getAttribute("title");
-    let n = [];
+    let l = [];
     try {
       const i = this.getAttribute("folders");
-      i && (n = JSON.parse(i));
+      i && (l = JSON.parse(i));
     } catch {
     }
-    Array.isArray(n) || (n = []), n.map((i) => {
-      const l = typeof i == "string" ? i : i.value || i.name || "", s = typeof i == "string" ? i : i.label || i.name || l;
-      return `<option value="${p(l)}">${p(s)}</option>`;
+    Array.isArray(l) || (l = []), l.map((i) => {
+      const c = typeof i == "string" ? i : i.value || i.name || "", s = typeof i == "string" ? i : i.label || i.name || c;
+      return `<option value="${n(c)}">${n(s)}</option>`;
     }).join(""), this.shadowRoot.innerHTML = `
       <style>${v}</style>
       <div class="prompt-header" role="region" aria-label="Update login">
-        <span class="prompt-header__icon" aria-hidden="true">${r.shield || ""}</span>
+        <span class="prompt-header__icon" aria-hidden="true">${a.shield || ""}</span>
         <span class="prompt-header__title">Update existing login?</span>
         <button type="button" class="prompt-header__close" aria-label="Close">
-          <span aria-hidden="true">${r.close || ""}</span>
+          <span aria-hidden="true">${a.close || ""}</span>
         </button>
       </div>
       <div class="prompt-body">
-        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${p(e)}</span></div>` : ""}
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${n(e)}</span></div>` : ""}
         <div class="prompt-field">
           <span class="prompt-field__label">From</span>
-          <span class="prompt-field__value">${p(t)}</span>
+          <span class="prompt-field__value">${n(t)}</span>
         </div>
         <div class="prompt-field">
           <span class="prompt-field__label">To</span>
-          <span class="prompt-field__value">${p(a)}</span>
+          <span class="prompt-field__value">${n(r)}</span>
         </div>
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">New Password</label>
-          <input type="text" class="prompt-editable-input" data-field="username" value="${p(a)}" placeholder="Username" />
+          <input type="text" class="prompt-editable-input" data-field="username" value="${n(r)}" placeholder="Username" />
         </div>
         ${o ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(o.length, 12))}</span></div>` : ""}
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">URL</label>
-          <input type="text" class="prompt-editable-input" data-field="url" value="${p(d)}" placeholder="https://" />
+          <input type="text" class="prompt-editable-input" data-field="url" value="${n(d)}" placeholder="https://" />
         </div>
       </div>
       <div class="prompt-actions">
@@ -1060,6 +1054,6 @@ class A extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", $);
-customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", A);
+customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", w);
+customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", $);
 x("kbb");
