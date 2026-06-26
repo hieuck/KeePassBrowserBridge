@@ -16,7 +16,7 @@
     <div class="options-page__body">
       <Sidebar :active="activeTab" :tabs="tabs" @select="activeTab = $event" />
       <main class="options-page__content">
-        <component :is="activeComponent" :settings="settings" @save="save" @reset="reset" />
+        <component :is="activeComponent" :settings="settings" @save="onSettingChange" @reset="reset" />
       </main>
     </div>
     <footer v-if="hasChanges" class="options-page__footer">
@@ -108,6 +108,12 @@ function cycleTheme() {
 async function loadSettings() {
   settings.value = await getSettings();
   originalSettings.value = { ...settings.value };
+}
+
+function onSettingChange(changes) {
+  if (changes && typeof changes === 'object') {
+    settings.value = { ...settings.value, ...changes };
+  }
 }
 
 async function save() {
