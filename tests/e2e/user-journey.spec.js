@@ -186,10 +186,11 @@ test.describe('Bug Regression Tests', () => {
     await page.waitForSelector('.options-page', { timeout: 10000 });
     await page.waitForTimeout(500);
     await page.locator('.ant-menu-item', { hasText: 'Clients' }).click();
-    await page.waitForTimeout(500);
-    // The ClientsTab should render without errors
-    const card = page.locator('.ant-card');
-    await expect(card).toBeVisible();
+    // Wait for lazy-loaded component to finish loading
+    await page.waitForTimeout(2000);
+    // The ClientsTab should render SectionCard (which contains ant-card)
+    const card = page.locator('.ant-card').first();
+    await expect(card).toBeVisible({ timeout: 8000 });
     // Should show either "No trusted clients" or a list (depending on bridge state)
     const noClients = page.locator('text=No trusted clients');
     expect(await noClients.count()).toBeGreaterThanOrEqual(0);
