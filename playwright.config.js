@@ -1,11 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const e2ePort = Number(process.env.PORT || 3000);
 const e2eBaseURL = `http://127.0.0.1:${e2ePort}`;
-const extensionPath = path.resolve(__dirname, 'extension');
 
 export default defineConfig({
   testDir: './tests',
@@ -30,17 +26,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        channel: 'chrome',
-        launchOptions: {
-          args: [
-            `--disable-extensions-except=${extensionPath}`,
-            `--load-extension=${extensionPath}`,
-            '--headless=new',
-          ],
-        },
-      },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
