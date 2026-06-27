@@ -111,6 +111,8 @@ jobs:
     name: E2E tests
     runs-on: windows-latest
     continue-on-error: true
+    env:
+      PW_SNAPSHOT_UPDATE: ${{ vars.UPDATE_SNAPSHOTS || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -131,7 +133,9 @@ jobs:
         run: Start-Job -ScriptBlock { node "$env:GITHUB_WORKSPACE/tests/e2e/server.mjs" }; Start-Sleep 3
         shell: pwsh
       - name: E2E tests
-        run: npx playwright test tests/e2e/user-journey.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=chromium --reporter=line
+        run: |
+          $updateFlag = if ("$env:PW_SNAPSHOT_UPDATE" -eq "true") { "--update-snapshots" } else { "" }
+          npx playwright test tests/e2e/user-journey.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=chromium --reporter=line @updateFlag
 
   csharp-tests:
     name: C# bridge tests
