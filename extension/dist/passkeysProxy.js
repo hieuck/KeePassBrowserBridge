@@ -1,0 +1,1556 @@
+(function (globalScope) {
+  'use strict';
+
+  const missingOriginMessage =
+    'Chrome webAuthenticationProxy requestInfo does not expose caller origin; supply a trusted origin before forwarding to KeePass.';
+  const invalidRequestIdMessage =
+    'WebAuthn proxy request is missing a valid request ID.';
+  const invalidRequestDetailsMessage =
+    'WebAuthn proxy request details must be valid JSON.';
+  const duplicatePendingRequestMessage =
+    'A pending passkey request already exists for this WebAuthn request.';
+  const requestTimeoutMessage =
+    'Passkey WebAuthn request timed out.';
+  const requestCanceledMessage =
+    'Passkey WebAuthn request was canceled.';
+  const beginResponseMismatchMessage =
+    'Passkey begin response did not match the WebAuthn request.';
+  const completeResponseMismatchMessage =
+    'Passkey complete response did not match the WebAuthn request.';
+  const missingCompleteResponseFieldsMessage =
+    'Passkey complete response was missing required WebAuthn fields.';
+  const credentialIdFieldsMismatchMessage =
+    'Passkey complete response credential ID fields did not match.';
+  const credentialTypeMismatchMessage =
+    'Passkey complete response credential type was not public-key.';
+  const invalidCompleteResponseBase64UrlMessage =
+    'Passkey complete response contained invalid base64url WebAuthn fields.';
+  const invalidCompleteResponseTransportMessage =
+    'Passkey complete response contained invalid transport metadata.';
+  const invalidCompleteResponseAuthenticatorAttachmentMessage =
+    'Passkey complete response authenticator attachment was not cross-platform.';
+  const invalidCompleteResponseClientExtensionResultsMessage =
+    'Passkey complete response contained invalid client extension results.';
+  const selectedCredentialNotReturnedMessage =
+    'Selected passkey credential was not returned by KeePass.';
+  const unsupportedUserVerificationMessage =
+    'Passkey user verification is not supported by this build.';
+  const unsupportedAlgorithmMessage =
+    'Passkey ES256 public-key credential algorithm is not allowed by this request.';
+  const unsupportedAttestationMessage =
+    'Passkey attestation conveyance is not supported by this build.';
+  const unsupportedAuthenticatorAttachmentMessage =
+    'Passkey authenticator attachment is not supported by this build.';
+  const unsupportedResidentKeyMessage =
+    'Passkey resident-key requirement is not supported by this build.';
+  const invalidAuthenticatorSelectionMessage =
+    'Passkey authenticator selection metadata is invalid.';
+  const unsupportedExtensionMessage =
+    'Passkey requested WebAuthn extension is not supported by this build.';
+  const invalidUserHandleMessage =
+    'WebAuthn user handle must be base64url-encoded and between 1 and 64 bytes.';
+  const invalidChallengeMessage =
+    'WebAuthn challenge must be base64url-encoded and at least 16 bytes.';
+  const invalidExcludeCredentialMessage =
+    'Passkey excludeCredentials contains an invalid credential ID.';
+  const invalidAllowCredentialMessage =
+    'Passkey allowCredentials contains an invalid credential ID.';
+
+  function getApi(chromeLike = globalScope.chrome) {
+    return chromeLike && chromeLike.webAuthenticationProxy ? chromeLike.webAuthenticationProxy : null;
+  }
+
+  function isAvailable(chromeLike = globalScope.chrome) {
+    const api = getApi(chromeLike);
+    return Boolean(
+      api &&
+      typeof api.attach === 'function' &&
+      typeof api.detach === 'function' &&
+      typeof api.completeCreateRequest === 'function' &&
+      typeof api.completeGetRequest === 'function' &&
+      typeof api.completeIsUvpaaRequest === 'function' &&
+      api.onCreateRequest &&
+      typeof api.onCreateRequest.addListener === 'function' &&
+      api.onGetRequest &&
+      typeof api.onGetRequest.addListener === 'function' &&
+      api.onIsUvpaaRequest &&
+      typeof api.onIsUvpaaRequest.addListener === 'function' &&
+      api.onRequestCanceled &&
+      typeof api.onRequestCanceled.addListener === 'function'
+    );
+  }
+
+  async function attach(chromeLike = globalScope.chrome) {
+    if (!isAvailable(chromeLike)) {
+      throw new Error('chrome.webAuthenticationProxy is not available.');
+    }
+    return getApi(chromeLike).attach();
+  }
+
+  async function detach(chromeLike = globalScope.chrome) {
+    if (!isAvailable(chromeLike)) return undefined;
+    return getApi(chromeLike).detach();
+  }
+
+  function createLifecycle(options = {}) {
+    const chromeLike = options.chromeLike || globalScope.chrome;
+    const setTimer = typeof options.setTimeout === 'function'
+      ? options.setTimeout
+      : (typeof globalScope.setTimeout === 'function' ? globalScope.setTimeout.bind(globalScope) : null);
+    const clearTimer = typeof options.clearTimeout === 'function'
+      ? options.clearTimeout
+      : (typeof globalScope.clearTimeout === 'function' ? globalScope.clearTimeout.bind(globalScope) : null);
+    const pending = new Map();
+    const state = {
+      attached: false,
+      listeners: null
+    };
+
+    async function attachProxy() {
+      if (!isAvailable(chromeLike)) {
+        throw new Error('chrome.webAuthenticationProxy is not available.');
+      }
+      if (state.attached) {
+        return { alreadyAttached: true, pendingCount: pending.size };
+      }
+
+      registerListeners();
+      try {
+        const result = await getApi(chromeLike).attach();
+        state.attached = true;
+        return result;
+      } catch (error) {
+        unregisterListeners();
+        throw error;
+      }
+    }
+
+    async function detachProxy() {
+      const api = getApi(chromeLike);
+      const wasAttached = state.attached;
+      state.attached = false;
+      await cancelPendingRequests('detach');
+      unregisterListeners();
+      if (wasAttached && api && typeof api.detach === 'function') {
+        return api.detach();
+      }
+      return undefined;
+    }
+
+    async function cancelPendingRequests(reason = 'cancel') {
+      const normalizedReason = stringValue(reason).trim() || 'cancel';
+      const pendingRequests = Array.from(pending.entries());
+      pending.clear();
+      for (const [requestId, request] of pendingRequests) {
+        clearPendingTimer(request);
+        await notifyCanceled(requestId, request, normalizedReason);
+        await completePendingErrorBestEffort(requestId, request, notAllowedError(requestCanceledMessage));
+      }
+      return {
+        canceled: pendingRequests.length,
+        reason: normalizedReason
+      };
+    }
+
+    function registerListeners() {
+      if (state.listeners) return;
+      const api = getApi(chromeLike);
+      state.listeners = {
+        create: (requestInfo) => handleRequest('create', requestInfo),
+        get: (requestInfo) => handleRequest('get', requestInfo),
+        isUvpaa: (requestInfo) => handleIsUvpaaRequest(requestInfo),
+        canceled: (requestId) => handleCanceled(requestId)
+      };
+      api.onCreateRequest.addListener(state.listeners.create);
+      api.onGetRequest.addListener(state.listeners.get);
+      api.onIsUvpaaRequest.addListener(state.listeners.isUvpaa);
+      api.onRequestCanceled.addListener(state.listeners.canceled);
+    }
+
+    function unregisterListeners() {
+      if (!state.listeners) return;
+      const api = getApi(chromeLike);
+      removeListener(api && api.onCreateRequest, state.listeners.create);
+      removeListener(api && api.onGetRequest, state.listeners.get);
+      removeListener(api && api.onIsUvpaaRequest, state.listeners.isUvpaa);
+      removeListener(api && api.onRequestCanceled, state.listeners.canceled);
+      state.listeners = null;
+    }
+
+    async function handleRequest(kind, requestInfo) {
+      const requestId = normalizeRequestId(requestInfo && requestInfo.requestId);
+      if (!requestId) return;
+      try {
+        parseRequestDetails(requestInfo);
+      } catch (error) {
+        if (kind === 'create') {
+          return completeCreateError(chromeLike, requestId, error);
+        }
+        return completeGetError(chromeLike, requestId, error);
+      }
+      if (pending.has(requestId)) {
+        await rejectDuplicateRequest(kind, requestId);
+        return;
+      }
+
+      const pendingRequest = { kind, requestInfo, timeoutId: null };
+      pending.set(requestId, pendingRequest);
+      scheduleRequestTimeout(requestId, pendingRequest);
+      const context = requestContext(kind, requestId);
+
+      try {
+        context.origin = await resolveTrustedOrigin(requestInfo, context);
+        if (!context.origin) {
+          throw {
+            name: 'NotAllowedError',
+            message: missingOriginMessage
+          };
+        }
+        assertRequestAllowedForTrustedOrigin(kind, requestInfo, context);
+
+        const handler = kind === 'create' ? options.onCreateRequest : options.onGetRequest;
+        if (typeof handler !== 'function') {
+          throw new Error(`No WebAuthn ${kind} handler configured.`);
+        }
+
+        const response = await handler(requestInfo, context);
+        if (response !== undefined && context.isPending()) {
+          await context.completeSuccess(response);
+        }
+      } catch (error) {
+        if (context.isPending()) {
+          await context.completeError(error);
+        }
+      }
+    }
+
+    async function rejectDuplicateRequest(kind, requestId) {
+      const existing = pending.get(requestId);
+      pending.delete(requestId);
+      clearPendingTimer(existing);
+      await notifyCanceled(requestId, existing, 'duplicate');
+
+      const completionKind = existing && existing.kind ? existing.kind : kind;
+      const error = notAllowedError(duplicatePendingRequestMessage);
+      if (completionKind === 'create') {
+        return completeCreateError(chromeLike, requestId, error);
+      }
+      return completeGetError(chromeLike, requestId, error);
+    }
+
+    async function resolveTrustedOrigin(requestInfo, context) {
+      if (typeof options.resolveTrustedOrigin !== 'function') return '';
+      return stringValue(await options.resolveTrustedOrigin(requestInfo, {
+        kind: context.kind,
+        requestId: context.requestId
+      })).trim();
+    }
+
+    async function handleIsUvpaaRequest(requestInfo) {
+      const requestId = normalizeRequestId(requestInfo && requestInfo.requestId);
+      if (!requestId) return;
+      try {
+        const result = typeof options.onIsUvpaaRequest === 'function'
+          ? await options.onIsUvpaaRequest(requestInfo)
+          : false;
+        await completeIsUvpaa(chromeLike, requestId, result);
+      } catch {
+        await completeIsUvpaa(chromeLike, requestId, false);
+      }
+    }
+
+    async function handleCanceled(requestId) {
+      const key = normalizeRequestId(requestId);
+      if (!key) return;
+      const request = pending.get(key);
+      if (!request) return;
+      pending.delete(key);
+      clearPendingTimer(request);
+      await notifyCanceled(key, request, 'canceled');
+    }
+
+    function scheduleRequestTimeout(requestId, request) {
+      if (!setTimer) return;
+      const timeoutMs = requestTimeoutMs(request && request.requestInfo);
+      if (timeoutMs <= 0) return;
+      request.timeoutId = setTimer(() => {
+        handleTimedOut(requestId).catch(() => {});
+      }, timeoutMs);
+    }
+
+    function clearPendingTimer(request) {
+      if (!request || request.timeoutId === null || request.timeoutId === undefined || !clearTimer) return;
+      clearTimer(request.timeoutId);
+      request.timeoutId = null;
+    }
+
+    async function handleTimedOut(requestId) {
+      const key = String(requestId);
+      const request = pending.get(key);
+      if (!request) return undefined;
+      pending.delete(key);
+      clearPendingTimer(request);
+      await notifyCanceled(key, request, 'timeout');
+
+      const error = notAllowedError(requestTimeoutMessage);
+      if (request.kind === 'create') {
+        return completeCreateError(chromeLike, key, error);
+      }
+      return completeGetError(chromeLike, key, error);
+    }
+
+    async function completePendingErrorBestEffort(requestId, request, error) {
+      if (!request) return undefined;
+      try {
+        if (request.kind === 'create') {
+          return await completeCreateError(chromeLike, requestId, error);
+        }
+        return await completeGetError(chromeLike, requestId, error);
+      } catch {
+        return undefined;
+      }
+    }
+
+    async function notifyCanceled(requestId, request, reason) {
+      if (typeof options.onRequestCanceled !== 'function') return;
+      try {
+        await options.onRequestCanceled(String(requestId), request, reason);
+      } catch {
+        // Browser cancellation must not leave the proxy attached or block detach.
+      }
+    }
+
+    function requestContext(kind, requestId) {
+      return {
+        requestId,
+        kind,
+        isPending() {
+          return pending.has(requestId);
+        },
+        async completeSuccess(response) {
+          const request = pending.get(requestId);
+          if (!request) return undefined;
+          pending.delete(requestId);
+          clearPendingTimer(request);
+          if (kind === 'create') {
+            return completeCreateSuccess(chromeLike, requestId, response);
+          }
+          return completeGetSuccess(chromeLike, requestId, response);
+        },
+        async completeError(error) {
+          const request = pending.get(requestId);
+          if (!request) return undefined;
+          pending.delete(requestId);
+          clearPendingTimer(request);
+          if (kind === 'create') {
+            return completeCreateError(chromeLike, requestId, error);
+          }
+          return completeGetError(chromeLike, requestId, error);
+        }
+      };
+    }
+
+    return {
+      attach: attachProxy,
+      detach: detachProxy,
+      cancelPending: cancelPendingRequests,
+      pendingCount() {
+        return pending.size;
+      },
+      isAttached() {
+        return state.attached;
+      }
+    };
+  }
+
+  function assertRequestAllowedForTrustedOrigin(kind, requestInfo, context) {
+    if (kind === 'create') {
+      normalizeCreateRequest(requestInfo, context);
+      return;
+    }
+    normalizeGetRequest(requestInfo, context);
+  }
+
+  function parseRequestDetails(requestInfo) {
+    if (!requestInfo || typeof requestInfo.requestDetailsJson !== 'string') {
+      throw notAllowedError(invalidRequestDetailsMessage);
+    }
+
+    const requestId = normalizeRequestId(requestInfo.requestId);
+    if (!requestId) {
+      throw notAllowedError(invalidRequestIdMessage);
+    }
+
+    let details;
+    try {
+      details = JSON.parse(requestInfo.requestDetailsJson);
+    } catch {
+      throw notAllowedError(invalidRequestDetailsMessage);
+    }
+    if (!details || typeof details !== 'object' || Array.isArray(details)) {
+      throw notAllowedError(invalidRequestDetailsMessage);
+    }
+    return {
+      requestId,
+      details
+    };
+  }
+
+  function requestTimeoutMs(requestInfo) {
+    try {
+      const parsed = parseRequestDetails(requestInfo);
+      return normalizeTimeoutMs(parsed.details && parsed.details.timeout);
+    } catch {
+      return 0;
+    }
+  }
+
+  function normalizeCreateRequest(requestInfo, context = {}) {
+    const parsed = parseRequestDetails(requestInfo);
+    const options = parsed.details || {};
+    const origin = trustedOrigin(context);
+    const user = options.user || {};
+    const hasRp = Object.prototype.hasOwnProperty.call(options, 'rp');
+    const rp = hasRp ? options.rp : undefined;
+    const rpIdSource = hasRp
+      ? (rp && typeof rp === 'object' && !Array.isArray(rp)
+          ? (Object.prototype.hasOwnProperty.call(rp, 'id') ? rp.id : rpIdFromOrigin(origin))
+          : '')
+      : rpIdFromOrigin(origin);
+    const authenticatorSelection = normalizeAuthenticatorSelection(options.authenticatorSelection);
+    const rpId = normalizeRpId(rpIdSource);
+    assertRpIdAllowedForOrigin(rpId, origin);
+    const userVerification = normalizeUserVerification(authenticatorSelection.userVerification);
+    assertUserVerificationSupported(userVerification);
+    const attestation = normalizeAttestationConveyance(options.attestation);
+    assertAttestationSupported(attestation);
+    const authenticatorAttachment = normalizeAuthenticatorAttachment(authenticatorSelection.authenticatorAttachment);
+    assertAuthenticatorAttachmentSupported(authenticatorAttachment);
+    const residentKey = normalizeResidentKey(authenticatorSelection);
+    const credentialAlgorithms = normalizeCredentialAlgorithms(options.pubKeyCredParams);
+    assertEs256CredentialAlgorithmAllowed(credentialAlgorithms);
+    const challenge = normalizeChallenge(options.challenge);
+    const userHandle = normalizeUserHandle(user.id);
+
+    return {
+      WebAuthnRequestId: parsed.requestId,
+      RpId: rpId,
+      Origin: origin,
+      Challenge: challenge,
+      UserHandle: userHandle,
+      UserName: stringValue(user.name),
+      UserDisplayName: stringValue(user.displayName),
+      UserVerification: userVerification,
+      TimeoutMs: normalizeTimeoutMs(options.timeout),
+      Hints: normalizeHints(options.hints),
+      Attestation: attestation,
+      AuthenticatorAttachment: authenticatorAttachment,
+      ResidentKey: residentKey,
+      CredentialAlgorithms: credentialAlgorithms,
+      ExcludeCredentialIds: normalizeExcludeCredentialIds(options.excludeCredentials),
+      RequestedExtensions: normalizeRequestedExtensions(options.extensions),
+      Transports: []
+    };
+  }
+
+  function normalizeGetRequest(requestInfo, context = {}) {
+    const parsed = parseRequestDetails(requestInfo);
+    const options = parsed.details || {};
+    const origin = trustedOrigin(context);
+    const rpId = normalizeRpId(Object.prototype.hasOwnProperty.call(options, 'rpId') ? options.rpId : rpIdFromOrigin(origin));
+    assertRpIdAllowedForOrigin(rpId, origin);
+    const userVerification = normalizeUserVerification(options.userVerification);
+    assertUserVerificationSupported(userVerification);
+    const challenge = normalizeChallenge(options.challenge);
+    assertNoUnsupportedGetExtensions(options.extensions);
+
+    return {
+      WebAuthnRequestId: parsed.requestId,
+      RpId: rpId,
+      Origin: origin,
+      Challenge: challenge,
+      AllowCredentialIds: normalizeAllowCredentialIds(options.allowCredentials),
+      UserVerification: userVerification,
+      TimeoutMs: normalizeTimeoutMs(options.timeout),
+      Hints: normalizeHints(options.hints)
+    };
+  }
+
+  function createBridgeRequestHandlers(options = {}) {
+    const bridgeCall = options.bridgeCall;
+    if (typeof bridgeCall !== 'function') {
+      throw new Error('Passkey bridge experiment requires a bridgeCall function.');
+    }
+
+    return {
+      async onCreateRequest(requestInfo, context) {
+        const payload = normalizeCreateRequest(requestInfo, context);
+        const begin = await bridgeCall('passkeys.create.begin', payload);
+        try {
+          assertBeginMatchesRequest(payload, begin);
+          if (typeof options.approveCreate === 'function') {
+            const approved = await options.approveCreate({ payload, begin, context });
+            if (!approved) throw notAllowedError('Passkey registration was denied.');
+          }
+
+          const completePayload = {
+            WebAuthnRequestId: payload.WebAuthnRequestId,
+            RpId: payload.RpId,
+            Origin: payload.Origin
+          };
+          const complete = await bridgeCall('passkeys.create.complete', completePayload);
+          assertCreateCompleteMatchesRequest(completePayload, complete);
+          return complete;
+        } catch (error) {
+          await cancelBridgeRequestBestEffort(bridgeCall, payload.WebAuthnRequestId);
+          throw error;
+        }
+      },
+
+      async onGetRequest(requestInfo, context) {
+        const payload = normalizeGetRequest(requestInfo, context);
+        const begin = await bridgeCall('passkeys.get.begin', payload);
+        try {
+          assertBeginMatchesRequest(payload, begin);
+          const credentials = Array.isArray(begin && begin.Credentials) ? begin.Credentials : [];
+          const selected = typeof options.chooseCredential === 'function'
+            ? await options.chooseCredential({ payload, begin, credentials, context })
+            : credentials[0];
+          const credentialId = firstString(
+            selected && selected.CredentialId,
+            selected && selected.credentialId,
+            selected && selected.id,
+            selected && selected.rawId
+          );
+          if (!credentialId) throw notAllowedError('No matching passkey was selected.');
+          if (!credentials.some((credential) => credentialIdFromSummary(credential) === credentialId)) {
+            throw notAllowedError(selectedCredentialNotReturnedMessage);
+          }
+
+          const completePayload = {
+            WebAuthnRequestId: payload.WebAuthnRequestId,
+            RpId: payload.RpId,
+            Origin: payload.Origin,
+            CredentialId: credentialId
+          };
+          const complete = await bridgeCall('passkeys.get.complete', completePayload);
+          assertGetCompleteMatchesRequest(completePayload, complete);
+          return complete;
+        } catch (error) {
+          await cancelBridgeRequestBestEffort(bridgeCall, payload.WebAuthnRequestId);
+          throw error;
+        }
+      },
+
+      async onRequestCanceled(requestId) {
+        return cancelBridgeRequest(bridgeCall, requestId);
+      }
+    };
+  }
+
+  function assertBeginMatchesRequest(payload, begin) {
+    assertBeginFieldMatches(payload, begin, 'WebAuthnRequestId');
+    assertBeginFieldMatches(payload, begin, 'RpId');
+    assertBeginFieldMatches(payload, begin, 'Origin');
+  }
+
+  function assertBeginFieldMatches(payload, begin, fieldName) {
+    const expected = stringValue(payload && payload[fieldName]).trim();
+    const actual = stringValue(begin && begin[fieldName]).trim();
+    if (!actual || actual !== expected) {
+      throw notAllowedError(beginResponseMismatchMessage);
+    }
+  }
+
+  function assertCreateCompleteMatchesRequest(payload, complete) {
+    assertCompleteFieldMatches(payload, complete, 'WebAuthnRequestId');
+    assertCompleteFieldMatches(payload, complete, 'RpId');
+  }
+
+  function assertGetCompleteMatchesRequest(payload, complete) {
+    assertCompleteFieldMatches(payload, complete, 'WebAuthnRequestId');
+    assertCompleteFieldMatches(payload, complete, 'RpId');
+    assertCompleteFieldMatches(payload, complete, 'CredentialId');
+  }
+
+  function assertCompleteFieldMatches(payload, complete, fieldName) {
+    const expected = stringValue(payload && payload[fieldName]).trim();
+    const actual = stringValue(complete && complete[fieldName]).trim();
+    if (!actual || actual !== expected) {
+      throw notAllowedError(completeResponseMismatchMessage);
+    }
+  }
+
+  function credentialIdFromSummary(credential) {
+    return firstString(
+      credential && credential.CredentialId,
+      credential && credential.credentialId,
+      credential && credential.id,
+      credential && credential.rawId
+    );
+  }
+
+  function createTrustedOriginResolver(options = {}) {
+    const chromeLike = options.chromeLike || globalScope.chrome;
+    return async function resolveTrustedOrigin(requestInfo) {
+      const directOrigin = trustedOriginFromRequestInfo(requestInfo);
+      if (directOrigin) return directOrigin;
+      return resolveFrameOrigin(chromeLike, requestInfo);
+    };
+  }
+
+  function trustedOriginFromRequestInfo(requestInfo) {
+    if (!requestInfo || typeof requestInfo !== 'object') return '';
+
+    for (const field of ['origin', 'callerOrigin', 'sourceOrigin', 'documentOrigin', 'initiator']) {
+      const origin = normalizeTrustedWebOrigin(requestInfo[field]);
+      if (origin) return origin;
+    }
+
+    for (const field of ['url', 'documentUrl', 'frameUrl', 'pageUrl']) {
+      const origin = originFromUrlString(requestInfo[field]);
+      if (origin) return origin;
+    }
+
+    return '';
+  }
+
+  async function resolveFrameOrigin(chromeLike, requestInfo) {
+    const webNavigation = chromeLike && chromeLike.webNavigation;
+    if (!webNavigation || typeof webNavigation.getFrame !== 'function') return '';
+
+    const tabId = integerValue(requestInfo && requestInfo.tabId);
+    if (tabId < 0) return '';
+
+    const frameId = requestInfo && requestInfo.frameId === undefined
+      ? 0
+      : integerValue(requestInfo && requestInfo.frameId);
+    if (frameId < 0) return '';
+    const details = {
+      tabId,
+      frameId
+    };
+
+    try {
+      const frame = await callChromeApi(webNavigation.getFrame.bind(webNavigation), details);
+      return originFromUrlString(frame && frame.url);
+    } catch {
+      return '';
+    }
+  }
+
+  function callChromeApi(fn, details) {
+    return new Promise((resolve, reject) => {
+      let callbackResolved = false;
+      try {
+        const result = fn(details, (value) => {
+          callbackResolved = true;
+          resolve(value);
+        });
+        if (result && typeof result.then === 'function') {
+          result.then(resolve, reject);
+        } else if (result !== undefined) {
+          resolve(result);
+        } else if (fn.length < 2 && !callbackResolved) {
+          resolve(undefined);
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  function normalizeTrustedWebOrigin(value) {
+    const text = stringValue(value).trim();
+    if (!text) return '';
+
+    try {
+      const url = new URL(text);
+      return isAllowedWebOrigin(url) ? url.origin : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function originFromUrlString(value) {
+    return normalizeTrustedWebOrigin(value);
+  }
+
+  function isAllowedWebOrigin(url) {
+    if (!url || !url.hostname) return false;
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && isLoopbackHost(url.hostname);
+  }
+
+  function isLoopbackHost(hostname) {
+    const host = stringValue(hostname).toLowerCase();
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
+  }
+
+  function isRpIdAllowedForOrigin(rpId, origin) {
+    const normalizedRpId = normalizeRpId(rpId);
+    if (!isValidRpId(normalizedRpId)) return false;
+
+    try {
+      const url = new URL(stringValue(origin).trim());
+      if (!isPotentiallyTrustworthyRpOrigin(url)) return false;
+      const host = normalizeRpId(url.hostname);
+      return host === normalizedRpId || host.endsWith(`.${normalizedRpId}`);
+    } catch {
+      return false;
+    }
+  }
+
+  function assertRpIdAllowedForOrigin(rpId, origin) {
+    if (isRpIdAllowedForOrigin(rpId, origin)) return;
+    throw notAllowedError('Passkey RP ID is not valid for the trusted caller origin.');
+  }
+
+  function normalizeUserVerification(value) {
+    return normalizeKnownOptionalEnum(value,
+      ['required', 'preferred', 'discouraged'],
+      unsupportedUserVerificationMessage);
+  }
+
+  function assertUserVerificationSupported(userVerification) {
+    if (userVerification !== 'required') return;
+    throw notAllowedError(unsupportedUserVerificationMessage);
+  }
+
+  function assertEs256CredentialAlgorithmAllowed(credentialAlgorithms) {
+    if (Array.isArray(credentialAlgorithms) && credentialAlgorithms.includes(-7)) return;
+    throw notAllowedError(unsupportedAlgorithmMessage);
+  }
+
+  function normalizeAttestationConveyance(value) {
+    return normalizeKnownOptionalEnum(value,
+      ['none', 'indirect', 'direct', 'enterprise'],
+      unsupportedAttestationMessage);
+  }
+
+  function assertAttestationSupported(attestation) {
+    if (!attestation || attestation === 'none') return;
+    throw notAllowedError(unsupportedAttestationMessage);
+  }
+
+  function normalizeAuthenticatorAttachment(value) {
+    return normalizeKnownOptionalEnum(value,
+      ['platform', 'cross-platform'],
+      unsupportedAuthenticatorAttachmentMessage);
+  }
+
+  function normalizeAuthenticatorSelection(value) {
+    if (value === undefined || value === null) return {};
+    if (typeof value !== 'object' || Array.isArray(value)) {
+      throw notAllowedError(invalidAuthenticatorSelectionMessage);
+    }
+    return value;
+  }
+
+  function assertAuthenticatorAttachmentSupported(authenticatorAttachment) {
+    if (!authenticatorAttachment || authenticatorAttachment === 'cross-platform') return;
+    throw notAllowedError(unsupportedAuthenticatorAttachmentMessage);
+  }
+
+  function normalizeResidentKey(authenticatorSelection) {
+    const residentKey = normalizeKnownOptionalEnum(authenticatorSelection && authenticatorSelection.residentKey,
+      ['required', 'preferred', 'discouraged'],
+      unsupportedResidentKeyMessage);
+    if (residentKey) return residentKey;
+    return authenticatorSelection && authenticatorSelection.requireResidentKey === true ? 'required' : '';
+  }
+
+  function normalizeUserHandle(value) {
+    const text = stringValue(value);
+    const byteLength = base64UrlByteLength(text);
+    if (byteLength < 1 || byteLength > 64) {
+      throw notAllowedError(invalidUserHandleMessage);
+    }
+    return text.replace(/=+$/g, '');
+  }
+
+  function normalizeChallenge(value) {
+    const text = stringValue(value);
+    if (base64UrlByteLength(text) < 16) {
+      throw notAllowedError(invalidChallengeMessage);
+    }
+    return text.replace(/=+$/g, '');
+  }
+
+  function base64UrlByteLength(value) {
+    const text = stringValue(value);
+    if (!text || text !== text.trim()) return -1;
+    if (!/^[A-Za-z0-9_-]+={0,2}$/.test(text)) return -1;
+    const paddingStart = text.indexOf('=');
+    if (paddingStart >= 0) {
+      const paddingLength = text.length - paddingStart;
+      if (text.length % 4 !== 0 || paddingLength < 1 || paddingLength > 2) return -1;
+    }
+    const unpadded = text.replace(/=+$/g, '');
+    if (unpadded.length === 0 || unpadded.length % 4 === 1) return -1;
+    const paddedLength = unpadded.length + ((4 - (unpadded.length % 4)) % 4);
+    return (paddedLength / 4) * 3 - (paddedLength - unpadded.length);
+  }
+
+  function normalizeCredentialAlgorithms(pubKeyCredParams) {
+    if (!Array.isArray(pubKeyCredParams)) return [];
+    const algorithms = [];
+    for (const value of pubKeyCredParams) {
+      const algorithm = normalizeCredentialAlgorithm(value);
+      if (algorithm === undefined || algorithms.includes(algorithm)) continue;
+      algorithms.push(algorithm);
+    }
+    return algorithms;
+  }
+
+  function normalizeCredentialAlgorithm(value) {
+    if (!value || typeof value !== 'object') return undefined;
+    const type = stringValue(value.type).trim().toLowerCase();
+    if (type !== 'public-key') return undefined;
+    const algorithm = Number(value.alg);
+    return Number.isInteger(algorithm) ? algorithm : undefined;
+  }
+
+  function normalizeKnownOptionalEnum(value, allowedValues, unsupportedMessage) {
+    const text = stringValue(value).trim();
+    if (!text) return '';
+    const normalized = text.toLowerCase();
+    if (allowedValues.includes(normalized)) return normalized;
+    throw notAllowedError(unsupportedMessage);
+  }
+
+  function normalizeHints(hints) {
+    if (!Array.isArray(hints)) return [];
+    const normalizedHints = [];
+    for (const value of hints) {
+      const hint = stringValue(value).trim().toLowerCase();
+      if (!['security-key', 'client-device', 'hybrid'].includes(hint)) continue;
+      if (normalizedHints.includes(hint)) continue;
+      normalizedHints.push(hint);
+    }
+    return normalizedHints;
+  }
+
+  function normalizeExcludeCredentialIds(credentials) {
+    return normalizeCredentialDescriptorIdsWithError(credentials, invalidExcludeCredentialMessage);
+  }
+
+  function normalizeAllowCredentialIds(credentials) {
+    return normalizeCredentialDescriptorIdsWithError(credentials, invalidAllowCredentialMessage);
+  }
+
+  function normalizeCredentialDescriptorIdsWithError(credentials, invalidMessage) {
+    if (credentials === undefined || credentials === null) return [];
+    if (!Array.isArray(credentials)) {
+      if (invalidMessage) throw notAllowedError(invalidMessage);
+      return [];
+    }
+    const ids = [];
+    for (const credential of credentials) {
+      const type = stringValue(credential && credential.type).trim().toLowerCase();
+      if (type && type !== 'public-key') {
+        if (invalidMessage) throw notAllowedError(invalidMessage);
+        continue;
+      }
+      const id = normalizeCredentialId(credential && credential.id);
+      if (!id && invalidMessage) throw notAllowedError(invalidMessage);
+      if (!id || ids.includes(id)) continue;
+      ids.push(id);
+    }
+    return ids;
+  }
+
+  function normalizeCredentialId(value) {
+    const text = stringValue(value);
+    if (base64UrlByteLength(text) < 1) return '';
+    return text.replace(/=+$/g, '');
+  }
+
+  function rpIdFromOrigin(origin) {
+    try {
+      return normalizeRpId(new URL(stringValue(origin).trim()).hostname);
+    } catch {
+      return '';
+    }
+  }
+
+  function normalizeRpId(value) {
+    return stringValue(value).trim().replace(/\.+$/g, '').toLowerCase();
+  }
+
+  function isValidRpId(rpId) {
+    if (!rpId || rpId.length > 253) return false;
+    if (rpId.startsWith('.') || rpId.includes('..')) return false;
+    if (/[\\/:@]/.test(rpId)) return false;
+    if (isIpAddressLike(rpId)) return false;
+
+    return rpId.split('.').every((label) =>
+      label.length > 0 &&
+      label.length <= 63 &&
+      !label.startsWith('-') &&
+      !label.endsWith('-')
+    );
+  }
+
+  function isIpAddressLike(value) {
+    const text = stringValue(value).trim().toLowerCase();
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(text)) return true;
+    return text.includes(':');
+  }
+
+  function isPotentiallyTrustworthyRpOrigin(url) {
+    if (!url || !url.hostname) return false;
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && normalizeRpId(url.hostname) === 'localhost';
+  }
+
+  function integerValue(value) {
+    return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : -1;
+  }
+
+  async function cancelBridgeRequest(bridgeCall, requestId) {
+    const webAuthnRequestId = stringValue(requestId).trim();
+    if (!webAuthnRequestId) {
+      return { WebAuthnRequestId: '', Cancelled: false };
+    }
+
+    return bridgeCall('passkeys.cancel', {
+      WebAuthnRequestId: webAuthnRequestId
+    });
+  }
+
+  async function cancelBridgeRequestBestEffort(bridgeCall, requestId) {
+    try {
+      return await cancelBridgeRequest(bridgeCall, requestId);
+    } catch {
+      return undefined;
+    }
+  }
+
+  async function completeCreateError(chromeLike, requestId, error) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeCreateRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeCreateRequest is not available.');
+    }
+    return api.completeCreateRequest(errorDetails(requestId, error));
+  }
+
+  async function completeGetError(chromeLike, requestId, error) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeGetRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeGetRequest is not available.');
+    }
+    return api.completeGetRequest(errorDetails(requestId, error));
+  }
+
+  async function completeCreateSuccess(chromeLike, requestId, response) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeCreateRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeCreateRequest is not available.');
+    }
+    let responseJson;
+    try {
+      responseJson = createResponseJson(response);
+    } catch (error) {
+      return completeCreateError(chromeLike, requestId, error);
+    }
+    return api.completeCreateRequest(successDetails(requestId, responseJson));
+  }
+
+  async function completeGetSuccess(chromeLike, requestId, response) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeGetRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeGetRequest is not available.');
+    }
+    let responseJson;
+    try {
+      responseJson = getResponseJson(response);
+    } catch (error) {
+      return completeGetError(chromeLike, requestId, error);
+    }
+    return api.completeGetRequest(successDetails(requestId, responseJson));
+  }
+
+  async function completeIsUvpaa(chromeLike, requestId, result) {
+    const api = getApi(chromeLike);
+    if (!api || typeof api.completeIsUvpaaRequest !== 'function') {
+      throw new Error('chrome.webAuthenticationProxy.completeIsUvpaaRequest is not available.');
+    }
+    return api.completeIsUvpaaRequest({
+      requestId: Number(requestId),
+      isUvpaa: normalizeIsUvpaaResult(result)
+    });
+  }
+
+  function trustedOrigin(context) {
+    const origin = stringValue(context && context.origin);
+    if (!origin) throw new Error(missingOriginMessage);
+    return origin;
+  }
+
+  function errorDetails(requestId, error) {
+    const normalized = normalizeError(error);
+    return {
+      requestId: Number(requestId),
+      error: normalized
+    };
+  }
+
+  function successDetails(requestId, responseJson) {
+    return {
+      requestId: Number(requestId),
+      responseJson
+    };
+  }
+
+  function createResponseJson(response) {
+    const responseJson = responseJsonString(response);
+    if (responseJson) return validatedSerializedCreateResponseJson(responseJson);
+
+    const credential = (response && (response.Credential || response.credential)) || {};
+    const credentialId = completeCredentialId(
+      response && response.CredentialId,
+      response && response.credentialId,
+      credential.CredentialId,
+      credential.credentialId,
+      response && response.id,
+      response && response.rawId
+    );
+    const publicKey = completeBase64UrlField(
+      response && response.PublicKey,
+      response && response.publicKey,
+      response && response.PublicKeySpki,
+      response && response.publicKeySpki,
+      credential.PublicKey,
+      credential.publicKey,
+      credential.PublicKeySpki,
+      credential.publicKeySpki,
+      response && response.PublicKeyCose,
+      response && response.publicKeyCose,
+      credential.PublicKeyCose,
+      credential.publicKeyCose
+    );
+    const clientDataJson = completeBase64UrlAliasField(response && response.ClientDataJson, response && response.clientDataJSON);
+    const attestationObject = completeBase64UrlAliasField(response && response.AttestationObject, response && response.attestationObject);
+    const authenticatorData = completeBase64UrlAliasField(
+      response && response.AuthenticatorData,
+      response && response.authenticatorData,
+      credential.AuthenticatorData,
+      credential.authenticatorData);
+    assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
+    const authenticatorAttachment = completeAuthenticatorAttachment(response, false);
+
+    return JSON.stringify(compactObject({
+      id: credentialId,
+      rawId: credentialId,
+      type: 'public-key',
+      authenticatorAttachment,
+      response: compactObject({
+        clientDataJSON: clientDataJson,
+        attestationObject,
+        authenticatorData,
+        publicKey,
+        publicKeyAlgorithm: publicKey ? -7 : undefined,
+        transports: normalizeCompleteTransportMetadata(
+          response && response.Transports,
+          response && response.transports,
+          credential.Transports,
+          credential.transports)
+      }),
+      clientExtensionResults: normalizeCompleteClientExtensionResults(response)
+    }));
+  }
+
+  function getResponseJson(response) {
+    const responseJson = responseJsonString(response);
+    if (responseJson) return validatedSerializedGetResponseJson(responseJson);
+
+    const assertion = response && (response.Assertion || response.assertion) || response || {};
+    const credentialId = completeCredentialId(
+      response && response.CredentialId,
+      response && response.credentialId,
+      assertion.CredentialId,
+      assertion.credentialId,
+      response && response.id,
+      response && response.rawId
+    );
+    const authenticatorData = completeBase64UrlAliasField(assertion.AuthenticatorData, assertion.authenticatorData);
+    const clientDataJson = completeBase64UrlAliasField(assertion.ClientDataJson, assertion.clientDataJSON);
+    const signature = completeBase64UrlAliasField(assertion.Signature, assertion.signature);
+    const userHandle = completeBase64UrlAliasField(assertion.UserHandle, assertion.userHandle);
+    assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertOptionalBase64UrlCompleteFields(userHandle);
+    const authenticatorAttachment = completeAuthenticatorAttachment(response, false);
+
+    return JSON.stringify(compactObject({
+      id: credentialId,
+      rawId: credentialId,
+      type: 'public-key',
+      authenticatorAttachment,
+      response: compactObject({
+        authenticatorData,
+        clientDataJSON: clientDataJson,
+        signature,
+        userHandle
+      }),
+      clientExtensionResults: normalizeCompleteClientExtensionResults(response)
+    }));
+  }
+
+  function responseJsonString(response) {
+    if (typeof response === 'string') return response;
+    if (response && typeof response.responseJson === 'string') return response.responseJson;
+    return '';
+  }
+
+  function validatedSerializedCreateResponseJson(responseJson) {
+    const parsed = parseSerializedResponseJson(responseJson);
+    const response = (parsed && parsed.response) || {};
+    const credentialId = serializedCredentialId(parsed);
+    const clientDataJson = completeBase64UrlAliasField(response.clientDataJSON, response.ClientDataJson);
+    const attestationObject = completeBase64UrlAliasField(response.attestationObject, response.AttestationObject);
+    const authenticatorData = completeBase64UrlAliasField(response.authenticatorData, response.AuthenticatorData);
+    const publicKey = completeBase64UrlField(response.publicKey, response.PublicKey, response.publicKeyCose, response.PublicKeyCose);
+    assertSerializedCredentialType(parsed);
+    assertRequiredCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertBase64UrlCompleteFields(credentialId, clientDataJson, attestationObject);
+    assertOptionalBase64UrlCompleteFields(authenticatorData, publicKey);
+    completeSerializedTransportMetadata(
+      parsed && parsed.response && parsed.response.transports,
+      parsed && parsed.response && parsed.response.Transports
+    );
+    completeAuthenticatorAttachment(parsed, true);
+    assertCompleteClientExtensionResultAliases(parsed);
+    return responseJson;
+  }
+
+  function validatedSerializedGetResponseJson(responseJson) {
+    const parsed = parseSerializedResponseJson(responseJson);
+    const response = (parsed && parsed.response) || {};
+    const credentialId = serializedCredentialId(parsed);
+    const authenticatorData = completeBase64UrlAliasField(response.authenticatorData, response.AuthenticatorData);
+    const clientDataJson = completeBase64UrlAliasField(response.clientDataJSON, response.ClientDataJson);
+    const signature = completeBase64UrlAliasField(response.signature, response.Signature);
+    const userHandle = completeBase64UrlAliasField(response.userHandle, response.UserHandle);
+    assertSerializedCredentialType(parsed);
+    assertRequiredCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertBase64UrlCompleteFields(credentialId, authenticatorData, clientDataJson, signature);
+    assertOptionalBase64UrlCompleteFields(userHandle);
+    completeAuthenticatorAttachment(parsed, true);
+    assertCompleteClientExtensionResultAliases(parsed);
+    return responseJson;
+  }
+
+  function parseSerializedResponseJson(responseJson) {
+    const text = stringValue(responseJson).trim();
+    if (!text) throw notAllowedError(missingCompleteResponseFieldsMessage);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw notAllowedError(missingCompleteResponseFieldsMessage);
+    }
+    if (!parsed || typeof parsed !== 'object') {
+      throw notAllowedError(missingCompleteResponseFieldsMessage);
+    }
+    return parsed;
+  }
+
+  function serializedCredentialId(parsed) {
+    const id = stringValue(parsed && parsed.id);
+    const rawId = stringValue(parsed && parsed.rawId);
+    assertRequiredCompleteFields(id, rawId);
+    if (id !== rawId) {
+      throw notAllowedError(credentialIdFieldsMismatchMessage);
+    }
+    return id;
+  }
+
+  function assertSerializedCredentialType(parsed) {
+    if (stringValue(parsed && parsed.type) !== 'public-key') {
+      throw notAllowedError(credentialTypeMismatchMessage);
+    }
+  }
+
+  function assertBase64UrlCompleteFields(...values) {
+    if (values.some((value) => base64UrlByteLength(value) < 1)) {
+      throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
+    }
+  }
+
+  function assertOptionalBase64UrlCompleteFields(...values) {
+    if (values.some((value) => {
+      const text = stringValue(value);
+      return text && base64UrlByteLength(text) < 1;
+    })) {
+      throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
+    }
+  }
+
+  function completeBase64UrlField(...values) {
+    assertOptionalBase64UrlCompleteFields(...values);
+    return firstString(...values);
+  }
+
+  function completeBase64UrlAliasField(...values) {
+    assertOptionalBase64UrlCompleteFields(...values);
+    const selected = firstString(...values);
+    for (const value of values) {
+      const candidate = stringValue(value);
+      if (candidate && candidate !== selected) {
+        throw notAllowedError(invalidCompleteResponseBase64UrlMessage);
+      }
+    }
+    return selected;
+  }
+
+  function completeCredentialId(...values) {
+    const credentialId = completeBase64UrlField(...values);
+    for (const value of values) {
+      const candidate = stringValue(value);
+      if (candidate && candidate !== credentialId) {
+        throw notAllowedError(credentialIdFieldsMismatchMessage);
+      }
+    }
+    return credentialId;
+  }
+
+  function normalizeCompleteTransportMetadata(...values) {
+    let selected;
+    for (const value of values) {
+      if (value === undefined || value === null || value === false) continue;
+      if (!Array.isArray(value)) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+      const normalized = normalizeTransportArray(value) || [];
+      if (selected === undefined) {
+        selected = normalized;
+      } else if (JSON.stringify(selected) !== JSON.stringify(normalized)) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+    }
+    return selected && selected.length ? selected : undefined;
+  }
+
+  function assertSerializedTransportMetadata(transports) {
+    if (transports === undefined || transports === null) return;
+    if (!Array.isArray(transports)) {
+      throw notAllowedError(invalidCompleteResponseTransportMessage);
+    }
+    const normalized = normalizeTransportArray(transports) || [];
+    if (normalized.length !== transports.length) {
+      throw notAllowedError(invalidCompleteResponseTransportMessage);
+    }
+    for (let i = 0; i < transports.length; i++) {
+      if (typeof transports[i] !== 'string' || transports[i] !== normalized[i]) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+    }
+  }
+
+  function completeSerializedTransportMetadata(...values) {
+    let selected;
+    for (const value of values) {
+      if (value === undefined || value === null) continue;
+      assertSerializedTransportMetadata(value);
+      if (selected === undefined) {
+        selected = value;
+      } else if (JSON.stringify(selected) !== JSON.stringify(value)) {
+        throw notAllowedError(invalidCompleteResponseTransportMessage);
+      }
+    }
+    return selected;
+  }
+
+  function assertCompleteAuthenticatorAttachment(authenticatorAttachment) {
+    if (!authenticatorAttachment || authenticatorAttachment === 'cross-platform') return;
+    throw notAllowedError(invalidCompleteResponseAuthenticatorAttachmentMessage);
+  }
+
+  function assertCompleteAuthenticatorAttachmentAliases(source) {
+    if (!source || typeof source !== 'object') return;
+    assertCompleteAuthenticatorAttachment(stringValue(source.AuthenticatorAttachment));
+    assertCompleteAuthenticatorAttachment(stringValue(source.authenticatorAttachment));
+  }
+
+  function completeAuthenticatorAttachment(source, preferLowercase) {
+    if (!source || typeof source !== 'object') return '';
+    assertCompleteAuthenticatorAttachmentAliases(source);
+    return preferLowercase
+      ? firstString(source.authenticatorAttachment, source.AuthenticatorAttachment)
+      : firstString(source.AuthenticatorAttachment, source.authenticatorAttachment);
+  }
+
+  function assertSerializedClientExtensionResults(results) {
+    if (results === undefined || results === null) return;
+    if (typeof results !== 'object' || Array.isArray(results)) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    normalizeClientExtensionResults(results);
+  }
+
+  function assertCompleteClientExtensionResultAliases(source) {
+    if (!source || typeof source !== 'object') return;
+    const upper = source.ClientExtensionResults;
+    const lower = source.clientExtensionResults;
+    assertSerializedClientExtensionResults(upper);
+    assertSerializedClientExtensionResults(lower);
+    if (upper !== undefined && upper !== null && lower !== undefined && lower !== null &&
+        JSON.stringify(normalizeClientExtensionResults(upper)) !== JSON.stringify(normalizeClientExtensionResults(lower))) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+  }
+
+  function normalizeCompleteClientExtensionResults(source) {
+    if (!source || typeof source !== 'object') return {};
+    assertCompleteClientExtensionResultAliases(source);
+    return normalizeClientExtensionResults(firstDefined(source.ClientExtensionResults, source.clientExtensionResults));
+  }
+
+  function assertRequiredCompleteFields(...values) {
+    if (values.some((value) => !stringValue(value).trim())) {
+      throw notAllowedError(missingCompleteResponseFieldsMessage);
+    }
+  }
+
+  function normalizeError(error) {
+    if (error && typeof error === 'object') {
+      return {
+        name: stringValue(error.name) || 'NotAllowedError',
+        message: stringValue(error.message) || 'KeePass Browser Bridge could not complete the WebAuthn request.'
+      };
+    }
+
+    return {
+      name: 'NotAllowedError',
+      message: stringValue(error) || 'KeePass Browser Bridge could not complete the WebAuthn request.'
+    };
+  }
+
+  function notAllowedError(message) {
+    return {
+      name: 'NotAllowedError',
+      message
+    };
+  }
+
+  function normalizeIsUvpaaResult(_result) {
+    return false;
+  }
+
+  function normalizeRequestedExtensions(extensions) {
+    if (extensions === undefined || extensions === null) return undefined;
+    if (typeof extensions !== 'object' || Array.isArray(extensions)) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
+    const unsupportedExtensions = unsupportedRequestedExtensionNames(extensions);
+    if (unsupportedExtensions.length > 0) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
+    return extensions.credProps === true ? { CredProps: true } : undefined;
+  }
+
+  function assertNoUnsupportedGetExtensions(extensions) {
+    if (extensions === undefined || extensions === null) return;
+    if (typeof extensions !== 'object' || Array.isArray(extensions)) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
+    if (unsupportedRequestedExtensionNames(extensions).length > 0 ||
+        isRequestedExtensionValue(extensions.credProps)) {
+      throw notAllowedError(unsupportedExtensionMessage);
+    }
+  }
+
+  function unsupportedRequestedExtensionNames(extensions) {
+    const unsupported = [];
+    for (const [name, value] of Object.entries(extensions || {})) {
+      if (name === 'credProps') continue;
+      if (isRequestedExtensionValue(value)) unsupported.push(name);
+    }
+    return unsupported;
+  }
+
+  function isRequestedExtensionValue(value) {
+    if (value === undefined || value === null || value === false) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return Boolean(value);
+  }
+
+  function unsupportedClientExtensionResultNames(results) {
+    const unsupported = [];
+    for (const [name, value] of Object.entries(results || {})) {
+      if (name === 'credProps' || name === 'CredProps') continue;
+      if (isRequestedExtensionValue(value)) unsupported.push(name);
+    }
+    return unsupported;
+  }
+
+  function unsupportedCredPropsResultNames(credProps) {
+    const unsupported = [];
+    for (const [name, value] of Object.entries(credProps || {})) {
+      if (name === 'rk' || name === 'Rk' || name === 'residentKey' || name === 'ResidentKey') continue;
+      if (isRequestedExtensionValue(value)) unsupported.push(name);
+    }
+    return unsupported;
+  }
+
+  function normalizeClientExtensionResults(results) {
+    if (results === undefined || results === null || results === false) return {};
+    if (typeof results !== 'object' || Array.isArray(results)) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    if (unsupportedClientExtensionResultNames(results).length > 0) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    const normalized = {};
+    const lowerCredProps = results.credProps;
+    const upperCredProps = results.CredProps;
+    const lower = normalizeCredPropsExtensionResult(lowerCredProps);
+    const upper = normalizeCredPropsExtensionResult(upperCredProps);
+    if (isExtensionAliasPresent(lowerCredProps) && isExtensionAliasPresent(upperCredProps) &&
+        JSON.stringify(lower) !== JSON.stringify(upper)) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    const credProps = lower.rk !== undefined ? lower : upper;
+    if (credProps.rk !== undefined) {
+      normalized.credProps = { rk: credProps.rk };
+    }
+    return normalized;
+  }
+
+  function normalizeCredPropsExtensionResult(credProps) {
+    if (credProps === undefined || credProps === null || credProps === false) return {};
+    if (typeof credProps !== 'object' || Array.isArray(credProps)) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    if (unsupportedCredPropsResultNames(credProps).length > 0) {
+      throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+    }
+    return normalizeBooleanAliasGroup(
+      credProps.rk,
+      credProps.Rk,
+      credProps.residentKey,
+      credProps.ResidentKey);
+  }
+
+  function normalizeBooleanAliasGroup(...values) {
+    let normalized;
+    for (const value of values) {
+      if (value === undefined || value === null) continue;
+      if (typeof value !== 'boolean') {
+        throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+      }
+      if (normalized !== undefined && normalized !== value) {
+        throw notAllowedError(invalidCompleteResponseClientExtensionResultsMessage);
+      }
+      normalized = value;
+    }
+    return normalized === undefined ? {} : { rk: normalized };
+  }
+
+  function isExtensionAliasPresent(value) {
+    return value !== undefined && value !== null && value !== false;
+  }
+
+  function normalizeTimeoutMs(value) {
+    const timeout = Number(value);
+    return Number.isFinite(timeout) && timeout > 0 ? Math.floor(timeout) : 0;
+  }
+
+  function normalizeRequestId(value) {
+    if (typeof value === 'number') {
+      return Number.isSafeInteger(value) && value >= 0 ? String(value) : '';
+    }
+
+    if (typeof value !== 'string') return '';
+
+    const trimmed = value.trim();
+    if (trimmed !== value || !/^(0|[1-9][0-9]*)$/.test(trimmed)) return '';
+    const numeric = Number(trimmed);
+    return Number.isSafeInteger(numeric) ? trimmed : '';
+  }
+
+  function stringValue(value) {
+    return value === undefined || value === null ? '' : String(value);
+  }
+
+  function firstString(...values) {
+    for (const value of values) {
+      const normalized = stringValue(value);
+      if (normalized) return normalized;
+    }
+    return '';
+  }
+
+  function firstDefined(...values) {
+    for (const value of values) {
+      if (value !== undefined && value !== null) return value;
+    }
+    return undefined;
+  }
+
+  function normalizeTransportArray(value) {
+    if (!Array.isArray(value)) return undefined;
+    const normalized = [];
+    for (const item of value) {
+      if (typeof item !== 'string') continue;
+      const transport = normalizeTransportToken(item);
+      if (!transport || normalized.includes(transport)) continue;
+      normalized.push(transport);
+    }
+    return normalized.length ? normalized : undefined;
+  }
+
+  function normalizeTransportToken(value) {
+    const transport = value.trim().toLowerCase();
+    if (!transport || transport.length > 32) return '';
+    return /^[a-z0-9-]+$/.test(transport) ? transport : '';
+  }
+
+  function compactObject(value) {
+    const compacted = {};
+    for (const [key, entry] of Object.entries(value || {})) {
+      if (entry === undefined || entry === null || entry === '') continue;
+      if (Array.isArray(entry) && entry.length === 0) continue;
+      compacted[key] = entry;
+    }
+    return compacted;
+  }
+
+  function removeListener(event, listener) {
+    if (event && typeof event.removeListener === 'function') {
+      event.removeListener(listener);
+    }
+  }
+
+  const api = {
+    attach,
+    detach,
+    createLifecycle,
+    isAvailable,
+    normalizeCreateRequest,
+    normalizeGetRequest,
+    createBridgeRequestHandlers,
+    createTrustedOriginResolver,
+    isRpIdAllowedForOrigin,
+    completeCreateSuccess,
+    completeGetSuccess,
+    completeIsUvpaa,
+    completeCreateError,
+    completeGetError,
+    createResponseJson,
+    getResponseJson,
+    missingOriginMessage
+  };
+
+  globalScope.KeePassBrowserBridgePasskeysProxyExperiment = api;
+  if (typeof module !== 'undefined') {
+    module.exports = api;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this);
