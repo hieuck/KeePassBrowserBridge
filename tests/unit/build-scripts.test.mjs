@@ -56,4 +56,36 @@ describe('build-release.ps1 - Firefox extension files', () => {
     assert.ok(source.includes('dotnet build') && source.includes('KeePassReferencePath'),
       'build script should compile via dotnet build with KeePassReferencePath');
   });
+
+  it('should include dist/_plugin-vue_export-helper.js in common extension files', () => {
+    const commonStart = source.indexOf('$commonExtensionFiles = @(');
+    const afterCommonStart = source.slice(commonStart);
+    const commonEnd = afterCommonStart.indexOf('$chromeExtensionFiles');
+    const commonBlock = afterCommonStart.slice(0, commonEnd);
+    assert.ok(commonBlock.includes('_plugin-vue_export-helper.js'),
+      'commonExtensionFiles must include _plugin-vue_export-helper.js — popup.js imports it at runtime');
+  });
+
+  it('should include dist/antd-vendor.js in common extension files', () => {
+    const commonStart = source.indexOf('$commonExtensionFiles = @(');
+    const afterCommonStart = source.slice(commonStart);
+    const commonEnd = afterCommonStart.indexOf('$chromeExtensionFiles');
+    const commonBlock = afterCommonStart.slice(0, commonEnd);
+    assert.ok(commonBlock.includes('antd-vendor.js'),
+      'commonExtensionFiles must include antd-vendor.js — popup.js imports it at runtime');
+  });
+});
+
+const verifySource = fs.readFileSync(path.join(projectRoot, 'scripts', 'verify-release-artifacts.ps1'), 'utf8');
+
+describe('verify-release-artifacts.ps1 - extension ZIP contents', () => {
+  it('should expect dist/_plugin-vue_export-helper.js in the extension package', () => {
+    assert.ok(verifySource.includes('dist/_plugin-vue_export-helper.js'),
+      'verify-release-artifacts must expect _plugin-vue_export-helper.js in the ZIP');
+  });
+
+  it('should expect dist/antd-vendor.js in the extension package', () => {
+    assert.ok(verifySource.includes('dist/antd-vendor.js'),
+      'verify-release-artifacts must expect antd-vendor.js in the ZIP');
+  });
 });

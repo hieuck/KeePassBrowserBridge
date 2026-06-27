@@ -117,6 +117,8 @@ function Assert-ExtensionZip {
             "contentScript.js",
             "customFields.js",
             "design-tokens.css",
+            "dist/_plugin-vue_export-helper.js",
+            "dist/antd-vendor.js",
             "dist/BaseBadge.css",
             "dist/BaseBadge.js",
             "dist/BaseInput.css",
