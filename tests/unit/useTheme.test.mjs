@@ -88,6 +88,54 @@ describe('useTheme.js - exports', () => {
   });
 });
 
+describe('useTheme.js - lifecycle (component-scoped watch)', () => {
+  it('should import onUnmounted from vue', () => {
+    assert.ok(source.includes("import { ref, watch, onUnmounted } from 'vue'"),
+      'Missing onUnmounted import from vue for lifecycle cleanup');
+  });
+
+  it('should create watch inside useTheme() body, not at module level', () => {
+    const useThemeBody = source.split('export function useTheme()')[1];
+    assert.ok(useThemeBody, 'Missing useTheme function body');
+    assert.ok(useThemeBody.includes('const stopWatch = watch(theme,'),
+      'watch() must be created inside useTheme() body (not at module level)');
+  });
+
+  it('should call stopWatch() in onUnmounted cleanup', () => {
+    const useThemeBody = source.split('export function useTheme()')[1];
+    assert.ok(useThemeBody.includes("onUnmounted(() =>"),
+      'Missing onUnmounted lifecycle hook in useTheme()');
+    assert.ok(useThemeBody.includes('stopWatch()'),
+      'Missing stopWatch() call in cleanup');
+  });
+
+  it('should clean up media query listener via removeEventListener', () => {
+    const useThemeBody = source.split('export function useTheme()')[1];
+    assert.ok(useThemeBody.includes('removeEventListener'),
+      'Missing removeEventListener cleanup for media query');
+    assert.ok(useThemeBody.includes("mqCleanup = ()"),
+      'Missing mqCleanup function assignment');
+    assert.ok(useThemeBody.includes('if (mqCleanup) mqCleanup()'),
+      'Missing mqCleanup invocation in onUnmounted');
+  });
+
+  it('should NOT have module-level watch outside useTheme()', () => {
+    const moduleLevel = source.split('export function useTheme()')[0];
+    const watchCount = (moduleLevel.match(/\bwatch\(/g) || []).length;
+    assert.equal(watchCount, 0,
+      `Found ${watchCount} module-level watch() calls — should be 0 (moved into useTheme())`);
+  });
+
+  it('should only call applyTheme() at module level (no other side effects)', () => {
+    const moduleLevel = source.split('export function useTheme()')[0];
+    const hasWatchAtModule = moduleLevel.includes('watch(');
+    const hasAddEventListenerAtModule = moduleLevel.includes('addEventListener');
+    assert.ok(!hasWatchAtModule, 'watch() must not be at module level');
+    assert.ok(!hasAddEventListenerAtModule, 'addEventListener must not be at module level');
+    assert.ok(moduleLevel.includes('applyTheme()'), 'applyTheme() should still run at module level');
+  });
+});
+
 describe('useTheme.js - storage key', () => {
   it('should use consistent storage key', () => {
     assert.ok(source.includes("STORAGE_KEY = 'kbb-theme'"), 'Missing or changed STORAGE_KEY constant');

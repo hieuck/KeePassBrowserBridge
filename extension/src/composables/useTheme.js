@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue';
+import { ref, watch, onUnmounted } from 'vue';
 
 const STORAGE_KEY = 'kbb-theme';
 
@@ -31,24 +31,33 @@ function applyTheme() {
 
 if (typeof window !== 'undefined') {
   applyTheme();
-  watch(theme, () => {
+}
+
+export function useTheme() {
+  const stopWatch = watch(theme, () => {
     applyTheme();
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, theme.value);
     }
-  }, { immediate: false });
+  });
 
-  if (window.matchMedia) {
+  let mqCleanup = null;
+  if (typeof window !== 'undefined' && window.matchMedia) {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      if (theme.value === 'system') applyTheme();
+    };
     if (mq.addEventListener) {
-      mq.addEventListener('change', () => {
-        if (theme.value === 'system') applyTheme();
-      });
+      mq.addEventListener('change', handler);
+      mqCleanup = () => mq.removeEventListener('change', handler);
     }
   }
-}
 
-export function useTheme() {
+  onUnmounted(() => {
+    stopWatch();
+    if (mqCleanup) mqCleanup();
+  });
+
   function setTheme(value) {
     if (['light', 'dark', 'system'].includes(value)) {
       theme.value = value;

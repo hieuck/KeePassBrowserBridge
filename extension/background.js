@@ -609,7 +609,7 @@ async function clearClipboardState() {
 async function queryLogins() {
   const tab = await getActiveTab();
   if (!tab || !tab.url) {
-    throw new Error('No active tab.');
+    return { url: '', entries: [] };
   }
 
   const result = await queryLoginsForUrl(tab.url);
@@ -783,7 +783,7 @@ async function collectPageCredential() {
     return { collected: false, credential: null };
   }
 
-  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['contentScript.js'] });
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['dist/contentScript.js'] });
   return chrome.tabs.sendMessage(tab.id, { type: 'KBB_COLLECT_PAGE_CREDENTIAL' });
 }
 
@@ -797,7 +797,7 @@ async function fillLogin(credential, fieldRole, customFieldName) {
 
   const state = await getState();
   const autoSubmit = await getAutoSubmitForUrl(tab.url, state.autoSubmitEnabled);
-  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['contentScript.js'] });
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['dist/contentScript.js'] });
   const result = await chrome.tabs.sendMessage(tab.id, {
     type: 'KBB_FILL',
     credential,
@@ -908,7 +908,7 @@ async function autoFillTab(tabId, url) {
     }
 
     const entry = result.entries[0];
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['dist/contentScript.js'] });
     const fillResult = await chrome.tabs.sendMessage(tabId, {
       type: 'KBB_FILL',
       credential: entry,
@@ -1155,7 +1155,7 @@ async function bridgeCall(method, payload, requiresAuth) {
     if (fetchError && fetchError.message === 'Failed to fetch') {
       throw new Error('Cannot connect to KeePass. Please ensure KeePass is running with the plugin enabled.');
     }
-    throw fetchError;
+    throw new Error(fetchError && fetchError.message ? fetchError.message : 'KeePass communication failed.');
   }
 }
 
@@ -1348,7 +1348,7 @@ async function fillFromContextMenu(tabId, url, role) {
     else if (role === 'password') credentialToFill = { Password: entry.Password };
     else if (role === 'otp') credentialToFill = { OneTimePassword: entry.OneTimePassword };
     
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['dist/contentScript.js'] });
     const fillResult = await chrome.tabs.sendMessage(tabId, {
       type: 'KBB_FILL',
       credential: credentialToFill,
@@ -1380,7 +1380,7 @@ async function fillTotp() {
     return;
   }
 
-  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['contentScript.js'] });
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['dist/contentScript.js'] });
   await chrome.tabs.sendMessage(tab.id, {
     type: 'KBB_FILL',
     credential: { OneTimePassword: entry.OneTimePassword },
@@ -1404,7 +1404,7 @@ async function generateAndFillPassword(tabId) {
       password += charset[result[i] % charset.length];
     }
     
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['dist/contentScript.js'] });
     await chrome.tabs.sendMessage(tabId, {
       type: 'KBB_FILL',
       credential: { Password: password },

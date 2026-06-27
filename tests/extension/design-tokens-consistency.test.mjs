@@ -56,9 +56,9 @@ test.describe('Design tokens consistency', () => {
     expect(hasHostDefs).toBe(true);
   });
 
-  test('manifest.json webAuthenticationProxy is in optional_permissions, not required permissions', () => {
+  test('manifest.json webAuthenticationProxy is in required permissions (not optional for MV3)', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(EXTENSION_PATH, 'manifest.json'), 'utf8'));
-    expect(manifest.optional_permissions).toContain('webAuthenticationProxy');
-    expect(manifest.permissions).not.toContain('webAuthenticationProxy');
+    expect(manifest.permissions).toContain('webAuthenticationProxy');
+    expect(manifest.optional_permissions).not.toContain('webAuthenticationProxy');
   });
 });

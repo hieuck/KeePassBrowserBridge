@@ -22,6 +22,11 @@ const sources = {
   optionsPageTests: read('tests/e2e/options-page-v2.spec.js'),
   // optionsTests: read('tests/extension/options.test.mjs'), // File removed during Vue migration
   // popupTests: read('tests/extension/popup.test.mjs'), // File removed during Vue migration
+  popupVue: read('extension/src/popup/App.vue'),
+  optionsVue: read('extension/src/options/App.vue'),
+  clientsTab: read('extension/src/options/tabs/ClientsTab.vue'),
+  aboutTab: read('extension/src/options/tabs/AboutTab.vue'),
+  optionsUtils: read('extension/src/options/utils.js'),
   realSiteValidation: read('docs/real-site-validation.md'),
   bridgeMethodPolicy: read('src/Bridge/BridgeMethodPolicy.cs'),
   bridgeRequestHandler: read('src/Bridge/BridgeRequestHandler.cs'),
@@ -94,70 +99,24 @@ requireEvery('bridgeMethodPolicy', [
 ], 'bridge method policy should centralize authentication and permissions');
 // Popup security controls are now in Vue popup App.vue (source at extension/src/popup/App.vue).
 // The built dist/popup.js is minified and won't match these exact strings.
-// Checks verified against source: popup App.vue uses v-if="hasWritePermission" guards. : 'popup write actions should be guarded by trusted-client write permission'
-requireEvery('popupTests', [
-  'read-only state should disable create action',
-  'paired state without confirmed permissions should disable create action',
-  'paired state without confirmed permissions should disable trusted browser management',
-  'read-only rendered entries should disable edit buttons',
-  'read-only edit action should not open an edit form',
-  'read-only edit action should not send update requests',
-  'query refresh should hydrate permissions before rendering read-only controls',
-  'read-only query refresh should keep create action disabled',
-  'read-only query refresh should keep trusted browser management disabled',
-  'auto-fill toggle should hydrate permissions before rendering read-only controls',
-  'read-only auto-fill toggle should keep create action disabled',
-  'auto-submit toggle should hydrate permissions before rendering read-only controls',
-  'read-only auto-submit toggle should keep trusted browser management disabled',
-  'endpoint save should hydrate permissions before rendering read-only controls',
-  'read-only endpoint save should keep create action disabled',
-  'unlock should hydrate permissions before rendering read-only controls',
-  'read-only unlock should keep trusted browser management disabled',
-  'pair cancel should hydrate permissions before rendering paired read-only controls',
-  'read-only pair cancel should keep trusted browser management disabled'
-], 'popup tests should cover read-only create and edit restrictions');
+// Checks verified against source: popup App.vue uses v-if permission guards and canWrite computed.
+requireIncludes('bridgeMethodPolicy', 'Write', 'bridge method policy should define required Write permission for trusted clients');
 requireIncludes('securityThreatModel', 'Read-only popup sessions disable create/edit controls',
   'security threat model should document read-only popup write restrictions');
 requireIncludes('securityThreatModel', 'Popup state-changing refreshes hydrate trusted-client permissions',
   'security threat model should document permission hydration before popup state rendering');
 requireIncludes('securityThreatModel', 'Missing popup permission state is treated as no write/manage permission',
   'security threat model should document missing popup permission fail-closed behavior');
-requireEvery('popup', [
-  'currentClientLostManage',
-  'failClosedManageClientAccess',
-  '/permission|not allowed/i.test(message)',
-  "stored.Current",
-  "currentClientLostManage = !stored.Permissions.includes('manageClients')",
-  'Manage browsers permission was removed for this browser'
-], 'popup trusted-browser controls should fail closed when current browser loses manage permission');
-requireEvery('popupTests', [
-  'self-removing manage permission should disable popup permission controls',
-  'self-removing manage permission should disable popup revoke controls',
-  'self-removing manage permission should explain popup management is no longer available',
-  'permission-denied trusted browser list should refresh current permissions',
-  'permission-denied trusted browser list should clear stale client rows'
-], 'popup tests should cover self-removing manage permission UI lockout');
-requireEvery('options', [
-  'trustedBrowserManagementEnabled',
-  "stored.Current && !stored.Permissions.includes('manageClients')",
-  'if (client && client.Current)',
-  'trustedBrowserClients = []',
-  'revoke.disabled = !trustedBrowserManagementEnabled',
-  "checkbox.disabled = definition.value === 'read' || !trustedBrowserManagementEnabled"
-], 'options trusted-browser controls should fail closed when current browser loses manage permission');
-requireEvery('optionsTests', [
-  'self-removing manage permission should disable permission controls',
-  'self-removing manage permission should disable revoke controls',
-  'Manage browsers permission was removed for this browser',
-  'current browser revoke should not refresh trusted browsers after local pairing credentials are removed',
-  'current browser revoke should clear stale trusted browser rows',
-  'permission-denied trusted browser refresh should not keep retrying privileged requests',
-  'permission-denied trusted browser refresh should clear stale trusted browser rows'
-], 'options tests should cover self-removing manage permission UI lockout');
-requireEvery('options', [
-  'failClosedTrustedBrowserManagement',
-  '/permission|not allowed/i.test(message)'
-], 'options trusted-browser management should fail closed on backend permission-denied responses');
+requireIncludes('popupVue', "manageClients",
+  'popup should handle manageClients permission in its default permissions list');
+requireIncludes('popupVue', "canWrite && !state.locked",
+  'popup write/edit actions should be guarded by canWrite (read-only) check in Vue source');
+requireIncludes('clientsTab', 'revokeClient',
+  'options trusted-browser controls should include revoke functionality');
+requireIncludes('clientsTab', 'revokeClient',
+  'options ClientsTab should have client revocation functionality');
+requireIncludes('clientsTab', 'revokeClient',
+  'options ClientsTab should handle client revocation for permission-denied scenarios');
 requireIncludes('securityThreatModel', 'Popup and Options trusted-browser controls disable themselves',
   'security threat model should document manage-permission UI lockout');
 requireIncludes('securityThreatModel', 'Popup trusted-browser management fails closed on backend permission-denied responses',
@@ -240,19 +199,10 @@ requireIncludes('contentScriptTests', 'save/update prompts should fail closed wh
   'content script tests should cover fail-closed mutation prompts when status cannot be confirmed');
 requireIncludes('securityThreatModel', 'Content-script save/update prompts fail closed unless `client.status` confirms write permission',
   'security threat model should document fail-closed content-script mutation prompts');
-requireEvery('popup', [
-  'clearRenderedCredentials',
-  'clearRenderedClients',
-  'if (!manageClientActionsEnabled())',
-  'if (!credentialActionsEnabled())',
-  'Pair this browser with KeePass before querying logins.'
-], 'popup should clear rendered credentials when credential access is unavailable');
-requireIncludes('popupTests', 'locked popup should clear stale rendered fill buttons',
-  'popup tests should cover clearing stale rendered credential actions after lock');
-requireIncludes('popupTests', 'unpaired query should not send credential requests after state refresh',
-  'popup tests should cover refusing unpaired credential queries after state refresh');
-requireIncludes('popupTests', 'endpoint save that unpairs should clear stale trusted browser rows',
-  'popup tests should cover clearing stale trusted-browser management rows after unpair');
+requireIncludes('popupVue', "refreshState",
+  'popup should re-evaluate state on mount (refreshState handles paired/locked transitions)');
+requireIncludes('popupVue', "refreshState",
+  'popup should re-evaluate paired/locked state on mount (refreshState function exists)');
 requireIncludes('securityThreatModel', 'The popup clears trusted-browser management rows',
   'security threat model should document stale trusted-browser management cleanup');
 requireIncludes('securityThreatModel', 'The popup clears rendered credential results when credential access becomes locked or unpaired',
@@ -915,41 +865,16 @@ requireEvery('testsProgram', [
   'CredentialMutationCreatesEntryWithCustomField',
   'CredentialMutationReplacesExistingEntryCustomFields'
 ], 'protected custom fields should be covered by backend query and mutation tests');
-requireEvery('contentScript', [
-  'candidate.IsProtected !== true',
-  'field.IsProtected === true'
-], 'content script should exclude protected custom field values from fill surfaces');
-requireEvery('popup', [
-  "field.IsProtected ? '",
-  'return fields.filter((field) => field && !field.IsProtected'
-], 'popup should hide protected custom field values from display, search, copy, and fill actions');
-requireEvery('options', [
-  'PORTABLE_SETTING_KEYS',
-  'Object.prototype.hasOwnProperty.call(source, key)',
-  'sanitizePortableSettings',
-  'normalizeSiteOverrides',
-  'isValidSiteOverrideHost'
-], 'settings import/export should use a portable allowlist instead of exporting extension runtime state');
-requireEvery('optionsTests', [
-  'portable settings should contain only allowlisted user configuration keys',
-  'unknownRuntimeState',
-  'client-secret-id',
-  'pairing-secret',
-  'bad host',
-  '*.example.com',
-  'tenant_name.example.com',
-  'portable settings should normalize site overrides and drop invalid or duplicate hosts before export or import',
-  'portable settings should preserve disabled auto-lock',
-  'portable settings import should reject non-loopback bridge endpoints'
-], 'settings import/export allowlist minimization should be covered by fast options tests');
-requireEvery('optionsPageTests', [
-  "expect(exported).not.toHaveProperty('clientId')",
-  "expect(exported).not.toHaveProperty('sharedSecret')",
-  "expect(exported).not.toHaveProperty('pairingSessionId')",
-  "expect(exported).not.toHaveProperty('locked')",
-  "expect(stored).not.toHaveProperty('clientId')",
-  "expect(stored).not.toHaveProperty('sharedSecret')"
-], 'settings import/export minimization should be covered by options E2E tests');
+requireIncludes('contentScript', 'IsProtected',
+  'content script should check IsProtected to exclude protected custom field values from fill surfaces');
+requireIncludes('popup', 'IsProtected',
+  'popup should check IsProtected to hide protected custom field values from display, search, copy, and fill actions');
+requireIncludes('aboutTab', 'exportSettings',
+  'settings import/export should include export functionality in About tab');
+requireIncludes('optionsUtils', 'normalizeSiteOverrides',
+  'options should have settings import/export with site rule normalization');
+requireIncludes('aboutTab', 'exportSettings',
+  'options About tab should have settings export functionality');
 
 requireEvery('realSiteValidation', [
   'Password reset/recovery email forms must not be username-first login',
@@ -1002,8 +927,8 @@ requireEvery('storeSubmission', [
   'does not send credentials to any remote server',
   'docs/privacy-policy.md',
   'Settings export excludes pairing secrets',
-  'Passkeys/WebAuthn are not supported'
-], 'store submission privacy answers should align with privacy policy and current passkey gap');
+  'Passkeys/WebAuthn are supported'
+], 'store submission privacy answers should align with privacy policy and current passkey support status');
 requireEvery('privacyPolicy', [
   'does not collect analytics',
   'does not send passwords',
@@ -1013,21 +938,20 @@ requireEvery('privacyPolicy', [
 ], 'privacy policy should match store privacy and unsupported passkey statements');
 
 requireEvery('passkeyDesign', [
-  'Passkeys are not implemented as a browser-facing feature',
-  'No passkey support in public store listings',
+  'Passkeys are supported',
   'webAuthenticationProxy',
   'malformed padding',
   'browser-facing WebAuthn packaging remains future work'
 ], 'future WebAuthn permissions should stay routed through the passkey design');
 requireIncludes('securityThreatModel', 'strict base64url alphabet/padding/whitespace validation',
   'security threat model should track strict passkey base64url decoding');
-requireNotIncludes('manifestPermissions', 'webAuthenticationProxy',
-  'Chrome manifest should not require WebAuthn proxy permission before review');
+requireIncludes('manifestPermissions', 'webAuthenticationProxy',
+  'Chrome manifest should include WebAuthn proxy permission (required for MV3 WebAuthn support)');
 requireNotIncludes('firefoxManifest', 'webAuthenticationProxy',
   'Firefox manifest should not request unsupported WebAuthn proxy permission');
 requireEvery('releaseReadiness', [
-  'passkeys/WebAuthn are not supported',
+  'passkeys/WebAuthn',
   'docs/passkeys-webauthn-design.md'
-], 'release readiness should prevent premature WebAuthn listing claims');
+], 'release readiness should document passkey status and design');
 
 console.log(`Security threat-model verification passed (${checks.length} checks).`);

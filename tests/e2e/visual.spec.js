@@ -59,7 +59,7 @@ test.describe('KeePassBrowserBridge Visual Debug', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.waitForTimeout(2000);
 
     const buttons = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');

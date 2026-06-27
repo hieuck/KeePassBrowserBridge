@@ -22,6 +22,7 @@ function copyPasskeysProxy() {
 }
 
 export default defineConfig({
+  base: './',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },

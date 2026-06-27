@@ -16,6 +16,14 @@ const editFormSource = fs.readFileSync(path.join(projectRoot, 'extension', 'src'
 // ====== BUG 1: Badge count not showing on extension icon ======
 
 describe('BUG1: Badge should show login count on icon', () => {
+  it('queryLogins should return empty result (not throw) when no active tab', () => {
+    const queryLoginsStart = bgSource.indexOf('async function queryLogins');
+    const queryLoginsBody = bgSource.slice(queryLoginsStart, queryLoginsStart + 300);
+    assert.ok(!queryLoginsBody.includes("throw new Error('No active tab.')"),
+      'queryLogins() must not throw when no active tab — return empty result instead');
+    assert.ok(queryLoginsBody.includes("url: ''") || queryLoginsBody.includes("entries: []"),
+      'queryLogins() must return { url: "", entries: [] } when no active tab');
+  });
   it('queryLogins should update badge count after fetching entries', () => {
     // queryLogins() fetches the active tab and queries logins, but NEVER calls
     // updateBadgeCount. The badge only updates inside autoFillTab (on page load).
@@ -43,6 +51,42 @@ describe('BUG1: Badge should show login count on icon', () => {
     // Every updateBadgeCount call in onUpdated should use await
     const matches = updatedHandler.match(/updateBadgeCount/g);
     assert.ok(matches, 'updateBadgeCount must be called in onUpdated handler');
+  });
+});
+
+// ====== BUG 3: executeScript should use dist/contentScript.js (source has import) ======
+
+describe('BUG3: executeScript should inject built content script', () => {
+  it('all chrome.scripting.executeScript calls use dist/contentScript.js', () => {
+    const count = (bgSource.match(/executeScript/g) || []).length;
+    const distCount = (bgSource.match(/executeScript[^;]*dist\/contentScript\.js/g) || []).length;
+    assert.equal(distCount, count,
+      `all ${count} executeScript calls must use dist/contentScript.js, only ${distCount} do`);
+  });
+
+  it('no executeScript call references the raw source contentScript.js', () => {
+    assert.ok(!bgSource.includes("files: ['contentScript.js']"),
+      'executeScript must not reference raw contentScript.js — use dist/contentScript.js');
+  });
+});
+
+// ====== BUG 4: bridgeCall should wrap raw fetch errors in friendly message ======
+
+describe('BUG4: bridgeCall should handle raw fetch errors gracefully', () => {
+  it('throw fetchError should not appear in bridgeCall (replaced by friendly message)', () => {
+    const bridgeCallStart = bgSource.indexOf('async function bridgeCall');
+    const bridgeCallEnd = bgSource.indexOf('async function getExtensionOrigin');
+    const bridgeCallBody = bgSource.slice(bridgeCallStart, bridgeCallEnd);
+    assert.ok(!bridgeCallBody.includes('throw fetchError'),
+      'bridgeCall must not re-throw raw fetchError — should wrap in friendly message');
+  });
+
+  it('bridgeCall catch block should produce a message string (never raw error object)', () => {
+    const bridgeCallStart = bgSource.indexOf('async function bridgeCall');
+    const bridgeCallEnd = bgSource.indexOf('async function getExtensionOrigin');
+    const bridgeCallBody = bgSource.slice(bridgeCallStart, bridgeCallEnd);
+    assert.ok(bridgeCallBody.includes("'KeePass communication failed.'"),
+      'bridgeCall should have a fallback error message for non-Failed-to-fetch errors');
   });
 });
 

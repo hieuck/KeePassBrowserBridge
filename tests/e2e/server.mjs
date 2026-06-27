@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const extRoot = path.resolve(root, 'extension');
 const port = Number(process.env.PORT || 3000);
 
 const contentTypes = new Map([
@@ -16,7 +17,18 @@ const contentTypes = new Map([
 
 function resolveRequestPath(urlPath) {
   const cleanPath = decodeURIComponent(urlPath.split('?')[0] || '/');
-  const relativePath = cleanPath === '/' ? 'tests/fixtures/login-page.html' : cleanPath.replace(/^\/+/, '');
+  let relativePath;
+  // Vite modulepreload generates /dist/... paths; rewrite to extension/dist/...
+  if (cleanPath === '/') {
+    relativePath = 'tests/fixtures/login-page.html';
+  } else if (cleanPath.startsWith('/dist/')) {
+    const filePath = cleanPath.replace(/^\/+/, '');
+    const resolved = path.resolve(extRoot, filePath);
+    if (!resolved.startsWith(extRoot + path.sep) && resolved !== extRoot) return null;
+    return fs.existsSync(resolved) ? resolved : null;
+  } else {
+    relativePath = cleanPath.replace(/^\/+/, '');
+  }
   const resolved = path.resolve(root, relativePath);
   if (!resolved.startsWith(root + path.sep) && resolved !== root) {
     return null;

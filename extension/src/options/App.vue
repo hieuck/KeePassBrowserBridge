@@ -37,8 +37,8 @@
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import {
   BulbOutlined,
-  HighlightOutlined,
   DesktopOutlined,
+  HighlightOutlined,
   KeyOutlined,
   SafetyOutlined,
 } from '@ant-design/icons-vue';
@@ -92,7 +92,7 @@ const tabs = [
 const activeComponent = computed(() => components[activeTab.value]);
 
 const themeIconMap = { light: BulbOutlined, dark: HighlightOutlined, system: DesktopOutlined };
-const themeIconComponent = computed(() => themeIconMap[theme.value] || SunOutlined);
+const themeIconComponent = computed(() => themeIconMap[theme.value] || BulbOutlined);
 
 function cycleTheme() {
   setTheme(theme.value === 'light' ? 'dark' : theme.value === 'dark' ? 'system' : 'light');
@@ -120,7 +120,7 @@ async function save() {
       if (nextPasskeys && typeof chrome !== 'undefined' && chrome.permissions) {
         try {
           await chrome.permissions.request({
-            permissions: ['webNavigation']
+            permissions: ['webNavigation', 'webAuthenticationProxy']
           });
         } catch (e) {
           console.error('Passkey permission request failed:', e);

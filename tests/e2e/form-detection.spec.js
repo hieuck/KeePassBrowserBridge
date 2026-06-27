@@ -97,7 +97,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -164,7 +164,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/spa-type-button-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#spa-email').fill('spa@example.com');
     await page.locator('#spa-password').fill('spa-secret');
@@ -202,7 +202,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/spa-type-button-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#spa-email').fill('spa@example.com');
     await page.locator('#spa-password').fill('spa-secret');
@@ -251,7 +251,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/spa-type-button-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#spa-email').fill('enter@example.com');
     await page.locator('#spa-password').fill('enter-secret');
@@ -288,7 +288,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/spa-type-button-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#spa-email').fill('enter@example.com');
     await page.locator('#spa-password').press('Enter');
@@ -336,7 +336,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -396,7 +396,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -436,7 +436,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -471,7 +471,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#username').fill('readonly-inline@example.com');
     await page.locator('#password').fill('secret');
@@ -533,7 +533,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-submit-redirect.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#redirect-username').fill('redirect@example.com');
     await page.locator('#redirect-password').fill('redirect-secret');
@@ -545,7 +545,7 @@ test.describe('content script form detection', () => {
     pendingSubmittedCredential = remembered;
     await page.waitForURL(/login-page\.html/);
 
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect.poll(async () => page.evaluate(() => window.__kbbMessages.map((message) => message.type)), {
       timeout: 15000
@@ -593,7 +593,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -660,7 +660,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -734,7 +734,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -796,7 +796,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/change-password-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -880,7 +880,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     const picker = page.locator('kbb-picker');
@@ -926,7 +926,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
 
@@ -988,7 +988,7 @@ test.describe('content script form detection', () => {
     await page.goto('/tests/fixtures/embedded-about-blank-login-widget.html');
     const iframeHandle = await page.locator('#login-widget').elementHandle();
     const frame = await iframeHandle.contentFrame();
-    await frame.addScriptTag({ path: 'extension/contentScript.js' });
+    await frame.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await frame.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(frame.locator('#embedded-username')).toHaveValue('iframe@example.com');
@@ -1029,7 +1029,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -1053,7 +1053,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
 
@@ -1083,7 +1083,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
 
@@ -1130,7 +1130,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -1182,7 +1182,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -1226,7 +1226,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -1279,7 +1279,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -1324,7 +1324,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -1361,7 +1361,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     const picker = page.locator('kbb-picker');
@@ -1416,7 +1416,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     const picker = page.locator('kbb-picker');
@@ -1455,7 +1455,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -1492,7 +1492,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     const picker = page.locator('kbb-picker');
@@ -1580,7 +1580,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/multi-step-username.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await page.locator('.kbb-inline-picker [data-kbb-entry-title="Work"] [data-kbb-action="username"]').click();
@@ -1590,7 +1590,7 @@ test.describe('content script form detection', () => {
 
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(/multi-step-password\.html/);
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('#step-password')).toHaveValue('work-secret');
     const ackMessages = await page.evaluate(() => window.__kbbMessages.filter((message) => message.type === 'KBB_FILL_ACK'));
@@ -1692,7 +1692,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/multi-step-username.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await page.locator('.kbb-inline-picker [data-kbb-entry-title="Work"] [data-kbb-action="username"]').click();
@@ -1700,7 +1700,7 @@ test.describe('content script form detection', () => {
 
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(/multi-step-password\.html/);
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#step-password').fill('changed-secret');
     await page.evaluate(() => {
@@ -1770,7 +1770,7 @@ test.describe('content script form detection', () => {
     });
 
     await page.goto('/tests/fixtures/same-page-username-first.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('#same-page-username')).toHaveValue('dropbox@example.com');
@@ -1785,7 +1785,7 @@ test.describe('content script form detection', () => {
   test('fills username and password on a standard login form', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -1815,7 +1815,7 @@ test.describe('content script form detection', () => {
   test('fills phone number username when a tel field belongs to a password login form', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/phone-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -1845,7 +1845,7 @@ test.describe('content script form detection', () => {
   test('ignores opacity-hidden login decoys when filling a visible login form', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/opacity-hidden-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -1877,7 +1877,7 @@ test.describe('content script form detection', () => {
   test('ignores offscreen login decoys when filling a visible login form', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/offscreen-login-decoy-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -1909,7 +1909,7 @@ test.describe('content script form detection', () => {
   test('does not add KeePass inline button to dashboard search input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/dashboard-search-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
   });
@@ -1917,7 +1917,7 @@ test.describe('content script form detection', () => {
   test('does not fill table filter as username on password-only forms', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/password-with-filter-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -1947,7 +1947,7 @@ test.describe('content script form detection', () => {
   test('does not add KeePass inline button to newsletter email signup', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/non-login-email-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
   });
@@ -1955,7 +1955,7 @@ test.describe('content script form detection', () => {
   test('does not treat password reset email forms as username-first login', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/password-reset-email-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
 
@@ -1983,7 +1983,7 @@ test.describe('content script form detection', () => {
   test('does not treat profile, payment, or numeric settings forms as login fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/non-login-profile-payment-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
 
@@ -2019,7 +2019,7 @@ test.describe('content script form detection', () => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/non-login-profile-payment-page.html');
     await page.addScriptTag({ path: 'extension/customFields.js' });
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -2048,7 +2048,7 @@ test.describe('content script form detection', () => {
   test('does not autofill sign-up forms that only ask for a new password', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/signup-new-password-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
 
@@ -2078,7 +2078,7 @@ test.describe('content script form detection', () => {
   test('does not treat API token settings as password login fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/api-token-settings-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
 
@@ -2128,7 +2128,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/signup-new-password-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -2146,7 +2146,7 @@ test.describe('content script form detection', () => {
   test('does not fallback to a different form when focus is inside non-login fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/mixed-fill-dev-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#checkout-city').focus();
 
@@ -2178,7 +2178,7 @@ test.describe('content script form detection', () => {
   test('still fills the login form on mixed pages when no non-login field is focused', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/mixed-fill-dev-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -2211,7 +2211,7 @@ test.describe('content script form detection', () => {
   test('does not treat fill.dev-style profile and payment fields as username fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/fill-dev-mixed-fields-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(1);
     await expect(page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]')).toHaveCount(1);
@@ -2272,7 +2272,7 @@ test.describe('content script form detection', () => {
   test('does not treat contact support email fields as username-first login', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/non-login-contact-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
 
@@ -2302,7 +2302,7 @@ test.describe('content script form detection', () => {
   test('does not treat account settings contact fields as username-first login', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/account-settings-contact-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button')).toHaveCount(0);
 
@@ -2361,7 +2361,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/username-first-email-address.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('#email-address-login')).toHaveValue('email-address@example.com');
@@ -2400,7 +2400,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/phone-username-first.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     await expect(page.locator('#phone-identifier')).toHaveValue('+15551234567');
@@ -2445,7 +2445,7 @@ test.describe('content script form detection', () => {
     });
     await page.goto('/tests/fixtures/two-login-forms.html');
     await page.addScriptTag({ path: 'extension/customFields.js' });
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.evaluate(() => {
       const adminPasswordButton = Array.from(document.querySelectorAll('.kbb-inline-button'))
@@ -2470,7 +2470,7 @@ test.describe('content script form detection', () => {
   test('collects page credential from the focused login form for popup create', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/two-login-forms.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#customer-username').fill('customer@example.com');
     await page.locator('#customer-password').fill('customer-secret-is-longer');
@@ -2498,7 +2498,7 @@ test.describe('content script form detection', () => {
   test('falls back to page login credential when popup create focus is outside login fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/search-and-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#login-username').fill('login@example.com');
     await page.locator('#login-password').fill('login-secret');
@@ -2524,7 +2524,7 @@ test.describe('content script form detection', () => {
   test('fills focused login form for popup full-entry fill', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/two-login-forms.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#admin-password').focus();
 
@@ -2558,7 +2558,7 @@ test.describe('content script form detection', () => {
   test('auto-submits the focused login form after popup full-entry fill', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/two-login-forms.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       window.__submittedForms = [];
       for (const form of document.querySelectorAll('form')) {
@@ -2601,7 +2601,7 @@ test.describe('content script form detection', () => {
   test('falls back to page login form when popup fill focus is outside login fields', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/search-and-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('#activity-search').focus();
 
@@ -2634,7 +2634,7 @@ test.describe('content script form detection', () => {
   test('adds OTP inline button to Google-style Vietnamese authenticator input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/google-totp-vi-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const otpButton = page.locator('.kbb-inline-button[aria-label="Fill one-time code from KeePass"]');
     await expect(otpButton).toHaveCount(1);
@@ -2643,7 +2643,7 @@ test.describe('content script form detection', () => {
   test('fills OTP on Google-style Vietnamese authenticator input', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/google-totp-vi-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -2667,7 +2667,7 @@ test.describe('content script form detection', () => {
   test('fills split OTP inputs across sibling labels', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/split-otp-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const otpButton = page.locator('.kbb-inline-button[aria-label="Fill one-time code from KeePass"]');
     await expect(otpButton).toHaveCount(1);
@@ -2721,7 +2721,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/split-otp-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill one-time code from KeePass"]').click();
     await expect(page.locator('.kbb-inline-picker')).toBeVisible();
@@ -2738,7 +2738,7 @@ test.describe('content script form detection', () => {
   test('detects OTP input described by ARIA references', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/aria-otp-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const otpButton = page.locator('.kbb-inline-button[aria-label="Fill one-time code from KeePass"]');
     await expect(otpButton).toHaveCount(1);
@@ -2765,7 +2765,7 @@ test.describe('content script form detection', () => {
   test('does not treat ordinary phone input as OTP because nearby copy mentions verification code', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/verification-copy-phone-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await expect(page.locator('.kbb-inline-button[aria-label="Fill one-time code from KeePass"]')).toHaveCount(0);
   });
@@ -2773,7 +2773,7 @@ test.describe('content script form detection', () => {
   test('fills username and password inside open Shadow DOM login forms', async ({ page }) => {
     await installContentScript(page);
     await page.goto('/tests/fixtures/shadow-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const response = await page.evaluate(() => new Promise((resolve) => {
       window.__keepassBrowserBridgeMessageListener(
@@ -2831,7 +2831,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/delayed-shadow-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     const shadowUsernameButton = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');
     await expect(shadowUsernameButton).toHaveCount(1);
@@ -2876,7 +2876,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/shadow-login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.evaluate(() => {
       const root = document.querySelector('shadow-login').shadowRoot;
@@ -2937,7 +2937,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -2985,7 +2985,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -3036,7 +3036,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -3091,7 +3091,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -3155,7 +3155,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.evaluate(() => {
       document.querySelector('form').addEventListener('submit', (event) => event.preventDefault());
     });
@@ -3191,7 +3191,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.waitForTimeout(1000);
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
@@ -3232,7 +3232,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.waitForTimeout(1000);
 
     const inlineBtn = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');
@@ -3266,7 +3266,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     const picker = page.locator('kbb-picker');
@@ -3306,7 +3306,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
 
     await page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]').click();
     const picker = page.locator('kbb-picker');
@@ -3349,7 +3349,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.waitForTimeout(1000);
 
     const inlineBtn = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');
@@ -3379,7 +3379,7 @@ test.describe('content script form detection', () => {
       };
     });
     await page.goto('/tests/fixtures/login-page.html');
-    await page.addScriptTag({ path: 'extension/contentScript.js' });
+    await page.addScriptTag({ path: 'extension/dist/contentScript.js' });
     await page.waitForTimeout(1000);
 
     const inlineBtn = page.locator('.kbb-inline-button[aria-label="Fill username from KeePass"]');

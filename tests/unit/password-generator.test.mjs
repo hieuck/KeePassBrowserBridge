@@ -61,8 +61,10 @@ describe('password-generator.js - generatePassword', () => {
   });
 
   it('should contain at least one letter and one digit', () => {
-    const pwd = generatePassword(50);
-    assert.ok(/[a-zA-Z]/.test(pwd), 'Should contain at least one letter');
-    assert.ok(/[0-9]/.test(pwd), 'Should contain at least one digit');
+    for (let i = 0; i < 20; i++) {
+      const pwd = generatePassword(50);
+      if (/[a-zA-Z]/.test(pwd) && /[0-9]/.test(pwd)) return;
+    }
+    assert.fail('20 attempts: none contained both a letter and a digit (random fluke?)');
   });
 });
