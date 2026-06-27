@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 
 test('popup v2 inspection', async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 600 });
-  await page.goto('http://127.0.0.1:3000/extension/popup.html');
+  await page.goto('/extension/popup.html');
   await page.waitForSelector('.popup-header, .kbb-popup', { timeout: 5000 }).catch(() => {});
   await page.waitForTimeout(500);
 
