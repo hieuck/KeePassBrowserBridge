@@ -41,6 +41,11 @@ export default defineConfig({
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]',
+        manualChunks(id) {
+          if (id.includes('node_modules/ant-design-vue') || id.includes('node_modules/@ant-design')) {
+            return 'antd-vendor';
+          }
+        },
       },
     },
   },

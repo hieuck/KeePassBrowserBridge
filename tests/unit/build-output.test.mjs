@@ -52,6 +52,14 @@ describe('Vue build output', () => {
         `${file} is too large: ${(stat.size / 1024).toFixed(1)}KB (max 2048KB)`);
     }
   });
+
+  it('vendor chunk (_plugin-vue_export-helper.js) should not exceed 500KB', () => {
+    const vendor = path.join(distDir, '_plugin-vue_export-helper.js');
+    assert.ok(fs.existsSync(vendor), '_plugin-vue_export-helper.js must exist');
+    const stat = fs.statSync(vendor);
+    assert.ok(stat.size < 500 * 1024,
+      `vendor chunk is ${(stat.size / 1024).toFixed(1)}KB — must be < 500KB (split ant-design-vue into separate chunk)`);
+  });
 });
 
 describe('Extension source files', () => {
