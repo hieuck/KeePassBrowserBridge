@@ -11,6 +11,7 @@ const LIMITS = {
   'background.js': 100 * 1024,
   'contentScript.js': 100 * 1024,
   'components.es.js': 150 * 1024,
+  'antd-vendor.js': 2000 * 1024,
 };
 
 let failed = false;
