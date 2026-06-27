@@ -59,7 +59,7 @@ import { useBridge } from '../composables/useBridge.js';
 import { theme as antdTheme } from 'ant-design-vue';
 import { getSettings, setSettings } from '../../shared/storage.js';
 
-const { theme: appTheme, resolved: resolvedTheme, setTheme } = useTheme();
+const { theme, resolved: resolvedTheme, setTheme } = useTheme();
 const antdThemeConfig = computed(() => ({
   algorithm: resolvedTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
