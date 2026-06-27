@@ -34,7 +34,7 @@ const sources = {
   background: read('extension/background.js'),
   backgroundTests: read('tests/extension/background.test.mjs'),
   contentScriptTests: read('tests/extension/content-script.test.mjs'),
-  passkeysProxyExperiment: read('extension/passkeysProxy.js'),
+  passkeysProxy: read('extension/passkeysProxy.js'),
   manifest: read('extension/manifest.json'),
   manifestPermissions: JSON.stringify(JSON.parse(read('extension/manifest.json')).permissions || []),
   firefoxManifest: read('extension/manifest.firefox.json'),
@@ -558,7 +558,7 @@ requireEvery('testsProgram', [
   'bridge unsupported requested extension rejection should not prompt for approval',
   'bridge unsupported requested get extension rejection should not prompt for approval'
 ], 'backend unsupported requested extension rejection should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeUserVerification',
   'assertUserVerificationSupported',
   'normalizeKnownOptionalEnum',
@@ -571,7 +571,7 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when required user verification is unsupported',
   'lifecycle should reject required user verification before calling handlers'
 ], 'user verification rejection should be covered by proxy tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeUserHandle',
   'base64UrlByteLength',
   'invalidUserHandleMessage',
@@ -586,7 +586,7 @@ requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with whitespace-padded user handles',
   'bridge helper must not call backend passkey methods when user handle is invalid'
 ], 'proxy invalid user handle rejection should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeExcludeCredentialIds',
   "type !== 'public-key'",
   'invalidExcludeCredentialMessage',
@@ -600,7 +600,7 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when excludeCredentials is invalid',
   'bridge helper must not call backend passkey methods when excludeCredentials descriptor type is unsupported'
 ], 'proxy invalid excludeCredentials ID and descriptor type rejection should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeChallenge',
   'invalidChallengeMessage',
   'base64UrlByteLength'
@@ -612,7 +612,7 @@ requireEvery('passkeysProxyTests', [
   'proxy experiment must reject get requests with whitespace-padded challenges',
   'bridge helper must not call backend passkey methods when challenge is invalid'
 ], 'proxy invalid challenge rejection should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeAllowCredentialIds',
   "type !== 'public-key'",
   'invalidAllowCredentialMessage',
@@ -626,7 +626,7 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not call backend passkey methods when allowCredentials is invalid',
   'bridge helper must not call backend passkey methods when allowCredentials descriptor type is unsupported'
 ], 'proxy invalid allowCredentials ID and descriptor type rejection should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'credentialIdFromSummary',
   'Selected passkey credential was not returned by KeePass.',
   'credentials.some((credential) => credentialIdFromSummary(credential) === credentialId)'
@@ -636,7 +636,7 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not complete get requests for unlisted selected credentials',
   'Selected passkey credential was not returned by KeePass.'
 ], 'proxy selected-credential allow-list enforcement should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'assertBeginMatchesRequest',
   'assertBeginFieldMatches',
   "assertBeginFieldMatches(payload, begin, 'RpId')",
@@ -650,7 +650,7 @@ requireEvery('passkeysProxyTests', [
   'bridge helper must not complete get requests after mismatched begin origin responses',
   'Passkey begin response did not match the WebAuthn request.'
 ], 'proxy begin-response WebAuthn request, RP ID, and origin binding should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'assertCreateCompleteMatchesRequest',
   'assertGetCompleteMatchesRequest',
   "assertCompleteFieldMatches(payload, complete, 'CredentialId')",
@@ -687,9 +687,9 @@ requireEvery('passkeysProxyExperiment', [
   'assertRequiredCompleteFields',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'passkey proxy bridge helper should reject mismatched complete response bindings before browser completion');
-requireCountAtLeast('passkeysProxyExperiment', 'assertBase64UrlCompleteFields(', 5,
+requireCountAtLeast('passkeysProxy', 'assertBase64UrlCompleteFields(', 5,
   'passkey proxy should validate both object and serialized complete response base64url fields');
-requireCountAtLeast('passkeysProxyExperiment', "assertCompleteFieldMatches(payload, complete, 'RpId')", 2,
+requireCountAtLeast('passkeysProxy', "assertCompleteFieldMatches(payload, complete, 'RpId')", 2,
   'passkey proxy should verify RP ID binding for both create and get complete responses');
 requireEvery('passkeysProxyTests', [
   'get bridge helper should reject complete responses for a different selected credential',
@@ -764,7 +764,7 @@ requireEvery('passkeysProxyTests', [
   'Passkey complete response contained invalid client extension results.',
   'Passkey complete response was missing required WebAuthn fields.'
 ], 'proxy complete-response WebAuthn request, RP ID, credential, and required-field binding should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'assertEs256CredentialAlgorithmAllowed',
   'normalizeCredentialAlgorithms',
   'CredentialAlgorithms',
@@ -776,7 +776,7 @@ requireEvery('passkeysProxyTests', [
   'CredentialAlgorithms: [-257, -7]',
   'bridge helper must not call backend passkey methods when ES256 is not allowed by the request'
 ], 'ES256 create-algorithm enforcement should be covered by proxy tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeAttestationConveyance',
   'assertAttestationSupported',
   'Passkey attestation conveyance is not supported by this build.'
@@ -786,7 +786,7 @@ requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with unknown attestation conveyance',
   'bridge helper must not call backend passkey methods when attestation conveyance is unsupported'
 ], 'proxy attestation enforcement should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeAuthenticatorAttachment',
   'assertAuthenticatorAttachmentSupported',
   'Passkey authenticator attachment is not supported by this build.'
@@ -800,7 +800,7 @@ requireEvery('passkeysProxyTests', [
 ], 'proxy authenticator attachment enforcement should be covered by tests');
 requireCountAtLeast('passkeysProxyTests', "authenticatorAttachment: 'cross-platform'", 2,
   'proxy success serialization should include authenticator attachment for create and get completions');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeResidentKey',
   'requireResidentKey',
   'Passkey resident-key requirement is not supported by this build.',
@@ -812,7 +812,7 @@ requireEvery('passkeysProxyTests', [
   'proxy experiment must reject create requests with unknown resident-key requirements',
   'bridge helper must not call backend passkey methods when resident-key requirement is unsupported'
 ], 'proxy resident-key policy handling should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeExcludeCredentialIds',
   'normalizeCredentialDescriptorIds',
   'ExcludeCredentialIds'
@@ -820,7 +820,7 @@ requireEvery('passkeysProxyExperiment', [
 requireEvery('passkeysProxyTests', [
   "ExcludeCredentialIds: ['YQ', 'ZXhjbHVkZS0y']"
 ], 'proxy excludeCredentials mapping should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeTimeoutMs',
   'normalizeHints',
   'TimeoutMs',
@@ -832,7 +832,7 @@ requireEvery('passkeysProxyTests', [
   "Hints: ['hybrid', 'security-key']",
   "Hints: ['client-device', 'hybrid']"
 ], 'proxy timeout and WebAuthn hint mapping should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'requestTimeoutMs',
   'scheduleRequestTimeout',
   'handleTimedOut',
@@ -846,7 +846,7 @@ requireEvery('passkeysProxyTests', [
   'lifecycle should complete timed-out WebAuthn requests with a WebAuthn error',
   'timed-out WebAuthn requests must not complete success after the handler resolves'
 ], 'proxy WebAuthn timeout cleanup should be covered by lifecycle tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'completePendingErrorBestEffort',
   'Passkey WebAuthn request was canceled.',
   'completeCreateError(chromeLike, requestId, error)',
@@ -868,7 +868,7 @@ requireEvery('backgroundTests', [
   "passkeyCleanupCalls.at(-1), 'lock'",
   "passkeyCleanupCalls.at(-1), 'auto-lock'"
 ], 'background passkey proxy cleanup hooks should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'normalizeRequestedExtensions',
   'assertNoUnsupportedGetExtensions',
   'unsupportedRequestedExtensionNames',
@@ -900,7 +900,7 @@ requireEvery('passkeysProxyTests', [
   'appid: true',
   'unexpected: true'
 ], 'proxy WebAuthn extension and create public-key serialization handling should be covered by tests');
-requireEvery('passkeysProxyExperiment', [
+requireEvery('passkeysProxy', [
   'duplicatePendingRequestMessage',
   'pending.has(requestId)',
   "'duplicate'"
