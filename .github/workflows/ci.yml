@@ -136,6 +136,19 @@ jobs:
         run: |
           $updateFlag = if ("$env:PW_SNAPSHOT_UPDATE" -eq "true") { "--update-snapshots" } else { "" }
           npx playwright test tests/e2e/user-journey.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=chromium --reporter=line @updateFlag
+      - name: Commit updated snapshots
+        if: ${{ env.PW_SNAPSHOT_UPDATE == 'true' }}
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/*.spec.js-snapshots/ tests/visual/*.spec.js-snapshots/
+          if (git diff --cached --quiet) {
+            Write-Output "No snapshot changes to commit."
+          } else {
+            git commit -m "chore: update E2E visual snapshots [skip ci]"
+            git push
+          }
 
   csharp-tests:
     name: C# bridge tests
