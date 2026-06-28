@@ -15,4 +15,9 @@ Thumbs.db
 
 /coverage/
 /tests/__screenshots__/
-# Test artifacts
+/test-results/
+/.test-chrome-*/
+/.test-ext-*/
+/real-ext-*/
+/popup-diag*.png
+/docs/popup-diagnostic.js
