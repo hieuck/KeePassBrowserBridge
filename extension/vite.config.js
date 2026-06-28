@@ -28,6 +28,7 @@ export default defineConfig({
   },
   plugins: [vue(), copyPasskeysProxy()],
   build: {
+    chunkSizeWarningLimit: 2000,
     outDir: 'dist',
     emptyOutDir: false,
     rollupOptions: {
