@@ -354,6 +354,7 @@ $commonExtensionFiles = @(
     "customFields.js",
     "design-tokens.css",
     "dist\_plugin-vue_export-helper.js",
+    "dist\_plugin-vue_export-helper.css",
     "dist\antd-vendor.js",
     "dist\BaseInput.css",
     "dist\BaseInput.js",

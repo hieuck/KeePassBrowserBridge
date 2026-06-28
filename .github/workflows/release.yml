@@ -152,7 +152,8 @@ jobs:
             "design-tokens.css", "httpAuth.js", "icons.js",
             "options.css", "options.html", "passkeysProxy.js",
             "popup.css", "popup.html",
-            "_locales\en\messages.json", "_locales\vi\messages.json"
+            "_locales\en\messages.json", "_locales\vi\messages.json",
+            "dist\_plugin-vue_export-helper.css", "dist\antd-vendor.css"
           )
           $chromeOnlyFiles = @("compat.js")
           $firefoxOnlyFiles = @()

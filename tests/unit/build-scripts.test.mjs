@@ -122,4 +122,9 @@ describe('release.yml - extension package', () => {
     assert.ok(releaseSource.includes('Picker.web.js'),
       'release.yml must copy Picker.web.js — manifest.json declares it as web_accessible_resource');
   });
+
+  it('should include _plugin-vue_export-helper.css in common extension files', () => {
+    assert.ok(releaseSource.includes('dist\\_plugin-vue_export-helper.css') || releaseSource.includes('dist/_plugin-vue_export-helper.css'),
+      'release.yml must include _plugin-vue_export-helper.css — antd base CSS reset needed by popup.html');
+  });
 });
