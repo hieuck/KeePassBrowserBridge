@@ -143,27 +143,66 @@ jobs:
           Set-Location ..
           $artifacts = "${{ github.workspace }}\artifacts"
           $dist = "extension\dist"
+          $root = "extension"
           $version = "${{ env.RELEASE_VERSION }}"
           if (-not (Test-Path $artifacts)) { New-Item -ItemType Directory -Force -Path $artifacts | Out-Null }
 
+          $commonFiles = @(
+            "background.js", "contentScript.js", "customFields.js",
+            "design-tokens.css", "httpAuth.js", "icons.js",
+            "options.css", "options.html", "passkeysProxy.js",
+            "popup.css", "popup.html",
+            "_locales\en\messages.json", "_locales\vi\messages.json"
+          )
+          $chromeOnlyFiles = @("compat.js")
+          $firefoxOnlyFiles = @()
+          $rootFiles = $commonFiles + $chromeOnlyFiles
+
+          function Copy-ExtensionFiles {
+            param($SourceRoot, $DestDir, $RootFiles)
+            New-Item -ItemType Directory -Force -Path $DestDir | Out-Null
+            # Copy dist (built outputs)
+            Copy-Item "$dist\*" $DestDir -Recurse -Force
+            # Copy root-level files
+            foreach ($f in $RootFiles) {
+              $src = Join-Path $SourceRoot $f
+              $parent = Split-Path (Join-Path $DestDir $f) -Parent
+              New-Item -ItemType Directory -Force -Path $parent | Out-Null
+              Copy-Item $src (Join-Path $DestDir $f) -Force
+            }
+            # Copy icons
+            Copy-Item "$SourceRoot\icons" $DestDir -Recurse -Force -ErrorAction SilentlyContinue
+            # Copy web-accessible resources
+            $war = @("src\components\Picker.web.js", "src\components\Prompt.web.js")
+            foreach ($f in $war) {
+              $src = Join-Path $SourceRoot $f
+              $parent = Split-Path (Join-Path $DestDir $f) -Parent
+              if (Test-Path $src) {
+                New-Item -ItemType Directory -Force -Path $parent | Out-Null
+                Copy-Item $src (Join-Path $DestDir $f) -Force
+              }
+            }
+          }
+
           # Chrome extension
           $chromeDir = "$env:TEMP\kbb-chrome"
-          New-Item -ItemType Directory -Force -Path $chromeDir | Out-Null
-          Copy-Item "$dist\*" $chromeDir -Recurse -Force
-          Copy-Item "extension\compat.js" $chromeDir -Force
+          Copy-ExtensionFiles -SourceRoot $root -DestDir $chromeDir -RootFiles $rootFiles
           Copy-Item "extension\manifest.json" "$chromeDir\manifest.json" -Force
-          Compress-Archive -Path "$chromeDir\*" -DestinationPath "$artifacts\KeePassBrowserBridge-chrome-extension-$version.zip" -Force
+          $chromeZip = "$artifacts\KeePassBrowserBridge-chrome-extension-$version.zip"
+          if (Test-Path $chromeZip) { Remove-Item $chromeZip -Force }
+          Compress-Archive -Path "$chromeDir\*" -DestinationPath $chromeZip -Force
 
           # Firefox extension
           $firefoxDir = "$env:TEMP\kbb-firefox"
-          New-Item -ItemType Directory -Force -Path $firefoxDir | Out-Null
-          Copy-Item "$dist\*" $firefoxDir -Recurse -Force
+          Copy-ExtensionFiles -SourceRoot $root -DestDir $firefoxDir -RootFiles @($commonFiles)
           @("compat.js") | ForEach-Object {
-            $p = Join-Path "extension" $_
-            if (Test-Path $p) { Remove-Item "$firefoxDir\$_" -Force -ErrorAction SilentlyContinue }
+            $p = Join-Path $firefoxDir $_
+            if (Test-Path $p) { Remove-Item $p -Force -ErrorAction SilentlyContinue }
           }
           Copy-Item "extension\manifest.firefox.json" "$firefoxDir\manifest.json" -Force
-          Compress-Archive -Path "$firefoxDir\*" -DestinationPath "$artifacts\KeePassBrowserBridge-firefox-extension-$version.zip" -Force
+          $firefoxZip = "$artifacts\KeePassBrowserBridge-firefox-extension-$version.zip"
+          if (Test-Path $firefoxZip) { Remove-Item $firefoxZip -Force }
+          Compress-Archive -Path "$firefoxDir\*" -DestinationPath $firefoxZip -Force
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

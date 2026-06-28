@@ -89,3 +89,37 @@ describe('verify-release-artifacts.ps1 - extension ZIP contents', () => {
       'verify-release-artifacts must expect antd-vendor.js in the ZIP');
   });
 });
+
+const releaseSource = fs.readFileSync(path.join(projectRoot, '.github', 'workflows', 'release.yml'), 'utf8');
+
+describe('release.yml - extension package', () => {
+  it('should copy popup.html into extension package', () => {
+    assert.ok(releaseSource.includes('popup.html'),
+      'release.yml must copy popup.html into extension ZIP');
+  });
+
+  it('should copy options.html into extension package', () => {
+    assert.ok(releaseSource.includes('options.html'),
+      'release.yml must copy options.html into extension ZIP');
+  });
+
+  it('should copy design-tokens.css into extension package', () => {
+    assert.ok(releaseSource.includes('design-tokens.css'),
+      'release.yml must copy design-tokens.css into extension ZIP — popup.html references it');
+  });
+
+  it('should copy _locales into extension package', () => {
+    assert.ok(releaseSource.includes('_locales'),
+      'release.yml must copy _locales directory with translations');
+  });
+
+  it('should copy icons into extension package', () => {
+    assert.ok(releaseSource.includes('icons'),
+      'release.yml must copy icons directory');
+  });
+
+  it('should copy web-accessible resources (Picker.web.js, Prompt.web.js)', () => {
+    assert.ok(releaseSource.includes('Picker.web.js'),
+      'release.yml must copy Picker.web.js — manifest.json declares it as web_accessible_resource');
+  });
+});
