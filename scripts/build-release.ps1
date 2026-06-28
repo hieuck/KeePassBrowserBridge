@@ -356,6 +356,7 @@ $commonExtensionFiles = @(
     "dist\_plugin-vue_export-helper.js",
     "dist\_plugin-vue_export-helper.css",
     "dist\antd-vendor.js",
+    "dist\antd-vendor.css",
     "dist\BaseInput.css",
     "dist\BaseInput.js",
     "dist\BaseBadge.css",

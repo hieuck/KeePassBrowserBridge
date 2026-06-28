@@ -74,6 +74,15 @@ describe('build-release.ps1 - Firefox extension files', () => {
     assert.ok(commonBlock.includes('antd-vendor.js'),
       'commonExtensionFiles must include antd-vendor.js — popup.js imports it at runtime');
   });
+
+  it('should include dist/antd-vendor.css in common extension files', () => {
+    const commonStart = source.indexOf('$commonExtensionFiles = @(');
+    const afterCommonStart = source.slice(commonStart);
+    const commonEnd = afterCommonStart.indexOf('$chromeExtensionFiles');
+    const commonBlock = afterCommonStart.slice(0, commonEnd);
+    assert.ok(commonBlock.includes('antd-vendor.css'),
+      'commonExtensionFiles must include antd-vendor.css — antd component styles');
+  });
 });
 
 const verifySource = fs.readFileSync(path.join(projectRoot, 'scripts', 'verify-release-artifacts.ps1'), 'utf8');
