@@ -41,6 +41,8 @@ export default defineConfig({
         'extension/managed_storage.json',
         'extension/src/composables/**',
         'extension/shared/field-classifier.js',
+        'extension/src/shared/antd-plugin.js',
+        'extension/shared/antd-plugin.js',
         'extension/shared/storage.js',
       ],
       thresholds: {
