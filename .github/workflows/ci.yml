@@ -133,7 +133,7 @@ jobs:
         run: Start-Job -ScriptBlock { node "$env:GITHUB_WORKSPACE/tests/e2e/server.mjs" }; Start-Sleep 3
         shell: pwsh
       - name: E2E tests
-        run: npx playwright test tests/e2e/user-journey.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=chromium --reporter=line
+        run: npx playwright test tests/e2e/user-journey.spec.js tests/e2e/edit-flow.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=chromium --reporter=line
 
   csharp-tests:
     name: C# bridge tests
