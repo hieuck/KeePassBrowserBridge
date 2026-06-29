@@ -1022,41 +1022,90 @@ function showInlinePicker(button, entries) {
     _entry: entry,
   }));
   const mountPicker = () => {
-    if (typeof customElements === 'undefined' || !customElements || !customElements.get("kbb-picker")) {
-      return false;
+    if (typeof customElements !== 'undefined' && customElements && customElements.get("kbb-picker")) {
+      const picker = document.createElement("kbb-picker");
+      picker.setAttribute("placeholder", "Search KeePass logins…");
+      picker.setAttribute("show-search", String(items.length > 6));
+      picker.setAttribute("aria-label", `${items.length} KeePass logins`);
+      picker.addEventListener("kbb-fill", (event) => {
+        const detail = event.detail || {};
+        const cred = detail.credential || {};
+        const entry = cred._entry;
+        if (!entry) return;
+        event.preventDefault();
+        event.stopPropagation();
+        rememberMultiStepCredentialIfNeeded(fillCredentialForButton(button, entry), entry);
+        acknowledgeFilledEntry(entry);
+        closeInlinePicker();
+        setInlineButtonState(button, "ok");
+      });
+      picker.addEventListener("kbb-close", () => {
+        closeInlinePicker();
+      });
+      document.documentElement.appendChild(picker);
+      window.__keepassBrowserBridgeActivePicker = picker;
+      picker.credentials = items;
+      positionInlinePicker(button, picker);
+      requestAnimationFrame(() => positionInlinePicker(button, picker));
+      const searchInput = picker.shadowRoot && picker.shadowRoot.querySelector
+        ? picker.shadowRoot.querySelector(".picker-search-input")
+        : null;
+      if (searchInput && searchInput.focus) {
+        searchInput.focus();
+      } else if (picker.focus) {
+        picker.focus();
+      }
+      return true;
     }
-    const picker = document.createElement("kbb-picker");
-    picker.setAttribute("placeholder", "Search KeePass logins…");
-    picker.setAttribute("show-search", String(items.length > 6));
+    // Fallback: native HTML picker when customElements is unavailable
+    const picker = document.createElement("div");
+    picker.className = "kbb-inline-picker kbb-inline-picker--simple";
+    picker.setAttribute("role", "listbox");
     picker.setAttribute("aria-label", `${items.length} KeePass logins`);
-    picker.addEventListener("kbb-fill", (event) => {
-      const detail = event.detail || {};
-      const cred = detail.credential || {};
-      const entry = cred._entry;
-      if (!entry) return;
-      event.preventDefault();
-      event.stopPropagation();
-      rememberMultiStepCredentialIfNeeded(fillCredentialForButton(button, entry), entry);
-      acknowledgeFilledEntry(entry);
-      closeInlinePicker();
-      setInlineButtonState(button, "ok");
-    });
-    picker.addEventListener("kbb-close", () => {
-      closeInlinePicker();
-    });
+    applyPickerStyle(picker);
+    const list = document.createElement("div");
+    list.style.maxHeight = "300px";
+    list.style.overflowY = "auto";
+    for (const item of items) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.setAttribute("role", "option");
+      row.style.display = "block";
+      row.style.width = "100%";
+      row.style.padding = "8px 12px";
+      row.style.border = "none";
+      row.style.background = "transparent";
+      row.style.cursor = "pointer";
+      row.style.textAlign = "left";
+      row.style.font = "13px/1.4 system-ui, sans-serif";
+      row.style.color = "var(--kbb-text, #1f2933)";
+      row.style.borderBottom = "1px solid var(--kbb-border, #e2e8f0)";
+      row.textContent = item.name + (item.username ? ` (${item.username})` : "");
+      row.addEventListener("click", () => {
+        rememberMultiStepCredentialIfNeeded(fillCredentialForButton(button, item._entry), item._entry);
+        acknowledgeFilledEntry(item._entry);
+        closeInlinePicker();
+        setInlineButtonState(button, "ok");
+      });
+      list.appendChild(row);
+    }
+    picker.appendChild(list);
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "Close";
+    closeBtn.style.display = "block";
+    closeBtn.style.width = "100%";
+    closeBtn.style.padding = "6px 12px";
+    closeBtn.style.border = "none";
+    closeBtn.style.background = "transparent";
+    closeBtn.style.cursor = "pointer";
+    closeBtn.style.font = "12px system-ui, sans-serif";
+    closeBtn.style.color = "#667085";
+    closeBtn.addEventListener("click", closeInlinePicker);
+    picker.appendChild(closeBtn);
     document.documentElement.appendChild(picker);
     window.__keepassBrowserBridgeActivePicker = picker;
-    picker.credentials = items;
     positionInlinePicker(button, picker);
-    requestAnimationFrame(() => positionInlinePicker(button, picker));
-    const searchInput = picker.shadowRoot && picker.shadowRoot.querySelector
-      ? picker.shadowRoot.querySelector(".picker-search-input")
-      : null;
-    if (searchInput && searchInput.focus) {
-      searchInput.focus();
-    } else if (picker.focus) {
-      picker.focus();
-    }
     return true;
   };
   if (mountPicker()) return;
