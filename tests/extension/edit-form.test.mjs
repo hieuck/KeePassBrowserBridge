@@ -29,7 +29,7 @@ test.describe('EditForm dirty state', () => {
 
   test('EditForm validates URL format', () => {
     expect(source).toMatch(/isValidUrl/);
-    expect(source).toMatch(/errors\.Url/);
+    expect(source).toMatch(/validationErrors\.Url/);
     expect(source).toMatch(/Invalid URL/);
   });
 

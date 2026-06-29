@@ -2,28 +2,36 @@
   <div class="form">
     <header class="form__header">
       <h2>Editing {{ entry.Title }}</h2>
-      <a-button type="text" size="small" aria-label="Close form" @click="onCancel">
-        <template #icon><CloseOutlined /></template>
-      </a-button>
+      <button type="button" class="form__close-btn" aria-label="Close form" @click="onCancel"><CloseOutlined /></button>
     </header>
     <div class="form__body">
-      <a-form-item label="Title" :validate-status="errors.Title ? 'error' : ''" :help="errors.Title">
-        <a-input v-model:value="form.Title" @input="errors.Title = ''" />
-      </a-form-item>
-      <a-form-item label="URL" :validate-status="errors.Url ? 'error' : ''" :help="errors.Url">
-        <a-input v-model:value="form.Url" type="url" @input="errors.Url = ''" />
-      </a-form-item>
-      <a-form-item label="Username">
-        <a-input v-model:value="form.UserName" />
-      </a-form-item>
-      <a-form-item label="Password">
-        <a-input-password v-model:value="form.Password" />
-      </a-form-item>
+      <div class="form__field">
+        <label class="form__label">Title</label>
+        <input class="form__input" :class="{ 'form__input--error': validationErrors.Title }" :value="form.Title" @input="form.Title = $event.target.value" />
+        <span v-if="validationErrors.Title" class="form__error">{{ validationErrors.Title }}</span>
+      </div>
+      <div class="form__field">
+        <label class="form__label">URL</label>
+        <input class="form__input form__input--url" :class="{ 'form__input--error': validationErrors.Url }" :value="form.Url" @input="form.Url = $event.target.value" type="url" />
+        <span v-if="validationErrors.Url" class="form__error">{{ validationErrors.Url }}</span>
+      </div>
+      <div class="form__field">
+        <label class="form__label">Username</label>
+        <input class="form__input" :value="form.UserName" @input="form.UserName = $event.target.value" />
+      </div>
+      <div class="form__field">
+        <label class="form__label">Password</label>
+        <div class="form__password-wrap">
+          <input class="form__input" :type="showPassword ? 'text' : 'password'" :value="form.Password" @input="form.Password = $event.target.value" />
+          <button type="button" class="form__toggle-btn" @click="showPassword = !showPassword">
+            <EyeOutlined v-if="showPassword" /><EyeInvisibleOutlined v-else />
+          </button>
+        </div>
+      </div>
       <div class="form__password-actions">
-        <a-button type="link" size="small" @click="showGenerator = !showGenerator">
-          <template #icon><KeyOutlined /></template>
-          {{ showGenerator ? 'Hide' : 'Generate' }} strong password
-        </a-button>
+        <button type="button" class="form__link-btn" @click="showGenerator = !showGenerator">
+          <KeyOutlined /> {{ showGenerator ? 'Hide' : 'Generate' }} strong password
+        </button>
       </div>
       <PasswordGenerator
         v-if="showGenerator"
@@ -34,37 +42,35 @@
         @refresh="refreshPassword"
         @copy="copyPassword"
       />
-      <a-form-item label="Folder">
-        <a-input v-model:value="form.Group" />
-      </a-form-item>
+      <div class="form__field">
+        <label class="form__label">Folder</label>
+        <input class="form__input" :value="form.Group" @input="form.Group = $event.target.value" />
+      </div>
       <div class="form__custom">
         <div class="form__custom-header">
           <span>Custom fields</span>
-          <a-button type="dashed" size="small" @click="addCustomField">
-            <template #icon><PlusOutlined /></template>
-            Add field
-          </a-button>
+          <button type="button" class="form__add-btn" @click="addCustomField"><PlusOutlined /> Add field</button>
         </div>
         <div v-for="(field, idx) in form.CustomFields" :key="idx" class="form__custom-row">
-          <a-input v-model:value="field.Name" placeholder="Name" />
-          <a-input-password v-model:value="field.Value" placeholder="Value" />
-          <a-button type="text" danger aria-label="Remove field" @click="removeCustomField(idx)">
-            <template #icon><DeleteOutlined /></template>
-          </a-button>
+          <input class="form__input" :value="field.Name" @input="field.Name = $event.target.value" placeholder="Name" />
+          <div class="form__password-wrap">
+            <input class="form__input" type="password" :value="field.Value" @input="field.Value = $event.target.value" placeholder="Value" />
+          </div>
+          <button type="button" class="form__remove-btn" aria-label="Remove field" @click="removeCustomField(idx)"><DeleteOutlined /></button>
         </div>
       </div>
     </div>
     <footer class="form__footer">
       <span v-if="dirty" class="form__dirty-dot" title="Unsaved changes">&#9679;</span>
-      <a-button @click="onCancel">Cancel</a-button>
-      <a-button type="primary" :disabled="!canSave" @click="onSave">Save changes</a-button>
+      <button type="button" class="form__btn form__btn--cancel" @click="onCancel">Cancel</button>
+      <button type="button" class="form__btn form__btn--primary" :disabled="!canSave" @click="onSave">Save changes</button>
     </footer>
   </div>
 </template>
 
 <script setup>
 import { reactive, computed, ref, onMounted, onUnmounted } from 'vue';
-import { CloseOutlined, KeyOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { CloseOutlined, KeyOutlined, PlusOutlined, DeleteOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons-vue';
 import PasswordGenerator from './PasswordGenerator.vue';
 import { isValidUrl, isNonEmpty } from '../../shared/validators.js';
 import { generatePassword } from '../../shared/password-generator.js';
@@ -90,9 +96,9 @@ const form = reactive({
   CustomFields: JSON.parse(JSON.stringify(props.entry.CustomFields || [])),
 });
 
-const errors = reactive({ Title: '', Url: '' });
 const showGenerator = ref(false);
 const generatedPassword = ref('');
+const showPassword = ref(false);
 
 const isDirty = computed(() => {
   if (form.Title !== original.Title) return true;
@@ -113,20 +119,14 @@ const isDirty = computed(() => {
 
 const dirty = computed(isDirty);
 
-const isValid = computed(() => {
-  errors.Title = '';
-  errors.Url = '';
-  let valid = true;
-  if (!isNonEmpty(form.Title)) {
-    errors.Title = 'Title is required';
-    valid = false;
-  }
-  if (form.Url && !isValidUrl(form.Url)) {
-    errors.Url = 'Invalid URL format';
-    valid = false;
-  }
-  return valid;
+const validationErrors = computed(() => {
+  const e = { Title: '', Url: '' };
+  if (!isNonEmpty(form.Title)) e.Title = 'Title is required';
+  if (form.Url && !isValidUrl(form.Url)) e.Url = 'Invalid URL format';
+  return e;
 });
+
+const isValid = computed(() => !validationErrors.value.Title && !validationErrors.value.Url);
 
 function refreshPassword() {
   generatedPassword.value = generatePassword();
@@ -198,10 +198,36 @@ onUnmounted(() => {
 .form { display: flex; flex-direction: column; background: var(--color-surface); border-top: 1px solid var(--color-border); }
 .form__header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); }
 .form__header h2 { margin: 0; font-size: var(--text-md); font-weight: 600; }
+.form__close-btn { background: transparent; border: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast); }
+.form__close-btn:hover { background: var(--color-bg); color: var(--color-text); }
 .form__body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); max-height: 400px; overflow-y: auto; }
-.form__password-actions { margin-top: -8px; }
+.form__field { display: flex; flex-direction: column; gap: 4px; }
+.form__label { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); }
+.form__input { width: 100%; padding: 6px 10px; font-size: var(--text-sm); font-family: var(--font-sans); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-text); outline: none; transition: border-color var(--transition-fast); box-sizing: border-box; }
+.form__input:focus { border-color: var(--color-accent); }
+.form__input--error { border-color: var(--color-danger); }
+.form__input--url { font-family: var(--font-mono); font-size: var(--text-xs); }
+.form__error { font-size: var(--text-xs); color: var(--color-danger); }
+.form__password-wrap { display: flex; gap: 0; position: relative; }
+.form__password-wrap .form__input { padding-right: 32px; }
+.form__toggle-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: transparent; border: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); }
+.form__toggle-btn:hover { color: var(--color-text); }
+.form__password-actions { margin-top: -4px; }
+.form__link-btn { background: transparent; border: none; cursor: pointer; font-size: var(--text-sm); color: var(--color-accent); font-family: inherit; display: inline-flex; align-items: center; gap: var(--space-1); padding: 2px 0; }
+.form__link-btn:hover { text-decoration: underline; }
 .form__custom { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
 .form__custom-header { display: flex; align-items: center; justify-content: space-between; font-size: var(--text-sm); font-weight: 600; }
+.form__add-btn { background: transparent; border: 1px dashed var(--color-border); cursor: pointer; font-size: var(--text-xs); color: var(--color-text-secondary); font-family: inherit; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-sm); transition: border-color var(--transition-fast), color var(--transition-fast); }
+.form__add-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
 .form__custom-row { display: flex; gap: var(--space-2); align-items: center; }
-.form__footer { display: flex; gap: var(--space-2); justify-content: flex-end; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); }
+.form__custom-row .form__input { flex: 1; }
+.form__remove-btn { background: transparent; border: none; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); flex-shrink: 0; transition: color var(--transition-fast), background var(--transition-fast); }
+.form__remove-btn:hover { color: var(--color-danger); background: var(--color-danger-subtle); }
+.form__footer { display: flex; gap: var(--space-2); justify-content: flex-end; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); align-items: center; }
+.form__dirty-dot { color: var(--color-warning); font-size: 12px; margin-right: auto; }
+.form__btn { padding: 6px 16px; font-size: var(--text-sm); font-family: var(--font-sans); border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); }
+.form__btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.form__btn--primary { background: var(--color-accent); color: #fff; border: none; }
+.form__btn--primary:hover { opacity: 0.85; }
+.form__btn--primary:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
