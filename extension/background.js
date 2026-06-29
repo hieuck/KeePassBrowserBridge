@@ -110,7 +110,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     .then((response) => sendResponse({ ok: true, response }))
     .catch((error) => {
       const msg = error && error.message ? error.message : String(error);
-      console.error('[KeePass BG] Error handling', message?.type, ':', msg);
+      const stack = error && error.stack ? '\n' + error.stack.split('\n').slice(0, 4).join('\n') : '';
+      console.error('[KeePass BG] Error handling', message?.type, ':', msg, stack);
       sendResponse({ ok: false, error: msg });
     });
 

@@ -896,14 +896,16 @@ async function fillFromInlineButton(button) {
     setInlineButtonState(button, "ok");
   } catch (error) {
     const message = error && error.message ? error.message : String(error);
+    const stack = error && error.stack ? '\n' + error.stack.split('\n').slice(0, 3).join('\n') : '';
+    const fullInfo = message + stack;
     if (message.includes('context invalidated') || message.includes('Extension context')) {
-      console.warn('[KeePass] Extension context invalidated — refresh page');
+      console.warn('[KeePass] Extension context invalidated');
       showInlineErrorPicker(button, "Extension was updated. Please refresh this page.");
-    } else if (message.includes('get') && message.includes('storage')) {
-      console.error('[KeePass] Storage API error:', message);
-      showInlineErrorPicker(button, "Storage API unavailable. Try opening the extension popup.");
+    } else if (message.includes('null') && message.includes('get')) {
+      console.error('[KeePass] null.get error — likely chrome.storage or Map:', fullInfo);
+      showInlineErrorPicker(button, 'Extension error. Check console (F12) for details.');
     } else {
-      console.warn('[KeePass] Fill error:', message);
+      console.warn('[KeePass] Fill error:', fullInfo);
       showInlineErrorPicker(button, message);
     }
     setInlineButtonState(button, "!");
