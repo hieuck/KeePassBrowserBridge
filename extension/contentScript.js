@@ -1022,7 +1022,7 @@ function showInlinePicker(button, entries) {
     _entry: entry,
   }));
   const mountPicker = () => {
-    if (!customElements.get("kbb-picker")) {
+    if (typeof customElements === 'undefined' || !customElements || !customElements.get("kbb-picker")) {
       return false;
     }
     const picker = document.createElement("kbb-picker");

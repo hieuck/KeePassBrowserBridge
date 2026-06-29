@@ -77,7 +77,7 @@ export const upload = ICONS.upload;
  *   registerIcons('kbb') // creates <kbb-icon-key>, <kbb-icon-lock>, etc.
  */
 export function registerIcons(customElementPrefix = 'kbb') {
-  if (typeof customElements === 'undefined') return;
+  if (typeof customElements === 'undefined' || !customElements) return;
   for (const [name, svg] of Object.entries(ICONS)) {
     const tagName = `${customElementPrefix}-icon-${name}`;
     if (customElements.get(tagName)) continue;

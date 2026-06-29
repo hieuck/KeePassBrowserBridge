@@ -518,11 +518,13 @@ class KbbUpdatePrompt extends HTMLElement {
   }
 }
 
-if (!customElements.get('kbb-save-prompt')) {
-  customElements.define('kbb-save-prompt', KbbSavePrompt);
-}
-if (!customElements.get('kbb-update-prompt')) {
-  customElements.define('kbb-update-prompt', KbbUpdatePrompt);
+if (typeof customElements !== 'undefined' && customElements) {
+  if (!customElements.get('kbb-save-prompt')) {
+    customElements.define('kbb-save-prompt', KbbSavePrompt);
+  }
+  if (!customElements.get('kbb-update-prompt')) {
+    customElements.define('kbb-update-prompt', KbbUpdatePrompt);
+  }
 }
 
 export { KbbSavePrompt, KbbUpdatePrompt };

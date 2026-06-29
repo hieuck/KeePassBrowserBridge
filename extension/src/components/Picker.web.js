@@ -535,7 +535,7 @@ class KbbPicker extends HTMLElement {
   }
 }
 
-if (!customElements.get('kbb-picker')) {
+if (typeof customElements !== 'undefined' && customElements && !customElements.get('kbb-picker')) {
   customElements.define('kbb-picker', KbbPicker);
 }
 
