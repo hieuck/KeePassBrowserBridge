@@ -21,8 +21,8 @@ describe('useToast.js - show function', () => {
     assert.ok(source.includes('return { show }'), 'Missing show return');
   });
 
-  it('should call antd message API', () => {
-    assert.ok(source.includes('message['), 'Missing antd message API call');
+  it('should create DOM toast element', () => {
+    assert.ok(source.includes('createElement'), 'Must create DOM element for toast');
   });
 
   it('should handle error variant', () => {
@@ -41,8 +41,7 @@ describe('useToast.js - show function', () => {
     assert.ok(source.includes("'info'"), 'Missing info variant default');
   });
 
-  it('should convert duration from ms to seconds', () => {
-    assert.ok(source.includes('/ 1000'), 'Missing ms to seconds conversion');
+  it('should accept duration option in ms', () => {
     assert.ok(source.includes('options.duration'), 'Missing duration option handling');
   });
 

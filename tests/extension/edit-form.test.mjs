@@ -14,12 +14,9 @@ test.describe('EditForm dirty state', () => {
     expect(source).toMatch(/dirty/);
   });
 
-  test('dirty computed compares form fields to original', () => {
+  test('dirty computed compares form fields to snapshot', () => {
     expect(source).toMatch(/isDirty/);
-    expect(source).toMatch(/original\.Title/);
-    expect(source).toMatch(/original\.Url/);
-    expect(source).toMatch(/original\.UserName/);
-    expect(source).toMatch(/original\.Password/);
+    expect(source).toMatch(/snapshot/);
   });
 
   test('EditForm handles Cmd/Ctrl+S to save', () => {

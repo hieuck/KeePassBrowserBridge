@@ -1,6 +1,5 @@
 <template>
-  <a-config-provider :theme="antdThemeConfig">
-    <div v-if="themeReady" class="popup">
+  <div class="popup">
     <PopupHeader />
     <SearchBar
       v-model="searchQuery"
@@ -21,44 +20,46 @@
         @pair-complete="completePairing"
         @close="showPairDialog = false"
       />
-      <template v-if="formMode === 'new' && !showPairDialog">
+      <div v-show="!showPairDialog && formMode === 'new'">
         <NewLoginForm
           :groups="groupsData"
           @save="createLogin"
           @cancel="formMode = null"
         />
-      </template>
-      <template v-else-if="formMode === 'edit' && editingEntry && !showPairDialog">
+      </div>
+      <div v-show="!showPairDialog && formMode === 'edit' && editingEntry">
         <EditForm
           :entry="editingEntry"
           @save="saveEdit"
           @cancel="formMode = null"
         />
-      </template>
-      <template v-else-if="loading && !showPairDialog">
-        <SkeletonCard v-for="i in 3" :key="i" />
-      </template>
-      <template v-else-if="visibleEntries.length === 0 && !showPairDialog">
-        <EmptyState
-          :variant="emptyStateVariant"
-          :query="searchQuery"
-          @action="onEmptyAction"
-        />
-      </template>
-      <template v-else-if="!showPairDialog">
-        <CredentialCard
-          v-for="(entry, idx) in visibleEntries"
-          :key="entry.Uuid || entry.EntryId"
-          :entry="entry"
-          :entry-index="idx"
-          :can-edit="canWrite && !state.locked"
-          :expanded="detailEntry === entry"
-          @toggle="toggleDetail"
-          @fill="fillEntry"
-          @copy="copyField"
-          @edit="startEdit"
-        />
-      </template>
+      </div>
+      <div v-show="!showPairDialog && formMode === null">
+        <template v-if="loading">
+          <SkeletonCard v-for="i in 3" :key="i" />
+        </template>
+        <template v-else-if="visibleEntries.length === 0">
+          <EmptyState
+            :variant="emptyStateVariant"
+            :query="searchQuery"
+            @action="onEmptyAction"
+          />
+        </template>
+        <template v-else>
+          <CredentialCard
+            v-for="(entry, idx) in visibleEntries"
+            :key="entry.Uuid || entry.EntryId"
+            :entry="entry"
+            :entry-index="idx"
+            :can-edit="canWrite && !state.locked"
+            :expanded="detailEntry === entry"
+            @toggle="toggleDetail"
+            @fill="fillEntry"
+            @copy="copyField"
+            @edit="startEdit"
+          />
+        </template>
+      </div>
     </main>
     <FooterBar
       :can-write="canWrite && !state.locked"
@@ -72,12 +73,10 @@
       @toggle-theme="cycleTheme"
     />
   </div>
-</a-config-provider>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue';
-import { theme as antdTheme } from 'ant-design-vue';
 import { useBridge } from '../composables/useBridge.js';
 import { useTheme } from '../composables/useTheme.js';
 import { useToast } from '../composables/useToast.js';
@@ -94,17 +93,7 @@ import SkeletonCard from './SkeletonCard.vue';
 import PairDialog from './PairDialog.vue';
 
 const bridge = useBridge();
-const { theme, resolved: resolvedTheme, setTheme } = useTheme();
-const antdThemeConfig = computed(() => ({
-  algorithm: resolvedTheme.value === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-  token: {
-    colorPrimary: '#2563eb',
-    colorBgContainer: resolvedTheme.value === 'dark' ? '#1e293b' : '#ffffff',
-    colorText: resolvedTheme.value === 'dark' ? '#f1f5f9' : '#0f172a',
-    colorTextSecondary: resolvedTheme.value === 'dark' ? '#cbd5e1' : '#475569',
-    borderRadius: 6,
-  },
-}));
+const { theme, setTheme } = useTheme();
 const { show: showToast } = useToast();
 
 const state = ref({ paired: false, locked: false });
@@ -184,8 +173,9 @@ async function copyField(fieldName, value) {
 
 function startEdit(entry) {
   editingEntry.value = entry;
-  formMode.value = 'edit';
   detailEntry.value = null;
+  formMode.value = 'edit';
+  console.log('startEdit', entry?.Title);
 }
 
 function startNew() {

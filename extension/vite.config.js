@@ -43,8 +43,14 @@ export default defineConfig({
         chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]',
         manualChunks(id) {
-          if (id.includes('node_modules/ant-design-vue') || id.includes('node_modules/@ant-design')) {
+          if (id.includes('node_modules/vue')) {
+            return 'vue-vendor';
+          }
+          if (id.includes('node_modules/ant-design-vue')) {
             return 'antd-vendor';
+          }
+          if (id.includes('node_modules/@ant-design/icons-vue')) {
+            return 'icons-vendor';
           }
         },
       },

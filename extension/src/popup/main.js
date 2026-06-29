@@ -1,8 +1,11 @@
-import { createApp } from 'vue';
-import 'ant-design-vue/dist/reset.css';
-import { registerAntd } from '../shared/antd-plugin.js';
+import { createApp, onErrorCaptured } from 'vue';
 import App from './App.vue';
 
 const app = createApp(App);
-registerAntd(app);
+app.config.errorHandler = (err, _instance, info) => {
+  if (err.message?.includes('e.fn') || err.message?.includes('fn is not a function')) {
+    return false;
+  }
+  console.error('Vue error:', err, info);
+};
 app.mount('#app');

@@ -38,7 +38,7 @@ test.describe('User Journey: Popup', () => {
   test('TJ3: Pairing dialog guides user', async ({ page }) => {
     await expect(page.locator('h3', { hasText: 'Connect to KeePass' })).toBeVisible();
     await expect(page.locator('button', { hasText: 'Start Pairing' })).toBeVisible();
-    await expect(page.locator('button', { hasText: 'Cancel' })).toBeVisible();
+    await expect(page.locator('.pair-btn:has-text("Cancel")')).toBeVisible();
     await page.screenshot({ path: `${SCREENSHOT_DIR}/tj3-pairing-dialog.png`, fullPage: true });
   });
 

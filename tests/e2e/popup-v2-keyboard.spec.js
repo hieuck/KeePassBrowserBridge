@@ -153,7 +153,7 @@ test.describe('Popup v2 keyboard navigation', () => {
   });
 
   test('search with no matches shows empty state', async ({ page }) => {
-    const searchInput = page.locator('input[type="text"], input[type="search"]').first();
+    const searchInput = page.locator('.search-bar__input');
     await expect(searchInput).toBeVisible();
     await searchInput.fill('zzznonexistent');
     await page.waitForTimeout(300);
@@ -173,7 +173,7 @@ test.describe('Popup v2 keyboard navigation', () => {
     if (await lockBtn.count() > 0) {
       await lockBtn.click();
       await page.waitForTimeout(300);
-      const lockedState = page.locator('.ant-tag:has-text("Locked")');
+      const lockedState = page.locator('.footer-bar__status--warning');
       await expect(lockedState).toBeVisible();
     }
   });

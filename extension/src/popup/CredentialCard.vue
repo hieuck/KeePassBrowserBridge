@@ -39,7 +39,7 @@
         @copy="(...args) => $emit('copy', ...args)"
       />
       <div class="credential-card__actions">
-        <button v-if="canEdit" class="credential-card__edit-btn" size="small" @click="$emit('edit', entry)">
+        <button v-if="canEdit" class="credential-card__edit-btn" size="small" @click="emit('edit', entry)">
           <EditOutlined /> Edit
         </button>
       </div>

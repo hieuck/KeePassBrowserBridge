@@ -1,50 +1,37 @@
 <template>
   <div class="form">
     <header class="form__header">
-      <h2>Editing {{ entry.Title }}</h2>
-      <button type="button" class="form__close-btn" aria-label="Close form" @click="onCancel"><CloseOutlined /></button>
+      <h2>Editing {{ entry?.Title || '' }}</h2>
+      <button type="button" class="form__close-btn" aria-label="Close form" @click="onCancel">&#x2715;</button>
     </header>
     <div class="form__body">
       <div class="form__field">
         <label class="form__label">Title</label>
-        <input class="form__input" :class="{ 'form__input--error': validationErrors.Title }" :value="form.Title" @input="form.Title = $event.target.value" />
+        <input class="form__input" :class="{ 'form__input--error': validationErrors.Title }" v-model="form.Title" />
         <span v-if="validationErrors.Title" class="form__error">{{ validationErrors.Title }}</span>
       </div>
       <div class="form__field">
         <label class="form__label">URL</label>
-        <input class="form__input form__input--url" :class="{ 'form__input--error': validationErrors.Url }" :value="form.Url" @input="form.Url = $event.target.value" type="url" />
+        <input class="form__input form__input--url" :class="{ 'form__input--error': validationErrors.Url }" v-model="form.Url" type="url" />
         <span v-if="validationErrors.Url" class="form__error">{{ validationErrors.Url }}</span>
       </div>
       <div class="form__field">
         <label class="form__label">Username</label>
-        <input class="form__input" :value="form.UserName" @input="form.UserName = $event.target.value" />
+        <input class="form__input" v-model="form.UserName" />
       </div>
       <div class="form__field">
         <label class="form__label">Password</label>
         <div class="form__password-wrap">
-          <input class="form__input" :type="showPassword ? 'text' : 'password'" :value="form.Password" @input="form.Password = $event.target.value" />
+          <input class="form__input" :type="showPassword ? 'text' : 'password'" v-model="form.Password" />
           <button type="button" class="form__toggle-btn" @click="showPassword = !showPassword">
-            <EyeOutlined v-if="showPassword" /><EyeInvisibleOutlined v-else />
+            <span v-if="showPassword">&#x1F441;</span><span v-else>&#x1F575;</span>
           </button>
         </div>
       </div>
-      <div class="form__password-actions">
-        <button type="button" class="form__link-btn" @click="showGenerator = !showGenerator">
-          <KeyOutlined /> {{ showGenerator ? 'Hide' : 'Generate' }} strong password
-        </button>
-      </div>
-      <PasswordGenerator
-        v-if="showGenerator"
-        :visible="showGenerator"
-        :password="generatedPassword"
-        @fill-password="useGeneratedPassword"
-        @close="showGenerator = false"
-        @refresh="refreshPassword"
-        @copy="copyPassword"
-      />
+      <div class="form__password-actions"></div>
       <div class="form__field">
         <label class="form__label">Folder</label>
-        <input class="form__input" :value="form.Group" @input="form.Group = $event.target.value" />
+        <input class="form__input" v-model="form.Group" />
       </div>
       <div class="form__custom">
         <div class="form__custom-header">
@@ -52,9 +39,9 @@
           <button type="button" class="form__add-btn" @click="addCustomField"><PlusOutlined /> Add field</button>
         </div>
         <div v-for="(field, idx) in form.CustomFields" :key="idx" class="form__custom-row">
-          <input class="form__input" :value="field.Name" @input="field.Name = $event.target.value" placeholder="Name" />
+          <input class="form__input" v-model="field.Name" placeholder="Name" />
           <div class="form__password-wrap">
-            <input class="form__input" type="password" :value="field.Value" @input="field.Value = $event.target.value" placeholder="Value" />
+            <input class="form__input" type="password" v-model="field.Value" placeholder="Value" />
           </div>
           <button type="button" class="form__remove-btn" aria-label="Remove field" @click="removeCustomField(idx)"><DeleteOutlined /></button>
         </div>
@@ -69,7 +56,7 @@
 </template>
 
 <script setup>
-import { reactive, computed, ref, onMounted, onUnmounted } from 'vue';
+import { reactive, computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { CloseOutlined, KeyOutlined, PlusOutlined, DeleteOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons-vue';
 import PasswordGenerator from './PasswordGenerator.vue';
 import { isValidUrl, isNonEmpty } from '../../shared/validators.js';
@@ -78,39 +65,47 @@ import { generatePassword } from '../../shared/password-generator.js';
 const props = defineProps({ entry: { type: Object, required: true } });
 const emit = defineEmits(['save', 'cancel']);
 
-const original = {
-  Title: props.entry.Title || '',
-  Url: props.entry.Url || '',
-  UserName: props.entry.UserName || '',
-  Password: props.entry.Password || '',
-  Group: props.entry.Group || '',
-  CustomFields: JSON.parse(JSON.stringify(props.entry.CustomFields || [])),
-};
-
 const form = reactive({
-  Title: original.Title,
-  Url: original.Url,
-  UserName: original.UserName,
-  Password: original.Password,
-  Group: original.Group,
-  CustomFields: JSON.parse(JSON.stringify(props.entry.CustomFields || [])),
+  Title: '',
+  Url: '',
+  UserName: '',
+  Password: '',
+  Group: '',
+  CustomFields: [],
 });
+
+const snapshot = ref({ Title: '', Url: '', UserName: '', Password: '', Group: '', CustomFields: [] });
+
+watch(() => props.entry, (entry) => {
+  if (!entry) return;
+  const data = {
+    Title: entry.Title || '',
+    Url: entry.Url || '',
+    UserName: entry.UserName || '',
+    Password: entry.Password || '',
+    Group: entry.Group || '',
+    CustomFields: JSON.parse(JSON.stringify(entry.CustomFields || [])),
+  };
+  Object.assign(form, data);
+  snapshot.value = JSON.parse(JSON.stringify(data));
+}, { immediate: true });
 
 const showGenerator = ref(false);
 const generatedPassword = ref('');
 const showPassword = ref(false);
 
 const isDirty = computed(() => {
-  if (form.Title !== original.Title) return true;
-  if (form.Url !== original.Url) return true;
-  if (form.UserName !== original.UserName) return true;
-  if (form.Password !== original.Password) return true;
-  if (form.Group !== original.Group) return true;
-  const origLen = original.CustomFields.length;
+  const s = snapshot.value;
+  if (form.Title !== s.Title) return true;
+  if (form.Url !== s.Url) return true;
+  if (form.UserName !== s.UserName) return true;
+  if (form.Password !== s.Password) return true;
+  if (form.Group !== s.Group) return true;
+  const origLen = s.CustomFields.length;
   const formLen = form.CustomFields.length;
   if (origLen !== formLen) return true;
   for (let i = 0; i < origLen; i++) {
-    const o = original.CustomFields[i];
+    const o = s.CustomFields[i];
     const f = form.CustomFields[i];
     if (o.Name !== f.Name || o.Value !== f.Value) return true;
   }
@@ -142,6 +137,8 @@ function copyPassword() {
 }
 
 const canSave = computed(() => dirty.value && isValid.value && Boolean(form.Title.trim()));
+
+console.log('EditForm setup done, entry:', props.entry?.Title);
 
 function addCustomField() {
   form.CustomFields.push({ Name: '', Value: '', IsProtected: false });
@@ -185,11 +182,13 @@ function onSave() {
 }
 
 onMounted(() => {
+  console.log('EditForm mounted, entry:', props.entry?.Title);
   document.addEventListener('keydown', onKeydown);
   refreshPassword();
 });
 
 onUnmounted(() => {
+  console.log('EditForm unmounted');
   document.removeEventListener('keydown', onKeydown);
 });
 </script>
