@@ -175,7 +175,6 @@ function startEdit(entry) {
   editingEntry.value = entry;
   detailEntry.value = null;
   formMode.value = 'edit';
-  console.log('startEdit', entry?.Title);
 }
 
 function startNew() {
@@ -218,14 +217,22 @@ async function createLogin(login) {
 }
 
 function openSettings() {
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
-    chrome.runtime.openOptionsPage();
+  try {
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.openOptionsPage();
+    }
+  } catch (e) {
+    showToast(e.message, { variant: 'error' });
   }
 }
 
 function openClients() {
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
-    chrome.runtime.openOptionsPage();
+  try {
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.openOptionsPage();
+    }
+  } catch (e) {
+    showToast(e.message, { variant: 'error' });
   }
 }
 
@@ -237,6 +244,8 @@ function lock() {
     bridge.setLocked(true).then(() => {
       state.value.locked = true;
       showToast('KeePass locked (local)', { variant: 'info', duration: 2000 });
+    }).catch((e) => {
+      showToast(e.message, { variant: 'error' });
     });
   });
 }

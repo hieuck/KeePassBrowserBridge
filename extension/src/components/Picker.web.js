@@ -406,10 +406,11 @@ class KbbPicker extends HTMLElement {
   }
 
   _renderItem(cred, index) {
-    const initial = (cred.name || cred.username || '?').charAt(0).toUpperCase();
+    const initial = escapeHtml((cred.name || cred.username || '?').charAt(0).toUpperCase());
     const favicon = cred.url ? this._faviconUrl(cred.url) : null;
+    const escapedFavicon = escapeHtml(favicon || '');
     const avatar = favicon
-      ? `<img class="picker-avatar picker-avatar--favicon" src="${favicon}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${initial}</div>'" />`
+      ? `<img class="picker-avatar picker-avatar--favicon" src="${escapedFavicon}" alt="" />`
       : `<div class="picker-avatar">${initial}</div>`;
     const isExpanded = index === this._expandedIndex;
     return `

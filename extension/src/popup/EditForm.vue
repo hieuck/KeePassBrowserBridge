@@ -57,10 +57,8 @@
 
 <script setup>
 import { reactive, computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import { CloseOutlined, KeyOutlined, PlusOutlined, DeleteOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons-vue';
-import PasswordGenerator from './PasswordGenerator.vue';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { isValidUrl, isNonEmpty } from '../../shared/validators.js';
-import { generatePassword } from '../../shared/password-generator.js';
 
 const props = defineProps({ entry: { type: Object, required: true } });
 const emit = defineEmits(['save', 'cancel']);
@@ -90,8 +88,6 @@ watch(() => props.entry, (entry) => {
   snapshot.value = JSON.parse(JSON.stringify(data));
 }, { immediate: true });
 
-const showGenerator = ref(false);
-const generatedPassword = ref('');
 const showPassword = ref(false);
 
 const isDirty = computed(() => {
@@ -123,22 +119,7 @@ const validationErrors = computed(() => {
 
 const isValid = computed(() => !validationErrors.value.Title && !validationErrors.value.Url);
 
-function refreshPassword() {
-  generatedPassword.value = generatePassword();
-}
-
-function useGeneratedPassword() {
-  form.Password = generatedPassword.value;
-  showGenerator.value = false;
-}
-
-function copyPassword() {
-  navigator.clipboard.writeText(generatedPassword.value).catch(() => {});
-}
-
 const canSave = computed(() => dirty.value && isValid.value && Boolean(form.Title.trim()));
-
-console.log('EditForm setup done, entry:', props.entry?.Title);
 
 function addCustomField() {
   form.CustomFields.push({ Name: '', Value: '', IsProtected: false });
@@ -182,13 +163,10 @@ function onSave() {
 }
 
 onMounted(() => {
-  console.log('EditForm mounted, entry:', props.entry?.Title);
   document.addEventListener('keydown', onKeydown);
-  refreshPassword();
 });
 
 onUnmounted(() => {
-  console.log('EditForm unmounted');
   document.removeEventListener('keydown', onKeydown);
 });
 </script>
