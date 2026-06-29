@@ -1074,13 +1074,16 @@ function showInlinePicker(button, entries) {
       row.style.width = "100%";
       row.style.padding = "8px 12px";
       row.style.border = "none";
-      row.style.background = "transparent";
+      row.style.borderBottom = "1px solid #e2e8f0";
+      row.style.background = "#fff";
       row.style.cursor = "pointer";
       row.style.textAlign = "left";
       row.style.font = "13px/1.4 system-ui, sans-serif";
-      row.style.color = "var(--kbb-text, #1f2933)";
-      row.style.borderBottom = "1px solid var(--kbb-border, #e2e8f0)";
+      row.style.color = "#1f2933";
+      row.style.outline = "none";
       row.textContent = item.name + (item.username ? ` (${item.username})` : "");
+      row.addEventListener("mouseenter", () => { row.style.background = "#f1f5f9"; });
+      row.addEventListener("mouseleave", () => { row.style.background = "#fff"; });
       row.addEventListener("click", () => {
         rememberMultiStepCredentialIfNeeded(fillCredentialForButton(button, item._entry), item._entry);
         acknowledgeFilledEntry(item._entry);
@@ -1097,10 +1100,12 @@ function showInlinePicker(button, entries) {
     closeBtn.style.width = "100%";
     closeBtn.style.padding = "6px 12px";
     closeBtn.style.border = "none";
-    closeBtn.style.background = "transparent";
+    closeBtn.style.background = "#f9fafb";
     closeBtn.style.cursor = "pointer";
     closeBtn.style.font = "12px system-ui, sans-serif";
     closeBtn.style.color = "#667085";
+    closeBtn.addEventListener("mouseenter", () => { closeBtn.style.background = "#f1f5f9"; });
+    closeBtn.addEventListener("mouseleave", () => { closeBtn.style.background = "#f9fafb"; });
     closeBtn.addEventListener("click", closeInlinePicker);
     picker.appendChild(closeBtn);
     document.documentElement.appendChild(picker);
