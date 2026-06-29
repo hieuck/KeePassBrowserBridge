@@ -40,6 +40,6 @@ class KbbButton extends HTMLElement {
   }
 }
 
-if (typeof customElements !== 'undefined' && !customElements.get('kbb-button')) {
+if (typeof customElements !== 'undefined' && customElements && !customElements.get('kbb-button')) {
   customElements.define('kbb-button', KbbButton);
 }
