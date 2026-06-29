@@ -66,20 +66,30 @@ describe('build-release.ps1 - Firefox extension files', () => {
       'commonExtensionFiles must include _plugin-vue_export-helper.js — popup.js imports it at runtime');
   });
 
+  it('should include dist/vue-vendor.js in common extension files', () => {
+    const commonStart = source.indexOf('$commonExtensionFiles = @(');
+    const commonBlock = source.slice(commonStart, source.indexOf('$chromeExtensionFiles'));
+    assert.ok(commonBlock.includes('vue-vendor.js'),
+      'commonExtensionFiles must include vue-vendor.js — Vue runtime needed by popup');
+  });
+
+  it('should include dist/icons-vendor.js in common extension files', () => {
+    const commonStart = source.indexOf('$commonExtensionFiles = @(');
+    const commonBlock = source.slice(commonStart, source.indexOf('$chromeExtensionFiles'));
+    assert.ok(commonBlock.includes('icons-vendor.js'),
+      'commonExtensionFiles must include icons-vendor.js — ant-design icons needed by popup');
+  });
+
   it('should include dist/antd-vendor.js in common extension files', () => {
     const commonStart = source.indexOf('$commonExtensionFiles = @(');
-    const afterCommonStart = source.slice(commonStart);
-    const commonEnd = afterCommonStart.indexOf('$chromeExtensionFiles');
-    const commonBlock = afterCommonStart.slice(0, commonEnd);
+    const commonBlock = source.slice(commonStart, source.indexOf('$chromeExtensionFiles'));
     assert.ok(commonBlock.includes('antd-vendor.js'),
-      'commonExtensionFiles must include antd-vendor.js — popup.js imports it at runtime');
+      'commonExtensionFiles must include antd-vendor.js — needed by options page');
   });
 
   it('should include dist/antd-vendor.css in common extension files', () => {
     const commonStart = source.indexOf('$commonExtensionFiles = @(');
-    const afterCommonStart = source.slice(commonStart);
-    const commonEnd = afterCommonStart.indexOf('$chromeExtensionFiles');
-    const commonBlock = afterCommonStart.slice(0, commonEnd);
+    const commonBlock = source.slice(commonStart, source.indexOf('$chromeExtensionFiles'));
     assert.ok(commonBlock.includes('antd-vendor.css'),
       'commonExtensionFiles must include antd-vendor.css — antd component styles');
   });
@@ -91,6 +101,16 @@ describe('verify-release-artifacts.ps1 - extension ZIP contents', () => {
   it('should expect dist/_plugin-vue_export-helper.js in the extension package', () => {
     assert.ok(verifySource.includes('dist/_plugin-vue_export-helper.js'),
       'verify-release-artifacts must expect _plugin-vue_export-helper.js in the ZIP');
+  });
+
+  it('should expect dist/vue-vendor.js in the extension package', () => {
+    assert.ok(verifySource.includes('dist/vue-vendor.js'),
+      'verify-release-artifacts must expect vue-vendor.js in the ZIP');
+  });
+
+  it('should expect dist/icons-vendor.js in the extension package', () => {
+    assert.ok(verifySource.includes('dist/icons-vendor.js'),
+      'verify-release-artifacts must expect icons-vendor.js in the ZIP');
   });
 
   it('should expect dist/antd-vendor.js in the extension package', () => {
