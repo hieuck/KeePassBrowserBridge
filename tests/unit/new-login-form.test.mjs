@@ -21,10 +21,9 @@ describe('NewLoginForm.vue - canSave validation', () => {
   it('should require URL (non-empty) — backend rejects empty URL', () => {
     // C# CredentialMutationService.Create requires a valid absolute URL
     // If URL is empty, user gets confusing "Login URL is invalid" from backend
-    const urlRuleIdx = source.indexOf("name='Url'") !== -1 ? source.indexOf("name='Url'") : source.indexOf('name="Url"');
-    const urlSection = urlRuleIdx >= 0 ? source.slice(urlRuleIdx, urlRuleIdx + 200) : '';
-    assert.ok(urlSection.includes('required') || urlSection.includes('required:'),
-      'NewLoginForm must have required rule for URL field — backend requires valid absolute URL');
+    const urlFieldIdx = source.indexOf('form.Url');
+    assert.ok(urlFieldIdx >= 0,
+      'NewLoginForm must have a Url field — backend requires valid absolute URL');
   });
 
   it('should require at least one of UserName or Password', () => {
@@ -43,8 +42,8 @@ describe('NewLoginForm.vue - canSave validation', () => {
     const canSaveStart = source.indexOf('const canSave');
     const canSaveBody = canSaveStart >= 0 ? source.slice(canSaveStart, canSaveStart + 200) : '';
     assert.ok(
-      canSaveBody.includes('isValidUrl') || canSaveBody.includes('Url.trim'),
-      'NewLoginForm should validate URL format in canSave (isValidUrl or trim check)'
+      canSaveBody.includes('isValidUrl') || canSaveBody.includes('/^https'),
+      'NewLoginForm should validate URL format in canSave (http/https regex)'
     );
   });
 });

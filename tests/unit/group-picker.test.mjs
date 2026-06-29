@@ -23,8 +23,8 @@ describe('NewLoginForm.vue - group picker', () => {
       'NewLoginForm should accept a groups prop for the group picker');
   });
 
-  it('should render a select or tree for group picking', () => {
-    assert.ok(source.includes('a-tree-select') || source.includes('a-select') || source.includes('a-input'),
+  it('should render a select or input for group picking', () => {
+    assert.ok(source.includes('<select') || source.includes('<input'),
       'NewLoginForm should have a group/folder selector or input');
   });
 });
