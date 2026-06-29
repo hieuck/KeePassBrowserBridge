@@ -851,8 +851,14 @@ async function fillFromInlineButton(button) {
     try {
       await chrome.runtime.sendMessage({ type: "KBB_PING" });
     } catch (wakeError) {
-      if (String(wakeError).includes('context invalidated')) {
+      const wakeMsg = String(wakeError);
+      if (wakeMsg.includes('context invalidated')) {
         showInlineErrorPicker(button, "Extension was updated or reloaded. Please refresh the page.");
+        setInlineButtonState(button, "!");
+        return;
+      }
+      if (wakeMsg.includes('Could not establish connection')) {
+        showInlineErrorPicker(button, "Extension not ready. Please open the popup to activate.");
         setInlineButtonState(button, "!");
         return;
       }
@@ -890,10 +896,10 @@ async function fillFromInlineButton(button) {
     setInlineButtonState(button, "ok");
   } catch (error) {
     const message = error && error.message ? error.message : String(error);
-    if (message.includes("'get'")) {
-      showInlineErrorPicker(button, "Browser API unavailable on this page.");
-    } else if (message.includes('context invalidated') || message.includes('Extension context')) {
-      showInlineErrorPicker(button, "Please open the extension popup once to activate, then try again.");
+    if (message.includes('context invalidated') || message.includes('Extension context')) {
+      showInlineErrorPicker(button, "Extension was updated. Please refresh this page.");
+    } else if (message.includes('get') && message.includes('storage')) {
+      showInlineErrorPicker(button, "Storage API unavailable. Try opening the extension popup.");
     } else {
       showInlineErrorPicker(button, message);
     }

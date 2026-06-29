@@ -146,6 +146,9 @@ export function scoreOtpCandidate(input, fieldTextFn = fieldText) {
   if (/nhập mã|nhap ma|mã xác minh|ma xac minh|xác minh|xac minh|mã xác thực|ma xac thuc/.test(text))
     score += 90;
   if (/\bcode\b|\btoken\b|\bpin\b/.test(text)) score += 45;
+  // Strong negative signals for non-OTP contexts
+  if (/\bpost(al)?\s*code\b|\bzip\b|\barea\s*code\b|\bcvv\b|\bcvc\b|\bsecurity\s*code\b/i.test(text))
+    score -= 999;
   if (inputMode === 'numeric' && score > 0) score += 10;
   if (/\bsearch\b/i.test(text))
     score -= 999;
