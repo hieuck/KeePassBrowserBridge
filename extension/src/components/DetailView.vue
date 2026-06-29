@@ -1,9 +1,8 @@
 <template>
   <div class="detail-view" :data-testid="'detail-view'">
-    <a-button type="primary" block @click="$emit('fill', entry, 'form')">
-      <template #icon><CheckOutlined /></template>
-      Fill form
-    </a-button>
+    <button type="button" class="detail-view__fill-btn" @click="$emit('fill', entry, 'form')">
+      <CheckOutlined /> Fill form
+    </button>
     <div v-if="entry.UserName || entry.Password || entry.OneTimePassword" class="detail-view__fields">
       <div v-if="entry.UserName" class="detail-view__field">
         <span class="detail-view__field-label">Username</span>
@@ -67,5 +66,7 @@ const customFieldRows = computed(() => {
 .detail-view__field-value { flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-mono); }
 .detail-view__icon-btn { background: transparent; border: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary); border-radius: var(--radius-sm); flex-shrink: 0; transition: background var(--transition-fast), color var(--transition-fast); }
 .detail-view__icon-btn:hover { background: var(--color-surface); color: var(--color-accent); }
+.detail-view__fill-btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); padding: 6px 16px; font-size: var(--text-sm); font-family: inherit; cursor: pointer; border: none; border-radius: var(--radius-md); background: var(--color-accent); color: #fff; font-weight: 500; transition: opacity var(--transition-fast); }
+.detail-view__fill-btn:hover { opacity: 0.85; }
 .detail-view__custom-header { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-1); }
 </style>

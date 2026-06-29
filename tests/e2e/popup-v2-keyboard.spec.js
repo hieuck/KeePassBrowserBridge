@@ -194,7 +194,7 @@ test.describe('Popup v2 keyboard navigation', () => {
     });
     await page.goto('/extension/popup.html');
     await page.waitForTimeout(2000);
-    const badges = page.locator('.ant-tag');
+    const badges = page.locator('.credential-card__usage');
     await expect(badges.first()).toContainText('5');
   });
 });
