@@ -1,6 +1,6 @@
 <template>
   <a-config-provider :theme="antdThemeConfig">
-    <div class="popup">
+    <div v-if="themeReady" class="popup">
     <PopupHeader />
     <SearchBar
       v-model="searchQuery"
@@ -76,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { theme as antdTheme } from 'ant-design-vue';
 import { useBridge } from '../composables/useBridge.js';
 import { useTheme } from '../composables/useTheme.js';
@@ -121,6 +121,7 @@ const showPairDialog = ref(false);
 const pairingSessionId = ref('');
 const pairingExpiresAt = ref(0);
 const groupsData = ref([]);
+const themeReady = ref(false);
 
 const canWrite = computed(() => permissions.value.includes('write'));
 
@@ -322,6 +323,9 @@ async function refreshState() {
 }
 
 onMounted(() => {
+  nextTick(() => {
+    themeReady.value = true;
+  });
   refreshState();
 });
 </script>
