@@ -9,27 +9,26 @@
       </p>
 
       <div v-if="pairingActive" class="pair-code-input">
-        <a-input
-          v-model:value="code"
+        <input
+          v-model="code"
           placeholder="Enter 6-digit pairing code"
-          :maxlength="6"
-          size="large"
-          style="text-align: center; font-size: 20px; letter-spacing: 4px;"
+          maxlength="6"
+          class="pair-input"
           @keyup.enter="submitCode"
         />
         <p v-if="expiresAt" class="pair-expiry">Expires in {{ timeLeft }} seconds</p>
       </div>
 
       <div class="pair-actions">
-        <a-button v-if="pairingActive" type="primary" :disabled="code.length < 6" :loading="loading" @click="submitCode">
-          <template #icon><CheckOutlined /></template>
+        <button v-if="pairingActive" type="button" class="pair-btn pair-btn--primary" :disabled="code.length < 6" @click="submitCode">
+          <CheckOutlined />
           Complete Pairing
-        </a-button>
-        <a-button v-else type="primary" @click="startPairing" :loading="loading">
-          <template #icon><LinkOutlined /></template>
+        </button>
+        <button v-else type="button" class="pair-btn pair-btn--primary" @click="startPairing">
+          <LinkOutlined />
           Start Pairing
-        </a-button>
-        <a-button @click="$emit('close')">Cancel</a-button>
+        </button>
+        <button type="button" class="pair-btn" @click="$emit('close')">Cancel</button>
       </div>
     </div>
   </div>
@@ -88,6 +87,26 @@ onUnmounted(() => clearInterval(timer));
 .pair-title { font-size: var(--text-h2); font-weight: 700; color: var(--color-text); margin: 0; }
 .pair-desc { font-size: var(--text-sm); color: var(--color-text-secondary); margin: 0; line-height: 1.5; }
 .pair-code-input { width: 100%; }
+.pair-input {
+  width: 100%; padding: 10px; font-size: 20px; font-family: inherit;
+  text-align: center; letter-spacing: 4px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-bg); color: var(--color-text); outline: none;
+  transition: border-color var(--transition-fast); box-sizing: border-box;
+}
+.pair-input:focus { border-color: var(--color-accent); }
 .pair-expiry { font-size: var(--text-xs); color: var(--color-danger); margin: var(--space-1) 0 0; }
 .pair-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+.pair-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; font-size: var(--text-sm); font-family: inherit;
+  cursor: pointer; border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); background: transparent; color: var(--color-text);
+  transition: all var(--transition-fast);
+}
+.pair-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.pair-btn--primary { border: none; background: var(--color-accent); color: #fff; font-weight: 500; }
+.pair-btn--primary:hover:not(:disabled) { opacity: 0.85; color: #fff; }
+:root[data-theme="dark"] .pair-btn--primary { background: #2563eb; }
+.pair-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

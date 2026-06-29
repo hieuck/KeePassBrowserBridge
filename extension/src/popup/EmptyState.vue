@@ -1,20 +1,21 @@
 <template>
   <div class="empty-state" :class="`empty-state--${variant}`">
-    <a-empty :image="Empty.PRESENTED_IMAGE_SIMPLE">
-      <template #description>
-        <h3 class="empty-state__title">{{ title }}</h3>
-        <p v-if="description" class="empty-state__description">{{ description }}</p>
-        <a-button v-if="action" type="primary" size="small" @click="$emit('action')">
-          {{ actionLabel }}
-        </a-button>
-      </template>
-    </a-empty>
+    <div class="empty-state__icon" aria-hidden="true">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="1.5" />
+        <path d="M16 24h16M24 16v16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </div>
+    <h3 class="empty-state__title">{{ title }}</h3>
+    <p v-if="description" class="empty-state__description">{{ description }}</p>
+    <button v-if="action" type="button" class="empty-state__action" @click="$emit('action')">
+      {{ actionLabel }}
+    </button>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { Empty } from 'ant-design-vue';
 
 const props = defineProps({
   variant: { type: String, default: 'empty' },
@@ -44,6 +45,10 @@ const actionLabel = computed(() => '+ Add your first login');
 
 <style scoped>
 .empty-state { text-align: center; padding: var(--space-6) var(--space-4) var(--space-8); color: var(--color-text-secondary); }
+.empty-state__icon { margin-bottom: var(--space-3); color: var(--color-text-secondary); }
 .empty-state__title { font-size: var(--text-h2); font-weight: 600; color: var(--color-text); margin: 0 0 var(--space-1); }
 .empty-state__description { font-size: var(--text-sm); color: var(--color-text-secondary); margin: var(--space-2) auto var(--space-4); line-height: var(--line-loose); max-width: 260px; }
+.empty-state__action { display: inline-block; padding: 6px 16px; font-size: var(--text-sm); font-family: inherit; cursor: pointer; border: none; border-radius: var(--radius-md); background: var(--color-accent); color: #fff; font-weight: 500; transition: opacity var(--transition-fast); }
+.empty-state__action:hover { opacity: 0.85; }
+:root[data-theme="dark"] .empty-state__action { background: #2563eb; }
 </style>

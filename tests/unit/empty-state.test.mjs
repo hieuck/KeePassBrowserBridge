@@ -12,19 +12,20 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 
 const source = fs.readFileSync(path.join(projectRoot, 'extension', 'src', 'popup', 'EmptyState.vue'), 'utf8');
 
-describe('EmptyState.vue - ant-design-vue integration', () => {
-  it('should import Empty from ant-design-vue', () => {
-    assert.ok(source.includes("import { Empty } from 'ant-design-vue'"),
-      'Missing Empty import from ant-design-vue');
+describe('EmptyState.vue - native HTML rendering', () => {
+  it('should use scoped CSS class for state container', () => {
+    assert.ok(source.includes('class="empty-state"'),
+      'Missing scoped empty-state class');
   });
 
-  it('should use Empty.PRESENTED_IMAGE_SIMPLE', () => {
-    assert.ok(source.includes('Empty.PRESENTED_IMAGE_SIMPLE'),
-      'Missing Empty.PRESENTED_IMAGE_SIMPLE usage');
+  it('should NOT import ant-design-vue Empty', () => {
+    assert.ok(!source.includes("from 'ant-design-vue'"),
+      'EmptyState must NOT import from ant-design-vue — should use native HTML');
   });
 
-  it('should wrap content in a-empty component', () => {
-    assert.ok(source.includes('<a-empty'), 'Missing a-empty component');
+  it('should use native button for action', () => {
+    assert.ok(source.includes('<button') || source.includes('@click'),
+      'Must use native <button> instead of a-button');
   });
 });
 
@@ -69,6 +70,6 @@ describe('EmptyState.vue - state-specific messages', () => {
 
   it('should show action button only for empty variant', () => {
     assert.ok(source.includes("variant === 'empty'"), 'Missing empty variant for action');
-    assert.ok(source.includes("a-button"), 'Missing action button');
+    assert.ok(source.includes('<button'), 'Missing native action button');
   });
 });
