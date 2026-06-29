@@ -897,10 +897,13 @@ async function fillFromInlineButton(button) {
   } catch (error) {
     const message = error && error.message ? error.message : String(error);
     if (message.includes('context invalidated') || message.includes('Extension context')) {
+      console.warn('[KeePass] Extension context invalidated — refresh page');
       showInlineErrorPicker(button, "Extension was updated. Please refresh this page.");
     } else if (message.includes('get') && message.includes('storage')) {
+      console.error('[KeePass] Storage API error:', message);
       showInlineErrorPicker(button, "Storage API unavailable. Try opening the extension popup.");
     } else {
+      console.warn('[KeePass] Fill error:', message);
       showInlineErrorPicker(button, message);
     }
     setInlineButtonState(button, "!");

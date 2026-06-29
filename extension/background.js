@@ -108,10 +108,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     .then(() => assertAllowedSender(sender))
     .then(() => handleMessage(message))
     .then((response) => sendResponse({ ok: true, response }))
-    .catch((error) => sendResponse({
-      ok: false,
-      error: error && error.message ? error.message : String(error)
-    }));
+    .catch((error) => {
+      const msg = error && error.message ? error.message : String(error);
+      console.error('[KeePass BG] Error handling', message?.type, ':', msg);
+      sendResponse({ ok: false, error: msg });
+    });
 
   return true;
 });
