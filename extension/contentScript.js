@@ -1060,7 +1060,7 @@ function showInlinePicker(button, entries) {
     return true;
   };
   if (mountPicker()) return;
-  if (customElements.whenDefined) {
+  if (typeof customElements !== 'undefined' && customElements && customElements.whenDefined) {
     customElements
       .whenDefined("kbb-picker")
       .then(() => {
