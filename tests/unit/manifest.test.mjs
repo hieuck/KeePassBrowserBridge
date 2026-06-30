@@ -109,7 +109,7 @@ assert.equal(ciWorkflow.includes('.\\scripts\\verify.ps1'), true, 'CI workflow s
 assert.equal(ciWorkflow.includes('.\\scripts\\build-release.ps1'), true, 'CI workflow should build release artifacts with the release packaging script');
 assert.equal(ciWorkflow.includes('-RequireCleanSource'), true, 'CI workflow should exercise the clean-source release gate');
 assert.equal(ciWorkflow.includes('.\\scripts\\verify-release-artifacts.ps1'), true, 'CI workflow should verify release artifacts with the release artifact verifier');
-assert.equal(ciWorkflow.includes('actions/upload-artifact@v4'), true, 'CI workflow should upload the verified release artifact bundle');
+assert.ok(ciWorkflow.includes('actions/upload-artifact@v4') || ciWorkflow.includes('actions/upload-artifact@v7'), 'CI workflow should upload the verified release artifact bundle');
 assert.equal(ciWorkflow.includes('Package browser extensions'), false, 'CI workflow should not use the obsolete manual extension packaging step');
 assert.equal(ciWorkflow.includes('KeePassBrowserBridge-chrome-extension-ci.zip'), false, 'CI workflow should not create ad hoc CI-only extension ZIP names');
 assert.equal(ciWorkflow.includes('${{ github.workspace }}\\tools'), false, 'CI workflow should keep downloaded KeePass outside the source tree before clean-source release builds');
