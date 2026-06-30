@@ -57,7 +57,7 @@ jobs:
 
       - name: Install Node dependencies
         shell: pwsh
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Validate release version
         shell: pwsh

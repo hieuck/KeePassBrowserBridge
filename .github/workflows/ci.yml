@@ -31,7 +31,7 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps --legacy-peer-deps
       - run: npm run lint
 
   unit:
@@ -48,7 +48,7 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm test
 
   coverage:
@@ -65,7 +65,7 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run test:coverage:ci
 
   dotnet:
@@ -128,7 +128,7 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Install Playwright
         run: npx playwright install ${{ matrix.browser }} --with-deps
       - name: Build extension
@@ -208,7 +208,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Build extension
         run: |
           Set-Location extension
@@ -236,7 +236,7 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Install Playwright
         run: npx playwright install chromium firefox --with-deps
       - name: Build extension
