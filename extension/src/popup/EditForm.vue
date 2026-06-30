@@ -108,7 +108,7 @@ const isDirty = computed(() => {
   return false;
 });
 
-const dirty = computed(isDirty);
+const dirty = isDirty;
 
 const validationErrors = computed(() => {
   const e = { Title: '', Url: '' };

@@ -1,53 +1,73 @@
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const __filename = (() => {
-  try { return fileURLToPath(import.meta.url); }
-  catch { return path.join(process.cwd(), 'tests', 'unit', 'useToast.test.mjs'); }
-})();
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..', '..');
-
-const source = fs.readFileSync(path.join(projectRoot, 'extension', 'src', 'composables', 'useToast.js'), 'utf8');
-
-describe('useToast.js - show function', () => {
-  it('should export useToast function', () => {
-    assert.ok(source.includes('export function useToast()'), 'Missing useToast export');
+describe('useToast', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    vi.useFakeTimers();
   });
 
-  it('should return show function', () => {
-    assert.ok(source.includes('return { show }'), 'Missing show return');
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it('should create DOM toast element', () => {
-    assert.ok(source.includes('createElement'), 'Must create DOM element for toast');
+  it('should export useToast function', async () => {
+    const mod = await import('../../extension/src/composables/useToast.js');
+    expect(typeof mod.useToast).toBe('function');
   });
 
-  it('should handle error variant', () => {
-    assert.ok(source.includes("variant === 'error'"), 'Missing error variant handling');
+  it('should return show function', async () => {
+    const { useToast } = await import('../../extension/src/composables/useToast.js');
+    const toast = useToast();
+    expect(typeof toast.show).toBe('function');
   });
 
-  it('should handle success variant', () => {
-    assert.ok(source.includes("variant === 'success'"), 'Missing success variant handling');
+  it('should create toast element in DOM', async () => {
+    const { useToast } = await import('../../extension/src/composables/useToast.js');
+    const toast = useToast();
+    toast.show('Test message');
+    const el = document.body.querySelector('div');
+    expect(el).toBeDefined();
+    expect(el.textContent).toBe('Test message');
   });
 
-  it('should handle warning variant', () => {
-    assert.ok(source.includes("variant === 'warning'"), 'Missing warning variant handling');
+  it('should apply error variant styling', async () => {
+    const { useToast } = await import('../../extension/src/composables/useToast.js');
+    const toast = useToast();
+    toast.show('Error!', { variant: 'error' });
+    const el = document.body.querySelector('div');
+    expect(el.style.background).toBe('rgb(239, 68, 68)');
   });
 
-  it('should default to info variant', () => {
-    assert.ok(source.includes("'info'"), 'Missing info variant default');
+  it('should apply success variant styling', async () => {
+    const { useToast } = await import('../../extension/src/composables/useToast.js');
+    const toast = useToast();
+    toast.show('Saved!', { variant: 'success' });
+    const el = document.body.querySelector('div');
+    expect(el.style.background).toBe('rgb(16, 185, 129)');
   });
 
-  it('should accept duration option in ms', () => {
-    assert.ok(source.includes('options.duration'), 'Missing duration option handling');
+  it('should apply warning variant styling', async () => {
+    const { useToast } = await import('../../extension/src/composables/useToast.js');
+    const toast = useToast();
+    toast.show('Warning!', { variant: 'warning' });
+    const el = document.body.querySelector('div');
+    expect(el.style.background).toBe('rgb(245, 158, 11)');
   });
 
-  it('should default duration to 4 seconds', () => {
-    // 4s = 4000ms default
-    assert.ok(source.includes('4') || source.includes('4000'),
-      'Missing default duration of 4 seconds');
+  it('should default to info variant', async () => {
+    const { useToast } = await import('../../extension/src/composables/useToast.js');
+    const toast = useToast();
+    toast.show('Info');
+    const el = document.body.querySelector('div');
+    expect(el.style.background).toBe('rgb(59, 130, 246)');
+  });
+
+  it('should remove toast after duration', async () => {
+    const { useToast } = await import('../../extension/src/composables/useToast.js');
+    const toast = useToast();
+    toast.show('Brief', { duration: 100 });
+    expect(document.body.querySelector('div')).toBeDefined();
+    vi.advanceTimersByTime(300);
+    expect(document.body.querySelector('div')).toBeNull();
   });
 });

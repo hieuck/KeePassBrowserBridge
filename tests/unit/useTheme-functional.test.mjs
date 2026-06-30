@@ -1,6 +1,8 @@
-import { describe, it, assert, beforeEach } from 'vitest';
+import { describe, it, assert, beforeEach, vi } from 'vitest';
 import { nextTick } from 'vue';
 import { useTheme } from '../../extension/src/composables/useTheme.js';
+
+vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 describe('useTheme', () => {
   beforeEach(async () => {
@@ -71,4 +73,30 @@ describe('useTheme', () => {
     assert.equal(localStorage.getItem('kbb-theme'), 'dark');
   });
 
+  it('should detect dark system preference', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      value: vi.fn().mockImplementation(query => ({
+        matches: query === '(prefers-color-scheme: dark)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+      writable: true,
+      configurable: true,
+    });
+    const saved = localStorage.getItem('kbb-theme');
+    localStorage.removeItem('kbb-theme');
+    vi.resetModules();
+    const mod = await import('../../extension/src/composables/useTheme.js');
+    const { resolved } = mod.useTheme();
+    assert.equal(resolved.value, 'dark');
+    if (saved !== null) localStorage.setItem('kbb-theme', saved);
+  });
+
+  it('should handle missing localStorage gracefully', () => {
+    const saved = globalThis.localStorage;
+    delete globalThis.localStorage;
+    const { theme } = useTheme();
+    assert.ok(['light', 'dark', 'system'].includes(theme.value));
+    globalThis.localStorage = saved;
+  });
 });

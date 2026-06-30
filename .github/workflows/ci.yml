@@ -108,9 +108,13 @@ jobs:
           }
 
   e2e:
-    name: E2E tests
+    name: E2E tests (${{ matrix.browser }})
     runs-on: windows-latest
-    continue-on-error: true
+    continue-on-error: ${{ matrix.browser != 'chromium' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, msedge, webkit]
     env:
       PW_SNAPSHOT_UPDATE: ${{ vars.UPDATE_SNAPSHOTS || '' }}
     steps:
@@ -126,14 +130,14 @@ jobs:
           restore-keys: ${{ runner.os }}-npm-
       - run: npm ci
       - name: Install Playwright
-        run: npx playwright install chromium --with-deps
+        run: npx playwright install ${{ matrix.browser }} --with-deps
       - name: Build extension
         run: npm run build:all
       - name: Start dev server
         run: Start-Job -ScriptBlock { node "$env:GITHUB_WORKSPACE/tests/e2e/server.mjs" }; Start-Sleep 3
         shell: pwsh
       - name: E2E tests
-        run: npx playwright test tests/e2e/user-journey.spec.js tests/e2e/edit-flow.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=chromium --reporter=line
+        run: npx playwright test tests/e2e/user-journey.spec.js tests/e2e/edit-flow.spec.js tests/visual/ tests/accessibility/ tests/e2e/end-user-audit.spec.js --project=${{ matrix.browser }} --reporter=line
 
   csharp-tests:
     name: C# bridge tests

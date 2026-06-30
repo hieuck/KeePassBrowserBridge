@@ -62,4 +62,23 @@ describe('useI18n', () => {
     assert.equal(typeof mod.i18n.t, 'function');
     assert.equal(mod.i18n.t('hello'), 'Hello');
   });
+
+  it('should fall back to browser.i18n when chrome.i18n is missing', async () => {
+    const saved = globalThis.chrome.i18n;
+    delete globalThis.chrome.i18n;
+    globalThis.browser = { i18n: { getMessage: () => 'from-browser' } };
+    const mod = await import('../../extension/src/composables/useI18n.js');
+    assert.equal(mod.i18n.t('test'), 'from-browser');
+    globalThis.chrome.i18n = saved;
+    delete globalThis.browser;
+  });
+
+  it('should return key when both i18n APIs are unavailable', async () => {
+    const saved = globalThis.chrome.i18n;
+    delete globalThis.chrome.i18n;
+    delete globalThis.browser;
+    const mod = await import('../../extension/src/composables/useI18n.js');
+    assert.equal(mod.i18n.t('fallbackKey'), 'fallbackKey');
+    globalThis.chrome.i18n = saved;
+  });
 });

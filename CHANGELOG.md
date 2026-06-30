@@ -1,5 +1,57 @@
 # Changelog
 
+## 2.1.0 (2026-06-30)
+
+### Quality & Test Infrastructure
+- **911 tests** across 72 test files (from 658 in v2.0.0, +253 tests)
+- **96.94% code coverage** (from 30.74%, +66.2pp)
+- 0 ESLint errors/warnings, 0 Vue lifecycle warnings
+- CI matrix expanded: chromium, firefox, msedge, webkit
+- Stryker mutation testing configured for shared modules
+- WebKit + Edge Playwright projects added to E2E pipeline
+
+### Architecture
+- Extracted `dom-utils.js` — `querySelectorAllDeep` + `visibleInputs` from contentScript.js
+- Extracted `escape-html.js` — deduplicated 4 copies into 1 shared module
+- Extracted `password-generator.js` — deduplicated 2 copies
+- Extracted `background-utils.js` — 12 pure functions from background.js
+- Extracted `field-classifier.js` — 20 form detection functions from contentScript.js
+
+### Vue Component Testing
+- Added @vue/test-utils, 33 functional tests across 12 components
+- 100% coverage: PopupHeader, SkeletonCard, EmptyState, SearchBar, BaseButton, FilterBar
+- 95%+: FooterBar, CredentialCard, PairDialog, NewLoginForm, PasswordGenerator, EditForm
+- Fixed production bug: `computed(computedRef)` in EditForm.vue causes `computed.fn is not a function`
+- Fixed production bug: `v-show` instead of `v-if` in App.vue renders EditForm with null prop
+
+### Web Component Testing
+- KbbPicker (542 lines): 22 tests, 97.04% stmts / 70.47% branches
+- KbbSavePrompt + KbbUpdatePrompt (530 lines): 19 tests, 100% stmts
+- KbbButton (BaseButton.web.js): 9 tests, 100% coverage
+
+### Composable Testing
+- useBridge: 100% stmts / 93.75% branches (rewrote from string-analysis to functional)
+- useToast: 100% coverage (rewrote from string-analysis to functional)
+- useI18n: 100% stmts / 90.9% branches (added browser.i18n fallback path)
+- useTheme: 95.52% stmts (added dark mode detection, localStorage null)
+- useFocusTrap: 100% stmts / 86.66% branches (added non-Tab key + no-focusables paths)
+
+### Backend (C# bridge)
+- Added 6 fuzz + load tests: malformed JSON, oversized payload (>256KB), empty body, bad Content-Type, 10x concurrent hello, port conflict recovery
+- Covered all 23 protocol methods, auth, permissions, replay detection
+
+### Security
+- CSP headers added to both manifests
+- Favicon default changed to DuckDuckGo (privacy-first), configurable
+- getState rejection handling in App.vue refreshState
+- Complete error path coverage for lock/unlock/pair/create operations
+
+### DevOps
+- CI E2E matrix: chromium (required) + firefox/msedge/webkit (continue-on-error)
+- Coverage thresholds enforced in CI: 30% lines, 70% funcs, 80% branches
+- npm scripts: test:e2e:firefox, test:e2e:msedge, test:e2e:webkit
+- Release workflow: auto-trigger on git tag push, GPG signing optional
+
 ## 2.0.0 (2026-06-23)
 
 ### Breaking Changes

@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "extension/shared/*.js",
+    "tests/**/*.test.mjs",
+    "!extension/shared/design-tokens.js",
+    "!extension/shared/storage.js",
+    "!extension/shared/field-classifier.js"
+  ],
+  "vitest": {
+    "configFile": "vitest.config.js"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 50
+  },
+  "timeoutMS": 30000,
+  "reporters": ["html", "clear-text", "progress"],
+  "tempDir": "stryker-tmp"
+}

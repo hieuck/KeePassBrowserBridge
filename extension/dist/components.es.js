@@ -26,11 +26,11 @@ const x = {
   download: "M7.47 10.78a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L5.28 6.47a.75.75 0 0 0-1.06 1.06l3.25 3.25zM3.75 13.25a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5z",
   upload: "M8.53 1.22a.75.75 0 0 0-1.06 0L4.22 4.47a.75.75 0 0 0 1.06 1.06l2.47-2.47v6.69a.75.75 0 0 0 1.5 0V3.06l2.47 2.47a.75.75 0 1 0 1.06-1.06L8.53 1.22zM3.75 11.75a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5z"
 };
-function _(l, e) {
+function _(c, e) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="${e}"/></svg>`;
 }
 const a = Object.fromEntries(
-  Object.entries(x).map(([l, e]) => [l, _(l, e)])
+  Object.entries(x).map(([c, e]) => [c, _(c, e)])
 );
 a.key;
 a.lock;
@@ -58,22 +58,22 @@ a.moon;
 a.monitor;
 a.download;
 a.upload;
-function k(l = "kbb") {
-  if (!(typeof customElements > "u"))
+function k(c = "kbb") {
+  if (!(typeof customElements > "u" || !customElements))
     for (const [e, t] of Object.entries(a)) {
-      const r = `${l}-icon-${e}`;
+      const r = `${c}-icon-${e}`;
       if (customElements.get(r)) continue;
       class o extends HTMLElement {
         connectedCallback() {
-          const s = this.getAttribute("size") || 16;
-          this.innerHTML = t.replace('width="16"', `width="${s}"`).replace('height="16"', `height="${s}"`);
+          const n = this.getAttribute("size") || 16;
+          this.innerHTML = t.replace('width="16"', `width="${n}"`).replace('height="16"', `height="${n}"`);
         }
       }
       customElements.define(r, o);
     }
 }
-function n(l) {
-  return String(l).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function i(c) {
+  return String(c).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 class y extends HTMLElement {
   static get observedAttributes() {
@@ -96,11 +96,11 @@ class y extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-click", { bubbles: !0, detail: { original: e } }));
   }
   render() {
-    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", r = this.getAttribute("type") || "button", o = this.hasAttribute("block"), d = this.hasAttribute("loading"), s = this.hasAttribute("disabled") || d, p = this.textContent.trim();
-    this.innerHTML = `<button type="${r}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${o ? " kbb-btn--block" : ""}${d ? " kbb-btn--loading" : ""}" ${s ? "disabled" : ""} aria-busy="${d}" aria-disabled="${s}"><span class="kbb-btn__label">${n(p)}</span></button>`;
+    const e = this.getAttribute("variant") || "secondary", t = this.getAttribute("size") || "md", r = this.getAttribute("type") || "button", o = this.hasAttribute("block"), p = this.hasAttribute("loading"), n = this.hasAttribute("disabled") || p, l = this.textContent.trim();
+    this.innerHTML = `<button type="${r}" class="kbb-btn kbb-btn--${e} kbb-btn--${t}${o ? " kbb-btn--block" : ""}${p ? " kbb-btn--loading" : ""}" ${n ? "disabled" : ""} aria-busy="${p}" aria-disabled="${n}"><span class="kbb-btn__label">${i(l)}</span></button>`;
   }
 }
-typeof customElements < "u" && !customElements.get("kbb-button") && customElements.define("kbb-button", y);
+typeof customElements < "u" && customElements && !customElements.get("kbb-button") && customElements.define("kbb-button", y);
 const f = `
   --color-bg: #fafbfc;
   --color-surface: #ffffff;
@@ -134,17 +134,17 @@ const f = `
   --space-3: 12px;
   --space-4: 16px;
 `;
-let m = "duckduckgo";
-function w(l) {
-  if (!l) return null;
+let b = "duckduckgo";
+function w(c) {
+  if (!c) return null;
   try {
-    const t = new URL(l).hostname;
-    return m === "duckduckgo" ? `https://icons.duckduckgo.com/ip3/${t}.ico` : `https://icons.duckduckgo.com/ip3/${t}.ico`;
+    const t = new URL(c).hostname;
+    return b === "duckduckgo" ? `https://icons.duckduckgo.com/ip3/${t}.ico` : `https://icons.duckduckgo.com/ip3/${t}.ico`;
   } catch {
     return null;
   }
 }
-const $ = `
+const E = `
 :host {${f}
   position: absolute;
   z-index: 2147483647;
@@ -378,7 +378,7 @@ const $ = `
   .picker-expanded { border-color: var(--color-border); }
 }
 `;
-class A extends HTMLElement {
+class $ extends HTMLElement {
   static get observedAttributes() {
     return ["credentials", "placeholder", "show-search", "position"];
   }
@@ -422,14 +422,14 @@ class A extends HTMLElement {
     );
   }
   _render() {
-    var s, p;
+    var n, l;
     const e = this.getAttribute("placeholder") || "Search credentials…", t = this.getAttribute("show-search"), r = t !== null ? t !== "false" : this._credentials.length > 4, o = this._filtered;
     this._activeIndex = o.length > 0 ? 0 : -1;
-    const d = this._getHeaderDomain();
+    const p = this._getHeaderDomain();
     this.shadowRoot.innerHTML = `
-      <style>${$}</style>
+      <style>${E}</style>
       <div class="picker-header">
-        <span class="picker-header__title">${o.length} login${o.length !== 1 ? "s" : ""}${d ? ` for ${n(d)}` : ""}</span>
+        <span class="picker-header__title">${o.length} login${o.length !== 1 ? "s" : ""}${p ? ` for ${i(p)}` : ""}</span>
         <button type="button" class="picker-header__close" aria-label="Close picker">
           <span aria-hidden="true">${a.close || "✕"}</span>
         </button>
@@ -440,40 +440,40 @@ class A extends HTMLElement {
           <input
             type="text"
             class="picker-search-input"
-            placeholder="${n(e)}"
+            placeholder="${i(e)}"
             aria-label="Search credentials"
-            value="${n(this._search)}"
+            value="${i(this._search)}"
           />
         </div>
       ` : ""}
       <ul class="picker-list" role="listbox" aria-label="Credentials">
         ${o.length === 0 ? `<li class="picker-empty">${this._search ? "No matches" : "No credentials for this site"}</li>` : ""}
-        ${o.map((c, i) => this._renderItem(c, i)).join("")}
+        ${o.map((d, s) => this._renderItem(d, s)).join("")}
       </ul>
-    `, (s = this.shadowRoot.querySelector(".picker-header__close")) == null || s.addEventListener("click", (c) => {
-      c.stopPropagation(), this._emitClose();
-    }), (p = this.shadowRoot.querySelector(".picker-search-input")) == null || p.addEventListener("input", (c) => {
-      var i;
-      this._search = c.target.value, this._expandedIndex = -1, this._activeIndex = 0, this._render(), (i = this.shadowRoot.querySelector(".picker-search-input")) == null || i.focus();
-    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((c) => {
-      c.addEventListener("click", (i) => {
-        i.stopPropagation();
-        const u = Number(c.dataset.index);
+    `, (n = this.shadowRoot.querySelector(".picker-header__close")) == null || n.addEventListener("click", (d) => {
+      d.stopPropagation(), this._emitClose();
+    }), (l = this.shadowRoot.querySelector(".picker-search-input")) == null || l.addEventListener("input", (d) => {
+      var s;
+      this._search = d.target.value, this._expandedIndex = -1, this._activeIndex = 0, this._render(), (s = this.shadowRoot.querySelector(".picker-search-input")) == null || s.focus();
+    }), this.shadowRoot.querySelectorAll(".picker-item").forEach((d) => {
+      d.addEventListener("click", (s) => {
+        s.stopPropagation();
+        const u = Number(d.dataset.index);
         if (u === this._expandedIndex) {
           this._expandedIndex = -1, this._render();
           return;
         }
         this._expandedIndex = u, this._render();
       });
-    }), this.shadowRoot.querySelectorAll(".picker-action").forEach((c) => {
-      c.addEventListener("click", (i) => {
-        i.stopPropagation();
-        const u = Number(c.dataset.index), b = c.dataset.action, h = o[u];
+    }), this.shadowRoot.querySelectorAll(".picker-action").forEach((d) => {
+      d.addEventListener("click", (s) => {
+        s.stopPropagation();
+        const u = Number(d.dataset.index), m = d.dataset.action, h = o[u];
         if (h)
-          if (b === "fill-form") {
+          if (m === "fill-form") {
             const v = { ...h };
             v._fillRole = "form", this._emitFill(v);
-          } else b === "fill-username" ? this._emitFillForTarget(h, "username") : b === "copy-username" ? this._emitCopy(h, "username") : b === "fill-password" ? this._emitFillForTarget(h, "password") : b === "copy-password" && this._emitCopy(h, "password");
+          } else m === "fill-username" ? this._emitFillForTarget(h, "username") : m === "copy-username" ? this._emitCopy(h, "username") : m === "fill-password" ? this._emitFillForTarget(h, "password") : m === "copy-password" && this._emitCopy(h, "password");
       });
     }), this._activeIndex >= 0 && this._highlightActive();
   }
@@ -494,7 +494,7 @@ class A extends HTMLElement {
     }
   }
   _renderItem(e, t) {
-    const r = (e.name || e.username || "?").charAt(0).toUpperCase(), o = e.url ? this._faviconUrl(e.url) : null, d = o ? `<img class="picker-avatar picker-avatar--favicon" src="${o}" alt="" onerror="this.outerHTML='<div class=\\'picker-avatar\\'>${r}</div>'" />` : `<div class="picker-avatar">${r}</div>`, s = t === this._expandedIndex;
+    const r = i((e.name || e.username || "?").charAt(0).toUpperCase()), o = e.url ? this._faviconUrl(e.url) : null, p = i(o || ""), n = o ? `<img class="picker-avatar picker-avatar--favicon" src="${p}" alt="" />` : `<div class="picker-avatar">${r}</div>`, l = t === this._expandedIndex;
     return `
       <li
         class="picker-item${t === this._activeIndex ? " picker-item--active" : ""}${e.selected ? " picker-item--selected" : ""}"
@@ -503,14 +503,14 @@ class A extends HTMLElement {
         data-index="${t}"
         tabindex="${t === this._activeIndex ? "0" : "-1"}"
       >
-        ${d}
+        ${n}
         <div class="picker-info">
-          <div class="picker-name">${n(e.name || "(no name)")}</div>
-          ${e.username ? `<div class="picker-username">${n(e.username)}</div>` : ""}
+          <div class="picker-name">${i(e.name || "(no name)")}</div>
+          ${e.username ? `<div class="picker-username">${i(e.username)}</div>` : ""}
         </div>
-        <span class="picker-icon" style="transition: transform 120ms;${s ? " transform: rotate(180deg);" : ""}" aria-hidden="true">${a["chevron-down"] || ""}</span>
+        <span class="picker-icon" style="transition: transform 120ms;${l ? " transform: rotate(180deg);" : ""}" aria-hidden="true">${a["chevron-down"] || ""}</span>
       </li>
-      ${s ? this._renderExpanded(e, t) : ""}
+      ${l ? this._renderExpanded(e, t) : ""}
     `;
   }
   _renderExpanded(e, t) {
@@ -583,7 +583,7 @@ class A extends HTMLElement {
     }));
   }
 }
-customElements.get("kbb-picker") || customElements.define("kbb-picker", A);
+typeof customElements < "u" && customElements && !customElements.get("kbb-picker") && customElements.define("kbb-picker", $);
 const g = `
 :host {${f}
   --color-danger-subtle: #fee2e2;
@@ -821,7 +821,7 @@ const g = `
   .prompt-editable-label { color: var(--color-text-muted); }
 }
 `;
-class E extends HTMLElement {
+class A extends HTMLElement {
   static get observedAttributes() {
     return ["name", "username", "password", "url", "title", "folder", "folders"];
   }
@@ -849,17 +849,17 @@ class E extends HTMLElement {
     (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="save"]')) == null || t.addEventListener("click", () => this._save()), (r = this.shadowRoot.querySelector('[data-action="never"]')) == null || r.addEventListener("click", () => this._never());
   }
   _render() {
-    const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", r = this.getAttribute("password") || "", o = this.getAttribute("url") || "", d = this.getAttribute("title") || e || "", s = this.getAttribute("folder") || "";
-    let p = [];
+    const e = this.getAttribute("name") || "", t = this.getAttribute("username") || "", r = this.getAttribute("password") || "", o = this.getAttribute("url") || "", p = this.getAttribute("title") || e || "", n = this.getAttribute("folder") || "";
+    let l = [];
     try {
-      const i = this.getAttribute("folders");
-      i && (p = JSON.parse(i));
+      const s = this.getAttribute("folders");
+      s && (l = JSON.parse(s));
     } catch {
     }
-    Array.isArray(p) || (p = []);
-    const c = p.map((i) => {
-      const u = typeof i == "string" ? i : i.value || i.name || "", b = typeof i == "string" ? i : i.label || i.name || u, h = u === s ? " selected" : "";
-      return `<option value="${n(u)}"${h}>${n(b)}</option>`;
+    Array.isArray(l) || (l = []);
+    const d = l.map((s) => {
+      const u = typeof s == "string" ? s : s.value || s.name || "", m = typeof s == "string" ? s : s.label || s.name || u, h = u === n ? " selected" : "";
+      return `<option value="${i(u)}"${h}>${i(m)}</option>`;
     }).join("");
     this.shadowRoot.innerHTML = `
       <style>${g}</style>
@@ -871,21 +871,21 @@ class E extends HTMLElement {
         </button>
       </div>
       <div class="prompt-body">
-        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${n(e)}</span></div>` : ""}
-        ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${n(t)}</span></div>` : ""}
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${i(e)}</span></div>` : ""}
+        ${t ? `<div class="prompt-field"><span class="prompt-field__label">User</span><span class="prompt-field__value">${i(t)}</span></div>` : ""}
         ${r ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(r.length, 12))}</span></div>` : ""}
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">Title</label>
-          <input type="text" class="prompt-editable-input" data-field="title" value="${n(d)}" placeholder="Login title" />
+          <input type="text" class="prompt-editable-input" data-field="title" value="${i(p)}" placeholder="Login title" />
         </div>
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">URL</label>
-          <input type="text" class="prompt-editable-input" data-field="url" value="${n(o)}" placeholder="https://" />
+          <input type="text" class="prompt-editable-input" data-field="url" value="${i(o)}" placeholder="https://" />
         </div>
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">Folder</label>
           <select class="prompt-editable-select" data-field="folder" aria-label="Folder">
-            ${c}
+            ${d}
           </select>
         </div>
       </div>
@@ -957,14 +957,14 @@ class C extends HTMLElement {
     (e = this.shadowRoot.querySelector(".prompt-header__close")) == null || e.addEventListener("click", () => this._dismiss()), (t = this.shadowRoot.querySelector('[data-action="update"]')) == null || t.addEventListener("click", () => this._update()), (r = this.shadowRoot.querySelector('[data-action="skip"]')) == null || r.addEventListener("click", () => this._skip());
   }
   _render() {
-    const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", r = this.getAttribute("username") || "", o = this.getAttribute("password") || "", d = this.getAttribute("url") || "";
-    let s = [];
+    const e = this.getAttribute("name") || "", t = this.getAttribute("old-username") || "", r = this.getAttribute("username") || "", o = this.getAttribute("password") || "", p = this.getAttribute("url") || "";
+    let n = [];
     try {
-      const p = this.getAttribute("folders");
-      p && (s = JSON.parse(p));
+      const l = this.getAttribute("folders");
+      l && (n = JSON.parse(l));
     } catch {
     }
-    Array.isArray(s) || (s = []), this.shadowRoot.innerHTML = `
+    Array.isArray(n) || (n = []), this.shadowRoot.innerHTML = `
       <style>${g}</style>
       <div class="prompt-header" role="region" aria-label="Update login">
         <span class="prompt-header__icon" aria-hidden="true">${a.shield || ""}</span>
@@ -974,23 +974,23 @@ class C extends HTMLElement {
         </button>
       </div>
       <div class="prompt-body">
-        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${n(e)}</span></div>` : ""}
+        ${e ? `<div class="prompt-field"><span class="prompt-field__label">Site</span><span class="prompt-field__value">${i(e)}</span></div>` : ""}
         <div class="prompt-field">
           <span class="prompt-field__label">From</span>
-          <span class="prompt-field__value">${n(t)}</span>
+          <span class="prompt-field__value">${i(t)}</span>
         </div>
         <div class="prompt-field">
           <span class="prompt-field__label">To</span>
-          <span class="prompt-field__value">${n(r)}</span>
+          <span class="prompt-field__value">${i(r)}</span>
         </div>
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">New Password</label>
-          <input type="text" class="prompt-editable-input" data-field="username" value="${n(r)}" placeholder="Username" />
+          <input type="text" class="prompt-editable-input" data-field="username" value="${i(r)}" placeholder="Username" />
         </div>
         ${o ? `<div class="prompt-field"><span class="prompt-field__label">Pass</span><span class="prompt-field__value">${"•".repeat(Math.min(o.length, 12))}</span></div>` : ""}
         <div class="prompt-editable-group">
           <label class="prompt-editable-label">URL</label>
-          <input type="text" class="prompt-editable-input" data-field="url" value="${n(d)}" placeholder="https://" />
+          <input type="text" class="prompt-editable-input" data-field="url" value="${i(p)}" placeholder="https://" />
         </div>
       </div>
       <div class="prompt-actions">
@@ -1027,6 +1027,5 @@ class C extends HTMLElement {
     this.dispatchEvent(new CustomEvent("kbb-dismiss", { bubbles: !0, composed: !0 })), this.remove();
   }
 }
-customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", E);
-customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", C);
+typeof customElements < "u" && customElements && (customElements.get("kbb-save-prompt") || customElements.define("kbb-save-prompt", A), customElements.get("kbb-update-prompt") || customElements.define("kbb-update-prompt", C));
 k("kbb");

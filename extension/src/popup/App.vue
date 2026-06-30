@@ -27,7 +27,7 @@
           @cancel="formMode = null"
         />
       </div>
-      <div v-show="!showPairDialog && formMode === 'edit' && editingEntry">
+      <div v-if="!showPairDialog && formMode === 'edit' && editingEntry">
         <EditForm
           :entry="editingEntry"
           @save="saveEdit"

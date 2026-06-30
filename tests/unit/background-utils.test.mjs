@@ -54,6 +54,37 @@ describe('background-utils - normalizeFeatureDetails', () => {
     assert.deepEqual(result['auto-fill'], { enabled: true, status: 'enabled', reason: '' });
     assert.deepEqual(result['passkeys'], { enabled: false, status: 'prototype_disabled', reason: '' });
   });
+
+  it('should skip features with empty name after trim', async () => {
+    const { normalizeFeatureDetails } = await importModule();
+    const features = [
+      { Name: 'valid', Enabled: true },
+      { Name: '  ', Enabled: true },
+    ];
+    const result = normalizeFeatureDetails(features);
+    assert.deepEqual(Object.keys(result), ['valid']);
+  });
+
+  it('should skip features with no Name property', async () => {
+    const { normalizeFeatureDetails } = await importModule();
+    const features = [
+      { Name: 'valid', Enabled: true },
+      { Enabled: true },
+    ];
+    const result = normalizeFeatureDetails(features);
+    assert.deepEqual(Object.keys(result), ['valid']);
+  });
+
+  it('should derive status from enabled when Status is missing', async () => {
+    const { normalizeFeatureDetails } = await importModule();
+    const features = [
+      { Name: 'enabled-feature', Enabled: true },
+      { Name: 'disabled-feature', Enabled: false },
+    ];
+    const result = normalizeFeatureDetails(features);
+    assert.equal(result['enabled-feature'].status, 'enabled');
+    assert.equal(result['disabled-feature'].status, 'disabled');
+  });
 });
 
 describe('background-utils - normalizeReleaseVersion', () => {
@@ -193,6 +224,12 @@ describe('background-utils - normalizeClientPermissions', () => {
     assert.ok(result.includes('passkeyRead'));
     assert.ok(result.includes('passkeyWrite'));
   });
+
+  it('should handle non-array permissions gracefully', async () => {
+    const { normalizeClientPermissions } = await importModule();
+    assert.deepEqual(normalizeClientPermissions(null, false), ['read']);
+    assert.deepEqual(normalizeClientPermissions(undefined, false), ['read']);
+  });
 });
 
 describe('background-utils - clientPermissionAllowList', () => {
@@ -310,5 +347,17 @@ describe('background-utils - isTerminalPairingError', () => {
     const { isTerminalPairingError } = await importModule();
     assert.ok(isTerminalPairingError('Session expired'));
     assert.ok(!isTerminalPairingError('OK'));
+  });
+
+  it('should handle error object without message property', async () => {
+    const { isTerminalPairingError } = await importModule();
+    assert.ok(!isTerminalPairingError({ code: 404 }));
+    assert.ok(isTerminalPairingError({ toString: () => 'expired session' }));
+  });
+
+  it('should handle null or undefined error', async () => {
+    const { isTerminalPairingError } = await importModule();
+    assert.ok(!isTerminalPairingError(null));
+    assert.ok(!isTerminalPairingError(undefined));
   });
 });

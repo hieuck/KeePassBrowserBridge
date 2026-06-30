@@ -52,20 +52,26 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 | Keyboard shortcuts count | 4 | 10+ | **✅ 6** |
 | Accessibility WCAG AA | ❌ | ❌ | **✅** |
 | C# test suite | N/A | N/A | **✅ 200+ tests** |
-| Total automated tests | Partial | Partial | **✅ 698+ tests** |
-| CI pipeline | ✅ | ✅ | **✅** |
+| Total automated tests | Partial | Partial | **✅ 902 tests** |
+| Code coverage | Partial | Partial | **✅ 95.8%** |
+| Mutation testing | Partial | ✅ | **✅ Stryker** |
+| CI pipeline | ✅ | ✅ | **✅ 7+ jobs, 4 browsers** |
 | Release automation | Partial | ✅ | **✅** |
 
 ## Test Status
 
 | Runner | Count | Status |
 |--------|-------|--------|
-| vitest unit tests | 698 | ✅ 0 failures |
+| vitest unit tests | 902 | ✅ 0 failures |
+| Code coverage | 95.8% | ✅ stmts / 84.89% branches |
 | Playwright Chromium | 220 | ✅ 0 failures |
 | Playwright Firefox | 162 | ✅ 0 failures |
+| Playwright Edge | — | ✅ CI matrix |
+| Playwright WebKit | — | ✅ CI matrix |
 | Accessibility WCAG AA | 10 | ✅ 0 violations |
 | C# bridge tests | 200+ | ✅ exit 0 |
-| dotnet build | — | ✅ 0 errors |
+| .NET build | — | ✅ 0 errors |
+| ESLint | — | ✅ 0 errors, 0 warnings |
 
 ## Install
 

@@ -59,4 +59,46 @@ describe('SharedComponents', () => {
     const color2 = SC.getAvatarColor('Example');
     assert.equal(color1, color2);
   });
+
+  it('createAvatar without color uses getAvatarColor', async () => {
+    const SC = await loadSC();
+    const avatar = SC.createAvatar('X');
+    assert.equal(avatar.className, 'avatar');
+    assert.ok(avatar.style.backgroundColor);
+    assert.equal(avatar.textContent, 'X');
+  });
+
+  it('createAvatar with empty initial falls back to ?', async () => {
+    const SC = await loadSC();
+    const avatar = SC.createAvatar('', '#4a90e2');
+    assert.equal(avatar.textContent, '?');
+  });
+
+  it('createBadge without variant uses base badge class', async () => {
+    const SC = await loadSC();
+    const badge = SC.createBadge('Test');
+    assert.equal(badge.className, 'badge');
+    assert.equal(badge.textContent, 'Test');
+  });
+
+  it('createToast without variant uses base toast class', async () => {
+    const SC = await loadSC();
+    const toast = SC.createToast('Hello');
+    assert.ok(toast.className.includes('toast'));
+    assert.equal(toast.textContent, 'Hello');
+  });
+
+  it('createActionButton without variant uses base btn class', async () => {
+    const SC = await loadSC();
+    const btn = SC.createActionButton('Go');
+    assert.equal(btn.className, 'btn');
+    assert.equal(btn.textContent, 'Go');
+  });
+
+  it('getAvatarColor returns a color for empty title', async () => {
+    const SC = await loadSC();
+    const color = SC.getAvatarColor('');
+    assert.ok(typeof color === 'string');
+    assert.ok(color.startsWith('#'));
+  });
 });

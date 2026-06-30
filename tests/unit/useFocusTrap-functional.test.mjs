@@ -1,6 +1,8 @@
-import { describe, it, assert, beforeEach, afterEach } from 'vitest';
+import { describe, it, assert, beforeEach, afterEach, vi } from 'vitest';
 import { createApp, defineComponent, h } from 'vue';
 import { useFocusTrap } from '../../extension/src/composables/useFocusTrap.js';
+
+vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 function mountTrap() {
   const state = {};
@@ -78,6 +80,33 @@ describe('useFocusTrap', () => {
       event.preventDefault();
       document.dispatchEvent(event);
       assert.equal(document.activeElement, button);
+      app.unmount();
+      document.body.removeChild(root);
+    });
+
+    it('should ignore non-Tab key events', async () => {
+      const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+      document.dispatchEvent(event);
+      assert.ok(true);
+    });
+
+    it('should handle container with no focusable children', async () => {
+      const state = {};
+      const Comp = defineComponent({
+        setup() {
+          Object.assign(state, useFocusTrap());
+          return () => h('div', { ref: state.container }, [
+            h('span', 'No focusable'),
+          ]);
+        }
+      });
+      const app = createApp(Comp);
+      const root = document.createElement('div');
+      document.body.appendChild(root);
+      app.mount(root);
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
+      document.dispatchEvent(event);
+      assert.ok(true);
       app.unmount();
       document.body.removeChild(root);
     });

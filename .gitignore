@@ -21,3 +21,5 @@ Thumbs.db
 /real-ext-*/
 /popup-diag*.png
 /docs/popup-diagnostic.js
+/stryker-tmp/
+/reports/mutation/

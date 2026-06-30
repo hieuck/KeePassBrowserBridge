@@ -204,6 +204,12 @@ internal static class Program
         LoopbackBridgeServerRejectsOversizedPostBeforeHandling();
         LoopbackBridgeServerRejectsMismatchedHeaderAndRequestOriginBeforeHandling();
         LoopbackBridgeServerTryStartReportsPortConflict();
+        FuzzTestBridgeHandlesMalformedJson();
+        FuzzTestBridgeHandlesOversizedPayload();
+        FuzzTestBridgeHandlesEmptyRequest();
+        FuzzTestBridgeHandlesBadContentType();
+        LoadTestBridgeHandlesConcurrentRequests();
+        LoadTestLoopbackServerRestartsAfterPortConflict();
         return 0;
     }
 
@@ -4948,6 +4954,188 @@ internal static class Program
             }
 
             return response;
+        }
+    }
+
+    private static void FuzzTestBridgeHandlesMalformedJson()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            string[] garbagePayloads = new string[]
+            {
+                "not-json",
+                "{",
+                "[]",
+                "null",
+                "true",
+                "\"\""
+            };
+
+            foreach (string garbage in garbagePayloads)
+            {
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(garbage);
+                RawHttpResponse response = SendRawHttp(port,
+                    "POST /bridge HTTP/1.1\r\n" +
+                    "Host: 127.0.0.1:" + port + "\r\n" +
+                    "Origin: " + origin + "\r\n" +
+                    "Content-Type: application/json\r\n" +
+                    "Content-Length: " + bodyBytes.Length + "\r\n" +
+                    "Connection: close\r\n\r\n",
+                    bodyBytes);
+
+                AssertTrue(response.StatusCode == 400 || response.StatusCode == 403,
+                    "malformed JSON '" + garbage + "' should return 400 or 403, got " + response.StatusCode);
+            }
+
+            byte[] largeBody = new byte[300 * 1024];
+            RawHttpResponse largeResponse = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Content-Type: application/json\r\n" +
+                "Content-Length: " + largeBody.Length + "\r\n" +
+                "Connection: close\r\n\r\n",
+                largeBody);
+            AssertEqual(413, largeResponse.StatusCode, "300KB payload should be rejected with 413");
+        }
+    }
+
+    private static void FuzzTestBridgeHandlesOversizedPayload()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            byte[] largeBody = new byte[257 * 1024];
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Content-Type: application/json\r\n" +
+                "Content-Length: " + largeBody.Length + "\r\n" +
+                "Connection: close\r\n\r\n",
+                largeBody);
+            AssertEqual(413, response.StatusCode, "payload > 256KB should be rejected with 413");
+        }
+    }
+
+    private static void FuzzTestBridgeHandlesEmptyRequest()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Content-Type: application/json\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n\r\n");
+
+            AssertEqual(400, response.StatusCode, "empty body should return 400, got " + response.StatusCode);
+
+            if (response.StatusCode == 400)
+            {
+                BridgeResponse payload = BridgeJsonSerializer.Deserialize<BridgeResponse>(ExtractRawHttpBody(response.Raw));
+                AssertFalse(payload.Success, "empty body should return a failed bridge response");
+                AssertEqual("invalid_request", payload.ErrorCode, "empty body error code mismatch");
+            }
+        }
+    }
+
+    private static void FuzzTestBridgeHandlesBadContentType()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+            const string origin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
+
+            string validBody = BridgeJsonSerializer.Serialize(CreateValidRequest(BridgeMethods.Hello));
+            byte[] bodyBytes = Encoding.UTF8.GetBytes(validBody);
+
+            RawHttpResponse response = SendRawHttp(port,
+                "POST /bridge HTTP/1.1\r\n" +
+                "Host: 127.0.0.1:" + port + "\r\n" +
+                "Origin: " + origin + "\r\n" +
+                "Content-Type: text/xml\r\n" +
+                "Content-Length: " + bodyBytes.Length + "\r\n" +
+                "Connection: close\r\n\r\n",
+                bodyBytes);
+
+            AssertEqual(415, response.StatusCode, "text/xml content type should be rejected with 415");
+        }
+    }
+
+    private static void LoadTestBridgeHandlesConcurrentRequests()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+        using (LoopbackBridgeServer server = new LoopbackBridgeServer(handler))
+        {
+            server.Start(port);
+
+            int successCount = 0;
+            object lockObj = new object();
+
+            System.Threading.Tasks.Task[] tasks = new System.Threading.Tasks.Task[10];
+            for (int i = 0; i < 10; ++i)
+            {
+                tasks[i] = System.Threading.Tasks.Task.Run(() =>
+                {
+                    string body = BridgeJsonSerializer.Serialize(CreateValidRequest(BridgeMethods.Hello));
+                    string responseJson = PostRawHttp(port, body);
+                    BridgeResponse response = BridgeJsonSerializer.Deserialize<BridgeResponse>(responseJson);
+                    lock (lockObj)
+                    {
+                        if (response.Success) successCount++;
+                    }
+                });
+            }
+
+            System.Threading.Tasks.Task.WaitAll(tasks);
+
+            AssertEqual(10, successCount, "all concurrent hello requests should succeed");
+        }
+    }
+
+    private static void LoadTestLoopbackServerRestartsAfterPortConflict()
+    {
+        int port = FindFreePort();
+        BridgeRequestHandler handler = CreateHandler(null, new TrustedClientStore());
+
+        using (LoopbackBridgeServer first = new LoopbackBridgeServer(handler))
+        using (LoopbackBridgeServer second = new LoopbackBridgeServer(handler))
+        {
+            first.Start(port);
+
+            BridgeServerStartResult conflictResult = second.TryStart(port);
+            AssertFalse(conflictResult.Success, "second server should fail on occupied port");
+            AssertEqual("port_unavailable", conflictResult.ErrorCode, "port conflict error code mismatch");
+
+            first.Stop();
+
+            BridgeServerStartResult restartResult = second.TryStart(port);
+            AssertTrue(restartResult.Success, "server should restart after port is released");
+            AssertTrue(second.IsRunning, "server should be running after restart");
+
+            string body = BridgeJsonSerializer.Serialize(CreateValidRequest(BridgeMethods.Hello));
+            string responseJson = PostRawHttp(port, body);
+            BridgeResponse response = BridgeJsonSerializer.Deserialize<BridgeResponse>(responseJson);
+            AssertTrue(response.Success, "server should respond to hello after restart");
         }
     }
 }

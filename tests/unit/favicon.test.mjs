@@ -38,4 +38,14 @@ describe('favicon.js', () => {
     const url = getFaviconUrl('https://example.com');
     assert.ok(url.includes('duckduckgo'));
   });
+
+  it('should return null for unparseable URL string', async () => {
+    const { getFaviconUrl } = await importModule();
+    assert.equal(getFaviconUrl('not-a-valid-url'), null);
+  });
+
+  it('should return null for malformed URL without protocol', async () => {
+    const { getFaviconUrl } = await importModule();
+    assert.equal(getFaviconUrl('example.com'), null);
+  });
 });
