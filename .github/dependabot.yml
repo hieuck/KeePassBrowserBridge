@@ -19,6 +19,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "eslint-config-prettier"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "@stryker-mutator/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
