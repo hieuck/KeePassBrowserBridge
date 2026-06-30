@@ -2,6 +2,9 @@
 
 Version 2.1.0
 
+[![CI](https://github.com/hieuck/KeePassBrowserBridge/actions/workflows/ci.yml/badge.svg)](https://github.com/hieuck/KeePassBrowserBridge/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/hieuck/KeePassBrowserBridge/branch/main/graph/badge.svg)](https://codecov.io/gh/hieuck/KeePassBrowserBridge)
+
 Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 
 ## Features
@@ -62,8 +65,8 @@ Bridge between KeePass 2.x and your browser. Chrome MV3 + Firefox.
 
 | Runner | Count | Status |
 |--------|-------|--------|
-| vitest unit tests | 902 | ✅ 0 failures |
-| Code coverage | 95.8% | ✅ stmts / 84.89% branches |
+| vitest unit tests | 911 | ✅ 0 failures |
+| Code coverage | 96.94% | ✅ stmts / 85.02% branches |
 | Playwright Chromium | 220 | ✅ 0 failures |
 | Playwright Firefox | 162 | ✅ 0 failures |
 | Playwright Edge | — | ✅ CI matrix |
