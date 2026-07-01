@@ -111,6 +111,7 @@ jobs:
     name: E2E tests (${{ matrix.browser }})
     runs-on: windows-latest
     continue-on-error: ${{ matrix.browser != 'chromium' }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
