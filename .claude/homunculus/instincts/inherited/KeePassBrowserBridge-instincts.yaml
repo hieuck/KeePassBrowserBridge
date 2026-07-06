@@ -1,0 +1,336 @@
+# Instincts generated from https://github.com/hieuck/KeePassBrowserBridge
+# Generated: 2026-07-06T18:32:02.278Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: KeePassBrowserBridge-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/hieuck/KeePassBrowserBridge
+---
+
+# KeePassBrowserBridge Commit Length
+
+## Action
+
+Write moderate-length commit messages (~55 characters)
+
+## Evidence
+
+- Average commit message length: 55 chars
+- Based on 3 commits
+
+---
+id: KeePassBrowserBridge-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/hieuck/KeePassBrowserBridge
+---
+
+# KeePassBrowserBridge Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: KeePassBrowserBridge-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/hieuck/KeePassBrowserBridge
+---
+
+# KeePassBrowserBridge Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: KeePassBrowserBridge-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/hieuck/KeePassBrowserBridge
+---
+
+# KeePassBrowserBridge Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: KeePassBrowserBridge-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/hieuck/KeePassBrowserBridge
+---
+
+# KeePassBrowserBridge Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: 
+
+---
+id: KeePassBrowserBridge-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/hieuck/KeePassBrowserBridge
+---
+
+# KeePassBrowserBridge Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: keepassbrowserbridge-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct File Naming
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: keepassbrowserbridge-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Function Naming
+
+## Action
+
+Use camelCase for the function name
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: keepassbrowserbridge-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Class Naming
+
+## Action
+
+Use PascalCase for the class name
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: keepassbrowserbridge-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for the constant name
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: keepassbrowserbridge-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: keepassbrowserbridge-instinct-export-style
+trigger: "When exporting code from a module"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: keepassbrowserbridge-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Test Location
+
+## Action
+
+Place test files in the separate 'tests' folder
+
+## Evidence
+
+- Pattern in folderStructure.testLocation
+- Presence of 'tests' folder
+
+---
+id: keepassbrowserbridge-instinct-test-prefix
+trigger: "When writing a test commit"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Test Prefix
+
+## Action
+
+Prefix the commit message with 'test:'
+
+## Evidence
+
+- Seen in commit 'test: add Vitest coverage for Picker.web.js and Prompt.web.js'
+
+---
+id: keepassbrowserbridge-instinct-chore-prefix
+trigger: "When making a maintenance or configuration change"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Chore Prefix
+
+## Action
+
+Prefix the commit message with 'chore:'
+
+## Evidence
+
+- Seen in commit 'chore: ignore .worktrees directory'
+
+---
+id: keepassbrowserbridge-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 55 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: keepassbrowserbridge-instinct-merge-commit-style
+trigger: "When merging branches"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: hieuck/KeePassBrowserBridge
+---
+
+# Keepassbrowserbridge Instinct Merge Commit Style
+
+## Action
+
+Use the default merge commit format (e.g., 'Merge branch ...')
+
+## Evidence
+
+- Seen in commit 'Merge branch 'main' of https://github.com/hieuck/KeePassBrowserBridge'
+
