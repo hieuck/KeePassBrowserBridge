@@ -279,4 +279,156 @@ describe('KbbPicker', () => {
     expect(el.shadowRoot.textContent).toContain('Custom fields');
     document.body.removeChild(el);
   });
+
+  it('should upgrade a pre-existing credentials property value on connect', () => {
+    const el = document.createElement('kbb-picker');
+    const data = [{ name: 'Pre', username: 'pre@example.com' }];
+    Object.defineProperty(el, 'credentials', { value: data, configurable: true, writable: true });
+    document.body.appendChild(el);
+    expect(el.credentials).toBe(data);
+    document.body.removeChild(el);
+  });
+
+  it('should expose the credentials getter', () => {
+    const el = document.createElement('kbb-picker');
+    const data = [{ name: 'A', username: 'a@example.com' }];
+    el.credentials = data;
+    expect(el.credentials).toBe(data);
+  });
+
+  it('should ignore non-array values in credentials setter', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = 'not an array';
+    expect(el.credentials).toEqual([]);
+  });
+
+  it('should parse credentials from attribute as JSON', () => {
+    const el = document.createElement('kbb-picker');
+    el.setAttribute('credentials', JSON.stringify([{ name: 'Attr', username: 'attr@example.com' }]));
+    document.body.appendChild(el);
+    expect(el.credentials[0].name).toBe('Attr');
+    document.body.removeChild(el);
+  });
+
+  it('should ignore malformed credentials attribute JSON', () => {
+    const el = document.createElement('kbb-picker');
+    el.setAttribute('credentials', 'not-json');
+    document.body.appendChild(el);
+    expect(el.credentials).toEqual([]);
+    document.body.removeChild(el);
+  });
+
+  it('should filter credentials by URL in search', () => {
+    const el = document.createElement('kbb-picker');
+    el.setAttribute('show-search', '');
+    el.credentials = [
+      { name: 'GitHub', username: 'gh@example.com', url: 'https://github.com/login' },
+      { name: 'Bank', username: 'bank@example.com', url: 'https://bank.com' },
+    ];
+    document.body.appendChild(el);
+    const input = el.shadowRoot.querySelector('.picker-search-input');
+    input.value = 'github.com';
+    input.dispatchEvent(new Event('input'));
+    const items = el.shadowRoot.querySelectorAll('.picker-item');
+    expect(items.length).toBe(1);
+    expect(items[0].textContent).toContain('GitHub');
+    document.body.removeChild(el);
+  });
+
+  it('should handle invalid credential URLs when building header domain', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{ name: 'Bad', username: 'bad@example.com', url: 'not-a-url' }];
+    document.body.appendChild(el);
+    expect(el.shadowRoot.querySelector('.picker-header__title').textContent).toContain('1 login');
+    document.body.removeChild(el);
+  });
+
+  it('should render avatar initial with username fallback when name is missing', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{ username: 'fallback@example.com' }];
+    document.body.appendChild(el);
+    expect(el.shadowRoot.querySelector('.picker-avatar').textContent).toBe('F');
+    document.body.removeChild(el);
+  });
+
+  it('should render avatar initial as ? when name and username are missing', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{}];
+    document.body.appendChild(el);
+    expect(el.shadowRoot.querySelector('.picker-avatar').textContent).toBe('?');
+    document.body.removeChild(el);
+  });
+
+  it('should not render username actions when credential lacks username', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{ name: 'NoUser', password: 'secret' }];
+    document.body.appendChild(el);
+    el.shadowRoot.querySelector('.picker-item').click();
+    const actions = el.shadowRoot.querySelectorAll('.picker-action');
+    expect(actions.length).toBe(3);
+    expect([...actions].map(a => a.dataset.action)).toEqual(['fill-form', 'fill-password', 'copy-password']);
+    document.body.removeChild(el);
+  });
+
+  it('should not render password actions when credential lacks password', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{ name: 'NoPass', username: 'user@example.com' }];
+    document.body.appendChild(el);
+    el.shadowRoot.querySelector('.picker-item').click();
+    const actions = el.shadowRoot.querySelectorAll('.picker-action');
+    expect(actions.length).toBe(3);
+    expect([...actions].map(a => a.dataset.action)).toEqual(['fill-form', 'fill-username', 'copy-username']);
+    document.body.removeChild(el);
+  });
+
+  it('should not emit fill on Enter when no credential is active', () => {
+    const el = document.createElement('kbb-picker');
+    document.body.appendChild(el);
+    const fillHandler = vi.fn();
+    el.addEventListener('kbb-fill', fillHandler);
+    el._activeIndex = -1;
+    el._onKeyDown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(fillHandler).not.toHaveBeenCalled();
+    document.body.removeChild(el);
+  });
+
+  it('should scroll active item into view when scrollIntoView is available', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{ name: 'Only', username: 'only@example.com' }];
+    document.body.appendChild(el);
+    const item = el.shadowRoot.querySelector('.picker-item');
+    const scrollIntoView = vi.fn();
+    item.scrollIntoView = scrollIntoView;
+    el._activeIndex = 0;
+    el._highlightActive();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+    document.body.removeChild(el);
+  });
+
+  it('should not scroll if active item lacks scrollIntoView', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{ name: 'Only', username: 'only@example.com' }];
+    document.body.appendChild(el);
+    const item = el.shadowRoot.querySelector('.picker-item');
+    delete item.scrollIntoView;
+    el._activeIndex = 0;
+    expect(() => el._highlightActive()).not.toThrow();
+    document.body.removeChild(el);
+  });
+
+  it('should ignore keydown when picker is disconnected', () => {
+    const el = document.createElement('kbb-picker');
+    el.credentials = [{ name: 'Only', username: 'only@example.com' }];
+    const fillHandler = vi.fn();
+    el.addEventListener('kbb-fill', fillHandler);
+    el._onKeyDown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(fillHandler).not.toHaveBeenCalled();
+  });
+
+  it('should skip custom element registration if already defined', async () => {
+    expect(customElements.get('kbb-picker')).toBeDefined();
+    vi.resetModules();
+    await import('../../extension/src/components/Picker.web.js');
+    expect(customElements.get('kbb-picker')).toBeDefined();
+  });
 });
