@@ -6,7 +6,7 @@ describe('FilterBar', () => {
   const mockGroups = [
     { id: 'all', label: 'All' },
     { id: '1', label: 'Social' },
-    { id: '2', label: 'Finance' },
+    { id: '2', label: 'Finance', count: 12 },
     { id: '3', label: 'Work' },
     { id: '4', label: 'Personal' },
     { id: '5', label: 'Shopping' },
@@ -19,6 +19,7 @@ describe('FilterBar', () => {
     expect(wrapper.text()).toContain('Finance');
     expect(wrapper.text()).toContain('Work');
     expect(wrapper.text()).toContain('Personal');
+    expect(wrapper.text()).toContain('12');
   });
 
   it('should not render overflow when 5 or fewer groups', () => {
@@ -49,9 +50,12 @@ describe('FilterBar', () => {
 
   it('should toggle overflow dropdown on click', async () => {
     const wrapper = mount(FilterBar, { props: { groups: mockGroups } });
-    await wrapper.find('.filter-bar__more').trigger('click');
+    const more = wrapper.find('.filter-bar__more');
+    expect(more.attributes('aria-expanded')).toBe('false');
+    await more.trigger('click');
     const dropdown = wrapper.find('.filter-bar__dropdown');
     expect(dropdown.exists()).toBe(true);
+    expect(wrapper.find('.filter-bar__more').attributes('aria-expanded')).toBe('true');
   });
 
   it('should close overflow dropdown after selecting', async () => {
