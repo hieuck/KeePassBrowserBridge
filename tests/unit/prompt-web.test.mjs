@@ -161,6 +161,17 @@ describe('Prompt web components', () => {
       safeRemove(el);
     });
 
+    it('should apply custom data-top and data-right when position is not bottom-right', () => {
+      const el = document.createElement('kbb-update-prompt');
+      el.setAttribute('data-position', 'custom');
+      el.setAttribute('data-top', '12px');
+      el.setAttribute('data-right', '24px');
+      document.body.appendChild(el);
+      expect(el.style.top).toBe('12px');
+      expect(el.style.right).toBe('24px');
+      safeRemove(el);
+    });
+
     it('should dispatch kbb-update with edited username and url', () => {
       const el = document.createElement('kbb-update-prompt');
       el.setAttribute('name', 'Example');

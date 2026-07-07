@@ -60,7 +60,7 @@ describe('KbbPicker', () => {
     document.body.removeChild(el);
   });
 
-  it('should filter credentials by search', async () => {
+  it('should filter credentials by search', () => {
     const el = document.createElement('kbb-picker');
     el.setAttribute('show-search', '');
     el.credentials = [
@@ -71,14 +71,13 @@ describe('KbbPicker', () => {
     const input = el.shadowRoot.querySelector('.picker-search-input');
     input.value = 'Bank';
     input.dispatchEvent(new Event('input'));
-    await new Promise(r => setTimeout(r, 10));
     const items = el.shadowRoot.querySelectorAll('.picker-item');
     expect(items.length).toBe(1);
     expect(items[0].textContent).toContain('Bank');
     document.body.removeChild(el);
   });
 
-  it('should show no matches when search filters to nothing', async () => {
+  it('should show no matches when search filters to nothing', () => {
     const el = document.createElement('kbb-picker');
     el.setAttribute('show-search', '');
     el.credentials = [{ name: 'Example', username: 'user@example.com' }];
@@ -86,7 +85,6 @@ describe('KbbPicker', () => {
     const input = el.shadowRoot.querySelector('.picker-search-input');
     input.value = 'zzz';
     input.dispatchEvent(new Event('input'));
-    await new Promise(r => setTimeout(r, 10));
     expect(el.shadowRoot.querySelector('.picker-empty').textContent).toContain('No matches');
     document.body.removeChild(el);
   });
@@ -224,7 +222,7 @@ describe('KbbPicker', () => {
     document.body.appendChild(el);
     const handler = vi.fn();
     el.addEventListener('kbb-close', handler);
-    el.shadowRoot.querySelector('.picker-header').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    el.shadowRoot.querySelector('.picker-header').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }));
     expect(handler).not.toHaveBeenCalled();
     document.body.removeChild(el);
   });
