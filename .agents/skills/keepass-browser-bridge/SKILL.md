@@ -1,4 +1,9 @@
 ```markdown
+---
+name: keepass-browser-bridge
+description: Use when contributing to the KeePassBrowserBridge codebase and needing its conventions for file naming, imports/exports, commit messages, and testing.
+---
+
 # KeePassBrowserBridge Development Patterns
 
 > Auto-generated skill from repository analysis
