@@ -39,6 +39,15 @@ describe('favicon.js', () => {
     assert.ok(url.includes('duckduckgo'));
   });
 
+  it('should preserve previous source when setting invalid source', async () => {
+    const { getFaviconUrl, setFaviconSource } = await importModule();
+    setFaviconSource('google');
+    setFaviconSource('invalid');
+    const url = getFaviconUrl('https://example.com');
+    assert.ok(url.includes('google.com'));
+    setFaviconSource('duckduckgo');
+  });
+
   it('should return null for unparseable URL string', async () => {
     const { getFaviconUrl } = await importModule();
     assert.equal(getFaviconUrl('not-a-valid-url'), null);
