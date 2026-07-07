@@ -90,4 +90,76 @@ describe('EditForm', () => {
     const customRows = wrapper.findAll('.form__custom-row');
     expect(customRows.length).toBe(0);
   });
+
+  it('should show URL validation error for invalid URL', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const urlInput = wrapper.find('.form__input--url');
+    await urlInput.setValue('not-a-url');
+    expect(wrapper.find('.form__error').text()).toContain('Invalid URL format');
+  });
+
+  it('should mark dirty when custom fields change', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const customInputs = wrapper.findAll('.form__custom-row .form__input');
+    const valueInput = customInputs.find(i => i.attributes('placeholder') === 'Value');
+    await valueInput?.setValue('changed');
+    expect(wrapper.find('.form__dirty-dot').exists()).toBe(true);
+  });
+
+  it('should toggle password visibility', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const passwordInput = wrapper.findAll('.form__input')
+      .find(i => i.attributes('type') === 'password');
+    expect(passwordInput).toBeDefined();
+    const toggleBtn = wrapper.find('.form__toggle-btn');
+    await toggleBtn.trigger('click');
+    const textInput = wrapper.findAll('.form__input')
+      .find(i => i.attributes('type') === 'text' && i.element.value === 'p@ss');
+    expect(textInput).toBeDefined();
+  });
+
+  it('should save on Ctrl+S keydown when valid and dirty', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const titleInput = wrapper.find('.form__input');
+    await titleInput.setValue('Updated');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }));
+    expect(wrapper.emitted('save')).toBeTruthy();
+    expect(wrapper.emitted('save')[0][0].Title).toBe('Updated');
+  });
+
+  it('should cancel on Escape keydown when dirty and confirmed', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const titleInput = wrapper.find('.form__input');
+    await titleInput.setValue('Updated');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(wrapper.emitted('cancel')).toBeTruthy();
+  });
+
+  it('should not cancel on Escape when dirty and not confirmed', async () => {
+    global.confirm = vi.fn(() => false);
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const titleInput = wrapper.find('.form__input');
+    await titleInput.setValue('Updated');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(wrapper.emitted('cancel')).toBeFalsy();
+  });
+
+  it('should not cancel on cancel click when dirty and not confirmed', async () => {
+    global.confirm = vi.fn(() => false);
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const titleInput = wrapper.find('.form__input');
+    await titleInput.setValue('Updated');
+    const cancelBtn = wrapper.findAll('button').find(b => b.text() === 'Cancel');
+    await cancelBtn?.trigger('click');
+    expect(wrapper.emitted('cancel')).toBeFalsy();
+  });
+
+  it('should filter out empty custom fields on save', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    await wrapper.find('.form__add-btn').trigger('click');
+    const saveBtn = wrapper.findAll('button').find(b => b.text() === 'Save changes');
+    await saveBtn?.trigger('click');
+    expect(wrapper.emitted('save')).toBeTruthy();
+    expect(wrapper.emitted('save')[0][0].CustomFields).toEqual([{ Name: 'note', Value: 'hello', IsProtected: false }]);
+  });
 });
