@@ -90,6 +90,26 @@ describe('useFocusTrap', () => {
       assert.ok(true);
     });
 
+    it('should not wrap focus when Tab is pressed on middle element', async () => {
+      const buttons = trap.root.querySelectorAll('button');
+      const middle = buttons[1];
+      middle.focus();
+      assert.equal(document.activeElement, middle);
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
+      document.dispatchEvent(event);
+      assert.equal(document.activeElement, middle);
+    });
+
+    it('should not wrap focus when Shift+Tab is pressed on middle element', async () => {
+      const buttons = trap.root.querySelectorAll('button');
+      const middle = buttons[1];
+      middle.focus();
+      assert.equal(document.activeElement, middle);
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true });
+      document.dispatchEvent(event);
+      assert.equal(document.activeElement, middle);
+    });
+
     it('should handle container with no focusable children', async () => {
       const state = {};
       const Comp = defineComponent({
