@@ -2,10 +2,11 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_E2E_PORT } from './e2e-port.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const extRoot = path.resolve(root, 'extension');
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT || DEFAULT_E2E_PORT);
 
 const contentTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
