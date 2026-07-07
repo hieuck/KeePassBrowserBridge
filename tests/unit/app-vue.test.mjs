@@ -207,6 +207,47 @@ describe('App.vue', () => {
     expect(vm.formMode).toBe('edit');
   });
 
+  it('should toggle detail entry', () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    const entry = { Title: 'X' };
+    vm.currentEntries = [entry];
+    const reactiveEntry = vm.currentEntries[0];
+    vm.toggleDetail(reactiveEntry);
+    expect(vm.detailEntry).toEqual(entry);
+    vm.toggleDetail(reactiveEntry);
+    expect(vm.detailEntry).toBeNull();
+  });
+
+  it('should filter visible entries by search query including custom fields', () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    vm.currentEntries = [
+      { Title: 'Alpha', UserName: 'a', Url: 'https://a.com', Group: 'Work', UsageCount: 1, CustomFields: [{ Name: 'Pin', Value: '1234' }] },
+      { Title: 'Beta', UserName: 'b', Url: 'https://b.com', Group: 'Personal', UsageCount: 2, CustomFields: [] },
+    ];
+    vm.searchQuery = 'Pin 1234';
+    expect(vm.visibleEntries.length).toBe(1);
+    expect(vm.visibleEntries[0].Title).toBe('Alpha');
+  });
+
+  it('should compute emptyStateVariant as search when query present', () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    vm.state = { paired: true, locked: false };
+    vm.currentEntries = [{ Title: 'X' }];
+    vm.searchQuery = 'find';
+    expect(vm.emptyStateVariant).toBe('search');
+  });
+
+  it('should compute emptyStateVariant as filter when entries exist', () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    vm.state = { paired: true, locked: false };
+    vm.currentEntries = [{ Title: 'X' }];
+    expect(vm.emptyStateVariant).toBe('filter');
+  });
+
   it('should cycle theme light→dark→system→light', () => {
     const wrapper = mount(App, mountOptions);
     const vm = wrapper.vm;
@@ -242,6 +283,26 @@ describe('App.vue', () => {
     await vm.copyField('username', 'val');
     await new Promise(r => setTimeout(r, 10));
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('val');
+  });
+
+  it('should copy field successfully', async () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(() => Promise.resolve()) }, configurable: true });
+    await vm.copyField('username', 'val');
+    await new Promise(r => setTimeout(r, 10));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('val');
+  });
+
+  it('should fill entry successfully and close window', async () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    const closeSpy = vi.fn();
+    Object.defineProperty(window, 'close', { value: closeSpy, configurable: true });
+    await vm.fillEntry({ Title: 'X' }, 'form');
+    await new Promise(r => setTimeout(r, 10));
+    expect(vm.bridge.fillLogin).toHaveBeenCalled();
+    expect(closeSpy).toHaveBeenCalled();
   });
 
   it('should start empty action when empty', () => {
@@ -419,6 +480,20 @@ describe('App.vue', () => {
     await vm.saveEdit({ Title: 'New' });
     await new Promise(r => setTimeout(r, 50));
     expect(vm.formMode).toBeNull();
+  });
+
+  it('should map Uuid to EntryId when saving edit', async () => {
+    mockSettings = { clientId: 'c1', locked: false };
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    vm.editingEntry = { Title: 'Old', Uuid: 'uuid1', Group: 'Root', CustomFields: [] };
+    vm.formMode = 'edit';
+    const updateSpy = vi.spyOn(vm.bridge, 'updateLogin');
+    await vm.saveEdit({ Title: 'New' });
+    await new Promise(r => setTimeout(r, 50));
+    expect(updateSpy).toHaveBeenCalled();
+    const payload = updateSpy.mock.calls[0][0];
+    expect(payload.EntryId).toBe('uuid1');
   });
 
   it('should create login and refresh', async () => {
