@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { defineComponent } from 'vue';
+import { mount } from '@vue/test-utils';
 
 describe('useTheme', () => {
   let originalLocalStorage;
@@ -136,5 +138,37 @@ describe('useTheme', () => {
     );
     expect(vueWarnings).toHaveLength(0);
     warnSpy.mockRestore();
+  });
+
+  it('should clean up matchMedia listener and watcher when component unmounts', async () => {
+    global.document = originalDocument;
+
+    const removeEventListener = vi.fn();
+    let changeHandler = null;
+    const mq = {
+      matches: false,
+      addEventListener: vi.fn((event, handler) => { changeHandler = handler; }),
+      removeEventListener,
+    };
+    global.window.matchMedia = vi.fn(() => mq);
+
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+
+    const TestComponent = defineComponent({
+      setup() {
+        useTheme();
+        return {};
+      },
+      template: '<div data-testid="theme-test"></div>',
+    });
+
+    const wrapper = mount(TestComponent);
+    expect(removeEventListener).not.toHaveBeenCalled();
+    expect(changeHandler).not.toBeNull();
+
+    wrapper.unmount();
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(removeEventListener).toHaveBeenCalledWith('change', changeHandler);
   });
 });
