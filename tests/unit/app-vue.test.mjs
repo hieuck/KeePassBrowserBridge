@@ -40,10 +40,13 @@ vi.mock('../../extension/src/composables/useBridge.js', () => {
 });
 
 vi.mock('../../extension/src/composables/useTheme.js', () => ({
-  useTheme: () => ({
-    theme: ref('system'),
-    setTheme: vi.fn(),
-  }),
+  useTheme: () => {
+    const theme = ref('system');
+    return {
+      theme,
+      setTheme: vi.fn((value) => { theme.value = value; }),
+    };
+  },
 }));
 
 vi.mock('../../extension/src/composables/useToast.js', () => ({
@@ -187,8 +190,21 @@ describe('App.vue', () => {
   it('should start new login form', () => {
     const wrapper = mount(App, mountOptions);
     const vm = wrapper.vm;
+    vm.detailEntry = { Title: 'X' };
     vm.startNew();
     expect(vm.formMode).toBe('new');
+    expect(vm.detailEntry).toBeNull();
+  });
+
+  it('should start edit and clear detail', () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    const entry = { Title: 'X' };
+    vm.detailEntry = entry;
+    vm.startEdit(entry);
+    expect(vm.editingEntry).toEqual(entry);
+    expect(vm.detailEntry).toBeNull();
+    expect(vm.formMode).toBe('edit');
   });
 
   it('should cycle theme light→dark→system→light', () => {
@@ -196,7 +212,11 @@ describe('App.vue', () => {
     const vm = wrapper.vm;
     vm.theme = 'light';
     vm.cycleTheme();
-    expect(vm.$options.setTheme || true).toBe(true);
+    expect(vm.theme).toBe('dark');
+    vm.cycleTheme();
+    expect(vm.theme).toBe('system');
+    vm.cycleTheme();
+    expect(vm.theme).toBe('light');
   });
 
   it('should open settings page', () => {
@@ -204,6 +224,24 @@ describe('App.vue', () => {
     const vm = wrapper.vm;
     vm.openSettings();
     expect(chrome.runtime.openOptionsPage).toHaveBeenCalled();
+  });
+
+  it('should handle fillEntry error', async () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    vm.bridge.fillLogin = vi.fn(() => Promise.reject(new Error('fill failed')));
+    await vm.fillEntry({ Title: 'X' }, 'form');
+    await new Promise(r => setTimeout(r, 10));
+    expect(vm.bridge.fillLogin).toHaveBeenCalled();
+  });
+
+  it('should handle copyField error', async () => {
+    const wrapper = mount(App, mountOptions);
+    const vm = wrapper.vm;
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(() => Promise.reject(new Error('copy failed'))) }, configurable: true });
+    await vm.copyField('username', 'val');
+    await new Promise(r => setTimeout(r, 10));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('val');
   });
 
   it('should start empty action when empty', () => {
