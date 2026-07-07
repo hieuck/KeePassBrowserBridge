@@ -66,4 +66,28 @@ describe('PasswordGenerator', () => {
     await input.trigger('focus');
     expect(select).toHaveBeenCalled();
   });
+
+  it('should toggle include symbols checkbox', async () => {
+    const wrapper = mount(PasswordGenerator);
+    const checkboxes = wrapper.findAll('.generator__checkbox input[type="checkbox"]');
+    await checkboxes[0].setValue(false);
+    expect(wrapper.vm.useSymbols).toBe(false);
+  });
+
+  it('should toggle exclude ambiguous checkbox', async () => {
+    const wrapper = mount(PasswordGenerator);
+    const checkboxes = wrapper.findAll('.generator__checkbox input[type="checkbox"]');
+    await checkboxes[1].setValue(true);
+    expect(wrapper.vm.excludeAmbiguous).toBe(true);
+  });
+
+  it('should regenerate with options applied after refresh', async () => {
+    const wrapper = mount(PasswordGenerator);
+    const checkboxes = wrapper.findAll('.generator__checkbox input[type="checkbox"]');
+    await checkboxes[0].setValue(false);
+    await checkboxes[1].setValue(true);
+    await wrapper.find('.generator__refresh-btn').trigger('click');
+    const input = wrapper.find('.generator__input');
+    expect(input.element.value.length).toBeGreaterThanOrEqual(8);
+  });
 });
