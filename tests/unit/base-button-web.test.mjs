@@ -78,9 +78,32 @@ describe('BaseButton', () => {
     document.body.appendChild(el);
     const handler = vi.fn();
     el.addEventListener('kbb-click', handler);
-    const btn = el.querySelector('button');
-    btn?.click();
+    el.dispatchEvent(new Event('click'));
     expect(handler).not.toHaveBeenCalled();
+    document.body.removeChild(el);
+  });
+
+  it('should not dispatch kbb-click when loading', () => {
+    const el = document.createElement('kbb-button');
+    el.setAttribute('loading', '');
+    el.textContent = 'Loading';
+    document.body.appendChild(el);
+    const handler = vi.fn();
+    el.addEventListener('kbb-click', handler);
+    el.dispatchEvent(new Event('click'));
+    expect(handler).not.toHaveBeenCalled();
+    document.body.removeChild(el);
+  });
+
+  it('should disable button when loading attribute present', () => {
+    const el = document.createElement('kbb-button');
+    el.setAttribute('loading', '');
+    el.textContent = 'Loading';
+    document.body.appendChild(el);
+    const btn = el.querySelector('button');
+    expect(btn?.hasAttribute('disabled')).toBe(true);
+    expect(btn?.getAttribute('aria-disabled')).toBe('true');
+    expect(btn?.getAttribute('aria-busy')).toBe('true');
     document.body.removeChild(el);
   });
 
