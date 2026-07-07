@@ -49,4 +49,21 @@ describe('PasswordGenerator', () => {
     const pwLen = wrapper.find('.generator__input').element.value.length;
     expect(pwLen).toBe(32);
   });
+
+  it('should handle copy failure gracefully', async () => {
+    const writeText = vi.fn(() => Promise.reject(new Error('copy failed')));
+    Object.assign(navigator, { clipboard: { writeText } });
+    const wrapper = mount(PasswordGenerator);
+    await wrapper.find('.generator__copy-btn').trigger('click');
+    await new Promise(r => setTimeout(r, 10));
+    expect(wrapper.emitted('select')).toBeFalsy();
+  });
+
+  it('should select input text on focus', async () => {
+    const wrapper = mount(PasswordGenerator);
+    const input = wrapper.find('.generator__input');
+    const select = vi.spyOn(input.element, 'select');
+    await input.trigger('focus');
+    expect(select).toHaveBeenCalled();
+  });
 });
