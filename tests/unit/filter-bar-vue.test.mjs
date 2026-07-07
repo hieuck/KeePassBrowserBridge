@@ -40,6 +40,28 @@ describe('FilterBar', () => {
     expect(activeChip.text()).toContain('Finance');
   });
 
+  it('should render count badge only when group has a count', () => {
+    const wrapper = mount(FilterBar, {
+      props: {
+        groups: [
+          { id: 'all', label: 'All' },
+          { id: '1', label: 'Social' },
+          { id: '2', label: 'Finance', count: 12 },
+          { id: '3', label: 'Work', count: 0 },
+          { id: '4', label: 'Personal' },
+        ],
+      },
+    });
+    const chips = wrapper.findAll('.filter-bar__chip');
+    expect(chips[0].find('[data-testid="badge"]').exists()).toBe(false);
+    expect(chips[1].find('[data-testid="badge"]').exists()).toBe(false);
+    expect(chips[2].find('[data-testid="badge"]').exists()).toBe(true);
+    expect(chips[2].text()).toContain('12');
+    expect(chips[3].find('[data-testid="badge"]').exists()).toBe(true);
+    expect(chips[3].text()).toContain('0');
+    expect(chips[4].find('[data-testid="badge"]').exists()).toBe(false);
+  });
+
   it('should emit update:modelValue on chip click', async () => {
     const wrapper = mount(FilterBar, { props: { groups: mockGroups } });
     const chips = wrapper.findAll('.filter-bar__chip');
