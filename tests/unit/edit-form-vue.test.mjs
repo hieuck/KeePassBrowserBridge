@@ -162,4 +162,43 @@ describe('EditForm', () => {
     expect(wrapper.emitted('save')).toBeTruthy();
     expect(wrapper.emitted('save')[0][0].CustomFields).toEqual([{ Name: 'note', Value: 'hello', IsProtected: false }]);
   });
+
+  it('should update username field', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const inputs = wrapper.findAll('.form__input');
+    const usernameInput = inputs.find(i => i.element.value === 'admin');
+    await usernameInput?.setValue('newuser');
+    expect(wrapper.vm.form.UserName).toBe('newuser');
+  });
+
+  it('should update password field', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const inputs = wrapper.findAll('.form__input');
+    const passwordInput = inputs.find(i => i.attributes('type') === 'password' && i.element.value === 'p@ss');
+    await passwordInput?.setValue('newpass');
+    expect(wrapper.vm.form.Password).toBe('newpass');
+  });
+
+  it('should update group field', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const inputs = wrapper.findAll('.form__input');
+    const groupInput = inputs.find(i => i.element.value === 'Root');
+    await groupInput?.setValue('Work');
+    expect(wrapper.vm.form.Group).toBe('Work');
+  });
+
+  it('should update custom field name', async () => {
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    const nameInput = wrapper.findAll('.form__custom-row .form__input')
+      .find(i => i.attributes('placeholder') === 'Name');
+    await nameInput?.setValue('renamed');
+    expect(wrapper.vm.form.CustomFields[0].Name).toBe('renamed');
+  });
+
+  it('should remove keydown listener on unmount', () => {
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    const wrapper = mount(EditForm, { props: { entry: mockEntry }, ...mountOptions });
+    wrapper.unmount();
+    expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+  });
 });
