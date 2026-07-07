@@ -175,6 +175,16 @@ describe('CredentialCard', () => {
     expect(wrapper.emitted('toggle')[0]).toEqual([mockEntry]);
   });
 
+  it('should emit toggle on chevron button click', async () => {
+    const wrapper = mount(CredentialCard, {
+      props: { entry: mockEntry },
+      global: { stubs: { DetailView: true } },
+    });
+    await wrapper.find('.credential-card__chevron').trigger('click');
+    expect(wrapper.emitted('toggle')).toBeTruthy();
+    expect(wrapper.emitted('toggle')[0]).toEqual([mockEntry]);
+  });
+
   it('should render expanded detail view', () => {
     const wrapper = mount(CredentialCard, {
       props: { entry: mockEntry, expanded: true },
@@ -182,5 +192,50 @@ describe('CredentialCard', () => {
     });
     expect(wrapper.find('.credential-card__detail').exists()).toBe(true);
     expect(wrapper.find('.credential-card__quick-actions').exists()).toBe(false);
+  });
+
+  it('should render favicon image when entry has URL', () => {
+    const wrapper = mount(CredentialCard, {
+      props: { entry: mockEntry },
+      global: { stubs: { DetailView: true } },
+    });
+    const img = wrapper.find('.credential-card__favicon');
+    expect(img.exists()).toBe(true);
+    expect(img.attributes('src')).toContain('example.com');
+  });
+
+  it('should render meta with group and url', () => {
+    const wrapper = mount(CredentialCard, {
+      props: { entry: mockEntry },
+      global: { stubs: { DetailView: true } },
+    });
+    expect(wrapper.find('.credential-card__meta').exists()).toBe(true);
+  });
+
+  it('should render meta with only group', () => {
+    const wrapper = mount(CredentialCard, {
+      props: { entry: { ...mockEntry, Url: '' } },
+      global: { stubs: { DetailView: true } },
+    });
+    expect(wrapper.find('.credential-card__meta').exists()).toBe(true);
+  });
+
+  it('should render meta with only url', () => {
+    const wrapper = mount(CredentialCard, {
+      props: { entry: { ...mockEntry, Group: '' } },
+      global: { stubs: { DetailView: true } },
+    });
+    expect(wrapper.find('.credential-card__meta').exists()).toBe(true);
+  });
+
+  it('should forward fill and copy events from DetailView', async () => {
+    const wrapper = mount(CredentialCard, {
+      props: { entry: mockEntry, expanded: true },
+    });
+    const detail = wrapper.findComponent({ name: 'DetailView' });
+    await detail.vm.$emit('fill', mockEntry, 'form');
+    expect(wrapper.emitted('fill')).toBeTruthy();
+    await detail.vm.$emit('copy', 'username', mockEntry.UserName);
+    expect(wrapper.emitted('copy')).toBeTruthy();
   });
 });
