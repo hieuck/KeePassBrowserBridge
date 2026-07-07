@@ -71,4 +71,30 @@ describe('FooterBar', () => {
     await themeBtn?.trigger('click');
     expect(wrapper.emitted('toggle-theme')).toBeTruthy();
   });
+
+  it('should emit settings when Settings is clicked', async () => {
+    const wrapper = mount(FooterBar);
+    const buttons = wrapper.findAll('button');
+    const settingsBtn = buttons.find(b => b.text().includes('Settings'));
+    await settingsBtn?.trigger('click');
+    expect(wrapper.emitted('settings')).toBeTruthy();
+  });
+
+  it('should emit clients when Clients is clicked', async () => {
+    const wrapper = mount(FooterBar);
+    const buttons = wrapper.findAll('button');
+    const clientsBtn = buttons.find(b => b.text().includes('Clients'));
+    await clientsBtn?.trigger('click');
+    expect(wrapper.emitted('clients')).toBeTruthy();
+  });
+
+  it('should render dark theme icon', () => {
+    const wrapper = mount(FooterBar, { props: { theme: 'dark' } });
+    expect(wrapper.text()).toContain('Theme');
+  });
+
+  it('should render system theme icon', () => {
+    const wrapper = mount(FooterBar, { props: { theme: 'system' } });
+    expect(wrapper.text()).toContain('Theme');
+  });
 });
