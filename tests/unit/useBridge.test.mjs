@@ -89,4 +89,110 @@ describe('useBridge', () => {
       expect.any(Function),
     );
   });
+
+  it('should pass url to queryForUrl', async () => {
+    chrome.runtime.sendMessage.mockImplementation((_msg, cb) => {
+      cb({ ok: true, response: [] });
+    });
+    const { useBridge } = await import('../../extension/src/composables/useBridge.js');
+    const bridge = useBridge();
+    await bridge.queryForUrl('https://example.com');
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_QUERY_FOR_URL', url: 'https://example.com' },
+      expect.any(Function),
+    );
+  });
+
+  it('should call getState, getAbout, and hello with correct types', async () => {
+    chrome.runtime.sendMessage.mockImplementation((msg, cb) => {
+      cb({ ok: true, response: msg.type });
+    });
+    const { useBridge } = await import('../../extension/src/composables/useBridge.js');
+    const bridge = useBridge();
+    expect(await bridge.getState()).toBe('KBB_GET_STATE');
+    expect(await bridge.getAbout()).toBe('KBB_GET_ABOUT');
+    expect(await bridge.hello()).toBe('KBB_HELLO');
+  });
+
+  it('should pass enabled to setAutoFill and setAutoSubmit', async () => {
+    chrome.runtime.sendMessage.mockImplementation((_msg, cb) => {
+      cb({ ok: true, response: null });
+    });
+    const { useBridge } = await import('../../extension/src/composables/useBridge.js');
+    const bridge = useBridge();
+    await bridge.setAutoFill(true);
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_SET_AUTO_FILL', enabled: true },
+      expect.any(Function),
+    );
+    await bridge.setAutoSubmit(false);
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_SET_AUTO_SUBMIT', enabled: false },
+      expect.any(Function),
+    );
+  });
+
+  it('should pass login payload to createLogin and updateLogin', async () => {
+    chrome.runtime.sendMessage.mockImplementation((_msg, cb) => {
+      cb({ ok: true, response: null });
+    });
+    const { useBridge } = await import('../../extension/src/composables/useBridge.js');
+    const bridge = useBridge();
+    const login = { name: 'Example', username: 'user@example.com' };
+    await bridge.createLogin(login);
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_CREATE_LOGIN', login },
+      expect.any(Function),
+    );
+    await bridge.updateLogin(login);
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_UPDATE_LOGIN', login },
+      expect.any(Function),
+    );
+  });
+
+  it('should pass credential and role to fillLogin', async () => {
+    chrome.runtime.sendMessage.mockImplementation((_msg, cb) => {
+      cb({ ok: true, response: null });
+    });
+    const { useBridge } = await import('../../extension/src/composables/useBridge.js');
+    const bridge = useBridge();
+    const credential = { name: 'Example' };
+    await bridge.fillLogin(credential, 'username', 'custom-field');
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_FILL_LOGIN', credential, fieldRole: 'username', customFieldName: 'custom-field' },
+      expect.any(Function),
+    );
+  });
+
+  it('should call pairCancel, listClients, and setPasskeysEnabled', async () => {
+    chrome.runtime.sendMessage.mockImplementation((msg, cb) => {
+      cb({ ok: true, response: msg.type });
+    });
+    const { useBridge } = await import('../../extension/src/composables/useBridge.js');
+    const bridge = useBridge();
+    expect(await bridge.pairCancel()).toBe('KBB_PAIR_CANCEL');
+    expect(await bridge.listClients()).toBe('KBB_LIST_CLIENTS');
+    await bridge.setPasskeysEnabled(true);
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_SET_PASSKEYS_ENABLED', enabled: true },
+      expect.any(Function),
+    );
+  });
+
+  it('should call lockDatabase, listGroups, getDatabaseInfo, and performAutoType', async () => {
+    chrome.runtime.sendMessage.mockImplementation((msg, cb) => {
+      cb({ ok: true, response: msg.type });
+    });
+    const { useBridge } = await import('../../extension/src/composables/useBridge.js');
+    const bridge = useBridge();
+    expect(await bridge.lockDatabase()).toBe('KBB_LOCK_DATABASE');
+    expect(await bridge.listGroups()).toBe('KBB_LIST_GROUPS');
+    expect(await bridge.getDatabaseInfo()).toBe('KBB_GET_DATABASE_INFO');
+    expect(await bridge.performAutoType('search-term')).toBe('KBB_AUTOTYPE');
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: 'KBB_AUTOTYPE', search: 'search-term' },
+      expect.any(Function),
+    );
+  });
 });
