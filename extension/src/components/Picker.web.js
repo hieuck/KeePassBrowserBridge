@@ -398,11 +398,9 @@ class KbbPicker extends HTMLElement {
   _getHeaderDomain() {
     const urls = this._credentials.map(c => c.url).filter(Boolean);
     if (urls.length === 0) return '';
-    try {
-      const hostnames = urls.map(u => { try { return new URL(u).hostname; } catch { return null; } }).filter(Boolean);
-      const unique = [...new Set(hostnames)];
-      return unique[0] || '';
-    } catch { return ''; }
+    const hostnames = urls.map(u => { try { return new URL(u).hostname; } catch { return null; } }).filter(Boolean);
+    const unique = [...new Set(hostnames)];
+    return unique[0] || '';
   }
 
   _renderItem(cred, index) {
