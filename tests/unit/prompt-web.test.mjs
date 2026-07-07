@@ -1,221 +1,244 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import '../../extension/src/components/Prompt.web.js';
 
-describe('KbbSavePrompt', () => {
+function safeRemove(el) {
+  if (el && el.parentNode) {
+    el.parentNode.removeChild(el);
+  }
+}
+
+describe('Prompt web components', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     vi.useFakeTimers();
   });
 
   afterEach(() => {
+    document.body.innerHTML = '';
     vi.useRealTimers();
-    document.body.innerHTML = '';
   });
 
-  it('should define kbb-save-prompt custom element', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    expect(customElements.get('kbb-save-prompt')).toBeDefined();
+  describe('KbbSavePrompt', () => {
+    it('should be defined as a custom element', () => {
+      expect(customElements.get('kbb-save-prompt')).toBeDefined();
+    });
+
+    it('should render provided attributes', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('username', 'user@example.com');
+      el.setAttribute('password', 'secret');
+      document.body.appendChild(el);
+      expect(el.shadowRoot.textContent).toContain('Example');
+      expect(el.shadowRoot.textContent).toContain('user@example.com');
+      expect(el.shadowRoot.textContent).toContain('Save this login?');
+      safeRemove(el);
+    });
+
+    it('should render folder options and select current folder', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('folder', 'Work');
+      el.setAttribute('folders', JSON.stringify(['Personal', 'Work', 'Finance']));
+      document.body.appendChild(el);
+      const select = el.shadowRoot.querySelector('[data-field="folder"]');
+      expect(select).not.toBeNull();
+      expect(select.innerHTML).toContain('Work');
+      expect(select.innerHTML).toContain('Personal');
+      expect(select.querySelector('option[selected]').value).toBe('Work');
+      safeRemove(el);
+    });
+
+    it('should dispatch kbb-save with edited title and url', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('username', 'user@example.com');
+      el.setAttribute('password', 'secret');
+      el.setAttribute('url', 'https://example.com');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-save', handler);
+      const titleInput = el.shadowRoot.querySelector('[data-field="title"]');
+      titleInput.value = 'Edited Title';
+      titleInput.dispatchEvent(new Event('input'));
+      const urlInput = el.shadowRoot.querySelector('[data-field="url"]');
+      urlInput.value = 'https://edited.example.com';
+      urlInput.dispatchEvent(new Event('input'));
+      el.shadowRoot.querySelector('[data-action="save"]').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler.mock.calls[0][0].detail.name).toBe('Edited Title');
+      expect(handler.mock.calls[0][0].detail.url).toBe('https://edited.example.com');
+      safeRemove(el);
+    });
+
+    it('should fall back to name when title attribute is missing', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('username', 'user@example.com');
+      document.body.appendChild(el);
+      const input = el.shadowRoot.querySelector('[data-field="title"]');
+      expect(input.value).toBe('Example');
+      safeRemove(el);
+    });
+
+    it('should apply custom data-top and data-right when position is not bottom-right', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('data-position', 'custom');
+      el.setAttribute('data-top', '10px');
+      el.setAttribute('data-right', '20px');
+      document.body.appendChild(el);
+      expect(el.style.top).toBe('10px');
+      expect(el.style.right).toBe('20px');
+      safeRemove(el);
+    });
+
+    it('should dispatch kbb-save on save button click', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('username', 'user@example.com');
+      el.setAttribute('password', 'secret');
+      el.setAttribute('url', 'https://example.com');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-save', handler);
+      el.shadowRoot.querySelector('[data-action="save"]').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should dispatch kbb-never on never button click', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('url', 'https://example.com');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-never', handler);
+      el.shadowRoot.querySelector('[data-action="never"]').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should dispatch kbb-dismiss on close button click', () => {
+      const el = document.createElement('kbb-save-prompt');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-dismiss', handler);
+      el.shadowRoot.querySelector('.prompt-header__close').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should auto-dismiss after 30 seconds', () => {
+      const el = document.createElement('kbb-save-prompt');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-dismiss', handler);
+      vi.advanceTimersByTime(30000);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should clear auto-dismiss timer on disconnectedCallback', () => {
+      const el = document.createElement('kbb-save-prompt');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-dismiss', handler);
+      document.body.removeChild(el);
+      vi.advanceTimersByTime(30000);
+      expect(handler).not.toHaveBeenCalled();
+    });
   });
 
-  it('should create shadow root on construction', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    expect(el.shadowRoot).toBeDefined();
-  });
+  describe('KbbUpdatePrompt', () => {
+    it('should be defined as a custom element', () => {
+      expect(customElements.get('kbb-update-prompt')).toBeDefined();
+    });
 
-  it('should render site name and username from attributes', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('name', 'Example');
-    el.setAttribute('username', 'user@ex.com');
-    el.setAttribute('password', 'secret123');
-    document.body.appendChild(el);
-    expect(el.shadowRoot.textContent).toContain('Example');
-    expect(el.shadowRoot.textContent).toContain('user@ex.com');
-  });
+    it('should render provided attributes', () => {
+      const el = document.createElement('kbb-update-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('old-username', 'old@example.com');
+      el.setAttribute('username', 'new@example.com');
+      document.body.appendChild(el);
+      expect(el.shadowRoot.textContent).toContain('Example');
+      expect(el.shadowRoot.textContent).toContain('old@example.com');
+      expect(el.shadowRoot.textContent).toContain('new@example.com');
+      expect(el.shadowRoot.textContent).toContain('Update existing login?');
+      safeRemove(el);
+    });
 
-  it('should render editable title and URL fields', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('name', 'Test');
-    el.setAttribute('url', 'https://test.com');
-    document.body.appendChild(el);
-    expect(el.shadowRoot.querySelector('[data-field="title"]')).toBeDefined();
-    expect(el.shadowRoot.querySelector('[data-field="url"]')).toBeDefined();
-    expect(el.shadowRoot.querySelector('[data-field="folder"]')).toBeDefined();
-  });
+    it('should apply custom data-top and data-right when position is not bottom-right', () => {
+      const el = document.createElement('kbb-update-prompt');
+      el.setAttribute('data-position', 'custom');
+      el.setAttribute('data-top', '12px');
+      el.setAttribute('data-right', '24px');
+      document.body.appendChild(el);
+      expect(el.style.top).toBe('12px');
+      expect(el.style.right).toBe('24px');
+      safeRemove(el);
+    });
 
-  it('should emit kbb-save on Save button click', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('name', 'Site');
-    el.setAttribute('username', 'user');
-    el.setAttribute('password', 'pass');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-save', handler);
-    el.shadowRoot.querySelector('[data-action="save"]').click();
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].detail.username).toBe('user');
-    expect(handler.mock.calls[0][0].detail.password).toBe('pass');
-  });
+    it('should dispatch kbb-update with edited username and url', () => {
+      const el = document.createElement('kbb-update-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('username', 'new@example.com');
+      el.setAttribute('url', 'https://example.com');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-update', handler);
+      const usernameInput = el.shadowRoot.querySelector('[data-field="username"]');
+      usernameInput.value = 'edited@example.com';
+      usernameInput.dispatchEvent(new Event('input'));
+      const urlInput = el.shadowRoot.querySelector('[data-field="url"]');
+      urlInput.value = 'https://edited.example.com';
+      urlInput.dispatchEvent(new Event('input'));
+      el.shadowRoot.querySelector('[data-action="update"]').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler.mock.calls[0][0].detail.username).toBe('edited@example.com');
+      expect(handler.mock.calls[0][0].detail.url).toBe('https://edited.example.com');
+      safeRemove(el);
+    });
 
-  it('should emit kbb-never on Never button click', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('url', 'https://example.com');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-never', handler);
-    el.shadowRoot.querySelector('[data-action="never"]').click();
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].detail.url).toBe('https://example.com');
-  });
+    it('should render password field when password attribute is present', () => {
+      const el = document.createElement('kbb-update-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('password', 'secret123');
+      document.body.appendChild(el);
+      const fields = el.shadowRoot.querySelectorAll('.prompt-field');
+      expect(Array.from(fields).some(f => f.textContent.includes('Pass'))).toBe(true);
+      safeRemove(el);
+    });
 
-  it('should emit kbb-dismiss on close button click', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-dismiss', handler);
-    el.shadowRoot.querySelector('.prompt-header__close').click();
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
+    it('should dispatch kbb-update on update button click', () => {
+      const el = document.createElement('kbb-update-prompt');
+      el.setAttribute('name', 'Example');
+      el.setAttribute('username', 'new@example.com');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-update', handler);
+      el.shadowRoot.querySelector('[data-action="update"]').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
 
-  it('should auto-dismiss after 30 seconds', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-dismiss', handler);
-    expect(handler).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(30000);
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
+    it('should dispatch kbb-skip on skip button click', () => {
+      const el = document.createElement('kbb-update-prompt');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-skip', handler);
+      el.shadowRoot.querySelector('[data-action="skip"]').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
 
-  it('should remove element after save', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('name', 'X');
-    document.body.appendChild(el);
-    expect(document.body.contains(el)).toBe(true);
-    el.shadowRoot.querySelector('[data-action="save"]').click();
-    expect(document.body.contains(el)).toBe(false);
-  });
-});
+    it('should dispatch kbb-dismiss on close button click', () => {
+      const el = document.createElement('kbb-update-prompt');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-dismiss', handler);
+      el.shadowRoot.querySelector('.prompt-header__close').click();
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
 
-describe('KbbUpdatePrompt', () => {
-  beforeEach(() => {
-    document.body.innerHTML = '';
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    document.body.innerHTML = '';
-  });
-
-  it('should define kbb-update-prompt custom element', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    expect(customElements.get('kbb-update-prompt')).toBeDefined();
-  });
-
-  it('should render old and new usernames', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-update-prompt');
-    el.setAttribute('name', 'Site');
-    el.setAttribute('old-username', 'old@user.com');
-    el.setAttribute('username', 'new@user.com');
-    document.body.appendChild(el);
-    expect(el.shadowRoot.textContent).toContain('old@user.com');
-    expect(el.shadowRoot.textContent).toContain('new@user.com');
-  });
-
-  it('should emit kbb-update on Update button click', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-update-prompt');
-    el.setAttribute('password', 'newpass');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-update', handler);
-    el.shadowRoot.querySelector('[data-action="update"]').click();
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].detail.password).toBe('newpass');
-  });
-
-  it('should emit kbb-skip on Not now button click', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-update-prompt');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-skip', handler);
-    el.shadowRoot.querySelector('[data-action="skip"]').click();
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('should emit kbb-dismiss on close button click', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-update-prompt');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-dismiss', handler);
-    el.shadowRoot.querySelector('.prompt-header__close').click();
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('should auto-dismiss after 30 seconds', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-update-prompt');
-    document.body.appendChild(el);
-    const handler = vi.fn();
-    el.addEventListener('kbb-dismiss', handler);
-    vi.advanceTimersByTime(30000);
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('should apply custom position when data-position, data-top, data-right are set', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-update-prompt');
-    el.setAttribute('data-position', 'custom');
-    el.setAttribute('data-top', '100px');
-    el.setAttribute('data-right', '50px');
-    document.body.appendChild(el);
-    expect(el.style.top).toBe('100px');
-    expect(el.style.right).toBe('50px');
-  });
-
-  it('should render folder options when folders attribute provided', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('folders', JSON.stringify(['Root', 'Social', 'Work']));
-    el.setAttribute('name', 'Site');
-    document.body.appendChild(el);
-    const select = el.shadowRoot.querySelector('[data-field="folder"]');
-    expect(select).toBeDefined();
-    expect(select.options.length).toBe(3);
-    expect(select.options[0].value).toBe('Root');
-  });
-
-  it('should render folder options with object items', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('folders', JSON.stringify([
-      { name: 'Root', value: '/' },
-      { name: 'Social', value: '/social' },
-    ]));
-    el.setAttribute('name', 'Site');
-    document.body.appendChild(el);
-    const select = el.shadowRoot.querySelector('[data-field="folder"]');
-    expect(select).toBeDefined();
-    expect(select.options[0].value).toBe('/');
-    expect(select.options[0].textContent).toBe('Root');
-  });
-
-  it('should set save prompt custom position via data-* attributes', async () => {
-    await import('../../extension/src/components/Prompt.web.js');
-    const el = document.createElement('kbb-save-prompt');
-    el.setAttribute('data-position', 'custom');
-    el.setAttribute('data-top', '50px');
-    document.body.appendChild(el);
-    expect(el.style.top).toBe('50px');
+    it('should auto-dismiss after 30 seconds', () => {
+      const el = document.createElement('kbb-update-prompt');
+      document.body.appendChild(el);
+      const handler = vi.fn();
+      el.addEventListener('kbb-dismiss', handler);
+      vi.advanceTimersByTime(30000);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
   });
 });

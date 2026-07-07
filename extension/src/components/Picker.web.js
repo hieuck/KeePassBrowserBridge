@@ -460,7 +460,7 @@ class KbbPicker extends HTMLElement {
       el.setAttribute('tabindex', i === this._activeIndex ? '0' : '-1');
     });
     const active = items[this._activeIndex];
-    if (active) active.scrollIntoView({ block: 'nearest' });
+    if (active && typeof active.scrollIntoView === 'function') active.scrollIntoView({ block: 'nearest' });
   }
 
   _onKeyDown(e) {
