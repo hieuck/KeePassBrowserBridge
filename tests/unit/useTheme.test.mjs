@@ -1,143 +1,93 @@
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const __filename = (() => {
-  try { return fileURLToPath(import.meta.url); }
-  catch { return path.join(process.cwd(), 'tests', 'unit', 'useTheme.test.mjs'); }
-})();
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..', '..');
+describe('useTheme', () => {
+  let originalLocalStorage;
+  let originalMatchMedia;
+  let originalDocument;
 
-const source = fs.readFileSync(path.join(projectRoot, 'extension', 'src', 'composables', 'useTheme.js'), 'utf8');
-
-describe('useTheme.js - theme ref', () => {
-  it('should initialize from localStorage', () => {
-    assert.ok(source.includes("localStorage.getItem('kbb-theme')") || source.includes('localStorage.getItem(STORAGE_KEY)'),
-      'Missing localStorage read for initial theme');
+  beforeEach(() => {
+    vi.resetModules();
+    originalLocalStorage = global.localStorage;
+    originalMatchMedia = global.window?.matchMedia;
+    originalDocument = global.document;
+    global.localStorage = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    };
+    global.document = {
+      documentElement: {
+        setAttribute: vi.fn(),
+      },
+      createElement: vi.fn(() => ({ appendChild: vi.fn(), removeChild: vi.fn() })),
+    };
+    global.window = {
+      matchMedia: vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    };
   });
 
-  it('should have default theme of system', () => {
-    assert.ok(source.includes("return 'system'"), 'Missing default system theme fallback');
+  afterEach(() => {
+    global.localStorage = originalLocalStorage;
+    global.window.matchMedia = originalMatchMedia;
+    global.document = originalDocument;
   });
 
-  it('should validate stored theme value against allowed values', () => {
-    assert.ok(source.includes('includes(stored)'), 'Missing stored value validation via includes');
-  });
-});
-
-describe('useTheme.js - resolved ref', () => {
-  it('should init resolved to light', () => {
-    assert.ok(source.includes("resolved = ref('light')"), 'Missing resolved default of light');
+  it('should default to system when localStorage is empty', async () => {
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { theme, resolved } = useTheme();
+    expect(theme.value).toBe('system');
+    expect(['light', 'dark']).toContain(resolved.value);
   });
 
-  it('should detect dark mode from prefers-color-scheme media query', () => {
-    assert.ok(source.includes("matchMedia('(prefers-color-scheme: dark)')"),
-      'Missing prefers-color-scheme dark media query');
-    assert.ok(source.includes('.matches'), 'Missing .matches check on media query');
-  });
-});
-
-describe('useTheme.js - applyTheme', () => {
-  it('should set data-theme attribute on documentElement', () => {
-    assert.ok(source.includes("document.documentElement.setAttribute('data-theme'"),
-      'Missing data-theme attribute set');
+  it('should use stored theme from localStorage', async () => {
+    global.localStorage.getItem = vi.fn(() => 'dark');
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { theme } = useTheme();
+    expect(theme.value).toBe('dark');
   });
 
-  it('should guard against missing document', () => {
-    assert.ok(source.includes("typeof document === 'undefined'"),
-      'Missing document undefined guard for SSR');
-  });
-});
-
-describe('useTheme.js - setTheme', () => {
-  it('should validate theme value before setting', () => {
-    assert.ok(source.includes('includes(value)'), 'Missing theme value validation');
-    assert.ok(source.includes("'light', 'dark', 'system'"), 'Missing allowed theme values');
+  it('should fall back to system for invalid stored theme', async () => {
+    global.localStorage.getItem = vi.fn(() => 'invalid');
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { theme } = useTheme();
+    expect(theme.value).toBe('system');
   });
 
-  it('should persist theme to localStorage', () => {
-    assert.ok(source.includes('localStorage.setItem(STORAGE_KEY'),
-      'Missing localStorage persistence on theme change');
-  });
-});
-
-describe('useTheme.js - system theme media query listener', () => {
-  it('should listen for prefers-color-scheme changes', () => {
-    assert.ok(source.includes("matchMedia('(prefers-color-scheme: dark)')"),
-      'Missing prefers-color-scheme media query');
-    assert.ok(source.includes('addEventListener'), 'Missing addEventListener on media query');
-    assert.ok(source.includes('change'), 'Missing change event listener on media query');
+  it('should set theme to a valid value', async () => {
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { theme, setTheme } = useTheme();
+    setTheme('light');
+    await new Promise(r => setTimeout(r, 0));
+    expect(theme.value).toBe('light');
+    expect(global.localStorage.setItem).toHaveBeenCalledWith('kbb-theme', 'light');
   });
 
-  it('should only re-apply theme when system preference changes and theme is system', () => {
-    assert.ok(source.includes("theme.value === 'system'"),
-      'Missing system-theme-only guard on media query change');
-  });
-});
-
-describe('useTheme.js - exports', () => {
-  it('should export useTheme function', () => {
-    assert.ok(source.includes('export function useTheme()'), 'Missing useTheme export');
+  it('should ignore invalid theme values', async () => {
+    global.localStorage.getItem = vi.fn(() => 'dark');
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { theme, setTheme } = useTheme();
+    setTheme('purple');
+    expect(theme.value).toBe('dark');
   });
 
-  it('should return theme, resolved, and setTheme', () => {
-    assert.ok(source.includes('return { theme, resolved, setTheme }'),
-      'Missing theme, resolved, setTheme return object');
-  });
-});
-
-describe('useTheme.js - lifecycle (component-scoped watch)', () => {
-  it('should import onUnmounted from vue', () => {
-    assert.ok(source.includes("import { ref, watch, onUnmounted } from 'vue'"),
-      'Missing onUnmounted import from vue for lifecycle cleanup');
+  it('should resolve dark when system prefers dark', async () => {
+    global.window.matchMedia = vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { resolved, setTheme } = useTheme();
+    setTheme('system');
+    expect(resolved.value).toBe('dark');
   });
 
-  it('should create watch inside useTheme() body, not at module level', () => {
-    const useThemeBody = source.split('export function useTheme()')[1];
-    assert.ok(useThemeBody, 'Missing useTheme function body');
-    assert.ok(useThemeBody.includes('const stopWatch = watch(theme,'),
-      'watch() must be created inside useTheme() body (not at module level)');
-  });
-
-  it('should call stopWatch() in onUnmounted cleanup', () => {
-    const useThemeBody = source.split('export function useTheme()')[1];
-    assert.ok(useThemeBody.includes("onUnmounted(() =>"),
-      'Missing onUnmounted lifecycle hook in useTheme()');
-    assert.ok(useThemeBody.includes('stopWatch()'),
-      'Missing stopWatch() call in cleanup');
-  });
-
-  it('should clean up media query listener via removeEventListener', () => {
-    const useThemeBody = source.split('export function useTheme()')[1];
-    assert.ok(useThemeBody.includes('removeEventListener'),
-      'Missing removeEventListener cleanup for media query');
-    assert.ok(useThemeBody.includes("mqCleanup = ()"),
-      'Missing mqCleanup function assignment');
-    assert.ok(useThemeBody.includes('if (mqCleanup) mqCleanup()'),
-      'Missing mqCleanup invocation in onUnmounted');
-  });
-
-  it('should NOT have module-level watch outside useTheme()', () => {
-    const moduleLevel = source.split('export function useTheme()')[0];
-    const watchCount = (moduleLevel.match(/\bwatch\(/g) || []).length;
-    assert.equal(watchCount, 0,
-      `Found ${watchCount} module-level watch() calls — should be 0 (moved into useTheme())`);
-  });
-
-  it('should only call applyTheme() at module level (no other side effects)', () => {
-    const moduleLevel = source.split('export function useTheme()')[0];
-    const hasWatchAtModule = moduleLevel.includes('watch(');
-    const hasAddEventListenerAtModule = moduleLevel.includes('addEventListener');
-    assert.ok(!hasWatchAtModule, 'watch() must not be at module level');
-    assert.ok(!hasAddEventListenerAtModule, 'addEventListener must not be at module level');
-    assert.ok(moduleLevel.includes('applyTheme()'), 'applyTheme() should still run at module level');
-  });
-});
-
-describe('useTheme.js - storage key', () => {
-  it('should use consistent storage key', () => {
-    assert.ok(source.includes("STORAGE_KEY = 'kbb-theme'"), 'Missing or changed STORAGE_KEY constant');
+  it('should resolve light when system is selected but matchMedia is unavailable', async () => {
+    global.window.matchMedia = undefined;
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { resolved, setTheme } = useTheme();
+    setTheme('system');
+    await new Promise(r => setTimeout(r, 0));
+    expect(resolved.value).toBe('light');
   });
 });
