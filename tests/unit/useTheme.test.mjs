@@ -90,4 +90,40 @@ describe('useTheme', () => {
     await new Promise(r => setTimeout(r, 0));
     expect(resolved.value).toBe('light');
   });
+
+  it('should apply theme when matchMedia changes while system is selected', async () => {
+    const listeners = [];
+    const mq = {
+      matches: false,
+      addEventListener: vi.fn((event, handler) => listeners.push(handler)),
+      removeEventListener: vi.fn((event, handler) => {
+        const idx = listeners.indexOf(handler);
+        if (idx !== -1) listeners.splice(idx, 1);
+      }),
+    };
+    global.window.matchMedia = vi.fn(() => mq);
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { setTheme } = useTheme();
+    setTheme('system');
+    await new Promise(r => setTimeout(r, 0));
+    mq.matches = true;
+    listeners.forEach(h => h());
+    expect(global.document.documentElement.setAttribute).toHaveBeenCalledWith('data-theme', 'dark');
+  });
+
+  it('should not apply theme when matchMedia changes while non-system is selected', async () => {
+    const listeners = [];
+    const mq = {
+      matches: false,
+      addEventListener: vi.fn((event, handler) => listeners.push(handler)),
+      removeEventListener: vi.fn(),
+    };
+    global.window.matchMedia = vi.fn(() => mq);
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    const { setTheme } = useTheme();
+    setTheme('light');
+    await new Promise(r => setTimeout(r, 0));
+    listeners.forEach(h => h());
+    expect(global.document.documentElement.setAttribute).not.toHaveBeenCalledWith('data-theme', 'dark');
+  });
 });
