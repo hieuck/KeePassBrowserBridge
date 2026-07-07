@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import * as fieldClassifier from '../../extension/shared/field-classifier.js';
+import { querySelectorAllDeep } from '../../extension/shared/dom-utils.js';
 
 const DOCUMENT_POSITION_FOLLOWING = 4;
 let activeDocument = null;
@@ -378,6 +379,13 @@ classifierFns.editableInputFromElement = (element, _isVisible) => {
 Object.assign(sandbox, Object.fromEntries(
   Object.entries(classifierFns).map(([k, v]) => [k, typeof v === 'function' ? v : () => v])
 ));
+// Expose DOM utility helpers that contentScript.js imports from shared/dom-utils.js.
+// Use a sandbox-aware visibleInputs so it picks up the mocked isVisible and document.
+sandbox.querySelectorAllDeep = querySelectorAllDeep;
+sandbox.visibleInputs = (selector, root) => {
+  const scope = root && root.querySelectorAll ? root : sandbox.document;
+  return sandbox.querySelectorAllDeep(scope, selector).filter(sandbox.isVisible);
+};
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox, { filename: 'contentScript.js' });
 
