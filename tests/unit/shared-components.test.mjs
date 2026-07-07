@@ -142,4 +142,25 @@ describe('SharedComponents', () => {
     modal.dispatchEvent(event);
     assert.equal(modal.parentNode, null);
   });
+
+  it('createModal closes when close button is clicked', async () => {
+    const SC = await loadSC();
+    const modal = SC.createModal('Edit Entry', '<p>form</p>');
+    document.body.appendChild(modal);
+    assert.equal(modal.parentNode, document.body);
+    const closeBtn = modal.querySelector('.modal-close');
+    closeBtn.dispatchEvent(new Event('click'));
+    assert.equal(modal.parentNode, null);
+  });
+
+  it('createModal does not close when clicking inside content', async () => {
+    const SC = await loadSC();
+    const modal = SC.createModal('Edit Entry', '<p>form</p>');
+    document.body.appendChild(modal);
+    const content = modal.querySelector('.modal-content');
+    const event = new Event('click', { bubbles: true });
+    content.dispatchEvent(event);
+    assert.equal(modal.parentNode, document.body);
+    document.body.removeChild(modal);
+  });
 });
