@@ -91,6 +91,46 @@ describe('Prompt web components', () => {
       safeRemove(el);
     });
 
+    it('should keep default bottom-right position when no data-position is set', () => {
+      const el = document.createElement('kbb-save-prompt');
+      document.body.appendChild(el);
+      expect(el.style.top).toBe('');
+      expect(el.style.right).toBe('');
+      safeRemove(el);
+    });
+
+    it('should not render when attribute changes before element is connected', () => {
+      const el = document.createElement('kbb-save-prompt');
+      const initialShadowHTML = el.shadowRoot ? el.shadowRoot.innerHTML : '';
+      el.setAttribute('name', 'Before Connect');
+      expect(el.shadowRoot ? el.shadowRoot.innerHTML : '').toBe(initialShadowHTML);
+    });
+
+    it('should handle invalid folders JSON gracefully', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('folders', 'not-json');
+      document.body.appendChild(el);
+      const select = el.shadowRoot.querySelector('[data-field="folder"]');
+      expect(select).not.toBeNull();
+      expect(select.innerHTML).not.toContain('not-json');
+      safeRemove(el);
+    });
+
+    it('should render folder options from object format', () => {
+      const el = document.createElement('kbb-save-prompt');
+      el.setAttribute('folder', 'Finance');
+      el.setAttribute('folders', JSON.stringify([
+        { value: 'Personal', label: 'My Personal' },
+        { value: 'Finance', label: 'My Finance' },
+      ]));
+      document.body.appendChild(el);
+      const select = el.shadowRoot.querySelector('[data-field="folder"]');
+      expect(select.innerHTML).toContain('My Personal');
+      expect(select.innerHTML).toContain('My Finance');
+      expect(select.querySelector('option[selected]').value).toBe('Finance');
+      safeRemove(el);
+    });
+
     it('should dispatch kbb-save on save button click', () => {
       const el = document.createElement('kbb-save-prompt');
       el.setAttribute('name', 'Example');
