@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { DEFAULT_E2E_PORT } from './tests/e2e/e2e-port.mjs';
 
-const e2ePort = Number(process.env.PORT || 3000);
+const e2ePort = Number(process.env.PORT || DEFAULT_E2E_PORT);
 const e2eBaseURL = `http://127.0.0.1:${e2ePort}`;
 
 export default defineConfig({
