@@ -2,6 +2,22 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+## Status Update (as of 2026-07-07)
+
+The codebase has evolved significantly since this plan was written. Many of the tasks below have already been implemented and the project is now at **v2.1.0**, not v0.9.0.
+
+- [x] **Task 1** — `BridgeSettings.PasskeysEnabled` is config-based via `PasskeysConfigKey`.
+- [x] **Task 2** — KeePass plugin has a **Tools → KeePass Browser Bridge → Passkey Support** toggle that persists to custom config.
+- [x] **Task 3** — `manifest.json` requests `webAuthenticationProxy` in the required `permissions` array (Chrome MV3 requires this permission at install time; it cannot be optional).
+- [x] **Task 4** — `background.js` imports `passkeysProxy.js`, wires `setupPasskeyProxy()` / `teardownPasskeyProxy()`, and handles `KBB_SET_PASSKEYS_ENABLED`.
+- [x] **Task 5** — Passkey enable/disable UI lives in the Options page (`extension/src/options/tabs/PasskeyTab.vue`) rather than the popup.
+- [x] **Task 6** — Version has been bumped to **2.1.0** across manifests, `BridgeSettings.PluginVersion`, `AssemblyInfo.cs`, `update/versioninfo.txt`, and `README.md`.
+- [ ] **Tasks 7-9** — Manual smoke test, security review checklist confirmation, and release artifact builds remain pending. These require a Windows environment with KeePass.exe and the .NET Framework 4.8 build tools (`csc.exe`) available locally.
+
+This plan is retained for historical context and as a checklist for the remaining release-readiness work. When resuming, verify the current version and implementation state before assuming the gaps listed in the original Architecture section still exist.
+
+---
+
 **Goal:** Enable browser-facing passkey/WebAuthn support, bump to v1.0.0, and produce release artifacts.
 
 **Architecture:** Backend passkey crypto/storage (`PasskeyService.cs`) and Chrome proxy (`passkeysProxy.js`) already exist. The production gap is: (a) proxy not loaded by `background.js`, (b) `BridgeSettings.PasskeysEnabled` hardcoded `false`, (c) no `webAuthenticationProxy` permission in manifest, (d) no KeePass menu toggle. This plan wires those pieces together, then releases v1.0.0.
