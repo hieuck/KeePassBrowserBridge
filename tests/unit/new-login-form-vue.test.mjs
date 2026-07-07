@@ -64,6 +64,21 @@ describe('NewLoginForm', () => {
     expect(wrapper.emitted('cancel')).toBeTruthy();
   });
 
+  it('should emit cancel on header close button click', async () => {
+    const wrapper = mount(NewLoginForm);
+    const closeBtn = wrapper.find('.form__close-btn');
+    await closeBtn.trigger('click');
+    expect(wrapper.emitted('cancel')).toBeTruthy();
+  });
+
+  it('should update selected group', async () => {
+    const wrapper = mount(NewLoginForm, { props: { groups: mockGroups } });
+    const options = wrapper.findAll('option');
+    const personalOption = options.find(o => o.text() === 'Root\\Personal');
+    await wrapper.find('select').setValue(personalOption?.element.value);
+    expect(wrapper.vm.form.Group).toBe('Root\\Personal');
+  });
+
   it('should render group options from tree', () => {
     const wrapper = mount(NewLoginForm, { props: { groups: mockGroups } });
     const options = wrapper.findAll('option');
@@ -71,5 +86,34 @@ describe('NewLoginForm', () => {
     expect(wrapper.text()).toContain('Root');
     expect(wrapper.text()).toContain('Root\\Personal');
     expect(wrapper.text()).toContain('Finance');
+  });
+
+  it('should render group options from deeply nested tree', () => {
+    const deepGroups = [
+      { Name: 'Root', Children: [{ Name: 'Level1', Children: [{ Name: 'Level2', Children: [] }] }] },
+    ];
+    const wrapper = mount(NewLoginForm, { props: { groups: deepGroups } });
+    expect(wrapper.text()).toContain('Root\\Level1\\Level2');
+  });
+
+  it('should not emit save when form is invalid', async () => {
+    const wrapper = mount(NewLoginForm);
+    await wrapper.find('form').trigger('submit');
+    expect(wrapper.emitted('save')).toBeFalsy();
+  });
+
+  it('should handle null groups gracefully', () => {
+    const wrapper = mount(NewLoginForm, { props: { groups: null } });
+    const options = wrapper.findAll('option');
+    expect(options.length).toBe(1);
+  });
+
+  it('should enable save with password only (no username)', async () => {
+    const wrapper = mount(NewLoginForm);
+    await wrapper.find('#new-title').setValue('My App');
+    await wrapper.find('#new-url').setValue('https://app.com');
+    await wrapper.find('#new-password').setValue('secret');
+    const saveBtn = wrapper.findAll('button').find(b => b.text() === 'Save');
+    expect(saveBtn?.attributes('disabled')).toBeUndefined();
   });
 });
