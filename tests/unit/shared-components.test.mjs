@@ -1,4 +1,4 @@
-import { describe, it, assert } from 'vitest';
+import { describe, it, assert, vi } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -100,5 +100,46 @@ describe('SharedComponents', () => {
     const color = SC.getAvatarColor('');
     assert.ok(typeof color === 'string');
     assert.ok(color.startsWith('#'));
+  });
+
+  it('createToggle calls onChange when checkbox changes', async () => {
+    const SC = await loadSC();
+    const onChange = vi.fn();
+    const toggle = SC.createToggle(false, onChange);
+    const input = toggle.querySelector('input[type="checkbox"]');
+    input.checked = true;
+    input.dispatchEvent(new Event('change'));
+    assert.equal(onChange.mock.calls.length, 1);
+  });
+
+  it('createToggle without onChange does not throw on change', async () => {
+    const SC = await loadSC();
+    const toggle = SC.createToggle(false);
+    const input = toggle.querySelector('input[type="checkbox"]');
+    input.dispatchEvent(new Event('change'));
+    assert.ok(toggle);
+  });
+
+  it('createToast removes element after timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const SC = await loadSC();
+      const toast = SC.createToast('Saved!');
+      const removeSpy = vi.spyOn(toast, 'remove');
+      vi.advanceTimersByTime(3000);
+      assert.equal(removeSpy.mock.calls.length, 1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('createModal closes when overlay is clicked', async () => {
+    const SC = await loadSC();
+    const modal = SC.createModal('Edit Entry', '<p>form</p>');
+    document.body.appendChild(modal);
+    assert.equal(modal.parentNode, document.body);
+    const event = new Event('click', { bubbles: true });
+    modal.dispatchEvent(event);
+    assert.equal(modal.parentNode, null);
   });
 });
