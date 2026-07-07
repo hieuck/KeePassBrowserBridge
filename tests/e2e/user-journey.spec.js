@@ -223,6 +223,8 @@ test.describe('Bug Regression Tests', () => {
 });
 
 test.describe('User Journey: Visual Regression', () => {
+  test.skip(({ browserName, channel }) => browserName !== 'chromium' || !!channel, 'Visual regression snapshots are only maintained for stock Chromium');
+
   test('TJ11: Popup empty state matches design', async ({ page }) => {
     await page.setViewportSize({ width: 400, height: 600 });
     await page.goto('/extension/popup.html');
