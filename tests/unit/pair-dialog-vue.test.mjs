@@ -1,8 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import PairDialog from '../../extension/src/popup/PairDialog.vue';
 
 describe('PairDialog', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should show start pairing when not active', () => {
     const wrapper = mount(PairDialog);
     expect(wrapper.text()).toContain('Start Pairing');
@@ -64,5 +72,29 @@ describe('PairDialog', () => {
     const future = Date.now() + 120000;
     const wrapper = mount(PairDialog, { props: { pairingActive: true, expiresAt: future } });
     expect(wrapper.text()).toContain('Expires in');
+  });
+
+  it('should submit code on Enter key', async () => {
+    const wrapper = mount(PairDialog, { props: { pairingActive: true } });
+    const input = wrapper.find('.pair-input');
+    await input.setValue('654321');
+    await input.trigger('keyup.enter');
+    expect(wrapper.emitted('pair-complete')).toBeTruthy();
+    expect(wrapper.emitted('pair-complete')[0]).toEqual(['654321']);
+  });
+
+  it('should start pairing timer updates when expiresAt changes', async () => {
+    const wrapper = mount(PairDialog, { props: { pairingActive: true } });
+    expect(wrapper.find('.pair-expiry').exists()).toBe(false);
+    const future = Date.now() + 120000;
+    await wrapper.setProps({ expiresAt: future });
+    expect(wrapper.find('.pair-expiry').exists()).toBe(true);
+  });
+
+  it('should show 0 seconds when expired', async () => {
+    const past = Date.now() - 1000;
+    const wrapper = mount(PairDialog, { props: { pairingActive: true, expiresAt: past } });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain('Expires in 0 seconds');
   });
 });
