@@ -126,4 +126,15 @@ describe('useTheme', () => {
     listeners.forEach(h => h());
     expect(global.document.documentElement.setAttribute).not.toHaveBeenCalledWith('data-theme', 'dark');
   });
+
+  it('should not emit Vue warnings when called outside a component setup', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { useTheme } = await import('../../extension/src/composables/useTheme.js');
+    useTheme();
+    const vueWarnings = warnSpy.mock.calls.filter(
+      ([message]) => typeof message === 'string' && message.includes('onUnmounted')
+    );
+    expect(vueWarnings).toHaveLength(0);
+    warnSpy.mockRestore();
+  });
 });

@@ -1,4 +1,4 @@
-import { ref, watch, onUnmounted } from 'vue';
+import { ref, watch, onUnmounted, getCurrentInstance } from 'vue';
 
 const STORAGE_KEY = 'kbb-theme';
 
@@ -53,10 +53,12 @@ export function useTheme() {
     }
   }
 
-  onUnmounted(() => {
-    stopWatch();
-    if (mqCleanup) mqCleanup();
-  });
+  if (getCurrentInstance()) {
+    onUnmounted(() => {
+      stopWatch();
+      if (mqCleanup) mqCleanup();
+    });
+  }
 
   function setTheme(value) {
     if (['light', 'dark', 'system'].includes(value)) {
