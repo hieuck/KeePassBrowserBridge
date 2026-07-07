@@ -10,7 +10,7 @@ export default defineConfig({
     include: ['tests/**/*.test.{js,ts,mjs}', 'extension/tests/**/*.test.mjs'],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'tests/extension/**/*.test.mjs'],
     coverage: {
-      provider: 'istanbul',
+      provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
