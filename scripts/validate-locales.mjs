@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(new URL(import.meta.url));
 const __dirname = path.dirname(__filename);
-const localesDir = path.resolve(__dirname, "..", "extension", "_locales");
+const defaultLocalesDir = path.resolve(__dirname, "..", "extension", "_locales");
 
 function loadJson(filePath) {
   const raw = fs.readFileSync(filePath, "utf8");
@@ -16,20 +16,20 @@ function getKeys(obj) {
   return Object.keys(obj).sort();
 }
 
-function main() {
+export function validateLocales(localesDir) {
+  const errors = [];
+
   const locales = fs.readdirSync(localesDir).filter((name) => {
     return fs.statSync(path.join(localesDir, name)).isDirectory();
   });
 
   if (!locales.includes("en")) {
-    console.error("English locale is missing");
-    process.exit(1);
+    errors.push("English locale is missing");
+    return { ok: false, errors, localeCount: locales.length };
   }
 
   const english = loadJson(path.join(localesDir, "en", "messages.json"));
   const englishKeys = getKeys(english);
-
-  let hasError = false;
 
   for (const locale of locales) {
     if (locale === "en") continue;
@@ -38,8 +38,7 @@ function main() {
     try {
       data = loadJson(filePath);
     } catch (err) {
-      console.error(`Invalid JSON in ${locale}: ${err.message}`);
-      hasError = true;
+      errors.push(`Invalid JSON in ${locale}: ${err.message}`);
       continue;
     }
 
@@ -48,20 +47,31 @@ function main() {
     const extra = keys.filter((k) => !englishKeys.includes(k));
 
     if (missing.length > 0) {
-      console.error(`Locale ${locale} is missing keys: ${missing.join(", ")}`);
-      hasError = true;
+      errors.push(`Locale ${locale} is missing keys: ${missing.join(", ")}`);
     }
     if (extra.length > 0) {
-      console.error(`Locale ${locale} has extra keys: ${extra.join(", ")}`);
-      hasError = true;
+      errors.push(`Locale ${locale} has extra keys: ${extra.join(", ")}`);
     }
   }
 
-  if (hasError) {
+  return {
+    ok: errors.length === 0,
+    errors,
+    localeCount: locales.length,
+  };
+}
+
+function main() {
+  const { ok, errors, localeCount } = validateLocales(defaultLocalesDir);
+
+  if (!ok) {
+    for (const error of errors) {
+      console.error(error);
+    }
     process.exit(1);
   }
 
-  console.log(`All ${locales.length} locales are consistent with English.`);
+  console.log(`All ${localeCount} locales are consistent with English.`);
 }
 
 main();
