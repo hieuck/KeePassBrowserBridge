@@ -226,3 +226,10 @@ You MUST invoke the skill `.claude/skills/kimchi-risk-assessment/SKILL.md` and f
 
 Before starting any **major change**, perform a structured risk assessment. A major change is one that:
 
+- Modifies data models, database schemas, or persistent storage formats.
+- Changes public APIs or contracts with external systems.
+- Introduces new infrastructure, services, or deployment targets.
+- Replaces core frameworks, libraries, or build tools.
+- Has a broad blast radius across the codebase.
+- Is estimated to require significant time or coordination.
+

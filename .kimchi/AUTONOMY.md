@@ -9,7 +9,7 @@ allowed-actions:
   - deploy-staging
   # - deploy-production   # uncomment only when you trust the agent fully
   - add-dependency
-  - handle-secrets
+  # - handle-secrets  # requires explicit human approval per AGENTS.md section 13
   - create-release
   - bump-version-patch
   - bump-version-minor
