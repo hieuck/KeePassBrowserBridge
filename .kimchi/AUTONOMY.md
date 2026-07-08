@@ -1,6 +1,6 @@
 ---
 mode: full-continuous
-owner: <your-github-username>
+owner: hieuck
 
 # Allowed autonomous actions.
 # Remove any action you do not want the agent to perform automatically.
@@ -31,11 +31,12 @@ task-sources:
 # The agent itself does not schedule; this documents expected triggers.
 trigger: any
 
+# Deploy commands disabled until real staging/production deploy scripts are added to package.json.
 # Deployment configuration.
 deploy:
   staging:
     command: npm run deploy:staging
-    enabled: true
+    enabled: false
     on-release: true
   production:
     command: npm run deploy:production

@@ -2,20 +2,26 @@
 # These rules only inspect changed file paths and do not execute untrusted code.
 
 extension:
-  - extension/**
+  - changed-files:
+      - any-glob-to-any-file: extension/**
 
 plugin:
-  - src/**
+  - changed-files:
+      - any-glob-to-any-file: src/**
 
 tests:
-  - tests/**
+  - changed-files:
+      - any-glob-to-any-file: tests/**
 
 ci-cd:
-  - .github/**
+  - changed-files:
+      - any-glob-to-any-file: .github/**
 
 documentation:
-  - docs/**
-  - '**/*.md'
+  - changed-files:
+      - any-glob-to-any-file: docs/**
+      - any-glob-to-any-file: '**/*.md'
 
 build:
-  - scripts/**
+  - changed-files:
+      - any-glob-to-any-file: scripts/**

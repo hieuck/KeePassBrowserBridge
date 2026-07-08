@@ -28,7 +28,7 @@ jobs:
       - name: Detect repository context
         id: repo
         run: |
-          echo "repo_name=$(basename '$(git rev-parse --show-toplevel)')" >> "$GITHUB_OUTPUT"
+          echo "repo_name=$(basename "$(git rev-parse --show-toplevel)")" >> "$GITHUB_OUTPUT"
           echo "default_branch=$(git symbolic-ref refs/remotes/origin/HEAD --short 2>/dev/null | sed 's/origin\///')" >> "$GITHUB_OUTPUT"
           echo "repo_url=$(git remote get-url origin 2>/dev/null)" >> "$GITHUB_OUTPUT"
 

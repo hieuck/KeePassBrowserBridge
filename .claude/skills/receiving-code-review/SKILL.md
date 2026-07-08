@@ -49,6 +49,8 @@ Provide a concise review with:
 3. **Findings**: specific, actionable items with file/line references when possible.
 4. **Questions**: anything you need clarified before deciding.
 
+Write your full review report to `.kimchi/logs/review-<timestamp>.md`. Use a stable ISO-style timestamp, for example `review-2026-07-08T12-34-56.md`. This keeps transient agent output under `.kimchi/logs/`, which is the canonical location for such artifacts.
+
 ## Independence Rules
 
 - Do not view other reviewers' output before writing your own.
