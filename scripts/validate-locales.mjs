@@ -74,4 +74,6 @@ function main() {
   console.log(`All ${localeCount} locales are consistent with English.`);
 }
 
-main();
+if (process.argv[1] === __filename) {
+  main();
+}
