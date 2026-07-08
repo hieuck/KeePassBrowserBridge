@@ -1,0 +1,81 @@
+name: Kimchi Incident Response
+
+on:
+  # Trigger when an issue is labeled as an incident.
+  issues:
+    types: [labeled]
+
+  # Allow manual trigger with incident details.
+  workflow_dispatch:
+    inputs:
+      severity:
+        description: 'Incident severity (p0, p1, p2, p3)'
+        required: true
+        default: 'p2'
+      issue_number:
+        description: 'Optional GitHub issue number'
+        required: false
+
+jobs:
+  kimchi-incident:
+    runs-on: ubuntu-latest
+    # Minimal permissions for placeholder runner; expand once real Kimchi runner is wired.
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect repository context
+        id: repo
+        run: |
+          echo "repo_name=$(basename "$(git rev-parse --show-toplevel)")" >> "$GITHUB_OUTPUT"
+          echo "default_branch=$(git symbolic-ref refs/remotes/origin/HEAD --short 2>/dev/null | sed 's/origin\///')" >> "$GITHUB_OUTPUT"
+          echo "repo_url=$(git remote get-url origin 2>/dev/null)" >> "$GITHUB_OUTPUT"
+
+
+      - name: Verify autonomy opt-in
+        run: |
+          if [ ! -f .kimchi/AUTONOMY.md ]; then
+            echo "No .kimchi/AUTONOMY.md found. Skipping incident response."
+            exit 0
+          fi
+          echo "Autonomy config present. Continuing."
+
+      - name: Validate severity input
+        env:
+          INCIDENT_SEVERITY: ${{ github.event.inputs.severity || 'p2' }}
+        run: |
+          if [[ ! "$INCIDENT_SEVERITY" =~ ^(p0|p1|p2|p3)$ ]]; then
+            echo "Invalid severity: $INCIDENT_SEVERITY"
+            exit 1
+          fi
+
+      # --- Replace the step below with your actual Kimchi runner ---
+      - name: Run Kimchi incident response
+        env:
+          KIMCHI_FULL_AUTONOMY: 1
+          KIMCHI_AUTONOMY_CONFIG: .kimchi/AUTONOMY.md
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INCIDENT_SEVERITY: ${{ github.event.inputs.severity || 'p2' }}
+          INCIDENT_ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
+        run: |
+          echo "Replace this command with your Kimchi incident runner invocation."
+          echo "Example: kimchi run --mode incident --severity $INCIDENT_SEVERITY --issue $INCIDENT_ISSUE_NUMBER"
+          # Placeholder exit to keep the workflow green until configured.
+          exit 0
+
+      - name: Upload incident logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kimchi-incident-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .kimchi/logs/*.md
+            .kimchi/incidents/*.md
+          if-no-files-found: ignore

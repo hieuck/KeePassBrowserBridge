@@ -1,23 +1,45 @@
 ## Description
 
-Please include a summary of the change and which issue it fixes.
+Brief description of the change for the KeePass Browser Bridge browser extension and/or KeePass C# plugin.
 
-## Type of change
+## Changes
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
+- Change one
+- Change two
+
+## Motivation
+
+Why is this change needed? Link any related issues:
+
+- Closes #
+- Related to #
 
 ## Testing
 
-- [ ] Unit tests pass (`npm test`)
-- [ ] E2E tests pass (`npx playwright test`)
-- [ ] C# builds clean (`dotnet build`)
-- [ ] README updated (if applicable)
+- [ ] `npm test` (Vitest unit tests) passes
+- [ ] `npm run test:e2e:chromium` (Playwright E2E Chromium) passes
+- [ ] `npm run lint` (ESLint) passes
+- [ ] C# plugin build passes (`dotnet build src/` or `scripts/build-release.ps1`)
+- [ ] Manual testing in Chrome MV3
+- [ ] Manual testing in Firefox (if affected)
+
+## Browser / Plugin Impact
+
+- [ ] Chrome MV3 extension
+- [ ] Firefox extension
+- [ ] KeePass C# plugin / bridge protocol
+- [ ] No runtime impact (docs, build, repo hygiene only)
+
+## Security & Compatibility
+
+- [ ] No secrets, credentials, or private keys committed
+- [ ] Passkeys / WebAuthn behavior considered (if applicable)
+- [ ] Backward compatible with existing KeePass plugin versions
 
 ## Checklist
 
-- [ ] My code follows the existing code style
-- [ ] I have added tests for my changes
-- [ ] All new and existing tests pass
+- [ ] Code follows project conventions (`.claude/skills/keepass-browser-bridge/SKILL.md`)
+- [ ] Tests added or updated for the affected code
+- [ ] `CHANGELOG.md` updated
+- [ ] Documentation updated (`README.md`, `docs/`, inline comments, etc.)
+- [ ] i18n strings updated (`extension/_locales/`) if user-facing text changed

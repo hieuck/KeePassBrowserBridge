@@ -1,0 +1,27 @@
+# Path-based label mappings for actions/labeler.
+# These rules only inspect changed file paths and do not execute untrusted code.
+
+extension:
+  - changed-files:
+      - any-glob-to-any-file: extension/**
+
+plugin:
+  - changed-files:
+      - any-glob-to-any-file: src/**
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: tests/**
+
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file: .github/**
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: docs/**
+      - any-glob-to-any-file: '**/*.md'
+
+build:
+  - changed-files:
+      - any-glob-to-any-file: scripts/**

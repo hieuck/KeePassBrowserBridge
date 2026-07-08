@@ -1,0 +1,70 @@
+name: Kimchi Agent Cycle
+
+on:
+  # Run every 10 minutes. Adjust frequency as needed.
+  schedule:
+    - cron: '*/10 * * * *'
+
+  # Allow manual trigger from the Actions tab.
+  workflow_dispatch:
+
+  # Optional: react to new issues or issue comments.
+  # issues:
+  #   types: [opened, labeled]
+  # issue_comment:
+  #   types: [created]
+
+jobs:
+  kimchi-cycle:
+    runs-on: ubuntu-latest
+    # Minimal permissions for placeholder runner; expand once real Kimchi runner is wired.
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect repository context
+        id: repo
+        run: |
+          echo "repo_name=$(basename "$(git rev-parse --show-toplevel)")" >> "$GITHUB_OUTPUT"
+          echo "default_branch=$(git symbolic-ref refs/remotes/origin/HEAD --short 2>/dev/null | sed 's/origin\///')" >> "$GITHUB_OUTPUT"
+          echo "repo_url=$(git remote get-url origin 2>/dev/null)" >> "$GITHUB_OUTPUT"
+
+
+      - name: Verify autonomy opt-in
+        run: |
+          if [ ! -f .kimchi/AUTONOMY.md ]; then
+            echo "No .kimchi/AUTONOMY.md found. Skipping cycle."
+            exit 0
+          fi
+          echo "Autonomy config present. Continuing."
+
+      # --- Replace the step below with your actual Kimchi runner ---
+      # This is a placeholder because the official Kimchi CLI/runtime
+      # invocation depends on your installation.
+      - name: Run Kimchi agent cycle
+        env:
+          KIMCHI_FULL_AUTONOMY: 1
+          KIMCHI_AUTONOMY_CONFIG: .kimchi/AUTONOMY.md
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ steps.repo.outputs.repo_name }}
+          DEFAULT_BRANCH: ${{ steps.repo.outputs.default_branch }}
+          REPO_URL: ${{ steps.repo.outputs.repo_url }}
+        run: |
+          echo "Replace this command with your Kimchi runner invocation."
+          echo "Example: kimchi run --mode continuous --repo ."
+          # Placeholder exit to keep the workflow green until configured.
+          exit 0
+
+      - name: Upload cycle logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kimchi-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .kimchi/logs/*.md
+          if-no-files-found: ignore
