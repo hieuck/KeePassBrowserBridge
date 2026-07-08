@@ -25,7 +25,12 @@ Thumbs.db
 /reports/mutation/
 /.worktrees/
 /worktrees/
-/.kimchi
+# Kimchi workspace: ignore transient directories but keep tracked markdown docs and memory.
+/.kimchi/tmp/
+/.kimchi/logs/
+/.kimchi/incidents/
+/.kimchi/retrospectives/
+/.kimchi/risk-assessments/
 
 # Generated agent tooling metadata (kept out of source control)
 .claude/ecc-tools.json
@@ -33,3 +38,7 @@ Thumbs.db
 .claude/homunculus/
 .codex/
 .agents/
+
+# Kimchi runtime/debug output (transient directories)
+/.kimchi/debug/
+/.kimchi/docs/
