@@ -1,0 +1,53 @@
+name: Kimchi Release
+
+on:
+  # Trigger after a push to the default branch (e.g., after a PR merge).
+  push:
+    branches:
+      - main
+      - master
+
+  # Allow manual trigger.
+  workflow_dispatch:
+
+jobs:
+  kimchi-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify release autonomy
+        run: |
+          if [ ! -f .kimchi/AUTONOMY.md ]; then
+            echo "No .kimchi/AUTONOMY.md found. Skipping release."
+            exit 0
+          fi
+          echo "Autonomy config present. Continuing."
+
+      # --- Replace the step below with your actual Kimchi runner ---
+      - name: Run Kimchi release cycle
+        env:
+          KIMCHI_FULL_AUTONOMY: 1
+          KIMCHI_AUTONOMY_CONFIG: .kimchi/AUTONOMY.md
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Replace this command with your Kimchi release invocation."
+          echo "Example: kimchi run --mode release --repo ."
+          # Placeholder exit to keep the workflow green until configured.
+          exit 0
+
+      - name: Upload release logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kimchi-release-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .kimchi/logs/*.md
+          if-no-files-found: ignore

@@ -1,23 +1,25 @@
 ## Description
 
-Please include a summary of the change and which issue it fixes.
+Brief description of the change.
 
-## Type of change
+## Changes
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
+- Change one
+- Change two
+
+## Motivation
+
+Why is this change needed?
 
 ## Testing
 
-- [ ] Unit tests pass (`npm test`)
-- [ ] E2E tests pass (`npx playwright test`)
-- [ ] C# builds clean (`dotnet build`)
-- [ ] README updated (if applicable)
+- [ ] Unit tests added/updated
+- [ ] Integration tests passed
+- [ ] Manual testing performed
 
 ## Checklist
 
-- [ ] My code follows the existing code style
-- [ ] I have added tests for my changes
-- [ ] All new and existing tests pass
+- [ ] Code follows project conventions
+- [ ] Documentation updated if needed
+- [ ] No secrets or credentials committed
+- [ ] CHANGELOG.md updated if needed
