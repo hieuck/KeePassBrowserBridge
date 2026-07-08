@@ -45,6 +45,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
     }
   };
   chrome.runtime.onMessage.addListener(window.__keepassBrowserBridgeMessageListener);
+  refreshCustomLoginFields();
   installShadowRootObserverHook();
   installInlineFillButtons();
   restorePendingCredential();
@@ -526,7 +527,76 @@ function findCredentialMatch(entries, credential) {
   }
   return entries.length === 1 ? entries[0] : null;
 }
+function passwordLoginUsernameBoost(input, passwordInput) {
+  if (!input || !passwordInput) return 0;
+
+  const type = (input.getAttribute("type") || "text").toLowerCase();
+  const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
+  if (!isTelephoneIdentifierField(type, autocomplete)) return 0;
+
+  const context = credentialContextText(passwordInput);
+  if (!hasLoginIntentText(context)) return 0;
+
+  return 260;
+}
+function fillOneTimePassword(otpInput, code) {
+  const value = String(code || "").trim();
+  if (!value) return false;
+  const splitInputs = findSplitOtpInputs(otpInput, value.length);
+  if (splitInputs.length < value.length) return false;
+  for (let i = 0; i < value.length; ++i) {
+    setInputValue(splitInputs[i], value.charAt(i));
+  }
+  return true;
+}
+function setOneTimePasswordValue(otpInput, code) {
+  const value = String(code || "").trim();
+  if (!otpInput || !value) return false;
+  if (fillOneTimePassword(otpInput, value)) return true;
+  setInputValue(otpInput, value);
+  return true;
+}
+function findSplitOtpInputs(anchorInput, codeLength) {
+  if (!anchorInput || codeLength < 2) return [];
+  const scopes = [
+    anchorInput.parentElement,
+    anchorInput.closest ? anchorInput.closest("fieldset") : null,
+    anchorInput.form || null,
+    anchorInput.closest ? anchorInput.closest("main, section, article, div") : null,
+    document,
+  ].filter(Boolean);
+
+  for (const scope of scopes) {
+    const inputs = visibleInputs("input", scope)
+      .filter(
+        (input) => !input.disabled && !input.readOnly && isOtpDigitInput(input),
+      )
+      .sort((a, b) => documentOrder(a, b));
+    if (inputs.length >= codeLength && inputs.includes(anchorInput)) {
+      return inputs.slice(0, codeLength);
+    }
+  }
+
+  return [];
+}
+import { visibleInputs, querySelectorAllDeep } from './shared/dom-utils.js';
+import { getCustomLoginFields, findCustomFields } from './shared/custom-login-fields.js';
+let customLoginFieldMapping = null;
+async function refreshCustomLoginFields() {
+  if (typeof getCustomLoginFields !== 'function') return;
+  try {
+    customLoginFieldMapping = await getCustomLoginFields(window.location.href);
+  } catch {
+    customLoginFieldMapping = null;
+  }
+}
 function findPasswordInput(root) {
+  if (customLoginFieldMapping && customLoginFieldMapping.password) {
+    const custom = findCustomFields(root || document, customLoginFieldMapping);
+    if (custom && custom.password && !custom.password.disabled && !custom.password.readOnly) {
+      return custom.password;
+    }
+  }
   return (
     visibleInputs('input[type="password"]', root).find(
       (input) => !input.disabled && !input.readOnly && isLoginPasswordInput(input),
@@ -534,6 +604,12 @@ function findPasswordInput(root) {
   );
 }
 function findUsernameInput(passwordInput, root) {
+  if (customLoginFieldMapping && customLoginFieldMapping.username) {
+    const custom = findCustomFields(root || document, customLoginFieldMapping);
+    if (custom && custom.username && !custom.username.disabled && !custom.username.readOnly) {
+      return custom.username;
+    }
+  }
   const hasPasswordContext = Boolean(passwordInput);
   const candidates = visibleInputs("input", root).filter((input) => {
     const type = (input.getAttribute("type") || "text").toLowerCase();
@@ -579,19 +655,13 @@ function findUsernameInput(passwordInput, root) {
   );
   return ranked[0].input;
 }
-function passwordLoginUsernameBoost(input, passwordInput) {
-  if (!input || !passwordInput) return 0;
-
-  const type = (input.getAttribute("type") || "text").toLowerCase();
-  const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
-  if (!isTelephoneIdentifierField(type, autocomplete)) return 0;
-
-  const context = credentialContextText(passwordInput);
-  if (!hasLoginIntentText(context)) return 0;
-
-  return 260;
-}
 function findOtpInput(passwordInput, root) {
+  if (customLoginFieldMapping && customLoginFieldMapping.totp) {
+    const custom = findCustomFields(root || document, customLoginFieldMapping);
+    if (custom && custom.totp && !custom.totp.disabled && !custom.totp.readOnly) {
+      return custom.totp;
+    }
+  }
   const candidates = visibleInputs("input", root)
     .filter((input) => {
       const type = (input.getAttribute("type") || "text").toLowerCase();
@@ -607,47 +677,6 @@ function findOtpInput(passwordInput, root) {
     .sort((a, b) => b.score - a.score || a.index - b.index);
   return candidates.length ? candidates[0].input : null;
 }
-function fillOneTimePassword(otpInput, code) {
-  const value = String(code || "").trim();
-  if (!value) return false;
-  const splitInputs = findSplitOtpInputs(otpInput, value.length);
-  if (splitInputs.length < value.length) return false;
-  for (let i = 0; i < value.length; ++i) {
-    setInputValue(splitInputs[i], value.charAt(i));
-  }
-  return true;
-}
-function setOneTimePasswordValue(otpInput, code) {
-  const value = String(code || "").trim();
-  if (!otpInput || !value) return false;
-  if (fillOneTimePassword(otpInput, value)) return true;
-  setInputValue(otpInput, value);
-  return true;
-}
-function findSplitOtpInputs(anchorInput, codeLength) {
-  if (!anchorInput || codeLength < 2) return [];
-  const scopes = [
-    anchorInput.parentElement,
-    anchorInput.closest ? anchorInput.closest("fieldset") : null,
-    anchorInput.form || null,
-    anchorInput.closest ? anchorInput.closest("main, section, article, div") : null,
-    document,
-  ].filter(Boolean);
-
-  for (const scope of scopes) {
-    const inputs = visibleInputs("input", scope)
-      .filter(
-        (input) => !input.disabled && !input.readOnly && isOtpDigitInput(input),
-      )
-      .sort((a, b) => documentOrder(a, b));
-    if (inputs.length >= codeLength && inputs.includes(anchorInput)) {
-      return inputs.slice(0, codeLength);
-    }
-  }
-
-  return [];
-}
-import { visibleInputs, querySelectorAllDeep } from './shared/dom-utils.js';
 function installShadowRootObserverHook() {
   if (
     window.__keepassBrowserBridgeAttachShadowHooked ||
