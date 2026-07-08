@@ -1,57 +1,27 @@
 # Project Context
 
-Keywords: project, purpose, tech-stack, default-branch, package-manager, build, test, repo-url
-
-## Auto-Detection
-
-When this file contains placeholders, the agent should detect the following values automatically on first run and update this file:
-
-```bash
-# Project name
-project_name=$(basename "$(git rev-parse --show-toplevel)")
-
-# Default branch
-default_branch=$(git symbolic-ref refs/remotes/origin/HEAD --short 2>/dev/null | sed 's/origin\///')
-
-# Remote URL
-repo_url=$(git remote get-url origin 2>/dev/null)
-
-# Tech stack detection (first match wins)
-if [ -f package.json ]; then stack="Node.js"; pkg_manager="npm"; test_cmd="npm test"; build_cmd="npm run build"
-elif [ -f pnpm-workspace.yaml ] || [ -f pnpm-lock.yaml ]; then stack="Node.js"; pkg_manager="pnpm"; test_cmd="pnpm test"; build_cmd="pnpm build"
-elif [ -f yarn.lock ]; then stack="Node.js"; pkg_manager="yarn"; test_cmd="yarn test"; build_cmd="yarn build"
-elif [ -f pyproject.toml ]; then stack="Python"; pkg_manager="poetry"; test_cmd="poetry run pytest"; build_cmd="poetry build"
-elif [ -f requirements.txt ]; then stack="Python"; pkg_manager="pip"; test_cmd="pytest"; build_cmd="python setup.py build"
-elif [ -f go.mod ]; then stack="Go"; pkg_manager="go modules"; test_cmd="go test ./..."; build_cmd="go build ./..."
-elif [ -f Cargo.toml ]; then stack="Rust"; pkg_manager="cargo"; test_cmd="cargo test"; build_cmd="cargo build"
-fi
-```
+Keywords: project, purpose, tech-stack, default-branch, package-manager, build, test
 
 ## Basics
 
-- **Project name**: {{auto-detect from repo root}}
-- **Purpose**: <one sentence — update after first cycle>
-- **Default branch**: {{auto-detect from origin/HEAD}}
-- **Repository URL**: {{auto-detect from git remote origin}}
+- **Project name**: KeePass Browser Bridge
+- **Purpose**: Browser extension bridge between KeePass 2.x and Chrome/Firefox, with a KeePass C# plugin backend.
+- **Default branch**: main (auto-detected; never hardcode)
 
 ## Tech stack
 
-- Language: <auto-detect>
-- Framework: <fill in if known>
-- Package manager: <auto-detect>
-- Build tool: <auto-detect>
-- Test framework: <auto-detect>
+- **Language**: JavaScript / TypeScript (browser extension), C# (KeePass plugin)
+- **Framework**: Vue 3 (browser extension popup/options), Web Components (inline picker/prompts), Chrome Manifest V3 + Firefox
+- **Package manager**: npm
+- **Build tool**: Vite (extension bundles), PowerShell release scripts, .NET / MSBuild (C# plugin)
+- **Test framework**: Vitest (unit tests), Playwright (E2E across Chromium/Firefox/Edge/WebKit)
 
 ## Common commands
 
-- Install dependencies: <auto-detect>
-- Run tests: <auto-detect>
-- Run lint: <auto-detect>
-- Build: <auto-detect>
-- Deploy staging: <fill in if configured>
-- Deploy production: <fill in if configured>
-
-## Notes
-
-- Do not hardcode `main` or `master`. Always detect the default branch dynamically.
-- If auto-detection fails, ask the user for the missing values on the first cycle.
+- Install dependencies: `npm install`
+- Run tests: `npm test` (Vitest unit tests)
+- Run E2E: `npm run test:e2e:chromium` / `npm run test:e2e:firefox`
+- Run lint: `npm run lint`
+- Build extension: `npm run build:vue && npm run build:components`
+- Full release build: `npm run build:release` (PowerShell)
+- Verify: `npm run verify` (PowerShell script)

@@ -2,6 +2,6 @@
 
 Keywords: workstream, branch, pr, open, in-progress
 
-- <Feature or refactor currently in progress>
-- <Open PRs and their status>
-- <Branches that should not be touched by other work>
+- **Completed**: PR #61 — Setup Kimchi autonomous infrastructure and community templates (merged to main).
+- **Open**: None.
+- **Next**: Enable real Kimchi runner invocation in `.github/workflows/kimchi-*.yml` when the Kimchi runtime is available.
