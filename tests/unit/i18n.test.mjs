@@ -11,8 +11,10 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..');
 
 const enPath = path.join(projectRoot, 'extension', '_locales', 'en', 'messages.json');
-
-const LOCALES = ['en', 'vi', 'de', 'fr', 'es', 'ja', 'ko', 'zh_CN'];
+const localesDir = path.join(projectRoot, 'extension', '_locales');
+const LOCALES = fs.readdirSync(localesDir).filter((name) =>
+  fs.statSync(path.join(localesDir, name)).isDirectory(),
+);
 
 describe('i18n locale files', () => {
   for (const locale of LOCALES) {
