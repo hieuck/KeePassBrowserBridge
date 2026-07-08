@@ -1,0 +1,21 @@
+# Path-based label mappings for actions/labeler.
+# These rules only inspect changed file paths and do not execute untrusted code.
+
+extension:
+  - extension/**
+
+plugin:
+  - src/**
+
+tests:
+  - tests/**
+
+ci-cd:
+  - .github/**
+
+documentation:
+  - docs/**
+  - '**/*.md'
+
+build:
+  - scripts/**
