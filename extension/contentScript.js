@@ -46,6 +46,7 @@ if (!window.__keepassBrowserBridgeContentScriptLoaded) {
   };
   chrome.runtime.onMessage.addListener(window.__keepassBrowserBridgeMessageListener);
   refreshCustomLoginFields();
+  refreshSitePreferences();
   installShadowRootObserverHook();
   installInlineFillButtons();
   restorePendingCredential();
@@ -241,6 +242,15 @@ function autoSubmitLoginForm(root) {
   }, 100);
 }
 function fillLogin(credential, root) {
+  if (sitePreferencesMapping && sitePreferencesMapping.disableAutofill) {
+    return {
+      usernameFilled: false,
+      passwordFilled: false,
+      otpFilled: false,
+      customFieldsFilled: 0,
+      customFields: [],
+    };
+  }
   const passwordInput = findPasswordInput(root);
   const usernameInput = findUsernameInput(passwordInput, root);
   const otpInput = findOtpInput(passwordInput, root);
@@ -434,6 +444,9 @@ async function maybePromptSaveLogin(credential) {
   if (!credential.password) {
     return;
   }
+  if (sitePreferencesMapping && sitePreferencesMapping.disableSavePrompt) {
+    return;
+  }
   try {
     if (!(await canMutateKeePassEntries())) {
       return;
@@ -581,13 +594,27 @@ function findSplitOtpInputs(anchorInput, codeLength) {
 }
 import { visibleInputs, querySelectorAllDeep } from './shared/dom-utils.js';
 import { getCustomLoginFields, findCustomFields } from './shared/custom-login-fields.js';
+import { getSitePreference } from './shared/site-preferences.js';
 let customLoginFieldMapping = null;
+let sitePreferencesMapping = null;
 async function refreshCustomLoginFields() {
   if (typeof getCustomLoginFields !== 'function') return;
   try {
     customLoginFieldMapping = await getCustomLoginFields(window.location.href);
   } catch {
     customLoginFieldMapping = null;
+  }
+}
+async function refreshSitePreferences() {
+  if (typeof getSitePreference !== 'function') return;
+  try {
+    sitePreferencesMapping = {
+      disableAutofill: await getSitePreference(window.location.href, 'disableAutofill'),
+      disableSavePrompt: await getSitePreference(window.location.href, 'disableSavePrompt'),
+      disablePasskeys: await getSitePreference(window.location.href, 'disablePasskeys'),
+    };
+  } catch {
+    sitePreferencesMapping = null;
   }
 }
 function findPasswordInput(root) {

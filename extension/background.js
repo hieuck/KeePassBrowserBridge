@@ -7,6 +7,7 @@ try {
 }
 
 import { normalizeStringArray, normalizeFeatureMap, normalizeFeatureDetails, normalizeReleaseVersion, compareVersions, hasPartialPairingCredentials, booleanSetting, numberSetting, isActivePairingTimestamp, normalizeClientPermissions, isTerminalPairingError, getRelatedOrigins } from './shared/background-utils.js';
+import { getSitePreference } from './shared/site-preferences.js';
 
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:19455/bridge';
 const PROTOCOL_VERSION = 1;
@@ -551,9 +552,28 @@ async function setupPasskeyProxy() {
     }
   });
 
+  function wrapPasskeyHandler(handler) {
+    return async function passkeyHandlerWithSitePreferences(requestInfo, context) {
+      if (context && context.origin) {
+        try {
+          const disabled = await getSitePreference(context.origin, 'disablePasskeys');
+          if (disabled) {
+            const error = new Error('Passkeys are disabled for this site.');
+            error.name = 'NotAllowedError';
+            throw error;
+          }
+        } catch (error) {
+          if (error && error.name === 'NotAllowedError') throw error;
+          // Storage lookup failure should not block passkey requests.
+        }
+      }
+      return handler(requestInfo, context);
+    };
+  }
+
   const lifecycle = experiment.createLifecycle({
-    onCreateRequest: handlers.onCreateRequest,
-    onGetRequest: handlers.onGetRequest,
+    onCreateRequest: wrapPasskeyHandler(handlers.onCreateRequest),
+    onGetRequest: wrapPasskeyHandler(handlers.onGetRequest),
     onRequestCanceled: handlers.onRequestCanceled,
     resolveTrustedOrigin: typeof experiment.createTrustedOriginResolver === 'function'
       ? experiment.createTrustedOriginResolver()
