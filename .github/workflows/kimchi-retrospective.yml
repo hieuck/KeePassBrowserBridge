@@ -55,7 +55,7 @@ jobs:
 
       - name: Upload retrospective logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kimchi-retrospective-logs-${{ github.run_id }}-${{ github.run_attempt }}
           path: |

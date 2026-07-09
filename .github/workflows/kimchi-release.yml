@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload release logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kimchi-release-logs-${{ github.run_id }}-${{ github.run_attempt }}
           path: .kimchi/logs/*.md
